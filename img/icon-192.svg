@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#1a1145"/>
+      <stop offset="50%" stop-color="#0f0c29"/>
+      <stop offset="100%" stop-color="#1e1040"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7C3AED" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="rG" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FF4757" stop-opacity="0.45"/><stop offset="100%" stop-color="#FF4757" stop-opacity="0"/></radialGradient>
+    <radialGradient id="bG" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#3742FA" stop-opacity="0.45"/><stop offset="100%" stop-color="#3742FA" stop-opacity="0"/></radialGradient>
+    <radialGradient id="gG" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#2ED573" stop-opacity="0.45"/><stop offset="100%" stop-color="#2ED573" stop-opacity="0"/></radialGradient>
+    <radialGradient id="yG" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FFA502" stop-opacity="0.45"/><stop offset="100%" stop-color="#FFA502" stop-opacity="0"/></radialGradient>
+  </defs>
+
+  <rect width="192" height="192" rx="40" fill="url(#bg)"/>
+  <circle cx="96" cy="96" r="75" fill="url(#glow)"/>
+
+  <!-- Corner glows -->
+  <circle cx="49" cy="49" r="30" fill="url(#rG)"/>
+  <circle cx="143" cy="49" r="30" fill="url(#bG)"/>
+  <circle cx="49" cy="143" r="30" fill="url(#gG)"/>
+  <circle cx="143" cy="143" r="30" fill="url(#yG)"/>
+
+  <!-- Top-left: Red circle -->
+  <circle cx="49" cy="49" r="18" fill="#FF4757"/>
+  <ellipse cx="45" cy="44" rx="7" ry="4" fill="white" opacity="0.2"/>
+
+  <!-- Top-right: Blue rounded square -->
+  <rect x="125" y="31" width="36" height="36" rx="7" fill="#3742FA"/>
+
+  <!-- Bottom-left: Green triangle -->
+  <polygon points="49,125 70,161 28,161" fill="#2ED573"/>
+
+  <!-- Bottom-right: Orange star -->
+  <polygon points="143,127 149,141 163,143 153,151 155,165 143,159 131,165 133,151 123,143 137,141" fill="#FFA502"/>
+
+  <!-- Center swipe trail -->
+  <path d="M96,104 Q82,90 68,76" stroke="white" stroke-width="2" fill="none" opacity="0.22" stroke-linecap="round"/>
+
+  <!-- Center dot -->
+  <circle cx="96" cy="104" r="7" fill="white" opacity="0.9"/>
+  <circle cx="96" cy="104" r="5" fill="#7C3AED"/>
+</svg>

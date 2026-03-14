@@ -1,0 +1,23 @@
+{
+  "name": "scs-play",
+  "version": "1.0.0",
+  "description": "SCS Play — Blitzschnelles Reaktions-Sortierspiel",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build-cap.mjs",
+    "cap:sync": "node scripts/build-cap.mjs && npx cap sync android",
+    "cap:open": "npx cap open android",
+    "cap:run": "node scripts/build-cap.mjs && npx cap run android"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.2"
+  }
+}

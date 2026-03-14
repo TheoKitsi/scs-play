@@ -1,0 +1,17 @@
+/* ═══════════════════════════════════════════
+   SCS Play — CSS Architecture
+   Split into logical partials for fast dev.
+   ═══════════════════════════════════════════ */
+
+@import url('partials/01-tokens.css');
+@import url('partials/02-base.css');
+@import url('partials/03-boot-auth.css');
+@import url('partials/04-home.css');
+@import url('partials/05-game.css');
+@import url('partials/06-overlays.css');
+@import url('partials/07-effects.css');
+@import url('partials/08-patches-v7-v9.css');
+@import url('partials/09-extensions.css');
+@import url('partials/10-micro-modes.css');
+@import url('partials/11-light-theme.css');
+@import url('partials/12-polish-v18-v19.css');

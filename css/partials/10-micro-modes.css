@@ -1,0 +1,727 @@
+/* ─── HUD value pulse on change (via JS class) ─── */
+.hud-value.value-changed{
+  animation:hudValuePulse .3s ease-out;
+}
+@keyframes hudValuePulse{
+  0%{transform:scale(1);color:var(--text)}
+  40%{transform:scale(1.25);color:var(--gold)}
+  100%{transform:scale(1);color:var(--text)}
+}
+.hud-multiplier.value-changed{
+  animation:hudMultPulse .35s ease-out;
+}
+@keyframes hudMultPulse{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.35);filter:brightness(1.4)}
+  100%{transform:scale(1);filter:brightness(1)}
+}
+
+/* ─── Corner shape match glow ─── */
+.corner-shape.corner-matched{
+  animation:cornerMatchGlow .5s ease-out;
+}
+@keyframes cornerMatchGlow{
+  0%{transform:scale(1);filter:brightness(1)}
+  30%{transform:scale(1.15);filter:brightness(1.8) drop-shadow(0 0 16px currentColor)}
+  100%{transform:scale(1);filter:brightness(1)}
+}
+
+/* ─── Center shape spawn pop ─── */
+.center-shape.spawn-pop{
+  animation:spawnPop .3s var(--ease-bounce);
+}
+@keyframes spawnPop{
+  0%{transform:scale(0) rotate(-10deg);opacity:0}
+  60%{transform:scale(1.1) rotate(2deg);opacity:1}
+  100%{transform:scale(1) rotate(0);opacity:1}
+}
+
+/* ─── Score counter roll (tabular) ─── */
+.hud-value,.hud-timer,.results-score-num{
+  font-variant-numeric:tabular-nums;
+  transition:transform .1s ease;
+}
+
+/* ─── Results panel entrance ─── */
+.results-panel{
+  animation:resultsPanelIn .5s var(--ease-bounce);
+}
+@keyframes resultsPanelIn{
+  0%{opacity:0;transform:scale(.85) translateY(24px)}
+  100%{opacity:1;transform:scale(1) translateY(0)}
+}
+
+/* ─── PB badge crown animation ─── */
+.results-pb{
+  position:relative;
+  overflow:visible;
+  margin-top:18px;
+}
+.results-pb::before{
+  content:'\1F451';
+  position:absolute;left:50%;top:-18px;
+  transform:translateX(-50%);
+  font-size:1.3rem;
+  animation:crownBounce 1.5s ease-in-out infinite;
+  z-index:2;
+}
+@keyframes crownBounce{
+  0%,100%{transform:translateX(-50%) translateY(0) rotate(-5deg)}
+  50%{transform:translateX(-50%) translateY(-4px) rotate(5deg)}
+}
+
+/* ─── Level-up badge glow pulse ─── */
+.results-levelup{
+  position:relative;
+  overflow:hidden;
+}
+.results-levelup::after{
+  content:'';position:absolute;inset:-2px;
+  border-radius:inherit;
+  background:linear-gradient(135deg,var(--primary),var(--accent));
+  opacity:.15;
+  animation:levelUpPulse 2s ease-in-out infinite;
+  z-index:-1;
+}
+@keyframes levelUpPulse{
+  0%,100%{opacity:.1;transform:scale(1)}
+  50%{opacity:.25;transform:scale(1.03)}
+}
+
+/* ─── Achievement toast — enhanced entrance ─── */
+.achievement-toast .toast-icon svg{
+  animation:toastIconSpin .5s var(--ease-bounce);
+}
+@keyframes toastIconSpin{
+  0%{transform:rotate(-15deg) scale(0)}
+  60%{transform:rotate(5deg) scale(1.15)}
+  100%{transform:rotate(0) scale(1)}
+}
+
+/* ─── Store item hover lift ─── */
+.store-item{
+  transition:all .25s ease;
+}
+.store-item:hover{
+  transform:translateY(-2px);
+  box-shadow:0 6px 20px rgba(0,0,0,.3), inset 0 1px 1px rgba(255,255,255,0.06);
+  border-color:var(--primary);
+}
+.store-item:active{
+  transform:translateY(0) scale(.98);
+}
+
+/* ─── Unlock item progress bar ─── */
+.unlock-item .unlock-progress{
+  width:100%;height:3px;
+  background:rgba(255,255,255,.06);
+  border-radius:2px;overflow:hidden;
+  margin-top:4px;
+}
+.unlock-item .unlock-progress-fill{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,var(--primary),var(--accent));
+  transition:width .6s ease;
+}
+
+/* ─── Locked item overlay ─── */
+.unlock-item.locked-item{
+  position:relative;
+}
+.unlock-item.locked-item::after{
+  content:'';position:absolute;inset:0;
+  background:rgba(10,10,26,.35);
+  border-radius:inherit;pointer-events:none;
+}
+
+/* ─── Avatar grid item hover/select micro ─── */
+.avatar-grid-item{
+  transition:all .2s var(--ease-bounce);
+}
+.avatar-grid-item:active{
+  transform:scale(.88);
+}
+
+/* ─── Settings toggle — smooth slide ─── */
+.setting-row input[type="checkbox"]{
+  transition:background .3s ease;
+}
+.setting-row input[type="checkbox"]::after{
+  transition:transform .3s var(--ease-bounce);
+}
+
+/* ─── Countdown number enhanced pop ─── */
+.countdown-num{
+  text-shadow:0 0 40px var(--primary),0 0 80px rgba(108,92,231,.3);
+}
+
+/* ─── Score pop — more dramatic for big scores ─── */
+.score-pop.big{
+  font-weight:900;
+  text-shadow:0 0 12px currentColor;
+}
+
+/* ─── Screen transition overlay (faster, subtler) ─── */
+.screen.active{
+  transition:opacity .35s cubic-bezier(.4,0,.2,1),visibility .35s;
+}
+
+/* ─── Streak fire particles on HUD ─── */
+.hud-value.on-fire{
+  color:var(--danger);
+  text-shadow:0 0 8px rgba(255,71,87,.5);
+  animation:streakFireGlow .6s ease-in-out infinite alternate;
+}
+@keyframes streakFireGlow{
+  0%{text-shadow:0 0 6px rgba(255,71,87,.3)}
+  100%{text-shadow:0 0 14px rgba(255,71,87,.6)}
+}
+
+/* ─── Multiplier high glow ─── */
+.hud-multiplier.mult-ultra{
+  color:var(--gold);
+  animation:multUltraGlow .4s ease-in-out infinite alternate;
+}
+@keyframes multUltraGlow{
+  0%{text-shadow:0 0 8px rgba(255,215,0,.4);transform:scale(1)}
+  100%{text-shadow:0 0 20px rgba(255,215,0,.7);transform:scale(1.08)}
+}
+
+/* ─── Back button hover arrow nudge ─── */
+.btn-back:active{
+  transform:scale(.88) translateX(-2px);
+}
+
+/* ─── Continue panel urgency pulse ─── */
+.continue-panel{
+  animation:continueUrgency 2s ease-in-out infinite;
+}
+@keyframes continueUrgency{
+  0%,100%{border-color:rgba(253,121,168,.2);box-shadow:0 0 30px rgba(253,121,168,.05)}
+  50%{border-color:rgba(253,121,168,.4);box-shadow:0 0 50px rgba(253,121,168,.12)}
+}
+
+/* ─── Trail preview animation (shimmer across swatch) ─── */
+.unlock-preview.trail-anim{
+  position:relative;overflow:hidden;
+}
+.unlock-preview.trail-anim::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.2) 50%,transparent 70%);
+  transform:translateX(-100%);
+  animation:trailPreviewShimmer 2.5s ease-in-out infinite;
+}
+@keyframes trailPreviewShimmer{
+  0%{transform:translateX(-100%)}
+  50%{transform:translateX(100%)}
+  100%{transform:translateX(100%)}
+}
+
+/* ─── Active unlock item glow ring ─── */
+.unlock-item.active-item .unlock-preview{
+  box-shadow:0 0 12px rgba(108,92,231,.4);
+  border:2px solid var(--primary);
+}
+
+/* ─── Locked button dim ─── */
+.btn-unlock.btn-locked{
+  opacity:.7;font-size:.65rem;
+}
+
+/* ─── Store owned item checkmark ─── */
+.store-item.owned .store-item-name::after{
+  content:' \u2713';color:var(--success);font-weight:700;
+}
+
+/* ─── Shop tab badge dot ─── */
+.shop-tab{position:relative}
+.shop-tab.has-new::after{
+  content:'';position:absolute;top:4px;right:4px;
+  width:6px;height:6px;border-radius:50%;
+  background:var(--accent);
+}
+
+/* ═══════════════════════════════════════
+   NEW GAME MODES + EXPERIENCE POLISH
+   ═══════════════════════════════════════ */
+
+/* ─── Timer progress bar ─── */
+.timer-bar{
+  position:absolute;top:0;left:0;right:0;
+  height:3px;background:rgba(255,255,255,0.06);
+  z-index:12;pointer-events:none;
+}
+.timer-bar-fill{
+  height:100%;
+  background:var(--accent);
+  border-radius:0 2px 2px 0;
+  transition:width 1s linear;
+}
+.timer-bar-fill.urgent{
+  background:var(--warning);
+  transition:width 1s linear;
+}
+.timer-bar-fill.critical{
+  background:var(--danger,#FF4757);
+  animation:timerBarPulse 0.5s infinite;
+}
+@keyframes timerBarPulse{
+  50%{opacity:.5}
+}
+
+/* ─── Near-miss arrow indicator ─── */
+.near-miss-arrow{
+  position:absolute;z-index:50;pointer-events:none;
+  width:40px;height:40px;
+  opacity:0;transition:opacity .3s;
+  font-size:24px;text-align:center;line-height:40px;
+}
+.near-miss-arrow.visible{
+  opacity:1;
+  animation:nearMissPulse .6s ease-out forwards;
+}
+@keyframes nearMissPulse{
+  0%{transform:scale(1.5);opacity:0}
+  30%{opacity:1}
+  100%{transform:scale(1);opacity:0}
+}
+
+/* ─── Text-based corners (Math / Word modes) ─── */
+.corner-text{
+  font-family:var(--font-mono,'SF Mono','Menlo','Consolas',monospace);
+  font-size:18px;
+  font-weight:800;
+  color:#fff;
+  text-align:center;
+  line-height:1.2;
+  text-shadow:0 0 10px currentColor;
+  user-select:none;
+  pointer-events:none;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  word-break:break-word;
+}
+.corner-shape .corner-text{
+  display:flex;align-items:center;justify-content:center;
+  width:100%;height:100%;
+}
+
+/* ─── Center text (equation / word) ─── */
+.center-text{
+  font-weight:900;
+  color:#fff;
+  text-align:center;
+  line-height:1.2;
+  user-select:none;
+}
+.math-eq{
+  font-family:var(--font-mono,'SF Mono','Menlo','Consolas',monospace);
+  font-size:28px;
+  letter-spacing:2px;
+  text-shadow:0 0 20px rgba(255,255,255,.4);
+}
+.word-display{
+  font-size:24px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  text-shadow:0 0 15px rgba(255,255,255,.3);
+}
+
+/* ─── Memo mode — hidden corners (Verdeckte Ecken) ─── */
+.corner-shape.memo-covered{
+  background:rgba(255,255,255,0.04) !important;
+  border-color:rgba(255,255,255,0.12) !important;
+  box-shadow:0 0 12px rgba(255,255,255,0.05) !important;
+  transition:background .4s ease, border-color .4s ease, box-shadow .4s ease;
+}
+.corner-shape.memo-covered > *{
+  opacity:0 !important;
+  transition:opacity .3s ease;
+}
+.corner-shape.memo-covered::after{
+  content:'?';
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;font-weight:800;
+  color:rgba(255,255,255,0.3);
+  text-shadow:0 0 10px rgba(255,255,255,0.15);
+  animation:memoCoverPop .3s ease-out;
+}
+@keyframes memoCoverPop{
+  0%{opacity:0;transform:scale(0.5)}
+  100%{opacity:1;transform:scale(1)}
+}
+.corner-shape.memo-revealing{
+  animation:memoRevealPulse .4s ease-out;
+}
+@keyframes memoRevealPulse{
+  0%{transform:scale(0.9);filter:brightness(0.5)}
+  50%{transform:scale(1.1);filter:brightness(1.5)}
+  100%{transform:scale(1);filter:brightness(1)}
+}
+
+/* ─── Sequenz (Simon Says) corner flash ─── */
+.corner-shape.sequenz-flash{
+  animation: sequenzCornerFlash var(--seq-flash-ms, 500ms) cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index:5;
+}
+@keyframes sequenzCornerFlash{
+  0%{transform:scale(1);filter:brightness(1);box-shadow:none}
+  15%{transform:scale(1.22);filter:brightness(1.5);box-shadow:0 0 28px 8px rgba(255,255,255,.4)}
+  70%{transform:scale(1.12);filter:brightness(1.3);box-shadow:0 0 20px 4px rgba(255,255,255,.25)}
+  100%{transform:scale(1);filter:brightness(1);box-shadow:none}
+}
+
+/* ─── Mode selector grid layout (replaces old horizontal scroll) ─── */
+.mode-grid-4 .mode-chip,
+.mode-grid-3 .mode-chip,
+.mode-grid-2x2 .mode-chip{
+  min-width:0;
+}
+
+/* ─── Dynamic background intensity (applied via JS) ─── */
+#game.intensity-low{
+  background:radial-gradient(ellipse at center,rgba(108,92,231,.04) 0%,transparent 70%);
+}
+#game.intensity-mid{
+  background:radial-gradient(ellipse at center,rgba(255,165,2,.05) 0%,transparent 70%);
+}
+#game.intensity-high{
+  background:radial-gradient(ellipse at center,rgba(255,71,87,.06) 0%,transparent 70%);
+}
+#game.intensity-max{
+  background:radial-gradient(ellipse at center,rgba(255,215,0,.08) 0%,transparent 70%);
+}
+
+/* ─── Corner destination flash on correct ─── */
+.corner-shape.corner-destination-flash{
+  animation:cornerDestFlash .4s ease-out;
+}
+@keyframes cornerDestFlash{
+  0%{filter:brightness(2);transform:scale(1.2)}
+  100%{filter:brightness(1);transform:scale(1)}
+}
+
+/* ─── Near miss correct-corner highlight ─── */
+.corner-shape.near-miss-hint{
+  animation:nearMissHint .6s ease-out;
+}
+@keyframes nearMissHint{
+  0%,10%{box-shadow:0 0 25px rgba(46,213,115,.6);border-color:rgba(46,213,115,.7)}
+  100%{box-shadow:none;border-color:rgba(255,255,255,.08)}
+}
+
+/* ─── Score popup at corner position ─── */
+.corner-score-pop{
+  position:absolute;z-index:60;pointer-events:none;
+  font-weight:800;font-size:14px;
+  color:#2ED573;
+  text-shadow:0 0 8px rgba(46,213,115,.5);
+  animation:cornerScorePop .7s ease-out forwards;
+}
+@keyframes cornerScorePop{
+  0%{opacity:1;transform:translateY(0) scale(.8)}
+  40%{opacity:1;transform:translateY(-12px) scale(1)}
+  100%{opacity:0;transform:translateY(-28px) scale(.9)}
+}
+
+/* ─── Screen edge glow on high streaks ─── */
+#game::after{
+  content:'';
+  position:absolute;inset:0;
+  pointer-events:none;z-index:1;
+  opacity:0;transition:opacity .5s;
+  border-radius:inherit;
+  will-change:box-shadow,opacity;
+}
+#game.edge-glow-warm::after{
+  opacity:1;
+  box-shadow:inset 0 0 40px rgba(255,165,2,.15), inset 0 0 80px rgba(255,71,87,.08);
+}
+#game.edge-glow-hot::after{
+  opacity:1;
+  box-shadow:inset 0 0 50px rgba(255,71,87,.25), inset 0 0 100px rgba(255,215,0,.12);
+  animation:edgeGlowPulse 1s ease-in-out infinite alternate;
+}
+#game.edge-glow-fire::after{
+  opacity:1;
+  box-shadow:inset 0 0 60px rgba(255,50,50,.35), inset 0 0 120px rgba(255,215,0,.2), inset 0 0 180px rgba(255,140,0,.1);
+  animation:edgeGlowPulse .7s ease-in-out infinite alternate;
+}
+@keyframes edgeGlowPulse{
+  0%{opacity:.6}100%{opacity:1}
+}
+
+/* ─── Spawn burst particles (via JS) ─── */
+.spawn-particle{
+  position:absolute;z-index:30;pointer-events:none;
+  border-radius:50%;
+  animation:spawnBurst .5s ease-out forwards;
+}
+@keyframes spawnBurst{
+  0%{opacity:1;transform:translate(0,0) scale(1)}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0)}
+}
+
+/* ─── Enhanced timer display ─── */
+.hud-timer.timer-critical{
+  animation:timerShake .15s ease-in-out infinite;
+}
+@keyframes timerShake{
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-2px)}
+  75%{transform:translateX(2px)}
+}
+
+/* ─── Timer bonus/penalty flash ─── */
+.hud-timer.timer-bonus{
+  animation:timerBonusFlash .8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change:transform,color;
+}
+@keyframes timerBonusFlash{
+  0%{transform:scale(1.5);color:#2ED573;text-shadow:0 0 24px rgba(46,213,115,.8)}
+  30%{transform:scale(1.1);color:#2ED573;text-shadow:0 0 16px rgba(46,213,115,.5)}
+  100%{transform:scale(1);text-shadow:none}
+}
+.hud-timer.timer-penalty{
+  animation:timerPenaltyFlash .5s ease-out;
+  will-change:transform,color;
+}
+@keyframes timerPenaltyFlash{
+  0%{transform:scale(1.3);color:#FF4757}
+  100%{transform:scale(1)}
+}
+
+/* ─── Edge glow for streak bonus ─── */
+#game.edge-glow-bonus::after{
+  opacity:1;
+  box-shadow:inset 0 0 50px rgba(46,213,115,.25), inset 0 0 100px rgba(46,213,115,.1);
+  animation:edgeBonusPulse .6s ease-out forwards;
+}
+@keyframes edgeBonusPulse{
+  0%{opacity:1}
+  100%{opacity:0}
+}
+
+/* ─── Endless life earned heart bounce ─── */
+.hud-endless-lives.life-earned-pulse .endless-heart{
+  animation:heartEarnedBounce .6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes heartEarnedBounce{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.5);filter:drop-shadow(0 0 8px #FF6B81)}
+  100%{transform:scale(1);filter:none}
+}
+.endless-heart.heart-earned{
+  animation:heartAppear .5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes heartAppear{
+  0%{transform:scale(0);opacity:0}
+  60%{transform:scale(1.3);opacity:1}
+  100%{transform:scale(1);opacity:1}
+}
+
+/* ─── 374px: New modes compact ─── */
+@media(max-width:374px){
+  .corner-text{font-size:14px}
+  .math-eq{font-size:22px}
+  .word-display{font-size:18px}
+  .corner-shape.memo-covered::after{font-size:22px}
+}
+
+/* ═══════════════════════════════════════════
+   BRICKS-INSPIRED VISUAL UPGRADE
+   ═══════════════════════════════════════════ */
+
+/* Shimmer accent on hero card */
+.hero-card .hero-top::after{
+  content:'';position:absolute;top:0;left:-60%;
+  width:40%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);
+  transform:skewX(-20deg);
+  animation:heroShimmer 5s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes heroShimmer{
+  0%,100%{left:-60%;opacity:0}
+  50%{left:120%;opacity:1}
+}
+
+/* Footer item active glow */
+.footer-item:hover .footer-icon{
+  color:var(--primary-glow);
+  filter:drop-shadow(0 0 6px rgba(108,92,231,.35));
+}
+
+/* Mode chip hover lift */
+.mode-chip:not(.locked):hover{
+  transform:translateY(-2px);
+  box-shadow:0 4px 14px rgba(0,0,0,.25);
+}
+.mode-chip:not(.locked):active{
+  transform:translateY(0) scale(.96);
+}
+
+/* Section glow pulse on sort/brain labels */
+.mode-section--sort .mode-section-label{
+  text-shadow:0 0 12px rgba(108,92,231,.3);
+}
+.mode-section--brain .mode-section-label{
+  text-shadow:0 0 12px rgba(253,121,168,.3);
+}
+
+/* Daily card inner shimmer */
+.daily-card .daily-icon{
+  animation:dailyIconPulse 2.5s ease-in-out infinite;
+}
+@keyframes dailyIconPulse{
+  0%,100%{transform:scale(1);filter:none}
+  50%{transform:scale(1.15);filter:drop-shadow(0 0 8px rgba(255,215,0,.5))}
+}
+
+/* ═══════════════════════════════════════════
+   LIGHT THEME
+   ═══════════════════════════════════════════ */
+body.light-theme{
+  --bg:#f0f0f5;--bg-hue:230;
+  --surface:#ffffff;--card:rgba(255,255,255,.85);
+  --text:#1a1a2e;--text-dim:#4a4a5a;--text-muted:#5a5a70;
+  --glass:rgba(0,0,0,.03);--glass-border:rgba(0,0,0,.08);
+  --glass-hover:rgba(0,0,0,.05);--glass-active:rgba(0,0,0,.08);
+  --shadow:0 4px 20px rgba(0,0,0,.08);
+  --shadow-sm:0 2px 10px rgba(0,0,0,.06);--shadow-lg:0 8px 32px rgba(0,0,0,.12);
+
+  /* Surface hierarchy */
+  --surface-container:rgba(255,255,255,0.8);
+  --surface-container-high:rgba(255,255,255,0.9);
+  --surface-elevated:rgba(255,255,255,0.95);
+  --scrim:rgba(240,240,245,0.9);
+
+  /* Outline */
+  --outline:rgba(0,0,0,0.12);
+  --outline-subtle:rgba(0,0,0,0.06);
+
+  /* Focus ring */
+  --focus-ring:0 0 0 3px rgba(108,92,231,0.4);
+
+  /* Primary text on surfaces */
+  --primary-text:#4a3ab5;
+  --on-warning:#1a1a2e;
+}
+
+/* ═══════════════════════════════════════
+   SEQUENZ ROUND DISPLAY (center platform)
+   ═══════════════════════════════════════ */
+.sequenz-round-display {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.seq-round-num {
+  font-size: 2.5rem; font-weight: 900;
+  background: linear-gradient(135deg, #06B6D4, #38BDF8);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  filter: drop-shadow(0 0 8px rgba(6,182,212,0.4));
+}
+.seq-round-len {
+  font-size: 0.75rem; font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════
+   STROOP MODE
+   ═══════════════════════════════════════ */
+.stroop-display {
+  font-size: 32px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow: 0 0 20px currentColor;
+}
+.stroop-swatch {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ═══════════════════════════════════════
+   FOKUS (Flanker) MODE
+   ═══════════════════════════════════════ */
+.fokus-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 22px;
+  line-height: 1;
+}
+.fokus-flanker {
+  opacity: 0.45;
+  color: var(--text-dim, #888);
+  font-weight: 400;
+}
+.fokus-center {
+  font-weight: 900;
+  color: #fff;
+  font-size: 38px;
+  text-shadow: 0 0 18px rgba(255,255,255,0.5);
+  position: relative;
+  padding: 0 6px;
+}
+
+/* ═══════════════════════════════════════
+   CHAOS (Rule Switch) MODE
+   ═══════════════════════════════════════ */
+.chaos-stimulus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.chaos-shape {
+  text-shadow: 0 0 16px currentColor;
+  line-height: 1;
+  transition: font-size 0.2s ease;
+}
+.chaos-rule-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 3px 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  text-shadow: 0 0 8px currentColor;
+}
+.chaos-corner-shape {
+  line-height: 1;
+  text-shadow: 0 0 10px currentColor;
+}
+
+/* ── Chaos rule-switch banner ── */
+.chaos-rule-banner {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,165,0,0.18);
+  border: 1px solid rgba(255,165,0,0.35);
+  border-radius: 12px;
+  padding: 6px 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #FFA500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  z-index: 30;
+  pointer-events: none;
+  animation: chaosRulePop 0.3s ease-out;
+}
+@keyframes chaosRulePop {
+  0%   { opacity:0; transform: translateX(-50%) scale(0.7); }
+  100% { opacity:1; transform: translateX(-50%) scale(1); }
+}
