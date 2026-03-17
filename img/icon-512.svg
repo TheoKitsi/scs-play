@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#1a1145"/>
+      <stop offset="50%" stop-color="#0f0c29"/>
+      <stop offset="100%" stop-color="#1e1040"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7C3AED" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="rGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF4757" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#FF4757" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3742FA" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#3742FA" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#2ED573" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#2ED573" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="yGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFA502" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#FFA502" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6"/>
+      <feOffset dy="4"/>
+      <feComposite in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="200" fill="url(#glow)"/>
+
+  <!-- Corner glows -->
+  <circle cx="130" cy="130" r="80" fill="url(#rGlow)"/>
+  <circle cx="382" cy="130" r="80" fill="url(#bGlow)"/>
+  <circle cx="130" cy="382" r="80" fill="url(#gGlow)"/>
+  <circle cx="382" cy="382" r="80" fill="url(#yGlow)"/>
+
+  <!-- Top-left: Red circle -->
+  <circle cx="130" cy="130" r="48" fill="#FF4757" filter="url(#softShadow)"/>
+  <ellipse cx="120" cy="118" rx="18" ry="10" fill="white" opacity="0.2"/>
+
+  <!-- Top-right: Blue rounded square -->
+  <rect x="334" y="82" width="96" height="96" rx="18" fill="#3742FA" filter="url(#softShadow)"/>
+  <rect x="344" y="90" width="36" height="18" rx="6" fill="white" opacity="0.18"/>
+
+  <!-- Bottom-left: Green triangle -->
+  <polygon points="130,334 186,430 74,430" fill="#2ED573" filter="url(#softShadow)"/>
+  <polygon points="130,350 152,398 108,398" fill="white" opacity="0.12"/>
+
+  <!-- Bottom-right: Orange star -->
+  <polygon points="382,340 396,378 436,382 406,406 414,446 382,428 350,446 358,406 328,382 368,378" fill="#FFA502" filter="url(#softShadow)"/>
+  <polygon points="382,354 390,374 410,376 396,388 400,408 382,398 364,408 368,388 354,376 374,374" fill="white" opacity="0.15"/>
+
+  <!-- Center swipe trail -->
+  <path d="M256,276 Q220,240 180,200" stroke="white" stroke-width="3" fill="none" opacity="0.25" stroke-linecap="round"/>
+  <path d="M256,276 Q240,260 200,220" stroke="white" stroke-width="2" fill="none" opacity="0.12" stroke-linecap="round"/>
+
+  <!-- Center dot -->
+  <circle cx="256" cy="276" r="18" fill="white" opacity="0.9"/>
+  <circle cx="256" cy="276" r="12" fill="#7C3AED"/>
+  <circle cx="252" cy="272" r="4" fill="white" opacity="0.35"/>
+
+  <!-- Subtle grid lines -->
+  <line x1="130" y1="178" x2="130" y2="334" stroke="white" stroke-width="1" opacity="0.04"/>
+  <line x1="382" y1="178" x2="382" y2="340" stroke="white" stroke-width="1" opacity="0.04"/>
+  <line x1="178" y1="130" x2="334" y2="130" stroke="white" stroke-width="1" opacity="0.04"/>
+  <line x1="186" y1="382" x2="328" y2="382" stroke="white" stroke-width="1" opacity="0.04"/>
+</svg>

@@ -1,0 +1,95 @@
+/* ═══════════════════════════════════════════
+   SCS Play v8.0 — Complete Stylesheet
+   ═══════════════════════════════════════════ */
+
+/* ─── Reset & Root Variables ─── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* layout tokens for consistent spacing and icon sizing */
+  --spacing-unit: 12px;
+  --gutter: 16px;
+  --icon-size: 20px;
+  --icon-size-lg: 28px;
+  --btn-height: 52px;
+  --hud-height: 72px;
+
+  /* State of the Art Colors */
+  --primary:#7C3AED;--primary-glow:#9D4EDD;--primary-dark:#5B21B6;
+  --accent:#EC4899;--accent-glow:#F472B6;
+  --bg:#030014;--bg-hue:250;
+  --surface:rgba(15, 23, 42, 0.6);--card:rgba(30, 41, 59, 0.7);
+  --text:#F8FAFC;--text-dim:#94A3B8;--text-muted:#8896A8;
+  
+  --success:#10B981;--warning:#F59E0B;--error:#EF4444;--danger:#EF4444;
+  --info:#0EA5E9;
+  --gold:#FBBF24;--diamond:#38BDF8;
+
+  /* Achievement category accent colors */
+  --ach-gameplay:#10B981;--ach-social:#8B5CF6;--ach-collection:#F59E0B;--ach-milestone:#EC4899;
+  
+  --glass:rgba(255,255,255,0.03);
+  --glass-border:rgba(255,255,255,0.08);
+  --glass-hover:rgba(255,255,255,0.08);
+  --glass-active:rgba(255,255,255,0.12);
+
+  /* ── Semantic Surface Hierarchy (Material-inspired) ── */
+  --surface-container:rgba(15,23,42,0.5);
+  --surface-container-high:rgba(30,41,59,0.65);
+  --surface-elevated:rgba(20,30,52,0.85);
+  --scrim:rgba(3,0,20,0.8);
+
+  /* ── Outline / Border ── */
+  --outline:rgba(255,255,255,0.12);
+  --outline-subtle:rgba(255,255,255,0.06);
+
+  /* ── Focus Ring ── */
+  --focus-ring:0 0 0 3px rgba(157,78,221,0.5);
+
+  /* ── Contrast-safe "on" colors ── */
+  --on-primary:#ffffff;
+  --on-accent:#ffffff;
+  --on-success:#ffffff;
+  --on-error:#ffffff;
+  --on-warning:#1a1a2e;
+
+  /* ── "on-surface" semantic tokens (text/icon on themed backgrounds) ── */
+  --text-on-surface:#F8FAFC;         /* primary text on dark surface — ≥7:1 */
+  --text-on-surface-dim:#B0BEC5;     /* secondary text — ≥4.5:1 on dark bg */
+  --icon-on-surface:#CBD5E1;         /* icon fill on dark cards — ≥3:1 */
+  --icon-on-surface-variant:#94A3B8; /* muted icon fill — ≥3:1 */
+
+  /* ── Primary text on light surfaces (used in light theme) ── */
+  --primary-text:#7C3AED;
+  
+  --radius:20px;--radius-sm:14px;--radius-xs:8px;--radius-md:16px;--radius-lg:28px;--radius-xl:32px;
+  --shadow:0 8px 32px rgba(0,0,0,0.5);
+  --shadow-sm:0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg:0 16px 48px rgba(0,0,0,0.6);
+  --shadow-glow:0 0 24px var(--primary-glow);
+  
+  --ease-bounce:cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth:cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-soft:cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out-expo:cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out:cubic-bezier(0.65, 0, 0.35, 1);
+  
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-left:env(safe-area-inset-left,0px);
+  --safe-right:env(safe-area-inset-right,0px);
+  color-scheme:dark;
+}
+html,body{
+  width:100%;height:100%;height:100dvh;
+  overflow:hidden;position:fixed;
+  font-family:'Outfit',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:16px;color:var(--text);
+  background:var(--bg);
+  -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;user-select:none;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+  touch-action:pan-x pan-y;
+}
+/* Noise overlay – disabled for GPU perf (SVG feTurbulence re-composites every frame) */

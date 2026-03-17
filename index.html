@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f0c29">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="SCS Play \u2013 Sort \u00B7 Think \u00B7 React. Fast-paced brain training with 11 game modes!">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="SCS Play \u2013 Sort \u00B7 Think \u00B7 React">
+  <meta property="og:description" content="Fast-paced brain training with 11 game modes \u2013 Sort, Math, Memory & more.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="img/icon-512.svg">
+
+  <!-- DNS Prefetch for Firebase -->
+  <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+  <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com">
+
+  <!-- Modern Fonts (non-blocking) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet"></noscript>
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="img/icon-192.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/icon-192.svg">
+  <title>SCS Play</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!-- Skip to main content (a11y) -->
+<a href="#home" class="sr-skip-link">Zum Inhalt springen</a>
+<!-- Live region for screen reader announcements -->
+<div id="a11yLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<div class="ambient-bg-orbs" aria-hidden="true"></div>
+<noscript><p style="text-align:center;padding:2rem;font-family:sans-serif;color:#fff;background:#030014;min-height:100vh;display:flex;align-items:center;justify-content:center">SCS Play benötigt JavaScript. Bitte aktiviere JavaScript in deinem Browser.</p></noscript>
+
+<!-- SVG Icon Sprite (hidden) -->
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" focusable="false">
+  <defs>
+    <filter id="noiseFilter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 0.1 0" />
+    </filter>
+  </defs>
+  <symbol id="icon-trophy" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M7 4V3a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4H11A4 4 0 0 1 7 4z"></path>
+    <path fill="currentColor" d="M5 8v2a5 5 0 0 0 5 5h4a5 5 0 0 0 5-5V8H5z"></path>
+    <path fill="currentColor" d="M9 21h6v-2H9v2z"></path>
+  </symbol>
+  <symbol id="icon-heart" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+  </symbol>
+  <symbol id="icon-play" viewBox="0 0 24 24">
+    <polygon fill="currentColor" points="5,3 19,12 5,21" />
+  </symbol>
+  <symbol id="icon-gear" viewBox="0 0 24 24">
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+      d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/>
+    <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  </symbol>
+  <symbol id="icon-clock" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"></circle>
+    <path d="M12 7v6l4 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+  </symbol>
+  <symbol id="icon-cart" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M7 4h-2l-1 2v1h2l3.6 7.59-1.35 2.45A1 1 0 009 18h9v-2H10.4l.9-1.63L18 6H7V4z"></path>
+  </symbol>
+  <symbol id="icon-edit" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path>
+  </symbol>
+  <symbol id="icon-eye" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 11a4 4 0 110-8 4 4 0 010 8z"></path>
+  </symbol>
+  <symbol id="icon-arrow-right" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M10 6l6 6-6 6V6z"></path>
+  </symbol>
+  <symbol id="icon-pause" viewBox="0 0 24 24">
+    <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/>
+    <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/>
+  </symbol>
+  <symbol id="icon-close" viewBox="0 0 24 24">
+    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="icon-device" viewBox="0 0 24 24">
+    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.6"></rect>
+    <circle cx="12" cy="18" r="0.8" fill="currentColor"></circle>
+  </symbol>
+  <symbol id="icon-ad" viewBox="0 0 24 24">
+    <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></rect>
+    <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"></circle>
+    <polyline points="21 15 16 10 5 21" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></polyline>
+  </symbol>
+  <symbol id="icon-fire" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M12 23c-3.866 0-7-3.358-7-7.5 0-3.336 2.178-6.318 4.5-8.5.372-.35.978-.015.894.493C10.1 9.52 11.567 11 13 11c.778 0 1.5-.334 2-1 .312-.416.92-.37 1.09.095C17.327 13.1 19 15.378 19 17.5c0 2.761-1.79 5.5-7 5.5z"/>
+  </symbol>
+  <symbol id="icon-home" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/>
+  </symbol>
+  <symbol id="icon-fullscreen" viewBox="0 0 24 24">
+    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
+  </symbol>
+  <symbol id="icon-star" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+  </symbol>
+  <symbol id="icon-refresh" viewBox="0 0 24 24">
+    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 4v6h6M23 20v-6h-6"/>
+    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>
+  </symbol>
+  <symbol id="icon-brain" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M12 2C8.5 2 6 4.5 6 7c0 1.2.5 2.3 1.2 3.2C6.5 11.1 6 12.5 6 14c0 3.3 2.7 6 6 6s6-2.7 6-6c0-1.5-.5-2.9-1.2-3.8C17.5 9.3 18 8.2 18 7c0-2.5-2.5-5-6-5zm0 2c2 0 4 1.5 4 3 0 .9-.4 1.6-1 2.2l-.4.4.5.5c.6.7 1 1.7 1.1 2.8H12V6h-1v6.9H7.8c.1-1.1.5-2.1 1.1-2.8l.5-.5-.4-.4C8.4 8.6 8 7.9 8 7c0-1.5 2-3 4-3z"/>
+  </symbol>
+  <symbol id="icon-math" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M4 4h7v2H6v4h5v2H6v4h5v2H4V4zm9 0h7v2h-3v14h-2V6h-2V4zm-5 2v2H6V6h2z"/>
+    <text x="15" y="14" font-size="8" font-weight="bold" fill="currentColor" text-anchor="middle">÷</text>
+  </symbol>
+  <symbol id="icon-book" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M6 2h12a2 2 0 012 2v16a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zm0 2v16h12V4H6zm2 2h8v2H8V6zm0 4h8v2H8v-2z"/>
+  </symbol>
+</svg>
+
+<!-- ═══════ BOOT ═══════ -->
+<div id="boot" class="screen active">
+  <div class="boot-bg">
+    <div class="boot-orb orb-1"></div>
+    <div class="boot-orb orb-2"></div>
+    <div class="boot-orb orb-3"></div>
+    <div class="boot-orb orb-4"></div>
+  </div>
+  <div class="boot-content">
+    <div class="scs-logo" aria-label="SCS Play">
+      <div class="logo-grid">
+        <div class="logo-cell c1"><span>S</span></div>
+        <div class="logo-cell c2"><span>C</span></div>
+        <div class="logo-cell c3"><span>S</span></div>
+        <div class="logo-cell c4"><span>P</span></div>
+        <div class="logo-cell c5"><span>L</span></div>
+        <div class="logo-cell c6"><span>A</span></div>
+        <div class="logo-cell c7"><span>Y</span></div>
+      </div>
+      <div class="logo-subtitle">Swipe &bull; Sort &bull; Score</div>
+      <div class="logo-version">v1.0</div>
+      <div class="logo-ring"></div>
+    </div>
+    <div class="boot-progress">
+      <div id="bootProgressFill" class="boot-progress-fill"></div>
+    </div>
+    <div id="bootStatus" class="boot-status"></div>
+  </div>
+</div>
+
+<!-- ═══════ AUTH ═══════ -->
+<div id="auth" class="screen">
+  <div class="auth-bg">
+    <div class="auth-orb auth-orb-1"></div>
+    <div class="auth-orb auth-orb-2"></div>
+    <div class="auth-orb auth-orb-3"></div>
+    <div class="auth-orb auth-orb-4"></div>
+  </div>
+  <div class="screen-content auth-content">
+    <div class="auth-brand" aria-label="SCS Play">
+      <div class="brand-row">
+        <span class="brand-cell bc1">S</span>
+        <span class="brand-cell bc2">C</span>
+        <span class="brand-cell bc3">S</span>
+      </div>
+      <div class="brand-row">
+        <span class="brand-cell bc4">P</span>
+        <span class="brand-cell bc5">L</span>
+        <span class="brand-cell bc6">A</span>
+        <span class="brand-cell bc7">Y</span>
+      </div>
+      <div class="brand-ring"></div>
+    </div>
+
+    <button id="btnGuest" class="btn btn-primary btn-guest-hero">
+      <span class="btn-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg></span>
+      <span data-i18n="guest_login">Jetzt Spielen</span>
+    </button>
+    <p class="auth-guest-hint" data-i18n="guest_login_sub">Fortschritt wird lokal gespeichert</p>
+
+    <div class="auth-divider"><span data-i18n="login_to_play">oder einloggen</span></div>
+
+    <div class="auth-buttons">
+      <button id="btnGoogle" class="btn btn-auth btn-google">Google</button>
+      <button id="btnApple"  class="btn btn-auth btn-apple">Apple</button>
+    </div>
+    <div class="auth-form-toggle">
+      <button id="btnShowEmail" class="btn btn-ghost btn-email-toggle" data-i18n="email_login">Mit E-Mail anmelden</button>
+    </div>
+    <div id="authEmailForm" class="auth-form" style="display:none">
+      <input id="inputEmail"    type="email"    class="auth-input" data-i18n-placeholder="email_placeholder" placeholder="E-Mail">
+      <input id="inputPassword" type="password" class="auth-input" data-i18n-placeholder="password_placeholder" placeholder="Passwort">
+      <button id="btnEmail" class="btn btn-secondary" data-i18n="login">Anmelden</button>
+    </div>
+    <p id="authError" class="auth-error"></p>
+  </div>
+</div>
+
+<!-- ═══════ HOME ═══════ -->
+<div id="home" class="screen">
+  <div id="adBanner" class="ad-banner">
+    <span class="ad-banner-text">SPONSORED</span>
+    <div class="ad-banner-placeholder">
+      <svg class="ui-icon" viewBox="0 0 24 24" style="opacity:.3"><use href="#icon-ad"></use></svg>
+      <span>Ad Space 320×50</span>
+    </div>
+  </div>
+
+  <div class="screen-content home-content">
+    <!-- Compact Header — 2 Rows: Identity+Resources | XP Progress -->
+    <div class="home-header">
+      <!-- ROW 1: Identity + Resources -->
+      <div class="home-header-row1">
+        <div class="home-header-identity" id="headerIdentity">
+          <div id="homeAvatar" class="avatar-small"></div>
+          <div class="identity-text">
+            <span id="homeGreeting" class="home-greeting"></span>
+            <span id="userInfo" class="user-info-badge"></span>
+          </div>
+        </div>
+        <div class="home-header-resource" id="homeLivesBadge">
+          <div class="resource-item">
+            <svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FF4757;width:18px;height:18px"><use href="#icon-heart"></use></svg>
+            <span id="homeLivesCount">3</span>
+          </div>
+          <div class="resource-item" id="homeFireBadge">
+            <span class="fire-icon">🔥</span>
+            <span id="homeFireCount">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2: XP Progress (full width) -->
+      <div class="home-header-progress" id="xpSection" data-tooltip="tooltip_xp">
+        <span id="xpLevelNum" class="xp-level-num"></span>
+        <div class="xp-bar-mini"><div id="xpBarFill" class="xp-bar-mini-fill"></div></div>
+        <span id="xpPercent" class="xp-percent"></span>
+        <span id="weekendBadge" class="weekend-badge"></span>
+      </div>
+
+      <!-- ROW 3: Title + XP Numbers -->
+      <div class="home-header-meta">
+        <span id="xpTitle" class="xp-title"></span>
+        <span id="xpRateHint" class="xp-rate-dim"></span>
+        <span id="xpNumbers" class="xp-numbers"></span>
+      </div>
+    </div>
+
+    <!-- ═══ DAILY CHALLENGE ═══ -->
+    <div class="daily-card" id="dailyCard">
+      <div class="daily-left">
+        <span class="daily-icon">&#x1F31F;</span>
+        <div class="daily-info">
+          <span class="daily-title" data-i18n="daily_challenge">T&#196;GLICHE HERAUSFORDERUNG</span>
+          <span class="daily-reward" id="dailyReward" data-i18n="daily_reward_text">+2 &#x2764;&#xFE0F; &middot; +100 XP</span>
+          <span class="daily-streak-pill" id="dailyStreakPill"></span>
+        </div>
+      </div>
+      <div class="daily-right">
+        <button id="btnDaily" class="btn btn-daily-cta" data-i18n="play">Spielen</button>
+        <span class="daily-timer" id="dailyTimer"></span>
+      </div>
+    </div>
+
+    <!-- ═══ PWA Install Banner ═══ -->
+    <div class="pwa-install-banner" id="pwaInstallBanner" style="display:none">
+      <div class="pwa-install-left">
+        <img src="img/icon-192.svg" alt="" class="pwa-install-icon" width="40" height="40">
+        <div class="pwa-install-info">
+          <span class="pwa-install-title" data-i18n="pwa_install_title">App installieren</span>
+          <span class="pwa-install-desc" data-i18n="pwa_install_desc">Schnellerer Zugriff &middot; Offline spielen</span>
+        </div>
+      </div>
+      <button id="btnInstallPWA" class="btn btn-pwa-install" data-i18n="pwa_install_btn">Installieren</button>
+      <button id="btnDismissInstall" class="pwa-install-dismiss" aria-label="Schlie&szlig;en">&times;</button>
+    </div>
+
+    <!-- ═══ UNIFIED PLAY CARD (modes + play types + CTA) ═══ -->
+    <div class="play-action-bar hero-card" id="heroCard">
+      <!-- Hidden hero elements for JS compatibility -->
+      <div class="hero-top" style="display:none">
+        <div class="hero-visual" id="heroVisual"></div>
+        <div class="hero-meta">
+          <h2 class="hero-mode-name" id="heroModeName"></h2>
+          <p class="hero-mode-desc" id="heroModeDesc"></p>
+          <span class="hero-pb" id="heroPB"></span>
+        </div>
+      </div>
+
+      <!-- MODE PICKER (SORT + BRAIN) -->
+      <div class="mode-picker-grid" id="modePicker" role="group" aria-label="Spielmodus w&#228;hlen">
+        <!-- SORT Section -->
+        <div class="mode-section">
+          <div class="mode-section-header"><span class="mode-section-label" data-i18n="section_sort">SORTIEREN</span><span class="mode-section-line"></span></div>
+          <div class="mode-grid mode-grid-2x2">
+            <button class="mode-chip selected" data-mode="klassik">
+              <div class="mode-chip-visual">
+                <svg viewBox="0 0 52 52" class="mode-dots-svg">
+                  <rect x="4" y="4" width="18" height="18" rx="4" fill="#FF4757" opacity=".8"/>
+                  <rect x="30" y="4" width="18" height="18" rx="4" fill="#3742FA" opacity=".8"/>
+                  <rect x="4" y="30" width="18" height="18" rx="4" fill="#2ED573" opacity=".8"/>
+                  <rect x="30" y="30" width="18" height="18" rx="4" fill="#FFA502" opacity=".8"/>
+                </svg>
+              </div>
+              <span class="mode-chip-name" data-i18n="mode_klassik">FARBEN</span>
+            </button>
+            <button class="mode-chip" data-mode="beginner">
+              <div class="mode-chip-visual">
+                <svg viewBox="0 0 52 52" class="mode-dots-svg">
+                  <circle cx="10" cy="10" r="5.5" fill="#FF4757" opacity=".75"/>
+                  <circle cx="42" cy="10" r="5.5" fill="#3742FA" opacity=".75"/>
+                  <circle cx="10" cy="42" r="5.5" fill="#2ED573" opacity=".75"/>
+                  <circle cx="42" cy="42" r="5.5" fill="#FFA502" opacity=".75"/>
+                </svg>
+              </div>
+              <span class="mode-chip-name" data-i18n="mode_beginner">FORMEN</span>
+            </button>
+            <button class="mode-chip" data-mode="expert">
+              <div class="mode-chip-visual">
+                <svg viewBox="0 0 52 52" class="mode-dots-svg">
+                  <circle cx="10" cy="10" r="4" fill="#FF4757" opacity=".65"/>
+                  <circle cx="42" cy="10" r="4" fill="#3742FA" opacity=".65"/>
+                  <circle cx="10" cy="42" r="4" fill="#2ED573" opacity=".65"/>
+                  <circle cx="42" cy="42" r="4" fill="#FFA502" opacity=".65"/>
+                  <circle cx="26" cy="4" r="4" fill="#FF6B81" opacity=".65"/>
+                  <circle cx="26" cy="48" r="4" fill="#5352ED" opacity=".65"/>
+                  <circle cx="4" cy="26" r="4" fill="#7BED9F" opacity=".65"/>
+                  <circle cx="48" cy="26" r="4" fill="#ECCC68" opacity=".65"/>
+                </svg>
+              </div>
+              <span class="mode-chip-name" data-i18n="mode_expert">EXPERT</span>
+            </button>
+            <button class="mode-chip" data-mode="ultra">
+              <div class="mode-chip-visual">
+                <svg viewBox="0 0 52 52" class="mode-dots-svg">
+                  <circle cx="10" cy="10" r="3.2" fill="#FF4757" opacity=".55"/>
+                  <circle cx="42" cy="10" r="3.2" fill="#3742FA" opacity=".55"/>
+                  <circle cx="10" cy="42" r="3.2" fill="#2ED573" opacity=".55"/>
+                  <circle cx="42" cy="42" r="3.2" fill="#FFA502" opacity=".55"/>
+                  <circle cx="26" cy="3" r="3.2" fill="#FF6B81" opacity=".55"/>
+                  <circle cx="26" cy="49" r="3.2" fill="#5352ED" opacity=".55"/>
+                  <circle cx="3" cy="26" r="3.2" fill="#7BED9F" opacity=".55"/>
+                  <circle cx="49" cy="26" r="3.2" fill="#ECCC68" opacity=".55"/>
+                </svg>
+              </div>
+              <span class="mode-chip-name" data-i18n="mode_ultra">ULTRA</span>
+            </button>
+          </div>
+        </div>
+        <!-- DENKEN Section -->
+        <div class="mode-section mode-section--brain">
+          <div class="mode-section-header"><span class="mode-section-label mode-section-label--brain" data-i18n="section_brain">DENKEN</span><span class="mode-section-line"></span></div>
+          <div class="mode-grid mode-grid-2">
+            <button class="mode-chip" data-mode="mathe">
+              <div class="mode-chip-visual">
+                <svg viewBox="0 0 52 52" class="mode-dots-svg">
+                  <rect x="2" y="2" width="20" height="20" rx="6" fill="#FF4757" opacity=".6"/>
+                  <rect x="30" y="2" width="20" height="20" rx="6" fill="#3742FA" opacity=".6"/>
+                  <rect x="2" y="30" width="20" height="20" rx="6" fill="#2ED573" opacity=".6"/>
+                  <rect x="30" y="30" width="20" height="20" rx="6" fill="#FFA502" opacity=".6"/>
+                  <text x="26" y="30" fill="white" font-size="9" font-weight="600" text-anchor="middle" opacity=".5">2+5</text>
+                </svg>
+              </div>
+              <span class="mode-chip-name" data-i18n="mode_mathe">MATHE</span>
+            </button>
+            <button class="mode-chip" data-mode="worte">
+              <div class="mode-chip-visual">
+                <svg viewBox="0 0 52 52" class="mode-dots-svg">
+                  <rect x="2" y="2" width="20" height="20" rx="6" fill="#FF4757" opacity=".6"/>
+                  <rect x="30" y="2" width="20" height="20" rx="6" fill="#3742FA" opacity=".6"/>
+                  <rect x="2" y="30" width="20" height="20" rx="6" fill="#2ED573" opacity=".6"/>
+                  <rect x="30" y="30" width="20" height="20" rx="6" fill="#FFA502" opacity=".6"/>
+                  <text x="26" y="30" fill="white" font-size="8" font-weight="600" text-anchor="middle" opacity=".6">Abc</text>
+                </svg>
+              </div>
+              <span class="mode-chip-name" data-i18n="mode_worte">W&#214;RTER</span>
+            </button>
+          </div>
+        </div>
+        <!-- MERKEN Section -->
+        <div class="mode-section mode-section--merken">
+          <div class="mode-section-header"><span class="mode-section-label mode-section-label--merken" data-i18n="section_merken">MERKEN</span><span class="mode-section-line"></span></div>
+          <div class="mode-grid mode-grid-2">
+            <button class="mode-chip" data-mode="sequenz">
+              <div class="mode-chip-visual">
+                <svg viewBox="0 0 52 52" class="mode-dots-svg">
+                  <circle cx="10" cy="10" r="5.5" fill="#FF4757" opacity=".35"/>
+                  <circle cx="42" cy="10" r="5.5" fill="#3742FA" opacity=".35"/>
+                  <circle cx="10" cy="42" r="5.5" fill="#2ED573" opacity=".35"/>
+                  <circle cx="42" cy="42" r="5.5" fill="#FFA502" opacity=".35"/>
+                  <text x="8"  y="14" fill="#FF4757" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">1</text>
+                  <text x="44" y="14" fill="#3742FA" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">2</text>
+                  <text x="8"  y="46" fill="#2ED573" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">3</text>
+                  <text x="44" y="46" fill="#FFA502" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">4</text>
+                  <polyline points="10,10 42,10 10,42 42,42" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 3" opacity=".4"/>
+                </svg>
+              </div>
+              <span class="mode-chip-name" data-i18n="mode_sequenz">SEQUENZ</span>
+            </button>
+            <button class="mode-chip" data-mode="memo">
+              <div class="mode-chip-visual">
+                <svg viewBox="0 0 52 52" class="mode-dots-svg">
+                  <circle cx="10" cy="10" r="5.5" fill="#FF4757" opacity=".75"/>
+                  <circle cx="42" cy="10" r="5.5" fill="#3742FA" opacity=".75"/>
+                  <circle cx="10" cy="42" r="5.5" fill="#2ED573" opacity=".75"/>
+                  <circle cx="42" cy="42" r="5.5" fill="#FFA502" opacity=".75"/>
+                  <text x="26" y="29" fill="white" font-size="9" font-weight="700" text-anchor="middle" opacity=".6">?</text>
+                </svg>
+              </div>
+              <span class="mode-chip-name" data-i18n="mode_memo">MEMO</span>
+            </button>
+          </div>
+        </div>
+        <!-- REFLEX Section -->
+        <div class="mode-section mode-section--reflex">
+          <div class="mode-section-header"><span class="mode-section-label mode-section-label--reflex" data-i18n="section_reflex">REFLEX</span><span class="mode-section-line"></span></div>
+          <div class="mode-grid mode-grid-3">
+            <button class="mode-chip" data-mode="stroop">
+              <div class="mode-chip-visual">
+                <svg viewBox="0 0 52 52" class="mode-dots-svg">
+                  <rect x="2" y="2" width="48" height="48" rx="10" fill="none" stroke="#EF4444" stroke-width="1.5" opacity=".3"/>
+                  <text x="26" y="25" fill="#3B82F6" font-size="10" font-weight="800" text-anchor="middle" opacity=".9">ROT</text>
+                  <text x="26" y="38" fill="white" font-size="6" text-anchor="middle" opacity=".4">≠ Farbe</text>
+                </svg>
+              </div>
+              <span class="mode-chip-name" data-i18n="mode_stroop">STROOP</span>
+            </button>
+            <button class="mode-chip" data-mode="fokus">
+              <div class="mode-chip-visual">
+                <svg viewBox="0 0 52 52" class="mode-dots-svg">
+                  <text x="8"  y="30" fill="#64748B" font-size="12" text-anchor="middle" opacity=".5">←</text>
+                  <text x="20" y="30" fill="#64748B" font-size="12" text-anchor="middle" opacity=".5">←</text>
+                  <text x="32" y="30" fill="#8B5CF6" font-size="14" font-weight="800" text-anchor="middle" opacity=".9">→</text>
+                  <text x="44" y="30" fill="#64748B" font-size="12" text-anchor="middle" opacity=".5">←</text>
+                </svg>
+              </div>
+              <span class="mode-chip-name" data-i18n="mode_fokus">FOKUS</span>
+            </button>
+            <button class="mode-chip" data-mode="chaos">
+              <div class="mode-chip-visual">
+                <svg viewBox="0 0 52 52" class="mode-dots-svg">
+                  <circle cx="14" cy="14" r="8" fill="#F97316" opacity=".5"/>
+                  <rect x="32" y="8" width="12" height="12" rx="2" fill="#06B6D4" opacity=".5"/>
+                  <polygon points="14,44 8,34 20,34" fill="#10B981" opacity=".5"/>
+                  <text x="38" y="44" fill="white" font-size="8" font-weight="700" text-anchor="middle" opacity=".5">?!</text>
+                  <text x="26" y="28" fill="white" font-size="6" text-anchor="middle" opacity=".4">SWITCH</text>
+                </svg>
+              </div>
+              <span class="mode-chip-name" data-i18n="mode_chaos">CHAOS</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode description line -->
+      <p class="mode-desc-line" id="modeDescLine"></p>
+
+      <!-- Play type pills (1×4 compact row) -->
+      <div class="play-type-selector">
+        <button class="play-type-btn selected" data-play="blitz">
+          <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg></span>
+          <span class="play-type-name" data-i18n="play_blitz">BLITZ</span>
+        </button>
+        <button class="play-type-btn" data-play="classic">
+          <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-clock"></use></svg></span>
+          <span class="play-type-name" data-i18n="play_classic">MARATHON</span>
+        </button>
+        <button class="play-type-btn" data-play="endless">
+          <span class="play-type-icon play-type-icon--text">&#x221E;</span>
+          <span class="play-type-name" data-i18n="play_endless">ENDLOS</span>
+        </button>
+        <button class="play-type-btn" data-play="competition">
+          <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-trophy"></use></svg></span>
+          <span class="play-type-name" data-i18n="play_competition">WETTKAMPF</span>
+          <span class="play-type-comp-badge" id="compBadge"></span>
+        </button>
+      </div>
+
+      <!-- Big Play CTA -->
+      <button id="btnPlay" class="btn btn-primary btn-play" data-i18n="play"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg> SPIELEN</button>
+    </div>
+
+    <!-- ═══ FOOTER NAV ═══ -->
+    <nav class="footer-nav" id="footerNav" aria-label="Navigation">
+      <button id="btnLeaderboard" class="footer-item">
+        <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-trophy"></use></svg></span>
+        <span class="footer-label" data-i18n="leaderboard_short">Rang</span>
+      </button>
+      <button id="btnAchievements" class="footer-item">
+        <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-star"></use></svg></span>
+        <span class="footer-label" data-i18n="achievements_short">Erfolge</span>
+      </button>
+      <button id="btnStore" class="footer-item">
+        <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-cart"></use></svg></span>
+        <span class="footer-label" data-i18n="store">Shop</span>
+      </button>
+      <button id="btnSettings" class="footer-item">
+        <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-gear"></use></svg></span>
+        <span class="footer-label" data-i18n="settings_footer">SETTINGS</span>
+      </button>
+      <button id="btnFullscreen" class="footer-item footer-item-fs" aria-label="Fullscreen">
+        <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-fullscreen"></use></svg></span>
+        <span class="footer-label">&#x26F6;</span>
+      </button>
+    </nav>
+  </div>
+</div>
+
+<!-- ═══════ TUTORIAL (Interactive Onboarding) ═══════ -->
+<div id="tutorial" class="screen">
+  <div class="screen-content tutorial-content">
+    <h2 data-i18n="tutorial_title">So geht's</h2>
+    <!-- Step indicators -->
+    <div class="tutorial-dots" id="tutorialDots" aria-hidden="true">
+      <span class="tut-dot active"></span><span class="tut-dot"></span><span class="tut-dot"></span><span class="tut-dot"></span>
+    </div>
+    <!-- Animated step carousel -->
+    <div class="tutorial-carousel" id="tutorialCarousel">
+      <div class="tutorial-slide active" data-step="0">
+        <div class="tut-visual">
+          <div class="tut-mock-corners">
+            <span class="tut-corner tut-c-ul" style="background:#FF4757"></span>
+            <span class="tut-corner tut-c-ur" style="background:#3742FA"></span>
+            <span class="tut-corner tut-c-dl" style="background:#2ED573"></span>
+            <span class="tut-corner tut-c-dr" style="background:#FFA502"></span>
+          </div>
+          <div class="tut-mock-center">
+            <span class="tut-shape-dot" style="background:#FF4757"></span>
+          </div>
+        </div>
+        <p data-i18n="tutorial_step1">Jede Ecke zeigt eine Farbe. In der Mitte erscheint eine Form.</p>
+      </div>
+      <div class="tutorial-slide" data-step="1">
+        <div class="tut-visual tut-try-area" id="tutTryArea">
+          <div class="tut-try-corners">
+            <span class="tut-try-corner tut-tc-ul" style="background:#FF4757"></span>
+            <span class="tut-try-corner tut-tc-ur" style="background:#3742FA"></span>
+            <span class="tut-try-corner tut-tc-dl" style="background:#2ED573"></span>
+            <span class="tut-try-corner tut-tc-dr" style="background:#FFA502"></span>
+          </div>
+          <div class="tut-try-center" id="tutTryCenter">
+            <span class="tut-shape-dot" style="background:#FF4757" id="tutTryDot"></span>
+          </div>
+          <div class="tut-try-hint" id="tutTryHint">
+            <svg viewBox="0 0 24 24" width="20" height="20" style="fill:white;opacity:.6"><path d="M9 3a3 3 0 016 0v5.5l4.12 2.06A2 2 0 0120 12.44V17a6 6 0 01-6 6H10a6 6 0 01-6-6v-3a2 2 0 012-2h.5L9 8.5V3z"/></svg>
+            <span data-i18n="tutorial_try_hint">Probier es! Wische nach oben links</span>
+          </div>
+          <div class="tut-try-feedback" id="tutTryFeedback"></div>
+        </div>
+        <p data-i18n="tutorial_step2">Wische in die Richtung der passenden Ecke!</p>
+      </div>
+      <div class="tutorial-slide" data-step="2">
+        <div class="tut-visual">
+          <div class="tut-speed-icon">&#9889;</div>
+          <div class="tut-score-demo"><span class="tut-pts">+150</span></div>
+        </div>
+        <p data-i18n="tutorial_step3">Je schneller du wischst, desto mehr Punkte!</p>
+      </div>
+      <div class="tutorial-slide" data-step="3">
+        <div class="tut-visual">
+          <div class="tut-streak-demo">
+            <span class="tut-x">x1</span>
+            <span class="tut-arrow-r">&#8594;</span>
+            <span class="tut-x tut-x-big">x3</span>
+            <span class="tut-arrow-r">&#8594;</span>
+            <span class="tut-x tut-x-fire">&#128293; x5</span>
+          </div>
+        </div>
+        <p data-i18n="tutorial_step4">Streaks erhöhen deinen Multiplikator!</p>
+      </div>
+    </div>
+    <div class="tutorial-nav">
+      <button id="btnTutorialPrev" class="btn btn-ghost btn-sm tut-prev" style="visibility:hidden" data-i18n="back">Zur&uuml;ck</button>
+      <button id="btnTutorialNext" class="btn btn-primary tut-next" data-i18n="tutorial_next">Weiter</button>
+    </div>
+    <button id="btnTutorialSkip" class="btn btn-ghost btn-sm tut-skip" data-i18n="tutorial_skip">Überspringen</button>
+  </div>
+</div>
+
+<!-- ═══════ GAME ═══════ -->
+<div id="game" class="screen" role="application" aria-label="Spielfeld">
+  <!-- Game Ad Banner -->
+  <div id="gameAdBanner" class="game-ad-banner">
+    <span class="game-ad-banner-label" data-i18n="game_ad_text">AD</span>
+    <div class="game-ad-banner-placeholder">
+      <svg class="ui-icon" viewBox="0 0 24 24" style="opacity:.3"><use href="#icon-ad"></use></svg>
+      <span>320&#215;50</span>
+    </div>
+  </div>
+
+  <!-- Timer progress bar (v14) -->
+  <div class="timer-bar" role="progressbar" aria-label="Time remaining"><div id="timerBarFill" class="timer-bar-fill"></div></div>
+
+  <canvas id="trailCanvas" class="trail-canvas"></canvas>
+
+  <!-- Near-miss indicator (v14) -->
+  <div id="nearMissArrow" class="near-miss-arrow"></div>
+
+  <!-- Speed lines overlay -->
+  <div id="speedLines" class="speed-lines"></div>
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-top">
+      <button id="btnPause" class="btn-pause" aria-label="Pause"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-pause"></use></svg></button>
+      <div id="modeIndicator" class="mode-indicator">4-DIR</div>
+      <div id="hudTimer" class="hud-timer">30</div>
+    </div>
+    <div class="hud-scores">
+      <div class="hud-score-group">
+        <span class="hud-label" data-i18n="score">Punkte</span>
+        <span id="hudScore" class="hud-value" role="status" aria-live="polite" aria-label="Score">0</span>
+      </div>
+      <div class="hud-score-group">
+        <span class="hud-label" data-i18n="multiplier">Multiplikator</span>
+        <span id="hudMultiplier" class="hud-multiplier" role="status" aria-live="polite" aria-label="Multiplier">x1</span>
+      </div>
+      <div class="hud-score-group">
+        <span class="hud-label" data-i18n="streak_label">Streak</span>
+        <span id="hudStreak" class="hud-value" role="status" aria-live="polite" aria-label="Streak">0</span>
+      </div>
+    </div>
+    <div id="hudFever" class="hud-fever"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:currentColor;width:14px;height:14px;vertical-align:middle"><use href="#icon-fire"></use></svg> FEVER</div>
+    <!-- Endless lives display -->
+    <div id="hudEndlessLives" class="hud-endless-lives" style="display:none">
+      <span class="endless-heart"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FF4757"><use href="#icon-heart"></use></svg></span>
+      <span class="endless-heart"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FF4757"><use href="#icon-heart"></use></svg></span>
+      <span class="endless-heart"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FF4757"><use href="#icon-heart"></use></svg></span>
+    </div>
+    <!-- Competition target -->
+    <div id="hudCompTarget" class="hud-comp-target" style="display:none"></div>
+  </div>
+
+  <!-- PB Proximity -->
+  <div id="pbProximity" class="pb-proximity"></div>
+
+  <!-- Rush / Fever / Combo text overlays -->
+  <div id="rushText" class="rush-text"></div>
+  <div id="feverText" class="fever-text"></div>
+  <div id="comboText" class="combo-text"></div>
+  <div id="shuffleText" class="shuffle-text"></div>
+
+  <!-- Practice markers -->
+  <div id="practiceLabel" class="practice-label" style="display:none" data-i18n="practice_mode">&#220;bungsmodus</div>
+  <button id="btnStopPractice" class="btn btn-stop-practice" style="display:none" data-i18n="stop_practice">Beenden</button>
+
+  <!-- Corner shapes — 4 corners (always) -->
+  <div class="corner-shape" data-dir="ur" role="img" aria-label="Upper right corner"></div>
+  <div class="corner-shape" data-dir="ul" role="img" aria-label="Upper left corner"></div>
+  <div class="corner-shape" data-dir="dr" role="img" aria-label="Lower right corner"></div>
+  <div class="corner-shape" data-dir="dl" role="img" aria-label="Lower left corner"></div>
+
+  <!-- 4 edge slots (Expert + Ultra) -->
+  <div class="corner-shape edge-only" data-dir="up" role="img" aria-label="Top edge"></div>
+  <div class="corner-shape edge-only" data-dir="down" role="img" aria-label="Bottom edge"></div>
+  <div class="corner-shape edge-only" data-dir="left" role="img" aria-label="Left edge"></div>
+  <div class="corner-shape edge-only" data-dir="right" role="img" aria-label="Right edge"></div>
+
+  <!-- 4 Ultra-only slots -->
+  <div class="corner-shape ultra-only" data-dir="ene"></div>
+  <div class="corner-shape ultra-only" data-dir="nnw"></div>
+  <div class="corner-shape ultra-only" data-dir="wsw"></div>
+  <div class="corner-shape ultra-only" data-dir="sse"></div>
+
+  <!-- Center shape -->
+  <div id="centerPlatform" class="center-platform" role="img" aria-label="Shape to sort">
+    <div id="centerShape" class="center-shape" aria-live="assertive"></div>
+  </div>
+
+  <!-- Countdown -->
+  <div id="countdownOverlay" class="countdown-overlay" role="alert" aria-live="assertive">
+    <span id="countdownNum" class="countdown-num" aria-label="Countdown">3</span>
+  </div>
+
+  <!-- Pre-game Mode Instruction Overlay (brain/reflex modes) -->
+  <div id="modeInstructionOverlay" class="mode-instruction-overlay" role="dialog" aria-label="Spielanleitung" data-i18n-aria="instr_aria_label">
+    <div class="mode-instruction-panel">
+      <span id="modeInstructionIcon" class="mode-instruction-icon"></span>
+      <h2 id="modeInstructionTitle" class="mode-instruction-title"></h2>
+      <p id="modeInstructionText" class="mode-instruction-text"></p>
+      <button id="btnStartAfterInstruction" class="btn btn-primary mode-instruction-btn" data-i18n="instr_start">START</button>
+    </div>
+  </div>
+
+  <!-- PAUSE Overlay -->
+  <div id="pauseOverlay" class="pause-overlay" role="dialog" aria-label="Pause" aria-modal="true">
+    <!-- Pause Ad Banner (larger) -->
+    <div id="pauseAdBanner" class="pause-ad-banner">
+      <span class="pause-ad-label">AD</span>
+      <div class="pause-ad-placeholder">
+        <svg class="ui-icon" viewBox="0 0 24 24" style="opacity:.2"><use href="#icon-ad"></use></svg>
+        <span>300&#215;250</span>
+      </div>
+    </div>
+    <div class="pause-panel">
+      <div id="pauseGameInfo" class="pause-game-info"></div>
+      <h2 data-i18n="paused"><svg class="ui-icon" viewBox="0 0 24 24" style="vertical-align:middle"><use href="#icon-pause"></use></svg> PAUSE</h2>
+      <button id="btnResume" class="btn btn-primary" data-i18n="resume"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg> Fortsetzen</button>
+      <button id="btnPauseRestart" class="btn btn-secondary" data-i18n="restart"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-refresh"></use></svg> Neustart</button>
+      <button id="btnPauseSettings" class="btn btn-ghost" data-i18n="pause_settings"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-gear"></use></svg> Einstellungen</button>
+      <button id="btnPauseQuit" class="btn btn-ghost btn-danger" data-i18n="quit_game"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-close"></use></svg> Beenden</button>
+    </div>
+  </div>
+
+  <!-- CONTINUE now merged into results screen -->
+</div>
+
+<!-- ═══════ RESULTS ═══════ -->
+<div id="results" class="screen">
+  <div class="screen-content results-content">
+    <div class="results-panel">
+      <h2 data-i18n="game_over">ZEIT ABGELAUFEN!</h2>
+    <div id="resPB" class="results-pb" style="display:none"></div>
+    <div id="resLevelUp" class="results-levelup" style="display:none"></div>
+    <div id="resCompResult" class="results-comp" style="display:none"></div>
+
+    <!-- Phase 1: Score (counts up immediately) -->
+    <div class="results-phase" id="resPhase1">
+      <div class="results-xp-ring">
+        <svg viewBox="0 0 140 140">
+          <circle class="ring-bg" cx="70" cy="70" r="65"/>
+          <circle id="resXPRingFill" class="ring-fill" cx="70" cy="70" r="65"/>
+        </svg>
+        <span id="resScore" class="ring-score results-score-num">0</span>
+      </div>
+      <span id="resMode" class="results-mode">Beginner</span>
+    </div>
+
+    <!-- Phase 2: Stats grid (fades in after count-up) -->
+    <div class="results-phase results-phase-hidden" id="resPhase2">
+      <div class="results-grid">
+        <div class="res-item"><span class="res-label" data-i18n="correct">Richtig</span><span id="resCorrect" class="res-val">0</span></div>
+        <div class="res-item"><span class="res-label" data-i18n="accuracy_label">Genauigkeit</span><span id="resAccuracy" class="res-val">0%</span></div>
+        <div class="res-item"><span class="res-label" data-i18n="best_streak">Beste Serie</span><span id="resBestStreak" class="res-val">0</span></div>
+        <div class="res-item"><span class="res-label" data-i18n="avg_reaction">&#216; Reaktion</span><span id="resAvgReaction" class="res-val">0ms</span></div>
+      </div>
+
+      <div class="results-bonus">
+        <span id="resStreakBonus" class="bonus-label">+0</span> <span data-i18n="streak_bonus">Streak-Bonus</span>
+        &#183; <span id="resAccBonus" class="bonus-label">+0</span> <span data-i18n="acc_bonus">Acc-Bonus</span>
+      </div>
+      <div id="resPerfectRound" class="results-pb" style="display:none;background:rgba(124,58,237,0.12);border-color:rgba(124,58,237,0.3);color:var(--primary-glow)"></div>
+      <div id="resBonusExtra" class="results-bonus" style="display:none;color:var(--gold);font-weight:700"></div>
+
+      <div class="results-xp">
+        <div id="resXP" class="xp-earned"></div>
+        <div id="resFireEarned" class="xp-earned" style="color:var(--gold)"></div>
+        <div class="xp-bar"><div id="resXPBar" class="xp-bar-fill"></div></div>
+        <div id="resNextLevel" class="xp-next"></div>
+      </div>
+
+      <div class="results-session">
+        <span id="resSession"></span> &#183; <span id="resBestToday"></span>
+      </div>
+
+      <!-- Achievement progress teasers -->
+      <div id="resAchTeasers" class="res-ach-teasers"></div>
+    </div>
+
+    <!-- Phase 3: Buttons (slide up after stats) — pinned outside scrollable area -->
+    <div class="results-phase results-phase-hidden" id="resPhase3">
+      <!-- Continue banner (only when continue is available) -->
+      <div id="resContinue" class="results-continue" style="display:none">
+        <p class="results-continue-label" data-i18n="continue_title"><svg class="ui-icon" viewBox="0 0 24 24" width="20" height="20" style="vertical-align:middle"><use href="#icon-clock"></use></svg> Weiter spielen?</p>
+        <p id="resContinueDesc" class="results-continue-desc"></p>
+        <div class="results-continue-btns">
+          <button id="btnResContinueUse" class="btn btn-primary btn-continue-use"></button>
+          <button id="btnResContinueBuy" class="btn btn-secondary btn-sm" data-i18n="continue_buy" style="display:none"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-cart"></use></svg> Leben kaufen</button>
+          <button id="btnResContinueAd" class="btn btn-ghost btn-sm" style="display:none"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg> <span data-i18n="watch_ad_life">Werbung schauen (+1 Leben)</span></button>
+          <button id="btnResContinueNo" class="btn btn-ghost btn-sm" data-i18n="continue_no">Nein danke</button>
+        </div>
+      </div>
+      <!-- Normal result buttons (hidden during continue prompt) -->
+      <div id="resNormalBtns" class="results-buttons">
+        <button id="btnOneMore" class="btn btn-primary"><span id="oneMoreText" data-i18n="retry">Nochmal</span></button>
+        <button id="btnShare" class="btn btn-secondary btn-share" data-i18n="share_score"><svg class="ui-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:4px"><path fill="currentColor" d="M18 16a3 3 0 00-2.12.88l-7.17-4.18A3 3 0 009 12a3 3 0 00-.29-.7l7.17-4.18A3 3 0 0018 8a3 3 0 100-6 3 3 0 00-2.71 1.7L8.12 7.88A3 3 0 006 7a3 3 0 100 6c.77 0 1.47-.3 2.01-.78l7.17 4.18A3 3 0 0018 22a3 3 0 100-6z"/></svg> Teilen</button>
+        <button id="btnHome" class="btn btn-ghost" data-i18n="home">Home</button>
+      </div>
+    </div>
+    </div> <!-- .results-panel -->
+  </div>
+</div>
+
+<!-- ═══════ LEADERBOARD ═══════ -->
+<div id="leaderboard" class="screen">
+  <div class="screen-content">
+    <div class="screen-header"><h2 data-i18n="leaderboard">Bestenliste</h2></div>
+    <!-- Mode filter -->
+    <div id="lbModeFilters" class="lb-mode-tabs">
+      <button class="lb-mode-btn selected" data-mode="klassik" data-i18n="mode_klassik">KLASSIK</button>
+      <button class="lb-mode-btn" data-mode="beginner" data-i18n="mode_beginner">FORMEN</button>
+      <button class="lb-mode-btn" data-mode="expert" data-i18n="mode_expert">EXPERT</button>
+      <button class="lb-mode-btn" data-mode="ultra" data-i18n="mode_ultra">ULTRA</button>
+      <button class="lb-mode-btn" data-mode="mathe" data-i18n="mode_mathe">MATHE</button>
+      <button class="lb-mode-btn" data-mode="worte" data-i18n="mode_worte">WÖRTER</button>
+      <button class="lb-mode-btn" data-mode="memo" data-i18n="mode_memo">MEMO</button>
+      <button class="lb-mode-btn" data-mode="sequenz" data-i18n="mode_sequenz">SEQUENZ</button>
+      <button class="lb-mode-btn" data-mode="stroop" data-i18n="mode_stroop">STROOP</button>
+      <button class="lb-mode-btn" data-mode="fokus" data-i18n="mode_fokus">FOKUS</button>
+      <button class="lb-mode-btn" data-mode="chaos" data-i18n="mode_chaos">CHAOS</button>
+    </div>
+    <!-- Play type filter -->
+    <div id="lbFilters" class="lb-filter-tabs">
+      <button class="lb-filter-btn selected" data-filter="blitz" data-i18n="play_blitz">Blitz</button>
+      <button class="lb-filter-btn" data-filter="classic" data-i18n="play_classic">Marathon</button>
+      <button class="lb-filter-btn" data-filter="endless" data-i18n="play_endless">Endlos</button>
+      <button class="lb-filter-btn" data-filter="competition" data-i18n="play_competition">Wettkampf</button>
+    </div>
+    <div id="scoreList" class="score-list"></div>
+    <div class="bottom-back-bar">
+      <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ ACHIEVEMENTS ═══════ -->
+<div id="achievements" class="screen">
+  <div class="screen-content">
+    <div class="screen-header"><h2 data-i18n="achievements">Erfolge</h2></div>
+    <div id="achProgress" class="ach-progress"></div>
+    <!-- Filter tabs — Shop-style -->
+    <div id="achTabs" class="ach-tabs">
+      <button class="ach-tab selected" data-filter="all" data-i18n="ach_filter_all">Alle</button>
+      <button class="ach-tab" data-filter="earned" data-i18n="ach_filter_earned">Erreicht</button>
+      <button class="ach-tab" data-filter="locked" data-i18n="ach_filter_locked">Offen</button>
+      <button class="ach-tab" data-filter="close" data-i18n="ach_filter_close">Fast da</button>
+    </div>
+    <div id="achList" class="ach-list"></div>
+    <div class="bottom-back-bar">
+      <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ SETTINGS ═══════ -->
+<div id="settings" class="screen">
+  <div class="screen-content">
+    <div class="screen-header"><h2 data-i18n="settings">Einstellungen</h2></div>
+    <div class="settings-list">
+      <label class="setting-row"><span data-i18n="colorblind_mode">Farbenblind-Modus</span><input id="toggleColorblind" type="checkbox"></label>
+      <label class="setting-row"><span data-i18n="reduced_motion">Reduzierte Animationen</span><input id="toggleMotion" type="checkbox"></label>
+      <label class="setting-row"><span data-i18n="haptics">Haptik</span><input id="toggleHaptics" type="checkbox"></label>
+      <label class="setting-row"><span data-i18n="sound">Sound</span><input id="toggleSound" type="checkbox"></label>
+      <label class="setting-row"><span data-i18n="music">Musik</span><input id="toggleMusic" type="checkbox"></label>
+      <!-- Theme selector removed — dark only -->
+      <label class="setting-row">
+        <span data-i18n="language">Sprache</span>
+        <select id="selectLang"><option value="auto" data-i18n="lang_auto">Automatisch</option><option value="de">Deutsch</option><option value="en">English</option></select>
+      </label>
+    </div>
+    <button id="btnAvatar" class="btn btn-secondary" style="margin-top:12px" data-i18n="avatar_change">Avatar &#228;ndern</button>
+    <button id="btnEngagementReport" class="btn btn-secondary" style="margin-top:8px" data-i18n="engagement_report_btn">&#x1F4CA; Engagement Report</button>
+    <button id="btnLogout" class="btn btn-ghost btn-logout" data-i18n="logout" style="margin-top:16px">Abmelden</button>
+    <div class="bottom-back-bar">
+      <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ AVATAR SELECTION ═══════ -->
+<div id="avatarSelect" class="screen">
+  <div class="screen-content">
+    <div class="screen-header"><h2 data-i18n="avatar_title">Avatar</h2></div>
+    <div class="avatar-preview">
+      <div id="avatarPreviewSvg" class="avatar-preview-svg"></div>
+    </div>
+    <!-- Custom photo upload — compact inline -->
+    <div id="avatarUploadSection" class="avatar-upload-section">
+      <div id="avatarUploadLocked" class="avatar-upload-locked">
+        <span>&#x1F512;</span>
+        <span data-i18n="avatar_upload_locked">Im Shop freischalten</span>
+        <button id="btnAvatarBuyUpload" class="btn btn-secondary btn-sm" style="padding:4px 10px;font-size:.7rem" data-i18n="avatar_upload_buy">Zum Shop</button>
+      </div>
+      <div id="avatarUploadUnlocked" class="avatar-upload-unlocked" style="display:none">
+        <label id="avatarUploadLabel" class="avatar-upload-btn">
+          <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
+          <svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-ad"></use></svg>
+          <span data-i18n="avatar_upload_choose">Bild w&#228;hlen</span>
+        </label>
+        <button id="btnAvatarRemovePhoto" class="btn btn-ghost btn-sm" style="display:none" data-i18n="avatar_upload_remove">Foto entfernen</button>
+      </div>
+    </div>
+    <h3 class="avatar-section-title" data-i18n="avatar_icon">Symbol w&#228;hlen</h3>
+    <div id="avatarIconGrid" class="avatar-grid"></div>
+    <h3 class="avatar-section-title" data-i18n="avatar_color">Farbe w&#228;hlen</h3>
+    <div id="avatarColorGrid" class="avatar-color-grid"></div>
+    <button id="btnAvatarSave" class="btn btn-primary" style="margin-top:8px;padding:10px 20px;font-size:.85rem" data-i18n="avatar_save">Speichern</button>
+    <div class="bottom-back-bar">
+      <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ STORE ═══════ -->
+<div id="store" class="screen">
+  <div class="screen-content">
+    <div class="screen-header"><h2 data-i18n="store">Shop</h2></div>
+    <!-- Shop Tabs -->
+    <div id="shopTabs" class="shop-tabs">
+      <button class="shop-tab selected" data-tab="premium" data-i18n="shop_tab_premium">Premium</button>
+      <button class="shop-tab" data-tab="themes" data-i18n="shop_tab_themes">Themen</button>
+      <button class="shop-tab" data-tab="trails" data-i18n="shop_tab_trails">Trails</button>
+    </div>
+    <!-- Lives indicator (premium tab only) -->
+    <div id="shopLivesBar" class="shop-lives-bar">
+      <svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FF4757;width:18px;height:18px"><use href="#icon-heart"></use></svg>
+      <span id="shopLivesCount">3</span>
+      <span class="shop-lives-label" data-i18n="lives_label">Leben</span>
+      <span class="shop-lives-sep">&middot;</span>
+      <span class="fire-icon">🔥</span>
+      <span id="shopFireCount">0</span>
+    </div>
+    <!-- Tab content -->
+    <div id="shopTabContent">
+      <div id="storeList" class="store-list"></div>
+    </div>
+    <div class="bottom-back-bar">
+      <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ ENGAGEMENT REPORT ═══════ -->
+<div id="engagementReport" class="screen">
+  <div class="screen-content">
+    <div class="screen-header"><h2 data-i18n="engagement_report_title">Engagement Report</h2></div>
+    <div class="er-content">
+      <!-- Summary header -->
+      <div id="erSummary" class="er-summary"></div>
+      <!-- Big score circle -->
+      <div id="erScoreCircle" class="er-score-circle"></div>
+      <!-- Signal cards grid -->
+      <div id="erSignals" class="er-signals-grid"></div>
+      <!-- Feedback summary -->
+      <div id="erFeedback" class="er-feedback-section"></div>
+      <!-- Daily games chart -->
+      <div id="erDailyChart" class="er-chart-section"></div>
+      <!-- Export buttons -->
+      <div class="er-export-buttons">
+        <button id="btnErCopyText" class="btn btn-secondary er-export-btn">
+          <span class="er-export-icon">&#x1F4CB;</span>
+          <span data-i18n="er_copy_text">Als Text kopieren</span>
+        </button>
+        <button id="btnErExportJSON" class="btn btn-secondary er-export-btn">
+          <span class="er-export-icon">&#x1F4C1;</span>
+          <span data-i18n="er_export_json">Als JSON exportieren</span>
+        </button>
+      </div>
+    </div>
+    <div class="bottom-back-bar">
+      <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ AD INTERSTITIAL ═══════ -->
+<div id="adInterstitial" class="ad-interstitial">
+  <div class="ad-interstitial-content">
+    <div class="ad-interstitial-header">
+      <span class="ad-interstitial-label">Advertisement</span>
+      <button id="btnAdClose" class="ad-interstitial-close" style="display:none">
+        <svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-close"></use></svg>
+      </button>
+      <span id="adSkipTimer" class="ad-skip-timer"></span>
+    </div>
+    <div class="ad-interstitial-body">
+        <div class="ad-interstitial-placeholder">
+        <svg class="ui-icon" viewBox="0 0 24 24" style="opacity:.18"><use href="#icon-ad"></use></svg>
+        <span>Interstitial Ad</span>
+        <span class="ad-format-hint">320×480 / Fullscreen</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MICRO FEEDBACK PROMPT ═══════ -->
+<div id="microFeedback" class="micro-feedback" role="dialog" aria-label="Feedback">
+  <div class="mf-inner">
+    <span class="mf-title" data-i18n="mf_how_was_that">Wie war das?</span>
+    <div class="mf-buttons">
+      <button class="mf-btn" data-rating="1" aria-label="Meh">&#x1F610;</button>
+      <button class="mf-btn" data-rating="2" aria-label="Ok">&#x1F642;</button>
+      <button class="mf-btn" data-rating="3" aria-label="Good">&#x1F60A;</button>
+      <button class="mf-btn" data-rating="4" aria-label="Great">&#x1F60D;</button>
+    </div>
+    <button class="mf-skip" data-i18n="mf_skip">&#xDC;berspringen</button>
+  </div>
+</div>
+
+<!-- ═══════ OFFLINE INDICATOR ═══════ -->
+<div id="offlineToast" class="offline-toast" aria-live="polite" role="status">
+  <span class="offline-icon">&#x26A0;</span>
+  <span id="offlineMsg" class="offline-msg">Offline</span>
+</div>
+
+<!-- ═══════ LANDSCAPE WARNING ═══════ -->
+<div id="landscapeWarning" class="landscape-warning">
+  <div class="landscape-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-device"></use></svg></div>
+  <p data-i18n="rotate_device">Bitte drehe dein Ger&#228;t ins Hochformat</p>
+</div>
+
+<!-- Scripts -->
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

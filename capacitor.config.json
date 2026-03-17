@@ -1,0 +1,31 @@
+{
+  "appId": "com.scs.play",
+  "appName": "SCS Play",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#0F172A",
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "launchShowDuration": 1500,
+      "backgroundColor": "#0F172A",
+      "showSpinner": false,
+      "androidSpinnerStyle": "small",
+      "spinnerColor": "#9D4EDD"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0F172A"
+    },
+    "Keyboard": {
+      "resize": "none"
+    }
+  }
+}
