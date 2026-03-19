@@ -3,7 +3,7 @@
    Score display, stats, XP, continue, achievements.
    ═══════════════════════════════════════ */
 import { CONFIG }           from '../config.js';
-import { t }                from '../i18n.js';
+import { t, getLanguage }    from '../i18n.js';
 import { $, setText, showScreen } from '../helpers/dom.js';
 import { haptic }           from '../helpers/haptics.js';
 import { showAdInterstitial, isAdFree } from '../services/AdService.js';
@@ -171,6 +171,19 @@ export async function showResults(stats, canContinue = false) {
   setText('#resNextLevel', t('next_level', { n: prog.needed - prog.current }));
   const xpBar = $('#resXPBar');
   if (xpBar) xpBar.style.width = (prog.pct * 100) + '%';
+
+  /* v25: Per-mode level display */
+  const modeLvEl = $('#resModeLevelInfo');
+  if (modeLvEl) {
+    const modeKey = stats.mode || app.selectedMode;
+    const modeLvName = save.getModeLevelName(modeKey, getLanguage());
+    const modeLvProgress = save.getModeLevelProgress(modeKey);
+    const modeLv = save.getModeLevel(modeKey);
+    modeLvEl.innerHTML = `<span class="mode-level-label">${modeLabel} Lv.${modeLv}</span> <span class="mode-level-name">${modeLvName}</span>`;
+    modeLvEl.style.display = '';
+    const modeLvBar = $('#resModeLevelBar');
+    if (modeLvBar) modeLvBar.style.width = (modeLvProgress * 100) + '%';
+  }
 
   setText('#resSession', t('session_games', { n: app.sessionGames }));
   setText('#resBestToday', t('best_today', { n: app.sessionBest }));

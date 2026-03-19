@@ -7,7 +7,7 @@ export const CONFIG = {
   /* ─── Timer (per play type) ─── */
   GAME_DURATION: 30,                  // default (Blitz)
   DURATION_BLITZ: 30,
-  DURATION_BLITZ_BRAIN: 45,           // brain/reflex modes need more time per round
+  DURATION_BLITZ_BRAIN: 60,           // brain/reflex modes need more time per round
   DURATION_CLASSIC: 60,
   DURATION_ENDLESS: 0,                // 0 = no timer
   DURATION_COMPETITION: [20, 25, 30, 35, 40, 45, 50, 55, 60, 60], // per level
@@ -27,12 +27,12 @@ export const CONFIG = {
   SPAWN_INTERVAL_STEP: 25,
 
   /* Brain-mode overrides (reading + thinking requires more time) */
-  SPAWN_BRAIN_START: 1800,       // faster start for math/words
-  SPAWN_BRAIN_MIN: 900,          // minimum 0.9s (need to read + solve)
-  SPAWN_BRAIN_MAX: 3000,
-  SPAWN_BRAIN_STEP: 50,
-  SPAWN_BRAIN_CLASSIC_START: 2200,  // standard play type: slightly more relaxed
-  SPAWN_BRAIN_ENDLESS_START: 2000,  // endless: comfortable pace
+  SPAWN_BRAIN_START: 2400,       // comfortable start for math/words
+  SPAWN_BRAIN_MIN: 1000,          // minimum 1.0s (need to read + solve)
+  SPAWN_BRAIN_MAX: 4000,
+  SPAWN_BRAIN_STEP: 40,
+  SPAWN_BRAIN_CLASSIC_START: 2800,  // standard play type: slightly more relaxed
+  SPAWN_BRAIN_ENDLESS_START: 2600,  // endless: comfortable pace
 
   /* ─── Scoring ─── */
   BASE_SCORE: 100,
@@ -49,10 +49,11 @@ export const CONFIG = {
   STREAK_TIME_THRESHOLD: 5,       // consecutive correct before time bonus starts
   STREAK_TIME_BONUS: 2,           // seconds added per correct after threshold
   WRONG_TIME_PENALTY: 1,          // seconds removed per wrong answer
+  WRONG_TIME_PENALTY_BRAIN: 0,    // brain modes: no penalty for wrong (reading takes time)
   ENDLESS_LIFE_STREAK: 10,        // earn +1 life every N streak in endless
 
   /* ─── Direct speed-up on correct ─── */
-  SPEED_CORRECT_DIVISOR: 50,      // ~50 correct answers from start to min interval
+  SPEED_CORRECT_DIVISOR: 60,      // ~60 correct answers from start to min interval
   SPEED_WRONG_RECOVERY_MULT: 3,   // wrong recovery = 3x the correct step
 
   /* ─── Anti-cheat ─── */
@@ -156,8 +157,7 @@ export const CONFIG = {
   CORNER_SHUFFLE_INTERVAL: 10,      // then every N correct
   CORNER_SHUFFLE_STEP: 2,           // reduce interval by 2 each shuffle
   CORNER_SHUFFLE_MIN_INTERVAL: 6,   // never faster than every 6
-  CORNER_SHUFFLE_WARNING_MS: 800,   // warning flash before shuffle
-
+  CORNER_SHUFFLE_WARNING_MS: 800,   // warning flash before shuffle  CORNER_SHUFFLE_COLORS: true,      // also shuffle colors when corners shuffle
   /* ─── Mode unlock levels ─── */
   UNLOCK_KLASSIK: 0,       // Always unlocked
   UNLOCK_EXPERT: 5,        // Level 6 = 3,000 XP (~1 hr)
@@ -355,6 +355,8 @@ export const CONFIG = {
 
   /* ═══ CHAOS MODE (Rule Switching / WCST-inspired) ═══ */
   CHAOS_DIMENSIONS: ['color','shape','size'],
+  CHAOS_EXTRA_DIMENSIONS: ['math','stroop'],  /* unlocked progressively in chaos */
+  CHAOS_EXTRA_THRESHOLD: 15,  /* correct answers before extra dimensions activate */
   CHAOS_SHAPES: ['circle','square','triangle','star'],
   CHAOS_COLORS: ['#EF4444','#3B82F6','#10B981','#FBBF24'],
   CHAOS_SIZES: ['tiny','small','medium','large'],

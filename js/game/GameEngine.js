@@ -873,10 +873,89 @@ export class GameEngine {
   /* ═══ CHAOS (Rule Switch) spawn ═══ */
   _spawnChaos() {
     const dirs = this.directions;
+    const rule = this._chaosRule;
+
+    /* ── CHAOS-MATH: show equation, corners show numbers ── */
+    if (rule === 'math') {
+      const phase = { ops: ['+', '\u2212'], min: 1, max: 15 };
+      const { equation, answer } = this._generateEquation(phase);
+      const correctIdx = Math.floor(this.rng() * dirs.length);
+      const correctDir = dirs[correctIdx];
+      const distractors = this._generateDistractors(answer, dirs.length - 1);
+      let dIdx = 0;
+      dirs.forEach((d, i) => {
+        if (i === correctIdx) {
+          this.cornerMap[d] = { display: String(answer), value: answer, type: 'math',
+            color: CONFIG.COLORS.normal[i], colorblind: CONFIG.COLORS.colorblind[i], colorIndex: i };
+        } else {
+          this.cornerMap[d] = { display: String(distractors[dIdx]), value: distractors[dIdx], type: 'math',
+            color: CONFIG.COLORS.normal[i], colorblind: CONFIG.COLORS.colorblind[i], colorIndex: i };
+          dIdx++;
+        }
+      });
+      let bonus = null;
+      if (!this.practice) {
+        const roll = this.rng();
+        if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
+        else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
+      }
+      this.currentShape = {
+        direction: correctDir, display: equation, type: 'math', chaosRule: rule,
+        color: this.cornerMap[correctDir].color,
+        colorblind: this.cornerMap[correctDir].colorblind, bonus
+      };
+      this.bonusType = bonus;
+      this.lastSpawnTime = performance.now();
+      if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
+      if (this.onSpawn) this.onSpawn(this.currentShape);
+      this._scheduleSpawn();
+      return;
+    }
+
+    /* ── CHAOS-STROOP: show color word in conflicting ink ── */
+    if (rule === 'stroop') {
+      const lang = this._lang || 'de';
+      const pool = CONFIG.STROOP_COLORS_4;
+      const colors = pool.slice(0, dirs.length);
+      dirs.forEach((d, i) => {
+        const c = colors[i];
+        this.cornerMap[d] = {
+          display: c[`name_${lang}`] || c.name_en,
+          value: c.hex, type: 'stroop',
+          color: c.hex, colorblind: c.hex, colorIndex: i
+        };
+      });
+      const inkIdx = Math.floor(this.rng() * colors.length);
+      const inkColor = colors[inkIdx];
+      const correctDir = dirs[inkIdx];
+      let wordIdx;
+      if (this.rng() < 0.25) { wordIdx = inkIdx; }
+      else { do { wordIdx = Math.floor(this.rng() * colors.length); } while (wordIdx === inkIdx); }
+      const wordColor = colors[wordIdx];
+      const displayWord = wordColor[`name_${lang}`] || wordColor.name_en;
+      let bonus = null;
+      if (!this.practice) {
+        const roll = this.rng();
+        if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
+        else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
+      }
+      this.currentShape = {
+        direction: correctDir, display: displayWord,
+        inkColor: inkColor.hex, type: 'stroop', chaosRule: rule,
+        color: inkColor.hex, colorblind: inkColor.hex, bonus
+      };
+      this.bonusType = bonus;
+      this.lastSpawnTime = performance.now();
+      if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
+      if (this.onSpawn) this.onSpawn(this.currentShape);
+      this._scheduleSpawn();
+      return;
+    }
+
+    /* ── Standard CHAOS: color / shape / size ── */
     const chaosShapes = CONFIG.CHAOS_SHAPES;
     const chaosColors = CONFIG.CHAOS_COLORS;
     const chaosSizes = CONFIG.CHAOS_SIZES;
-    const rule = this._chaosRule;
 
     /* Shuffle corner properties each spawn to prevent memorization.
        Each dimension value appears exactly once across corners. */
@@ -941,7 +1020,11 @@ export class GameEngine {
     if (this._chaosCorrectSinceSwitch >= this._chaosRuleSwitchIn) {
       this._chaosCorrectSinceSwitch = 0;
       this._chaosRuleSwitchIn = CONFIG.CHAOS_RULE_SWITCH_MIN + Math.floor(this.rng() * (CONFIG.CHAOS_RULE_SWITCH_MAX - CONFIG.CHAOS_RULE_SWITCH_MIN));
-      const dims = CONFIG.CHAOS_DIMENSIONS;
+      /* After threshold, include extra dimensions (math, stroop) */
+      const baseDims = CONFIG.CHAOS_DIMENSIONS;
+      const extraDims = CONFIG.CHAOS_EXTRA_DIMENSIONS || [];
+      const threshold = CONFIG.CHAOS_EXTRA_THRESHOLD || 15;
+      const dims = this.correct >= threshold ? [...baseDims, ...extraDims] : baseDims;
       let newRule;
       do { newRule = dims[Math.floor(this.rng() * dims.length)]; } while (newRule === this._chaosRule && dims.length > 1);
       this._chaosRule = newRule;
@@ -1076,13 +1159,16 @@ export class GameEngine {
         this.multiplier = Math.max(1, this.multiplier - CONFIG.MISS_PENALTY);
         if (this.onMultiplierChange) this.onMultiplierChange(this.multiplier);
 
-        /* ── Wrong answer time penalty ── */
-        if (this.playType !== 'endless' && this._timerWallStart && this.timer > 0) {
-          this._timerTarget -= CONFIG.WRONG_TIME_PENALTY;
+        /* ── Wrong answer time penalty (brain modes: reduced/no penalty) ── */
+        const wrongPenalty = (this.isBrainMode || this.isReflexMode)
+          ? (CONFIG.WRONG_TIME_PENALTY_BRAIN ?? CONFIG.WRONG_TIME_PENALTY)
+          : CONFIG.WRONG_TIME_PENALTY;
+        if (wrongPenalty > 0 && this.playType !== 'endless' && this._timerWallStart && this.timer > 0) {
+          this._timerTarget -= wrongPenalty;
           this.timer = Math.max(0, Math.ceil(
             this._timerTarget - (Date.now() - this._timerWallStart - this._timerPausedAccum) / 1000
           ));
-          if (this.onTimerPenalty) this.onTimerPenalty(CONFIG.WRONG_TIME_PENALTY);
+          if (this.onTimerPenalty) this.onTimerPenalty(wrongPenalty);
           if (this.timer <= 0) { this._endGame(); return null; }
         }
 
@@ -1160,12 +1246,15 @@ export class GameEngine {
     this._addRecentResult(false, 9999);
 
     /* ── Auto-miss time penalty & speed recovery ── */
-    if (this.playType !== 'endless' && this._timerWallStart && this.timer > 0) {
-      this._timerTarget -= CONFIG.WRONG_TIME_PENALTY;
+    const autoMissPenalty = (this.isBrainMode || this.isReflexMode)
+      ? (CONFIG.WRONG_TIME_PENALTY_BRAIN ?? CONFIG.WRONG_TIME_PENALTY)
+      : CONFIG.WRONG_TIME_PENALTY;
+    if (autoMissPenalty > 0 && this.playType !== 'endless' && this._timerWallStart && this.timer > 0) {
+      this._timerTarget -= autoMissPenalty;
       this.timer = Math.max(0, Math.ceil(
         this._timerTarget - (Date.now() - this._timerWallStart - this._timerPausedAccum) / 1000
       ));
-      if (this.onTimerPenalty) this.onTimerPenalty(CONFIG.WRONG_TIME_PENALTY);
+      if (this.onTimerPenalty) this.onTimerPenalty(autoMissPenalty);
       if (this.timer <= 0) { this._endGame(); return; }
     }
     this.spawnInterval = Math.min(this._spawnMax, this.spawnInterval + this._speedStep * CONFIG.SPEED_WRONG_RECOVERY_MULT);
@@ -1420,6 +1509,18 @@ export class GameEngine {
     const dirs = this.directions;
     const entries = dirs.map(d => ({ ...this.cornerMap[d] }));
     const shuffled = shuffle(entries, this.rng);
+
+    /* Also shuffle color assignments to increase difficulty */
+    if (CONFIG.CORNER_SHUFFLE_COLORS && this._shuffleCount >= 2) {
+      const colorIndices = shuffled.map(e => ({ color: e.color, colorblind: e.colorblind, colorIndex: e.colorIndex }));
+      const shuffledColors = shuffle(colorIndices, this.rng);
+      shuffled.forEach((e, i) => {
+        e.color = shuffledColors[i].color;
+        e.colorblind = shuffledColors[i].colorblind;
+        e.colorIndex = shuffledColors[i].colorIndex;
+      });
+    }
+
     dirs.forEach((d, i) => { this.cornerMap[d] = shuffled[i]; });
   }
 

@@ -237,6 +237,14 @@ export class SaveService {
     this.data.level = this._calcLevel(this.data.totalXP);
     const leveledUp = this.data.level > oldLevel;
 
+    /* v25: Per-mode XP & level tracking */
+    const modeXPKey = `modeXP_${stats.mode}`;
+    const modeLevelKey = `modeLevel_${stats.mode}`;
+    this.data[modeXPKey] = (this.data[modeXPKey] || 0) + effectiveXP;
+    const oldModeLevel = this.data[modeLevelKey] || 0;
+    this.data[modeLevelKey] = this._calcLevel(this.data[modeXPKey]);
+    const modeLeveledUp = (this.data[modeLevelKey] || 0) > oldModeLevel;
+
     /* v11: Award life on level up */
     if (leveledUp) {
       this.data.lives = Math.min((this.data.lives || 0) + CONFIG.LIVES_LEVEL_UP, CONFIG.LIVES_MAX);
@@ -259,7 +267,25 @@ export class SaveService {
       }
     }
     await this.save();
-    return { isNewPB, leveledUp, newLevel: this.data.level, fireEarned: fireEarned + (leveledUp ? 25 : 0) };
+    return { isNewPB, leveledUp, newLevel: this.data.level, fireEarned: fireEarned + (leveledUp ? 25 : 0), modeLeveledUp, modeLevel: this.data[modeLevelKey] || 0 };
+  }
+
+  /* ── Per-mode level getters ── */
+  getModeXP(mode)    { return this.data[`modeXP_${mode}`] || 0; }
+  getModeLevel(mode) { return this.data[`modeLevel_${mode}`] || 0; }
+  getModeLevelName(mode, lang) {
+    const lv = this.getModeLevel(mode);
+    const names = lang === 'en' ? CONFIG.LEVEL_NAMES_EN : CONFIG.LEVEL_NAMES_DE;
+    return names[Math.min(lv, names.length - 1)];
+  }
+  getModeLevelProgress(mode) {
+    const xp = this.getModeXP(mode);
+    const lv = this.getModeLevel(mode);
+    const t = CONFIG.LEVEL_THRESHOLDS;
+    const current = t[lv] || 0;
+    const next = t[lv + 1] || t[t.length - 1];
+    if (next <= current) return 1;
+    return (xp - current) / (next - current);
   }
 
   _calcLevel(xp) {

@@ -386,6 +386,15 @@
   text-shadow: 0 0 12px rgba(251,191,36,0.5);
 }
 .hero-pb:empty{display:none}
+.hero-mode-level{
+  display:block;
+  font-size:0.7rem;
+  color:var(--mode-accent, var(--primary-glow));
+  font-weight:700;
+  margin-top:2px;
+  letter-spacing:0.03em;
+}
+.hero-mode-level:empty{display:none}
 
 /* ═══ MODE PICKER GRID (categorized sections) ═══ */
 .mode-picker-grid{

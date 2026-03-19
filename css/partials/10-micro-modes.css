@@ -633,11 +633,16 @@ body.light-theme{
    STROOP MODE
    ═══════════════════════════════════════ */
 .stroop-display {
-  font-size: 32px;
+  font-size: clamp(32px, 7vw, 44px);
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 3px;
-  text-shadow: 0 0 20px currentColor;
+  letter-spacing: 4px;
+  text-shadow:
+    0 0 24px currentColor,
+    0 0 48px currentColor,
+    0 2px 4px rgba(0,0,0,0.8);
+  -webkit-text-stroke: 1px rgba(255,255,255,0.15);
+  paint-order: stroke fill;
 }
 .stroop-swatch {
   font-size: 13px;
@@ -653,22 +658,26 @@ body.light-theme{
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  font-size: 22px;
+  gap: 4px;
+  font-size: clamp(28px, 6vw, 36px);
   line-height: 1;
 }
 .fokus-flanker {
-  opacity: 0.45;
-  color: var(--text-dim, #888);
-  font-weight: 400;
+  opacity: 0.55;
+  color: rgba(255,255,255,0.65);
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(255,255,255,0.2);
 }
 .fokus-center {
   font-weight: 900;
   color: #fff;
-  font-size: 38px;
-  text-shadow: 0 0 18px rgba(255,255,255,0.5);
+  font-size: clamp(42px, 9vw, 56px);
+  text-shadow:
+    0 0 22px rgba(255,255,255,0.6),
+    0 0 44px rgba(255,255,255,0.2);
+  -webkit-text-stroke: 0.5px rgba(255,255,255,0.25);
   position: relative;
-  padding: 0 6px;
+  padding: 0 4px;
 }
 
 /* ═══════════════════════════════════════
@@ -724,4 +733,31 @@ body.light-theme{
 @keyframes chaosRulePop {
   0%   { opacity:0; transform: translateX(-50%) scale(0.7); }
   100% { opacity:1; transform: translateX(-50%) scale(1); }
+}
+
+/* ═══════════════════════════════════════
+   PER-MODE LEVEL DISPLAY (Results)
+   ═══════════════════════════════════════ */
+.results-mode-level {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: 6px;
+}
+.mode-level-label {
+  color: var(--mode-accent, var(--primary-glow));
+  font-weight: 800;
+}
+.mode-level-name {
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-left: 4px;
+}
+.xp-bar-mode {
+  margin-top: 4px;
+  height: 3px !important;
+}
+.mode-bar-fill {
+  background: linear-gradient(90deg, var(--mode-accent, var(--primary)), var(--accent)) !important;
 }

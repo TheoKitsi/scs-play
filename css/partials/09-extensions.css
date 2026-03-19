@@ -463,6 +463,15 @@ body:not(.ad-free) .corner-shape[data-dir="up"]{top:12%}
   width:clamp(110px,22vmin,165px);
   height:clamp(110px,22vmin,165px);
 }
+/* Larger platform for text-based modes (brain/reflex) — need room for words */
+body.mode-stroop .center-platform,
+body.mode-fokus .center-platform,
+body.mode-chaos .center-platform,
+body.mode-mathe .center-platform,
+body.mode-worte .center-platform{
+  width:clamp(130px,28vmin,190px);
+  height:clamp(130px,28vmin,190px);
+}
 
 /* Results score responsive */
 .results-score-num{font-size:clamp(2rem,8vw,3rem)}

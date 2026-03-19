@@ -4,7 +4,7 @@
    daily challenge, XP bar, avatar.
    ═══════════════════════════════════════ */
 import { CONFIG }           from '../config.js';
-import { t }                from '../i18n.js';
+import { t, getLanguage }    from '../i18n.js';
 import { $, $$, setText, setHTML, safeSrc, showScreen } from '../helpers/dom.js';
 import { avatarSVG }        from '../renderers/avatars.js';
 import { updateAdBanner, isAdFree } from '../services/AdService.js';
@@ -155,6 +155,15 @@ export function updateHeroCard() {
   const pb = save.getPB(app.selectedMode);
   const pbEl = $('#heroPB');
   if (pbEl) pbEl.textContent = pb > 0 ? `PB ${pb.toLocaleString()}` : t('hero_first_record');
+
+  /* v25: Per-mode level in hero card */
+  const modeLvEl = $('#heroModeLevel');
+  if (modeLvEl) {
+    const lv = save.getModeLevel(app.selectedMode);
+    const lvName = save.getModeLevelName(app.selectedMode, getLanguage());
+    modeLvEl.textContent = lv > 0 ? `Lv.${lv} ${lvName}` : '';
+    modeLvEl.style.display = lv > 0 ? '' : 'none';
+  }
 }
 
 /* ═══════ Mode unlock level helper ═══════ */

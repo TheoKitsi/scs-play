@@ -845,8 +845,8 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   game.onChaosRuleSwitch = (newRule) => {
     /* Clean up any existing banners to prevent DOM leaks */
     document.querySelectorAll('.chaos-rule-banner').forEach(el => el.remove());
-    const ruleLabels = { color: '\uD83C\uDFA8', shape: '\uD83D\uDD37', size: '\uD83D\uDCCF' };
-    const ruleColors = { color: '#EF4444', shape: '#3B82F6', size: '#10B981' };
+    const ruleLabels = { color: '\uD83C\uDFA8', shape: '\uD83D\uDD37', size: '\uD83D\uDCCF', math: '\uD83D\uDCDD', stroop: '\uD83C\uDF08' };
+    const ruleColors = { color: '#EF4444', shape: '#3B82F6', size: '#10B981', math: '#FBBF24', stroop: '#EC4899' };
     const banner = document.createElement('div');
     banner.className = 'chaos-rule-banner pop-in';
     banner.textContent = `${ruleLabels[newRule] || ''} ${t('chaos_rule_' + newRule) || newRule.toUpperCase()}`;
