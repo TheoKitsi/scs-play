@@ -489,3 +489,102 @@ body.light-theme .weekend-badge{background:rgba(255,215,0,.1);border-color:rgba(
   color: var(--warning);
   opacity: .85;
 }
+
+/* ═══════════════════════════════════════════
+   v25 POLISH: Secondary Screen Micro-Animations
+   ═══════════════════════════════════════════ */
+
+/* ─── Screen header accent underline ─── */
+.screen-header::after {
+  content: ''; position: absolute; bottom: -1px; left: 16px; right: 16px; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(124,58,237,0.3), rgba(236,72,153,0.3), transparent);
+  border-radius: 1px; opacity: 0.6;
+}
+
+/* ─── Staggered list item entrance ─── */
+.screen.active .score-row,
+.screen.active .ach-category,
+.screen.active .store-item,
+.screen.active .setting-row,
+.screen.active .unlock-item {
+  animation: listItemIn 0.35s var(--ease-smooth) both;
+}
+@keyframes listItemIn {
+  0%   { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+/* Stagger delays — first 8 items get individual delays, rest instant */
+.screen.active .score-row:nth-child(1),
+.screen.active .ach-category:nth-child(1),
+.screen.active .store-item:nth-child(1),
+.screen.active .setting-row:nth-child(1) { animation-delay: 0.04s; }
+.screen.active .score-row:nth-child(2),
+.screen.active .ach-category:nth-child(2),
+.screen.active .store-item:nth-child(2),
+.screen.active .setting-row:nth-child(2) { animation-delay: 0.08s; }
+.screen.active .score-row:nth-child(3),
+.screen.active .ach-category:nth-child(3),
+.screen.active .store-item:nth-child(3),
+.screen.active .setting-row:nth-child(3) { animation-delay: 0.12s; }
+.screen.active .score-row:nth-child(4),
+.screen.active .ach-category:nth-child(4),
+.screen.active .store-item:nth-child(4),
+.screen.active .setting-row:nth-child(4) { animation-delay: 0.16s; }
+.screen.active .score-row:nth-child(5),
+.screen.active .ach-category:nth-child(5),
+.screen.active .store-item:nth-child(5),
+.screen.active .setting-row:nth-child(5) { animation-delay: 0.20s; }
+.screen.active .score-row:nth-child(6),
+.screen.active .ach-category:nth-child(6),
+.screen.active .store-item:nth-child(6),
+.screen.active .setting-row:nth-child(6) { animation-delay: 0.24s; }
+.screen.active .score-row:nth-child(7),
+.screen.active .ach-category:nth-child(7),
+.screen.active .setting-row:nth-child(7) { animation-delay: 0.28s; }
+.screen.active .score-row:nth-child(8),
+.screen.active .ach-category:nth-child(8),
+.screen.active .setting-row:nth-child(8) { animation-delay: 0.32s; }
+
+/* ─── Back button polish ─── */
+.btn-back-bottom {
+  transition: all 0.25s var(--ease-out-soft);
+}
+.btn-back-bottom:active {
+  transform: scale(0.95);
+}
+
+/* ─── Leaderboard top-3 glow accents ─── */
+.score-row.top-1 {
+  border-color: rgba(251,191,36,0.3);
+  box-shadow: 0 2px 12px rgba(251,191,36,0.1);
+}
+.score-row.top-2 {
+  border-color: rgba(192,192,192,0.25);
+  box-shadow: 0 2px 10px rgba(192,192,192,0.08);
+}
+.score-row.top-3 {
+  border-color: rgba(205,127,50,0.25);
+  box-shadow: 0 2px 10px rgba(205,127,50,0.06);
+}
+
+/* ─── Settings toggle micro-animation ─── */
+.setting-row input[type="checkbox"] {
+  transition: background 0.3s var(--ease-out-soft), border-color 0.3s, box-shadow 0.3s;
+}
+.setting-row input[type="checkbox"]:checked {
+  animation: togglePop 0.3s var(--ease-bounce);
+}
+@keyframes togglePop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* ─── Store premium card breathing glow ─── */
+.store-item.premium-glow-item {
+  animation: premiumBreath 4s ease-in-out infinite alternate;
+}
+@keyframes premiumBreath {
+  0%   { box-shadow: 0 4px 12px rgba(255,215,0,0.1); }
+  100% { box-shadow: 0 4px 20px rgba(255,215,0,0.18), 0 0 40px rgba(255,215,0,0.04); }
+}

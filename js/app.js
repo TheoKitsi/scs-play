@@ -211,7 +211,7 @@ function bindEvents() {
   bindMicroFeedback();
 
   /* ─ Mode selector ─ */
-  $$('.mode-chip').forEach(btn => {
+  $$('.mode-card').forEach(btn => {
     btn.addEventListener('click', () => {
       const mode = btn.dataset.mode;
       if (!save.isModeUnlocked(mode)) {
@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initErrorBoundary();
   /* global-haptics-bound */
   document.addEventListener('click', (e) => {
-    const tapTarget = e.target.closest('button, .btn, .mode-chip, .play-type-btn, input[type="checkbox"], select, .footer-item, .item-card, .avatar-option');
+    const tapTarget = e.target.closest('button, .btn, .mode-card, .play-type-btn, input[type="checkbox"], select, .footer-item, .item-card, .avatar-option');
     if (tapTarget) haptic('tap', app.save);
   });
   bindEvents();

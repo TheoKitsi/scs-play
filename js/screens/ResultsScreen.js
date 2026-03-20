@@ -111,6 +111,7 @@ export async function showResults(stats, canContinue = false) {
   if (phase3) { phase3.classList.add('results-phase-hidden'); phase3.classList.remove('results-phase-visible'); }
 
   const scoreEl = $('#resScore');
+  if (scoreEl) scoreEl.classList.remove('score-complete');
   if (scoreEl && effects && typeof effects.scoreCountUp === 'function') {
     /* v19: Audio ticks during score count-up */
     const tickFn = typeof audio.scoreCountTick === 'function'
@@ -120,8 +121,10 @@ export async function showResults(stats, canContinue = false) {
         }
         : null;
       effects.scoreCountUp(scoreEl, 0, stats.score, CONFIG.RESULTS_COUNTUP_MS, tickFn);
+      setTimeout(() => scoreEl.classList.add('score-complete'), CONFIG.RESULTS_COUNTUP_MS + 50);
   } else {
     setText('#resScore', stats.score.toLocaleString());
+    if (scoreEl) scoreEl.classList.add('score-complete');
   }
 
   setText('#resBestStreak', stats.streak);

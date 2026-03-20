@@ -21,7 +21,7 @@ body{
   touch-action:manipulation;
   overscroll-behavior-y:contain;
 }
-.btn,.mode-chip,.footer-item,.play-type-btn,.shop-tab,.ach-tab,.lb-mode-btn,.lb-filter-btn,.unlock-item,.btn-icon-circle,.btn-back-bottom{
+.btn,.mode-card,.footer-item,.play-type-btn,.shop-tab,.ach-tab,.lb-mode-btn,.lb-filter-btn,.unlock-item,.btn-icon-circle,.btn-back-bottom{
   -webkit-user-select:none;user-select:none;
   touch-action:manipulation;
 }
@@ -234,10 +234,7 @@ body{
 .btn-svg-icon, .mode-dots-svg, .mode-visual svg{width:var(--icon-size);height:var(--icon-size);display:inline-block;vertical-align:middle}
 .btn svg{fill:none;stroke:currentColor}
 
-/* results panel tweaks */
-.results-panel{display:flex;flex-direction:column;gap:12px;align-items:center;padding:18px}
-.results-panel .results-score-num{font-size:2.4rem}
-.results-panel .results-grid{gap:10px}
+/* results panel tweaks — canonical styles in 06-overlays.css */
 
 /* Icon circle button (settings etc.) */
 .btn-icon-circle{

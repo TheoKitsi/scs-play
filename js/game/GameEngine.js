@@ -526,6 +526,7 @@ export class GameEngine {
   continueGame() {
     if (this.continued) return false;
     this.continued = true;
+    this.currentShape = null;           // clear stale shape to prevent phantom autoMiss
     this.timer = CONFIG.CONTINUE_EXTRA_TIME;
     this.running = true;
     this.spawnInterval = this._spawnStart;
@@ -547,7 +548,17 @@ export class GameEngine {
 
   _spawn() {
     if (!this.running || this.paused) return;
-    if (this.currentShape && !this.practice && !this.inRush) this.autoMiss();
+    /* Grace period: don't auto-miss if the player hasn't had enough time to answer */
+    if (this.currentShape && !this.practice && !this.inRush) {
+      const elapsed = performance.now() - this.lastSpawnTime;
+      if (elapsed < (CONFIG.MIN_ANSWER_WINDOW || 1200)) {
+        /* Delay this spawn instead of penalizing the player */
+        const remaining = (CONFIG.MIN_ANSWER_WINDOW || 1200) - elapsed;
+        this._scheduleSpawn(remaining + 50);
+        return;
+      }
+      this.autoMiss();
+    }
 
     if (this.mode === 'mathe')  { this._spawnMath();  return; }
     if (this.mode === 'worte')  { this._spawnWord();  return; }
@@ -1034,6 +1045,7 @@ export class GameEngine {
 
   handleSwipe(direction, timestamp) {
     if (!this.running || this.paused || !this.currentShape) return null;
+    if (!direction) return null;  /* guard against null from dead-zone or missed hit-test */
     const reaction = timestamp - this.lastSpawnTime;
     if (reaction < CONFIG.ANTI_CHEAT_MIN_REACTION) return null;
 
@@ -1581,6 +1593,7 @@ export class GameEngine {
 
   _adjustDifficulty() {
     if (this._recentWindow.length < 5) return;
+    if (this.correct < 8) return;             // grace period: no adaptive changes in first 8 correct
     const w = this._recentWindow;
     const acc = w.filter(r => r.correct).length / w.length;
     const avgReact = w.filter(r => r.correct).reduce((s, r) => s + r.reaction, 0) /

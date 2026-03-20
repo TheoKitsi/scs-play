@@ -24,7 +24,7 @@ export const CONFIG = {
   SPAWN_INTERVAL_START: 850,
   SPAWN_INTERVAL_MIN: 400,
   SPAWN_INTERVAL_MAX: 1100,
-  SPAWN_INTERVAL_STEP: 25,
+  SPAWN_INTERVAL_STEP: 15,
 
   /* Brain-mode overrides (reading + thinking requires more time) */
   SPAWN_BRAIN_START: 2400,       // comfortable start for math/words
@@ -53,8 +53,11 @@ export const CONFIG = {
   ENDLESS_LIFE_STREAK: 10,        // earn +1 life every N streak in endless
 
   /* ─── Direct speed-up on correct ─── */
-  SPEED_CORRECT_DIVISOR: 60,      // ~60 correct answers from start to min interval
-  SPEED_WRONG_RECOVERY_MULT: 3,   // wrong recovery = 3x the correct step
+  SPEED_CORRECT_DIVISOR: 90,      // ~90 correct answers from start to min interval (gentler curve)
+  SPEED_WRONG_RECOVERY_MULT: 5,   // wrong recovery = 5x the correct step (faster bounce-back)
+
+  /* ─── Answer window (ms) — minimum time before auto-miss triggers ─── */
+  MIN_ANSWER_WINDOW: 1200,
 
   /* ─── Anti-cheat ─── */
   ANTI_CHEAT_MIN_REACTION: 50,

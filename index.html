@@ -206,265 +206,135 @@
 
 <!-- ═══════ HOME ═══════ -->
 <div id="home" class="screen">
-  <div id="adBanner" class="ad-banner">
-    <span class="ad-banner-text">SPONSORED</span>
-    <div class="ad-banner-placeholder">
-      <svg class="ui-icon" viewBox="0 0 24 24" style="opacity:.3"><use href="#icon-ad"></use></svg>
-      <span>Ad Space 320×50</span>
-    </div>
-  </div>
+  <div class="home-viewport">
 
-  <div class="screen-content home-content">
-    <!-- Compact Header — 2 Rows: Identity+Resources | XP Progress -->
-    <div class="home-header">
-      <!-- ROW 1: Identity + Resources -->
-      <div class="home-header-row1">
-        <div class="home-header-identity" id="headerIdentity">
+    <!-- ═══ HERO ZONE — immersive top section, fills ~55% of viewport ═══ -->
+    <div class="hero-zone" id="heroZone">
+      <div class="hero-backdrop" id="heroBackdrop"></div>
+      <div class="hero-particles" aria-hidden="true"></div>
+
+      <!-- Floating top bar -->
+      <div class="hero-top-bar">
+        <div class="htb-left" id="headerIdentity">
           <div id="homeAvatar" class="avatar-small"></div>
           <div class="identity-text">
             <span id="homeGreeting" class="home-greeting"></span>
             <span id="userInfo" class="user-info-badge"></span>
           </div>
         </div>
-        <div class="home-header-resource" id="homeLivesBadge">
-          <div class="resource-item">
-            <svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FF4757;width:18px;height:18px"><use href="#icon-heart"></use></svg>
+        <div class="htb-right">
+          <div class="resource-pill" id="homeLivesBadge">
+            <svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FF4757;width:16px;height:16px"><use href="#icon-heart"></use></svg>
             <span id="homeLivesCount">3</span>
           </div>
-          <div class="resource-item" id="homeFireBadge">
-            <span class="fire-icon">🔥</span>
+          <div class="resource-pill" id="homeFireBadge">
+            <svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FFA502;width:16px;height:16px"><use href="#icon-fire"></use></svg>
             <span id="homeFireCount">0</span>
           </div>
         </div>
       </div>
 
-      <!-- ROW 2: XP Progress (full width) -->
-      <div class="home-header-progress" id="xpSection" data-tooltip="tooltip_xp">
-        <span id="xpLevelNum" class="xp-level-num"></span>
-        <div class="xp-bar-mini"><div id="xpBarFill" class="xp-bar-mini-fill"></div></div>
-        <span id="xpPercent" class="xp-percent"></span>
-        <span id="weekendBadge" class="weekend-badge"></span>
+      <!-- Large centered mode visual -->
+      <div class="hero-visual-wrap">
+        <div class="hero-visual-ring"></div>
+        <div class="hero-visual-large" id="heroVisualLarge"></div>
       </div>
 
-      <!-- ROW 3: Title + XP Numbers -->
-      <div class="home-header-meta">
-        <span id="xpTitle" class="xp-title"></span>
-        <span id="xpRateHint" class="xp-rate-dim"></span>
-        <span id="xpNumbers" class="xp-numbers"></span>
+      <!-- Mode info overlay at bottom of hero -->
+      <div class="hero-info">
+        <h1 class="hero-mode-title" id="heroModeName"></h1>
+        <p class="hero-mode-subtitle" id="heroModeDesc"></p>
+        <div class="hero-badges">
+          <span class="hero-badge hero-badge--pb" id="heroPB"></span>
+          <span class="hero-badge hero-badge--level" id="heroModeLevel" style="display:none"></span>
+        </div>
       </div>
     </div>
 
-    <!-- ═══ DAILY CHALLENGE ═══ -->
-    <div class="daily-card" id="dailyCard">
-      <div class="daily-left">
-        <span class="daily-icon">&#x1F31F;</span>
-        <div class="daily-info">
-          <span class="daily-title" data-i18n="daily_challenge">T&#196;GLICHE HERAUSFORDERUNG</span>
-          <span class="daily-reward" id="dailyReward" data-i18n="daily_reward_text">+2 &#x2764;&#xFE0F; &middot; +100 XP</span>
-          <span class="daily-streak-pill" id="dailyStreakPill"></span>
-        </div>
-      </div>
-      <div class="daily-right">
-        <button id="btnDaily" class="btn btn-daily-cta" data-i18n="play">Spielen</button>
-        <span class="daily-timer" id="dailyTimer"></span>
-      </div>
-    </div>
+    <!-- ═══ BOTTOM SHEET — scrollable lower section ═══ -->
+    <div class="home-bottom-sheet" id="homeBottomSheet">
+      <div class="sheet-handle"></div>
 
-    <!-- ═══ PWA Install Banner ═══ -->
-    <div class="pwa-install-banner" id="pwaInstallBanner" style="display:none">
-      <div class="pwa-install-left">
-        <img src="img/icon-192.svg" alt="" class="pwa-install-icon" width="40" height="40">
-        <div class="pwa-install-info">
-          <span class="pwa-install-title" data-i18n="pwa_install_title">App installieren</span>
-          <span class="pwa-install-desc" data-i18n="pwa_install_desc">Schnellerer Zugriff &middot; Offline spielen</span>
-        </div>
-      </div>
-      <button id="btnInstallPWA" class="btn btn-pwa-install" data-i18n="pwa_install_btn">Installieren</button>
-      <button id="btnDismissInstall" class="pwa-install-dismiss" aria-label="Schlie&szlig;en">&times;</button>
-    </div>
-
-    <!-- ═══ UNIFIED PLAY CARD (modes + play types + CTA) ═══ -->
-    <div class="play-action-bar hero-card" id="heroCard">
-      <!-- Hidden hero elements for JS compatibility -->
-      <div class="hero-top" style="display:none">
-        <div class="hero-visual" id="heroVisual"></div>
-        <div class="hero-meta">
-          <h2 class="hero-mode-name" id="heroModeName"></h2>
-          <p class="hero-mode-desc" id="heroModeDesc"></p>
-          <span class="hero-pb" id="heroPB"></span>
-          <span class="hero-mode-level" id="heroModeLevel" style="display:none"></span>
+      <!-- Ad banner -->
+      <div id="adBanner" class="ad-banner">
+        <span class="ad-banner-text">AD</span>
+        <div class="ad-banner-placeholder">
+          <svg class="ui-icon" viewBox="0 0 24 24" style="opacity:.3"><use href="#icon-ad"></use></svg>
+          <span>320&times;50</span>
         </div>
       </div>
 
-      <!-- MODE PICKER (SORT + BRAIN) -->
-      <div class="mode-picker-grid" id="modePicker" role="group" aria-label="Spielmodus w&#228;hlen">
-        <!-- SORT Section -->
-        <div class="mode-section">
-          <div class="mode-section-header"><span class="mode-section-label" data-i18n="section_sort">SORTIEREN</span><span class="mode-section-line"></span></div>
-          <div class="mode-grid mode-grid-2x2">
-            <button class="mode-chip selected" data-mode="klassik">
-              <div class="mode-chip-visual">
-                <svg viewBox="0 0 52 52" class="mode-dots-svg">
-                  <rect x="4" y="4" width="18" height="18" rx="4" fill="#FF4757" opacity=".8"/>
-                  <rect x="30" y="4" width="18" height="18" rx="4" fill="#3742FA" opacity=".8"/>
-                  <rect x="4" y="30" width="18" height="18" rx="4" fill="#2ED573" opacity=".8"/>
-                  <rect x="30" y="30" width="18" height="18" rx="4" fill="#FFA502" opacity=".8"/>
-                </svg>
-              </div>
-              <span class="mode-chip-name" data-i18n="mode_klassik">FARBEN</span>
-            </button>
-            <button class="mode-chip" data-mode="beginner">
-              <div class="mode-chip-visual">
-                <svg viewBox="0 0 52 52" class="mode-dots-svg">
-                  <circle cx="10" cy="10" r="5.5" fill="#FF4757" opacity=".75"/>
-                  <circle cx="42" cy="10" r="5.5" fill="#3742FA" opacity=".75"/>
-                  <circle cx="10" cy="42" r="5.5" fill="#2ED573" opacity=".75"/>
-                  <circle cx="42" cy="42" r="5.5" fill="#FFA502" opacity=".75"/>
-                </svg>
-              </div>
-              <span class="mode-chip-name" data-i18n="mode_beginner">FORMEN</span>
-            </button>
-            <button class="mode-chip" data-mode="expert">
-              <div class="mode-chip-visual">
-                <svg viewBox="0 0 52 52" class="mode-dots-svg">
-                  <circle cx="10" cy="10" r="4" fill="#FF4757" opacity=".65"/>
-                  <circle cx="42" cy="10" r="4" fill="#3742FA" opacity=".65"/>
-                  <circle cx="10" cy="42" r="4" fill="#2ED573" opacity=".65"/>
-                  <circle cx="42" cy="42" r="4" fill="#FFA502" opacity=".65"/>
-                  <circle cx="26" cy="4" r="4" fill="#FF6B81" opacity=".65"/>
-                  <circle cx="26" cy="48" r="4" fill="#5352ED" opacity=".65"/>
-                  <circle cx="4" cy="26" r="4" fill="#7BED9F" opacity=".65"/>
-                  <circle cx="48" cy="26" r="4" fill="#ECCC68" opacity=".65"/>
-                </svg>
-              </div>
-              <span class="mode-chip-name" data-i18n="mode_expert">EXPERT</span>
-            </button>
-            <button class="mode-chip" data-mode="ultra">
-              <div class="mode-chip-visual">
-                <svg viewBox="0 0 52 52" class="mode-dots-svg">
-                  <circle cx="10" cy="10" r="3.2" fill="#FF4757" opacity=".55"/>
-                  <circle cx="42" cy="10" r="3.2" fill="#3742FA" opacity=".55"/>
-                  <circle cx="10" cy="42" r="3.2" fill="#2ED573" opacity=".55"/>
-                  <circle cx="42" cy="42" r="3.2" fill="#FFA502" opacity=".55"/>
-                  <circle cx="26" cy="3" r="3.2" fill="#FF6B81" opacity=".55"/>
-                  <circle cx="26" cy="49" r="3.2" fill="#5352ED" opacity=".55"/>
-                  <circle cx="3" cy="26" r="3.2" fill="#7BED9F" opacity=".55"/>
-                  <circle cx="49" cy="26" r="3.2" fill="#ECCC68" opacity=".55"/>
-                </svg>
-              </div>
-              <span class="mode-chip-name" data-i18n="mode_ultra">ULTRA</span>
-            </button>
+      <!-- MODE CAROUSEL — horizontal snap scroll -->
+      <div class="mode-carousel" id="modeCarousel" role="group" aria-label="Spielmodus">
+        <button class="mode-card selected" data-mode="klassik">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><rect x="4" y="4" width="18" height="18" rx="4" fill="#FF4757" opacity=".8"/><rect x="30" y="4" width="18" height="18" rx="4" fill="#3742FA" opacity=".8"/><rect x="4" y="30" width="18" height="18" rx="4" fill="#2ED573" opacity=".8"/><rect x="30" y="30" width="18" height="18" rx="4" fill="#FFA502" opacity=".8"/></svg>
           </div>
-        </div>
-        <!-- DENKEN Section -->
-        <div class="mode-section mode-section--brain">
-          <div class="mode-section-header"><span class="mode-section-label mode-section-label--brain" data-i18n="section_brain">DENKEN</span><span class="mode-section-line"></span></div>
-          <div class="mode-grid mode-grid-2">
-            <button class="mode-chip" data-mode="mathe">
-              <div class="mode-chip-visual">
-                <svg viewBox="0 0 52 52" class="mode-dots-svg">
-                  <rect x="2" y="2" width="20" height="20" rx="6" fill="#FF4757" opacity=".6"/>
-                  <rect x="30" y="2" width="20" height="20" rx="6" fill="#3742FA" opacity=".6"/>
-                  <rect x="2" y="30" width="20" height="20" rx="6" fill="#2ED573" opacity=".6"/>
-                  <rect x="30" y="30" width="20" height="20" rx="6" fill="#FFA502" opacity=".6"/>
-                  <text x="26" y="30" fill="white" font-size="9" font-weight="600" text-anchor="middle" opacity=".5">2+5</text>
-                </svg>
-              </div>
-              <span class="mode-chip-name" data-i18n="mode_mathe">MATHE</span>
-            </button>
-            <button class="mode-chip" data-mode="worte">
-              <div class="mode-chip-visual">
-                <svg viewBox="0 0 52 52" class="mode-dots-svg">
-                  <rect x="2" y="2" width="20" height="20" rx="6" fill="#FF4757" opacity=".6"/>
-                  <rect x="30" y="2" width="20" height="20" rx="6" fill="#3742FA" opacity=".6"/>
-                  <rect x="2" y="30" width="20" height="20" rx="6" fill="#2ED573" opacity=".6"/>
-                  <rect x="30" y="30" width="20" height="20" rx="6" fill="#FFA502" opacity=".6"/>
-                  <text x="26" y="30" fill="white" font-size="8" font-weight="600" text-anchor="middle" opacity=".6">Abc</text>
-                </svg>
-              </div>
-              <span class="mode-chip-name" data-i18n="mode_worte">W&#214;RTER</span>
-            </button>
+          <span class="mode-card-name" data-i18n="mode_klassik">FARBEN</span>
+        </button>
+        <button class="mode-card" data-mode="beginner">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><circle cx="10" cy="10" r="5.5" fill="#FF4757" opacity=".75"/><circle cx="42" cy="10" r="5.5" fill="#3742FA" opacity=".75"/><circle cx="10" cy="42" r="5.5" fill="#2ED573" opacity=".75"/><circle cx="42" cy="42" r="5.5" fill="#FFA502" opacity=".75"/></svg>
           </div>
-        </div>
-        <!-- MERKEN Section -->
-        <div class="mode-section mode-section--merken">
-          <div class="mode-section-header"><span class="mode-section-label mode-section-label--merken" data-i18n="section_merken">MERKEN</span><span class="mode-section-line"></span></div>
-          <div class="mode-grid mode-grid-2">
-            <button class="mode-chip" data-mode="sequenz">
-              <div class="mode-chip-visual">
-                <svg viewBox="0 0 52 52" class="mode-dots-svg">
-                  <circle cx="10" cy="10" r="5.5" fill="#FF4757" opacity=".35"/>
-                  <circle cx="42" cy="10" r="5.5" fill="#3742FA" opacity=".35"/>
-                  <circle cx="10" cy="42" r="5.5" fill="#2ED573" opacity=".35"/>
-                  <circle cx="42" cy="42" r="5.5" fill="#FFA502" opacity=".35"/>
-                  <text x="8"  y="14" fill="#FF4757" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">1</text>
-                  <text x="44" y="14" fill="#3742FA" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">2</text>
-                  <text x="8"  y="46" fill="#2ED573" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">3</text>
-                  <text x="44" y="46" fill="#FFA502" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">4</text>
-                  <polyline points="10,10 42,10 10,42 42,42" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 3" opacity=".4"/>
-                </svg>
-              </div>
-              <span class="mode-chip-name" data-i18n="mode_sequenz">SEQUENZ</span>
-            </button>
-            <button class="mode-chip" data-mode="memo">
-              <div class="mode-chip-visual">
-                <svg viewBox="0 0 52 52" class="mode-dots-svg">
-                  <circle cx="10" cy="10" r="5.5" fill="#FF4757" opacity=".75"/>
-                  <circle cx="42" cy="10" r="5.5" fill="#3742FA" opacity=".75"/>
-                  <circle cx="10" cy="42" r="5.5" fill="#2ED573" opacity=".75"/>
-                  <circle cx="42" cy="42" r="5.5" fill="#FFA502" opacity=".75"/>
-                  <text x="26" y="29" fill="white" font-size="9" font-weight="700" text-anchor="middle" opacity=".6">?</text>
-                </svg>
-              </div>
-              <span class="mode-chip-name" data-i18n="mode_memo">MEMO</span>
-            </button>
+          <span class="mode-card-name" data-i18n="mode_beginner">FORMEN</span>
+        </button>
+        <button class="mode-card" data-mode="expert">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><circle cx="10" cy="10" r="4" fill="#FF4757" opacity=".65"/><circle cx="42" cy="10" r="4" fill="#3742FA" opacity=".65"/><circle cx="10" cy="42" r="4" fill="#2ED573" opacity=".65"/><circle cx="42" cy="42" r="4" fill="#FFA502" opacity=".65"/><circle cx="26" cy="4" r="4" fill="#FF6B81" opacity=".65"/><circle cx="26" cy="48" r="4" fill="#5352ED" opacity=".65"/><circle cx="4" cy="26" r="4" fill="#7BED9F" opacity=".65"/><circle cx="48" cy="26" r="4" fill="#ECCC68" opacity=".65"/></svg>
           </div>
-        </div>
-        <!-- REFLEX Section -->
-        <div class="mode-section mode-section--reflex">
-          <div class="mode-section-header"><span class="mode-section-label mode-section-label--reflex" data-i18n="section_reflex">REFLEX</span><span class="mode-section-line"></span></div>
-          <div class="mode-grid mode-grid-3">
-            <button class="mode-chip" data-mode="stroop">
-              <div class="mode-chip-visual">
-                <svg viewBox="0 0 52 52" class="mode-dots-svg">
-                  <rect x="2" y="2" width="48" height="48" rx="10" fill="none" stroke="#EF4444" stroke-width="1.5" opacity=".3"/>
-                  <text x="26" y="25" fill="#3B82F6" font-size="10" font-weight="800" text-anchor="middle" opacity=".9">ROT</text>
-                  <text x="26" y="38" fill="white" font-size="6" text-anchor="middle" opacity=".4">≠ Farbe</text>
-                </svg>
-              </div>
-              <span class="mode-chip-name" data-i18n="mode_stroop">STROOP</span>
-            </button>
-            <button class="mode-chip" data-mode="fokus">
-              <div class="mode-chip-visual">
-                <svg viewBox="0 0 52 52" class="mode-dots-svg">
-                  <text x="8"  y="30" fill="#64748B" font-size="12" text-anchor="middle" opacity=".5">←</text>
-                  <text x="20" y="30" fill="#64748B" font-size="12" text-anchor="middle" opacity=".5">←</text>
-                  <text x="32" y="30" fill="#8B5CF6" font-size="14" font-weight="800" text-anchor="middle" opacity=".9">→</text>
-                  <text x="44" y="30" fill="#64748B" font-size="12" text-anchor="middle" opacity=".5">←</text>
-                </svg>
-              </div>
-              <span class="mode-chip-name" data-i18n="mode_fokus">FOKUS</span>
-            </button>
-            <button class="mode-chip" data-mode="chaos">
-              <div class="mode-chip-visual">
-                <svg viewBox="0 0 52 52" class="mode-dots-svg">
-                  <circle cx="14" cy="14" r="8" fill="#F97316" opacity=".5"/>
-                  <rect x="32" y="8" width="12" height="12" rx="2" fill="#06B6D4" opacity=".5"/>
-                  <polygon points="14,44 8,34 20,34" fill="#10B981" opacity=".5"/>
-                  <text x="38" y="44" fill="white" font-size="8" font-weight="700" text-anchor="middle" opacity=".5">?!</text>
-                  <text x="26" y="28" fill="white" font-size="6" text-anchor="middle" opacity=".4">SWITCH</text>
-                </svg>
-              </div>
-              <span class="mode-chip-name" data-i18n="mode_chaos">CHAOS</span>
-            </button>
+          <span class="mode-card-name" data-i18n="mode_expert">EXPERT</span>
+        </button>
+        <button class="mode-card" data-mode="ultra">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><circle cx="10" cy="10" r="3.2" fill="#FF4757" opacity=".55"/><circle cx="42" cy="10" r="3.2" fill="#3742FA" opacity=".55"/><circle cx="10" cy="42" r="3.2" fill="#2ED573" opacity=".55"/><circle cx="42" cy="42" r="3.2" fill="#FFA502" opacity=".55"/><circle cx="26" cy="3" r="3.2" fill="#FF6B81" opacity=".55"/><circle cx="26" cy="49" r="3.2" fill="#5352ED" opacity=".55"/><circle cx="3" cy="26" r="3.2" fill="#7BED9F" opacity=".55"/><circle cx="49" cy="26" r="3.2" fill="#ECCC68" opacity=".55"/></svg>
           </div>
-        </div>
+          <span class="mode-card-name" data-i18n="mode_ultra">ULTRA</span>
+        </button>
+        <button class="mode-card" data-mode="mathe">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><rect x="2" y="2" width="20" height="20" rx="6" fill="#FF4757" opacity=".6"/><rect x="30" y="2" width="20" height="20" rx="6" fill="#3742FA" opacity=".6"/><rect x="2" y="30" width="20" height="20" rx="6" fill="#2ED573" opacity=".6"/><rect x="30" y="30" width="20" height="20" rx="6" fill="#FFA502" opacity=".6"/><text x="26" y="30" fill="white" font-size="9" font-weight="600" text-anchor="middle" opacity=".5">2+5</text></svg>
+          </div>
+          <span class="mode-card-name" data-i18n="mode_mathe">MATHE</span>
+        </button>
+        <button class="mode-card" data-mode="worte">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><rect x="2" y="2" width="20" height="20" rx="6" fill="#FF4757" opacity=".6"/><rect x="30" y="2" width="20" height="20" rx="6" fill="#3742FA" opacity=".6"/><rect x="2" y="30" width="20" height="20" rx="6" fill="#2ED573" opacity=".6"/><rect x="30" y="30" width="20" height="20" rx="6" fill="#FFA502" opacity=".6"/><text x="26" y="30" fill="white" font-size="8" font-weight="600" text-anchor="middle" opacity=".6">Abc</text></svg>
+          </div>
+          <span class="mode-card-name" data-i18n="mode_worte">W&#214;RTER</span>
+        </button>
+        <button class="mode-card" data-mode="sequenz">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><circle cx="10" cy="10" r="5.5" fill="#FF4757" opacity=".35"/><circle cx="42" cy="10" r="5.5" fill="#3742FA" opacity=".35"/><circle cx="10" cy="42" r="5.5" fill="#2ED573" opacity=".35"/><circle cx="42" cy="42" r="5.5" fill="#FFA502" opacity=".35"/><text x="8" y="14" fill="#FF4757" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">1</text><text x="44" y="14" fill="#3742FA" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">2</text><text x="8" y="46" fill="#2ED573" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">3</text><text x="44" y="46" fill="#FFA502" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">4</text><polyline points="10,10 42,10 10,42 42,42" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 3" opacity=".4"/></svg>
+          </div>
+          <span class="mode-card-name" data-i18n="mode_sequenz">SEQUENZ</span>
+        </button>
+        <button class="mode-card" data-mode="memo">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><circle cx="10" cy="10" r="5.5" fill="#FF4757" opacity=".75"/><circle cx="42" cy="10" r="5.5" fill="#3742FA" opacity=".75"/><circle cx="10" cy="42" r="5.5" fill="#2ED573" opacity=".75"/><circle cx="42" cy="42" r="5.5" fill="#FFA502" opacity=".75"/><text x="26" y="29" fill="white" font-size="9" font-weight="700" text-anchor="middle" opacity=".6">?</text></svg>
+          </div>
+          <span class="mode-card-name" data-i18n="mode_memo">MEMO</span>
+        </button>
+        <button class="mode-card" data-mode="stroop">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><rect x="2" y="2" width="48" height="48" rx="10" fill="none" stroke="#EF4444" stroke-width="1.5" opacity=".3"/><text x="26" y="25" fill="#3B82F6" font-size="10" font-weight="800" text-anchor="middle" opacity=".9">ROT</text><text x="26" y="38" fill="white" font-size="6" text-anchor="middle" opacity=".4">&#x2260; Farbe</text></svg>
+          </div>
+          <span class="mode-card-name" data-i18n="mode_stroop">STROOP</span>
+        </button>
+        <button class="mode-card" data-mode="fokus">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><text x="8" y="30" fill="#64748B" font-size="12" text-anchor="middle" opacity=".5">&#x2190;</text><text x="20" y="30" fill="#64748B" font-size="12" text-anchor="middle" opacity=".5">&#x2190;</text><text x="32" y="30" fill="#8B5CF6" font-size="14" font-weight="800" text-anchor="middle" opacity=".9">&#x2192;</text><text x="44" y="30" fill="#64748B" font-size="12" text-anchor="middle" opacity=".5">&#x2190;</text></svg>
+          </div>
+          <span class="mode-card-name" data-i18n="mode_fokus">FOKUS</span>
+        </button>
+        <button class="mode-card" data-mode="chaos">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><circle cx="14" cy="14" r="8" fill="#F97316" opacity=".5"/><rect x="32" y="8" width="12" height="12" rx="2" fill="#06B6D4" opacity=".5"/><polygon points="14,44 8,34 20,34" fill="#10B981" opacity=".5"/><text x="38" y="44" fill="white" font-size="8" font-weight="700" text-anchor="middle" opacity=".5">?!</text><text x="26" y="28" fill="white" font-size="6" text-anchor="middle" opacity=".4">SWITCH</text></svg>
+          </div>
+          <span class="mode-card-name" data-i18n="mode_chaos">CHAOS</span>
+        </button>
       </div>
 
-      <!-- Mode description line -->
-      <p class="mode-desc-line" id="modeDescLine"></p>
-
-      <!-- Play type pills (1×4 compact row) -->
+      <!-- Play type pills -->
       <div class="play-type-selector">
         <button class="play-type-btn selected" data-play="blitz">
           <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg></span>
@@ -485,9 +355,76 @@
         </button>
       </div>
 
-      <!-- Big Play CTA -->
-      <button id="btnPlay" class="btn btn-primary btn-play" data-i18n="play"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg> SPIELEN</button>
+      <!-- Stats Spotlight (3 cells) -->
+      <div class="hero-stats-zone" id="heroStatsZone">
+        <div class="hst-item">
+          <span class="hst-value" id="hstPB">&#x2014;</span>
+          <span class="hst-label" data-i18n="hst_pb">Bestpunktzahl</span>
+        </div>
+        <div class="hst-item">
+          <span class="hst-value hst-value--streak" id="hstStreak">&#x2014;</span>
+          <span class="hst-label" data-i18n="hst_streak">Tage-Streak</span>
+        </div>
+        <div class="hst-item">
+          <span class="hst-value hst-value--games" id="hstGames">&#x2014;</span>
+          <span class="hst-label" data-i18n="hst_games">Spiele gesamt</span>
+        </div>
+      </div>
+
+      <!-- Daily Challenge -->
+      <div class="daily-card" id="dailyCard">
+        <div class="daily-left">
+          <div class="daily-icon-wrap">
+            <svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FBD38D;width:22px;height:22px"><use href="#icon-star"></use></svg>
+          </div>
+          <div class="daily-info">
+            <span class="daily-title" data-i18n="daily_challenge">T&Auml;GLICHE HERAUSFORDERUNG</span>
+            <span class="daily-reward" id="dailyReward" data-i18n="daily_reward_text">+100 XP</span>
+            <span class="daily-streak-pill" id="dailyStreakPill"></span>
+          </div>
+        </div>
+        <div class="daily-right">
+          <button id="btnDaily" class="btn btn-daily-cta" data-i18n="play">Spielen</button>
+          <span class="daily-timer" id="dailyTimer"></span>
+        </div>
+      </div>
+
+      <!-- XP Progress (compact) -->
+      <div class="home-xp-compact">
+        <div class="home-header-progress" id="xpSection" data-tooltip="tooltip_xp">
+          <span id="xpLevelNum" class="xp-level-num"></span>
+          <div class="xp-bar-mini"><div id="xpBarFill" class="xp-bar-mini-fill"></div></div>
+          <span id="xpPercent" class="xp-percent"></span>
+          <span id="weekendBadge" class="weekend-badge"></span>
+        </div>
+        <div class="home-header-meta">
+          <span id="xpTitle" class="xp-title"></span>
+          <span id="xpRateHint" class="xp-rate-dim"></span>
+          <span id="xpNumbers" class="xp-numbers"></span>
+        </div>
+      </div>
+
+      <!-- PWA Install Banner -->
+      <div class="pwa-install-banner" id="pwaInstallBanner" style="display:none">
+        <div class="pwa-install-left">
+          <img src="img/icon-192.svg" alt="" class="pwa-install-icon" width="40" height="40">
+          <div class="pwa-install-info">
+            <span class="pwa-install-title" data-i18n="pwa_install_title">App installieren</span>
+            <span class="pwa-install-desc" data-i18n="pwa_install_desc">Schnellerer Zugriff &middot; Offline spielen</span>
+          </div>
+        </div>
+        <button id="btnInstallPWA" class="btn btn-pwa-install" data-i18n="pwa_install_btn">Installieren</button>
+        <button id="btnDismissInstall" class="pwa-install-dismiss" aria-label="Schlie&szlig;en">&times;</button>
+      </div>
+
+      <div class="sheet-spacer"></div>
     </div>
+
+    <!-- FLOATING PLAY BUTTON -->
+    <button id="btnPlay" class="btn-play-fab" data-i18n="play">
+      <svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg>
+      <span>SPIELEN</span>
+    </button>
 
     <!-- ═══ FOOTER NAV ═══ -->
     <nav class="footer-nav" id="footerNav" aria-label="Navigation">
@@ -505,7 +442,7 @@
       </button>
       <button id="btnSettings" class="footer-item">
         <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-gear"></use></svg></span>
-        <span class="footer-label" data-i18n="settings_footer">SETTINGS</span>
+        <span class="footer-label" data-i18n="settings_footer">Settings</span>
       </button>
       <button id="btnFullscreen" class="footer-item footer-item-fs" aria-label="Fullscreen">
         <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-fullscreen"></use></svg></span>

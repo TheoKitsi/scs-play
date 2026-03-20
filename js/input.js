@@ -16,6 +16,7 @@ export class SwipeHandler {
     this.onTap = null;
     this.onCornerTap = null;   /* (dir, timestamp) — tapped a corner */
     this.onCenterTap = null;   /* () — tapped the center area */
+    this.onSwipeRejected = null; /* () — swipe fell in dead zone */
     this.onTrailStart = null;
     this.onTrailMove  = null;
     this.onTrailEnd   = null;
@@ -128,6 +129,7 @@ export class SwipeHandler {
     if (dir && this.onSwipe) {
       this.onSwipe(dir, performance.now());
     } else {
+      if (!dir && this.onSwipeRejected) this.onSwipeRejected();
       if (this.onTrailEnd) this.onTrailEnd();
     }
   }
@@ -138,7 +140,7 @@ export class SwipeHandler {
     for (const el of corners) {
       /* Skip hidden corners (edge-only/ultra-only not in current mode) */
       if (el.offsetParent === null) continue;
-      if (!el.innerHTML) continue;  /* empty = unassigned corner */
+      if (!el.innerHTML && !el.dataset.value) continue;  /* empty & no value = unassigned corner */
       const r = el.getBoundingClientRect();
       if (x >= r.left - TAP_HIT_PADDING && x <= r.right + TAP_HIT_PADDING &&
           y >= r.top - TAP_HIT_PADDING && y <= r.bottom + TAP_HIT_PADDING) {
@@ -173,8 +175,8 @@ export class SwipeHandler {
     }
 
     if (this.mode === 'expert') {
-      /* 8 directions — 45° sectors; reject swipes within 4° of boundaries */
-      const DEAD = 4;
+      /* 8 directions — 45° sectors; reduced dead zone for reliable input */
+      const DEAD = 2;
       const norm = ((angle % 45) + 45) % 45;
       if (norm < DEAD || norm > (45 - DEAD)) return null;
       if (angle >= -22.5  && angle <  22.5)  return 'right';
@@ -188,8 +190,8 @@ export class SwipeHandler {
       return 'right';
     }
 
-    /* Beginner / Klassik / Mathe / Worte / Memo — 4 quadrants; reject swipes within 5° of axes */
-    const DEAD = 5;
+    /* Beginner / Klassik / Mathe / Worte / Memo — 4 quadrants; near-zero dead zone for reliable input */
+    const DEAD = 1;
     const absAngle = Math.abs(angle);
     if (absAngle < DEAD || absAngle > (180 - DEAD) || Math.abs(absAngle - 90) < DEAD) return null;
     if (angle >= 0   && angle < 90)   return 'ur';

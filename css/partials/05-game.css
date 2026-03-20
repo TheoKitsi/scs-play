@@ -959,6 +959,13 @@ body:not(.ad-free) .center-platform{
 @keyframes goldenGlow{0%{transform:scale(1) translateY(0)}100%{transform:scale(1.05) translateY(-4px)}}
 @keyframes diamondGlow{0%{transform:scale(1) translateY(0)}100%{transform:scale(1.05) translateY(-4px)}}
 
+/* ─── Dead-zone swipe feedback flash ─── */
+.center-platform.dead-zone-flash{animation:deadZoneFlash .3s ease-out}
+@keyframes deadZoneFlash{
+  0%{box-shadow:0 0 0 3px rgba(245,158,11,0.7), inset 0 0 20px rgba(245,158,11,0.2)}
+  100%{box-shadow:0 0 0 0 rgba(245,158,11,0), inset 0 0 0 rgba(245,158,11,0)}
+}
+
 /* ─── Countdown ─── */
 .countdown-overlay{
   position:absolute;inset:0;z-index:50;

@@ -1304,6 +1304,17 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   /* ── Center tap: no-op (memo peek removed) ── */
   swipe.onCenterTap = () => {};
 
+  /* ── Dead-zone swipe: brief feedback so player knows input was received ── */
+  swipe.onSwipeRejected = () => {
+    haptic('tap', save);
+    const platform = $('#centerPlatform');
+    if (platform) {
+      platform.classList.remove('dead-zone-flash');
+      requestAnimationFrame(() => platform.classList.add('dead-zone-flash'));
+      setTimeout(() => platform.classList.remove('dead-zone-flash'), 300);
+    }
+  };
+
   swipe.onTrailStart = (x, y) => {
     if (game.paused) return;
     const shape = game.currentShape;
