@@ -105,6 +105,24 @@ export async function showResults(stats, canContinue = false) {
     dailyBanner.style.display = 'none';
   }
 
+  /* Tier-colored ring: tint based on accuracy */
+  const tier = stats.accuracy >= 95 && stats.score >= 5000 ? 3
+    : stats.accuracy >= 80 && stats.score >= 2000 ? 2
+    : stats.accuracy >= 60 ? 1 : 0;
+  const ringColors = ['#EF4444', '#F59E0B', '#7C3AED', '#2DD4BF'];
+  const ringEl = $('#resXPRingFill');
+  if (ringEl) {
+    ringEl.style.stroke = ringColors[tier];
+    ringEl.style.filter = `drop-shadow(0 0 12px ${ringColors[tier]})`;
+  }
+
+  /* Dramatic ring entrance */
+  const xpRing = $('.results-xp-ring');
+  if (xpRing) {
+    xpRing.classList.remove('ring-entrance');
+    requestAnimationFrame(() => xpRing.classList.add('ring-entrance'));
+  }
+
   const phase2 = $('#resPhase2');
   const phase3 = $('#resPhase3');
   if (phase2) { phase2.classList.add('results-phase-hidden'); phase2.classList.remove('results-phase-visible'); }
@@ -270,6 +288,46 @@ export async function showResults(stats, canContinue = false) {
   if (unlocked.length > maxToasts) {
     const extra = unlocked.length - maxToasts;
     setTimeout(() => { bodyFx.achievementToast(t('more_achievements', { n: extra })); }, achBaseDelay + maxToasts * 1500);
+  }
+
+  /* Close-to-PB motivator */
+  const closePBEl = $('#resCloseToePB');
+  if (!canContinue && !isNewPB) {
+    const currentPB = save.getPB(stats.mode || app.selectedMode);
+    if (currentPB > 0 && stats.score > 0) {
+      const diff = currentPB - stats.score;
+      const threshold = Math.max(currentPB * 0.15, 100);
+      if (diff > 0 && diff <= threshold) {
+        const motivEl = closePBEl || (() => {
+          const el = document.createElement('div');
+          el.id = 'resCloseToePB';
+          el.className = 'results-close-pb';
+          const pbContainer = $('#resPB');
+          if (pbContainer && pbContainer.parentElement) {
+            pbContainer.parentElement.insertBefore(el, pbContainer.nextSibling);
+          }
+          return el;
+        })();
+        if (motivEl) {
+          motivEl.textContent = t('close_to_pb', { n: diff }) || `Nur ${diff} Punkte von deinem PB!`;
+          motivEl.style.display = '';
+        }
+      } else if (closePBEl) {
+        closePBEl.style.display = 'none';
+      }
+    } else if (closePBEl) {
+      closePBEl.style.display = 'none';
+    }
+  } else if (closePBEl) {
+    closePBEl.style.display = 'none';
+  }
+
+  /* Retry button glow pulse */
+  const retryBtn = $('#btnOneMore');
+  if (retryBtn) {
+    retryBtn.classList.remove('retry-glow');
+    const countupDone = (CONFIG.RESULTS_COUNTUP_MS || 1200) + (CONFIG.RESULTS_STATS_DELAY || 400) + (CONFIG.RESULTS_BUTTONS_DELAY || 800) + 400;
+    setTimeout(() => retryBtn.classList.add('retry-glow'), countupDone);
   }
 
   setText('#oneMoreText', t('retry'));

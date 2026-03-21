@@ -160,6 +160,43 @@
   text-shadow: 0 4px 8px rgba(0,0,0,0.4);
 }
 
+/* ─── Results: Ring entrance animation ─── */
+.results-xp-ring.ring-entrance{
+  animation:ringEntrance 0.7s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes ringEntrance{
+  0%{transform:scale(0.4) rotate(-10deg);opacity:0;filter:blur(8px) drop-shadow(0 8px 16px rgba(0,0,0,0.5))}
+  60%{transform:scale(1.08) rotate(2deg);opacity:1;filter:blur(0) drop-shadow(0 8px 16px rgba(0,0,0,0.5))}
+  100%{transform:scale(1) rotate(0);opacity:1;filter:drop-shadow(0 8px 16px rgba(0,0,0,0.5))}
+}
+
+/* ─── Results: Close-to-PB motivator ─── */
+.results-close-pb{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:0.82rem;font-weight:700;
+  color:var(--accent-glow,#EC4899);
+  padding:6px 16px;
+  background:rgba(236,72,153,0.08);
+  border:1px solid rgba(236,72,153,0.2);
+  border-radius:12px;
+  text-align:center;
+  animation:closePBPulse 2s ease-in-out infinite;
+}
+@keyframes closePBPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(236,72,153,0)}
+  50%{box-shadow:0 0 12px 2px rgba(236,72,153,0.2)}
+}
+
+/* ─── Results: Retry button glow ─── */
+#btnOneMore.retry-glow{
+  animation:retryGlow 2s ease-in-out infinite;
+  position:relative;
+}
+@keyframes retryGlow{
+  0%,100%{box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+  50%{box-shadow:0 8px 32px rgba(124,58,237,0.5),0 0 20px rgba(124,58,237,0.3)}
+}
+
 /* ─── Settings: Category Headers ─── */
 .settings-category{
   font-size:.7rem;font-weight:800;text-transform:uppercase;
