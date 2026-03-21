@@ -600,7 +600,7 @@ export const CONFIG = {
   ALGEBRA_PHASES: [
     { threshold: 0,   type: 'linear_add',   label: 'ax + b = c' },
     { threshold: 8,   type: 'linear_sub',   label: 'ax - b = c' },
-    { threshold: 18,  type: 'two_step',     label: '(a+b)*c' },
+    { threshold: 18,  type: 'two_step',     label: 'a(x+b) = c' },
     { threshold: 30,  type: 'square',       label: 'x² = n' },
     { threshold: 45,  type: 'sqrt',         label: '√n' },
     { threshold: 65,  type: 'power',        label: 'aⁿ' },

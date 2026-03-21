@@ -497,7 +497,16 @@ body.mode-worte .center-platform{
   .play-type-icon{font-size:.8rem}
   .play-type-icon--text{font-size:.9rem}
   .play-type-icon svg{width:14px;height:14px}
-  .play-type-selector{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px}
+  .play-type-selector{display:flex;flex-wrap:nowrap;gap:2px}
+  .home-bottom-sheet{padding:0 8px;gap:4px;padding-bottom:calc(56px + env(safe-area-inset-bottom, 0px))}
+  .hero-stats-zone{min-height:36px;padding:2px 0;gap:3px}
+  .hst-item{padding:3px 2px}
+  .hst-value{font-size:0.75rem}
+  .daily-card{padding:4px 8px;gap:4px}
+  .btn-daily-cta{padding:4px 10px;font-size:0.6rem}
+  .home-xp-compact{gap:2px}
+  .home-header-progress{padding:4px 8px}
+  .sheet-spacer{height:4px}
   .footer-label{font-size:.52rem}
   .footer-nav{gap:2px;padding:2px 4px;padding-bottom:calc(2px + var(--safe-bottom))}
   .footer-item{padding:6px 2px 4px}

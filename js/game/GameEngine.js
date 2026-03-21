@@ -862,12 +862,12 @@ export class GameEngine {
         return { equation: `${a}x \u2212 ${b} = ${c}`, answer: x, answerDisplay: String(x) };
       }
       case 'two_step': {
-        /* (a + b) × c = ? */
-        const a = Math.floor(this.rng() * 12) + 1;
-        const b = Math.floor(this.rng() * 12) + 1;
-        const c = Math.floor(this.rng() * 8) + 2;
-        const answer = (a + b) * c;
-        return { equation: `(${a} + ${b}) \u00D7 ${c}`, answer, answerDisplay: String(answer) };
+        /* a(x + b) = c → solve for x */
+        const a = Math.floor(this.rng() * 6) + 2;     /* 2-7 */
+        const x = Math.floor(this.rng() * 10) + 1;    /* 1-10 */
+        const b = Math.floor(this.rng() * 10) + 1;    /* 1-10 */
+        const c = a * (x + b);
+        return { equation: `${a}(x + ${b}) = ${c}`, answer: x, answerDisplay: String(x) };
       }
       case 'square': {
         /* x² = n → x = ? (use only perfect squares) */
