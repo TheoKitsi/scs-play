@@ -563,10 +563,7 @@ export function getChainIndex() {
   return _chainIndex;
 }
 
-/** Total number of achievements */
-export function getTotalCount() {
-  return generateAchievements().length;
-}
+
 
 
 // ══════════════════════════════════════════════════════════════════

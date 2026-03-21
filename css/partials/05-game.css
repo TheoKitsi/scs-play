@@ -257,7 +257,7 @@
   padding: 6px;
   border-radius: var(--radius-sm);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .footer-item:hover, .footer-item.active {

@@ -217,12 +217,12 @@
       </div>
     </div>
 
-    <!-- ═══ HERO ZONE — immersive top section ═══ -->
+    <!-- ═══ HERO ZONE — swipeable mode carousel ═══ -->
     <div class="hero-zone" id="heroZone">
       <div class="hero-backdrop" id="heroBackdrop"></div>
       <div class="hero-particles" aria-hidden="true"></div>
 
-      <!-- Floating top bar -->
+      <!-- Identity bar -->
       <div class="hero-top-bar">
         <div class="htb-left" id="headerIdentity">
           <div id="homeAvatar" class="avatar-small"></div>
@@ -243,20 +243,33 @@
         </div>
       </div>
 
-      <!-- Large centered mode visual -->
-      <div class="hero-visual-wrap">
-        <div class="hero-visual-ring"></div>
-        <div class="hero-visual-large" id="heroVisualLarge"></div>
+      <!-- Thin XP bar below identity -->
+      <div class="hero-xp-bar">
+        <span id="xpLevelNum" class="xp-level-num"></span>
+        <div class="xp-bar-mini"><div id="xpBarFill" class="xp-bar-mini-fill"></div></div>
+        <span id="xpPercent" class="xp-percent"></span>
+        <span id="xpTitle" class="xp-title"></span>
+        <span id="xpNumbers" class="xp-numbers"></span>
+        <span id="weekendBadge" class="weekend-badge"></span>
       </div>
 
-      <!-- Mode info overlay at bottom of hero -->
-      <div class="hero-info">
-        <h1 class="hero-mode-title" id="heroModeName"></h1>
-        <p class="hero-mode-subtitle" id="heroModeDesc"></p>
-        <div class="hero-badges">
-          <span class="hero-badge hero-badge--pb" id="heroPB"></span>
-          <span class="hero-badge hero-badge--level" id="heroModeLevel" style="display:none"></span>
-        </div>
+      <!-- Swipeable mode slides — JS renders one .hero-slide per mode -->
+      <div class="hero-slider" id="heroSlider" role="group" aria-label="Spielmodus wählen"></div>
+
+      <!-- Prev / Next nav arrows -->
+      <button class="hero-nav-arrow hero-nav-prev" id="heroNavPrev" aria-label="Vorheriger Modus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="hero-nav-arrow hero-nav-next" id="heroNavNext" aria-label="Nächster Modus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+      <!-- Pin button -->
+      <div class="hero-carousel-footer">
+        <button class="hero-pin-btn" id="heroPinBtn" aria-label="Shortcut hinzufügen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span id="heroPinLabel">Shortcut</span>
+        </button>
       </div>
     </div>
 
@@ -264,9 +277,13 @@
     <div class="home-bottom-sheet" id="homeBottomSheet">
       <div class="sheet-handle"></div>
 
+      <!-- SHORTCUT PINBOARD — 4x2 grid of pinned modes -->
+      <div class="shortcut-grid" id="shortcutGrid" role="group" aria-label="Shortcuts">
+        <!-- JS renders 8 shortcut slots here -->
+      </div>
 
-      <!-- MODE CAROUSEL — horizontal snap scroll -->
-      <div class="mode-carousel" id="modeCarousel" role="group" aria-label="Spielmodus">
+      <!-- MODE CAROUSEL (hidden — used as SVG template source) -->
+      <div class="mode-carousel mode-carousel--hidden" id="modeCarousel" role="group" aria-label="Spielmodus">
         <button class="mode-card selected" data-mode="klassik">
           <div class="mode-card-visual">
             <svg viewBox="0 0 52 52"><rect x="4" y="4" width="18" height="18" rx="4" fill="#FF4757" opacity=".8"/><rect x="30" y="4" width="18" height="18" rx="4" fill="#3742FA" opacity=".8"/><rect x="4" y="30" width="18" height="18" rx="4" fill="#2ED573" opacity=".8"/><rect x="30" y="30" width="18" height="18" rx="4" fill="#FFA502" opacity=".8"/></svg>
@@ -399,21 +416,6 @@
         <div class="daily-right">
           <button id="btnDaily" class="btn btn-daily-cta" data-i18n="play">Spielen</button>
           <span class="daily-timer" id="dailyTimer"></span>
-        </div>
-      </div>
-
-      <!-- XP Progress (compact) -->
-      <div class="home-xp-compact">
-        <div class="home-header-progress" id="xpSection" data-tooltip="tooltip_xp">
-          <span id="xpLevelNum" class="xp-level-num"></span>
-          <div class="xp-bar-mini"><div id="xpBarFill" class="xp-bar-mini-fill"></div></div>
-          <span id="xpPercent" class="xp-percent"></span>
-          <span id="weekendBadge" class="weekend-badge"></span>
-        </div>
-        <div class="home-header-meta">
-          <span id="xpTitle" class="xp-title"></span>
-          <span id="xpRateHint" class="xp-rate-dim"></span>
-          <span id="xpNumbers" class="xp-numbers"></span>
         </div>
       </div>
 
@@ -871,7 +873,7 @@
       <span id="shopLivesCount">3</span>
       <span class="shop-lives-label" data-i18n="lives_label">Leben</span>
       <span class="shop-lives-sep">&middot;</span>
-      <span class="fire-icon">🔥</span>
+      <svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FFA502;width:18px;height:18px"><use href="#icon-fire"></use></svg>
       <span id="shopFireCount">0</span>
     </div>
     <!-- Tab content -->

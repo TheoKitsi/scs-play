@@ -103,10 +103,3 @@ export function localise(t) {
   $$('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
 }
 
-/** Announce text to screen readers via live region */
-export function announce(text) {
-  const el = document.getElementById('a11yLive');
-  if (!el) return;
-  el.textContent = '';
-  requestAnimationFrame(() => { el.textContent = text; });
-}

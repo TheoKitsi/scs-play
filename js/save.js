@@ -89,7 +89,9 @@ function defaults() {
     /* v20: Per-mode instruction view counter */
     instructionViews: {},
     /* v7: Avatar */
-    avatar: null   // { icon: 'star', colorIndex: 3 }
+    avatar: null,   // { icon: 'star', colorIndex: 3 }
+    /* v34: Hero carousel shortcut pinboard (8 user slots = 4x2 grid) */
+    pinnedModes: ['klassik', 'beginner', 'mathe', 'stroop', null, null, null, null]
   };
 }
 

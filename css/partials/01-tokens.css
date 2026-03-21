@@ -7,7 +7,7 @@
 :root{
   /* layout tokens for consistent spacing and icon sizing */
   --spacing-unit: 12px;
-  --gutter: 16px;
+  --gutter: 8px;
   --icon-size: 20px;
   --icon-size-lg: 28px;
   --btn-height: 52px;

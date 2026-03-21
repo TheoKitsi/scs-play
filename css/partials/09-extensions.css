@@ -253,9 +253,11 @@ body.ad-free #game .game-ad-banner{display:none}
 .shop-lives-bar{
   display:flex;align-items:center;gap:6px;
   padding:8px 14px;margin-bottom:10px;
-  background:rgba(255,71,87,.05);
-  border:1px solid rgba(255,71,87,.15);
+  background:rgba(0,0,0,0.35);
+  border:1px solid rgba(255,255,255,0.1);
   border-radius:var(--radius-sm);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
   font-size:.85rem;font-weight:700;
 }
 .shop-lives-bar svg{flex-shrink:0;width:18px;height:18px}
@@ -307,13 +309,16 @@ body.ad-free #game .game-ad-banner{display:none}
 #leaderboard #scoreList,
 #achievements #achList,
 #settings .settings-list,
-#store #shopTabContent,
-#avatarSelect .avatar-grid,
-#avatarSelect .avatar-color-grid{
+#store #shopTabContent{
   flex:1 1 0;
   min-height:0;
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
+}
+#avatarSelect .avatar-grid,
+#avatarSelect .avatar-color-grid{
+  flex:0 0 auto;
+  overflow:visible;
 }
 
 #store #shopTabContent,
@@ -492,7 +497,7 @@ body.mode-worte .center-platform{
   .mode-chip-visual{width:16px;height:16px}
   .mode-chip-name{font-size:.6rem}
   .mode-chip{padding:7px 5px}
-  .hero-mode-name{font-size:.9rem}
+  .hero-slide-name{font-size:.9rem}
   .play-type-name{font-size:.5rem;letter-spacing:0}
   .play-type-icon{font-size:.8rem}
   .play-type-icon--text{font-size:.9rem}
@@ -504,8 +509,8 @@ body.mode-worte .center-platform{
   .hst-value{font-size:0.75rem}
   .daily-card{padding:4px 8px;gap:4px}
   .btn-daily-cta{padding:4px 10px;font-size:0.6rem}
-  .home-xp-compact{gap:2px}
-  .home-header-progress{padding:4px 8px}
+  .hero-xp-bar{padding:0 8px}
+  .shortcut-grid{gap:4px}
   .sheet-spacer{height:4px}
   .footer-label{font-size:.52rem}
   .footer-nav{gap:2px;padding:2px 4px;padding-bottom:calc(2px + var(--safe-bottom))}

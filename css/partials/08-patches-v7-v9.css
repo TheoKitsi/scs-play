@@ -161,7 +161,8 @@ button:focus-visible{border-radius:var(--radius-sm)}
 
 .avatar-grid {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 8px; width: 100%; max-width: 280px; margin: 0 auto;
+  gap: 10px; width: 100%; max-width: 320px; margin: 0 auto;
+  padding: 6px;
 }
 .avatar-grid-item {
   width: 100%; aspect-ratio: 1; border-radius: var(--radius-md);
@@ -170,7 +171,7 @@ button:focus-visible{border-radius:var(--radius-sm)}
   cursor: pointer; transition: all 0.3s ease;
   box-shadow: none;
 }
-.avatar-grid-item svg { width: 28px; height: 28px; filter: none; transition: transform 0.3s ease; }
+.avatar-grid-item svg { width: 32px; height: 32px; filter: none; transition: transform 0.3s ease; }
 .avatar-grid-item:hover {
   background: rgba(255, 255, 255, 0.05); transform: translateY(-2px);
   border-color: rgba(255,255,255,0.1); box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -184,7 +185,7 @@ button:focus-visible{border-radius:var(--radius-sm)}
 
 .avatar-color-grid {
   display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
-  margin: 6px auto 0; max-width: 280px;
+  margin: 6px auto 0; max-width: 320px; padding: 6px;
 }
 .avatar-color-item {
   width: 28px; height: 28px; border-radius: 50%;

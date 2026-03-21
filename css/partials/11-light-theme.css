@@ -59,11 +59,11 @@ body.light-theme .home-header{
   padding:8px;
   margin-bottom:4px;
 }
-body.light-theme .home-header-progress{
+body.light-theme .hero-xp-bar{
   background:rgba(108,92,231,0.06);
   border-color:rgba(108,92,231,0.12);
 }
-body.light-theme .home-header-progress .xp-bar-mini{
+body.light-theme .hero-xp-bar .xp-bar-mini{
   background:rgba(0,0,0,0.06);
   border-color:rgba(0,0,0,0.08);
 }
@@ -142,12 +142,6 @@ body.light-theme .play-type-btn{
 body.light-theme .play-type-btn.selected{
   background:linear-gradient(135deg, rgba(108,92,231,.16), rgba(108,92,231,.08));
   color:var(--text-on-surface);
-}
-body.light-theme .home-play-cta{
-  background:linear-gradient(135deg, var(--primary), var(--primary-dark));
-  border-color:rgba(108,92,231,.45);
-  color:#fff;
-  box-shadow:0 10px 22px rgba(108,92,231,.24), inset 0 1px 0 rgba(255,255,255,.35);
 }
 body.light-theme .ad-banner{
   background:linear-gradient(180deg, rgba(255,255,255,.86), rgba(245,245,250,.92));
@@ -422,12 +416,6 @@ body.light-theme .ad-interstitial-close{
   background:rgba(0,0,0,.04);
   border-color:rgba(0,0,0,.1);
   color:var(--text);
-}
-
-/* ─── Ad banner (home) ─── */
-body.light-theme .ad-banner{
-  background:linear-gradient(180deg, rgba(255,255,255,.86), rgba(245,245,250,.92));
-  border-bottom-color:var(--outline-subtle);
 }
 
 /* ─── Toast/Achievement notifications ─── */

@@ -12,6 +12,12 @@ import { applyTheme }       from '../services/ThemeService.js';
 import { EffectsManager }   from '../effects.js';
 import app                   from '../appState.js';
 
+/* ═══════ Hero Carousel State ═══════ */
+let carouselIdx = 0;            // current index into MODE_ORDER
+let carouselTouchX = null;      // touch start X for swipe
+let carouselAnimating = false;  // prevent double-swipe
+const SWIPE_THRESHOLD = 40;     // px minimum for swipe
+
 /* ═══════ Daily Countdown Timer ═══════ */
 let dailyCountdownInterval = null;
 
@@ -153,47 +159,277 @@ const MODE_AURA = {
 };
 
 export function updateHeroCard() {
+  /* Now handled by renderCarousel() — kept as a no-op for compat */
+  renderCarousel();
+}
+
+/* ═══════ Carousel Engine ═══════ */
+
+/** Get the SVG HTML for a mode from the hidden template cards */
+function getModeSVG(mode) {
+  const card = $(`.mode-card[data-mode="${mode}"]`);
+  if (!card) return '';
+  const svg = card.querySelector('.mode-card-visual svg');
+  return svg ? svg.outerHTML : '';
+}
+
+/** Build a single hero slide element */
+function buildSlide(mode) {
   const { save } = app;
-  const card = $(`.mode-card[data-mode="${app.selectedMode}"]`);
-  const visual = $('#heroVisualLarge');
-  if (visual && card) {
-    const svg = card.querySelector('.mode-card-visual svg');
-    if (svg) {
-      visual.innerHTML = '';
-      const clone = svg.cloneNode(true);
-      clone.style.width = '100%'; clone.style.height = '100%';
-      visual.appendChild(clone);
+  const unlocked = save.isModeUnlocked(mode);
+  const slide = document.createElement('div');
+  slide.className = 'hero-slide';
+  slide.dataset.mode = mode;
+  slide.dataset.pos = 'hidden';
+
+  if (unlocked) {
+    const pb = save.getPB(mode);
+    const lv = save.getModeLevel ? save.getModeLevel(mode) : 0;
+    const lvName = save.getModeLevelName ? save.getModeLevelName(mode, getLanguage()) : '';
+    const aura = MODE_AURA[mode] || 'rgba(124,58,237,0.5)';
+    slide.innerHTML = `
+      <div class="hero-slide-visual" style="--slide-aura:${aura}">${getModeSVG(mode)}</div>
+      <span class="hero-slide-name">${t(`mode_${mode}`) || mode.toUpperCase()}</span>
+      <span class="hero-slide-desc">${t(MODE_DESC_KEYS[mode] || 'mode_klassik_desc')}</span>
+      <div class="hero-slide-badges">
+        <span class="hero-slide-badge hero-slide-badge--pb">${pb > 0 ? `PB ${pb.toLocaleString()}` : (t('hero_first_record') || '--')}</span>
+        ${lv > 0 ? `<span class="hero-slide-badge hero-slide-badge--level">Lv.${lv} ${lvName}</span>` : ''}
+      </div>`;
+  } else {
+    const unlockLv = getUnlockLevel(mode);
+    slide.innerHTML = `
+      <div class="hero-slide-locked">
+        <div class="hero-slide-visual" style="filter:grayscale(1) brightness(0.5)">${getModeSVG(mode)}</div>
+        <span class="hero-slide-name" style="opacity:0.5">${t(`mode_${mode}`) || mode.toUpperCase()}</span>
+        <span class="hero-slide-lock-label">Level ${unlockLv} ${t('required') || 'benötigt'}</span>
+      </div>`;
+  }
+  return slide;
+}
+
+/** Render all slides and position them */
+function renderCarousel() {
+  const slider = $('#heroSlider');
+  if (!slider) return;
+
+  const modes = CONFIG.MODE_ORDER;
+  const total = modes.length;
+
+  // Rebuild slides
+  slider.innerHTML = '';
+  modes.forEach((mode, i) => {
+    const slide = buildSlide(mode);
+    slider.appendChild(slide);
+  });
+
+  positionSlides();
+  updateBackdropAura();
+  updatePinButton();
+}
+
+/** Position slides relative to carouselIdx (infinite wrapping) */
+function positionSlides() {
+  const slider = $('#heroSlider');
+  if (!slider) return;
+  const slides = slider.querySelectorAll('.hero-slide');
+  const total = slides.length;
+  if (total === 0) return;
+
+  slides.forEach((slide, i) => {
+    const diff = ((i - carouselIdx) % total + total) % total;
+    if (diff === 0) {
+      slide.dataset.pos = 'current';
+    } else if (diff === total - 1) {
+      slide.dataset.pos = 'prev';
+    } else if (diff === 1) {
+      slide.dataset.pos = 'next';
+    } else {
+      slide.dataset.pos = 'hidden';
     }
-  }
-  const nameEl = $('#heroModeName');
-  if (nameEl) nameEl.textContent = t(`mode_${app.selectedMode}`) || app.selectedMode.toUpperCase();
-  const descEl = $('#heroModeDesc');
-  if (descEl) descEl.textContent = t(MODE_DESC_KEYS[app.selectedMode] || 'mode_klassik_desc');
-  const pb = save.getPB(app.selectedMode);
-  const pbEl = $('#heroPB');
-  if (pbEl) pbEl.textContent = pb > 0 ? `PB ${pb.toLocaleString()}` : t('hero_first_record');
+  });
 
-  /* v25: Per-mode level in hero card */
-  const modeLvEl = $('#heroModeLevel');
-  if (modeLvEl) {
-    const lv = save.getModeLevel(app.selectedMode);
-    const lvName = save.getModeLevelName(app.selectedMode, getLanguage());
-    modeLvEl.textContent = lv > 0 ? `Lv.${lv} ${lvName}` : '';
-    modeLvEl.style.display = lv > 0 ? '' : 'none';
+  // Update selected mode
+  const currentMode = CONFIG.MODE_ORDER[carouselIdx];
+  if (currentMode && app.save.isModeUnlocked(currentMode)) {
+    app.selectedMode = currentMode;
   }
+}
 
-  /* Mode Aura — set CSS var for the hero backdrop glow */
+/** Navigate carousel: direction = -1 (prev) or +1 (next) */
+function navigateCarousel(direction) {
+  if (carouselAnimating) return;
+  carouselAnimating = true;
+  const total = CONFIG.MODE_ORDER.length;
+  carouselIdx = ((carouselIdx + direction) % total + total) % total;
+  positionSlides();
+  updateBackdropAura();
+  updatePinButton();
+  updateHeroStats();
+  updatePlayTypeSelector();
+  updateShortcutGrid();
+  setTimeout(() => { carouselAnimating = false; }, 360);
+}
+
+/** Navigate to specific index */
+function goToSlide(idx) {
+  if (carouselAnimating || idx === carouselIdx) return;
+  carouselAnimating = true;
+  carouselIdx = idx;
+  positionSlides();
+  updateBackdropAura();
+  updatePinButton();
+  updateHeroStats();
+  updatePlayTypeSelector();
+  updateShortcutGrid();
+  setTimeout(() => { carouselAnimating = false; }, 360);
+}
+
+/** Update backdrop aura color for current mode */
+function updateBackdropAura() {
+  const currentMode = CONFIG.MODE_ORDER[carouselIdx];
   const heroBackdrop = $('#heroBackdrop');
   if (heroBackdrop) {
-    const aura = MODE_AURA[app.selectedMode] || 'rgba(124,58,237,0.35)';
+    const aura = MODE_AURA[currentMode] || 'rgba(124,58,237,0.35)';
     heroBackdrop.style.background = `radial-gradient(ellipse 80% 70% at 50% 40%, ${aura} 0%, rgba(124,58,237,0.08) 50%, transparent 100%)`;
   }
-  /* Also update the visual glow filter color */
-  const heroVisEl = $('#heroVisualLarge');
-  if (heroVisEl) {
-    const auraColor = MODE_AURA[app.selectedMode] || 'rgba(124,58,237,0.5)';
-    heroVisEl.style.filter = `drop-shadow(0 0 30px ${auraColor})`;
+}
+
+/** Update pin button state */
+function updatePinButton() {
+  const btn = $('#heroPinBtn');
+  if (!btn) return;
+  const currentMode = CONFIG.MODE_ORDER[carouselIdx];
+  const pinned = app.save.data.pinnedModes || [];
+  const isPinned = pinned.includes(currentMode);
+  btn.classList.toggle('pinned', isPinned);
+  const label = $('#heroPinLabel');
+  if (label) {
+    if (currentMode === 'klassik') {
+      label.textContent = 'Fixiert';
+    } else {
+      label.textContent = isPinned ? 'Entfernen' : 'Pinnen';
+    }
   }
+}
+
+/** Init carousel event listeners (called once) */
+let carouselInitialized = false;
+function initCarouselListeners() {
+  if (carouselInitialized) return;
+  carouselInitialized = true;
+
+  // Arrow nav
+  const prevBtn = $('#heroNavPrev');
+  const nextBtn = $('#heroNavNext');
+  if (prevBtn) prevBtn.addEventListener('click', () => navigateCarousel(-1));
+  if (nextBtn) nextBtn.addEventListener('click', () => navigateCarousel(1));
+
+  // Touch/swipe on slider
+  const slider = $('#heroSlider');
+  if (slider) {
+    slider.addEventListener('touchstart', (e) => {
+      carouselTouchX = e.touches[0].clientX;
+    }, { passive: true });
+
+    slider.addEventListener('touchend', (e) => {
+      if (carouselTouchX === null) return;
+      const dx = e.changedTouches[0].clientX - carouselTouchX;
+      carouselTouchX = null;
+      if (Math.abs(dx) > SWIPE_THRESHOLD) {
+        navigateCarousel(dx < 0 ? 1 : -1);
+      }
+    }, { passive: true });
+  }
+
+  // Pin button
+  const pinBtn = $('#heroPinBtn');
+  if (pinBtn) {
+    pinBtn.addEventListener('click', () => {
+      const currentMode = CONFIG.MODE_ORDER[carouselIdx];
+      if (!app.save.isModeUnlocked(currentMode)) return;
+      togglePin(currentMode);
+    });
+  }
+}
+
+/* ═══════ Shortcut Pinboard ═══════ */
+
+const SHORTCUT_SLOTS = 8; // 4x2 grid
+
+/** Toggle a mode's pinned state */
+function togglePin(mode) {
+  // FARBEN (klassik) is always locked at slot 0
+  if (mode === 'klassik') return;
+  const pinned = app.save.data.pinnedModes || [];
+
+  if (pinned.includes(mode)) {
+    // Unpin: replace with null (but protect slot 0 = klassik)
+    const idx = pinned.indexOf(mode);
+    if (idx === 0) return; // slot 0 is reserved
+    pinned[idx] = null;
+  } else {
+    // Pin: find first empty slot
+    const emptyIdx = pinned.indexOf(null);
+    if (emptyIdx !== -1) {
+      pinned[emptyIdx] = mode;
+    } else if (pinned.length < SHORTCUT_SLOTS) {
+      pinned.push(mode);
+    } else {
+      return; // No empty slots
+    }
+  }
+  // Ensure slot 0 is always klassik
+  if (pinned[0] !== 'klassik') {
+    // Remove klassik from wherever it is
+    const kIdx = pinned.indexOf('klassik');
+    if (kIdx > 0) pinned[kIdx] = null;
+    pinned[0] = 'klassik';
+  }
+  // Ensure array is always SHORTCUT_SLOTS long
+  while (pinned.length < SHORTCUT_SLOTS) pinned.push(null);
+  app.save.data.pinnedModes = pinned.slice(0, SHORTCUT_SLOTS);
+  app.save.save();
+  updateShortcutGrid();
+  updatePinButton();
+}
+
+/** Render the shortcut grid */
+export function updateShortcutGrid() {
+  const grid = $('#shortcutGrid');
+  if (!grid) return;
+
+  const pinned = app.save.data.pinnedModes || [];
+  // Ensure slot 0 is always klassik
+  if (pinned[0] !== 'klassik') pinned[0] = 'klassik';
+  // Ensure we always have SHORTCUT_SLOTS entries
+  while (pinned.length < SHORTCUT_SLOTS) pinned.push(null);
+
+  grid.innerHTML = '';
+  pinned.slice(0, SHORTCUT_SLOTS).forEach((mode, i) => {
+    const slot = document.createElement('button');
+    slot.className = 'shortcut-slot';
+
+    if (mode && app.save.isModeUnlocked(mode)) {
+      slot.dataset.mode = mode;
+      if (mode === app.selectedMode) slot.classList.add('selected');
+      const svgHTML = getModeSVG(mode);
+      const modeName = t(`mode_${mode}`) || mode.toUpperCase();
+      slot.innerHTML = `<div class="shortcut-visual">${svgHTML}</div><span class="shortcut-name">${modeName}</span>`;
+      slot.addEventListener('click', () => {
+        app.selectedMode = mode;
+        // Sync carousel to this mode
+        const modeIdx = CONFIG.MODE_ORDER.indexOf(mode);
+        if (modeIdx !== -1) goToSlide(modeIdx);
+        updateShortcutGrid();
+        updatePlayTypeSelector();
+        updateHeroStats();
+      });
+    } else {
+      slot.classList.add('empty');
+      slot.innerHTML = `<svg class="shortcut-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`;
+    }
+    grid.appendChild(slot);
+  });
 }
 
 /* ═══════ Hero stats spotlight ═══════ */
@@ -232,31 +468,14 @@ function getUnlockLevel(mode) {
 
 /* ═══════ Mode selector ═══════ */
 export function updateModeSelector() {
-  const { save } = app;
-  $$('.mode-card').forEach(btn => {
-    const mode = btn.dataset.mode;
-    const unlocked = save.isModeUnlocked(mode);
-    btn.classList.toggle('selected', mode === app.selectedMode);
-    btn.classList.toggle('locked', !unlocked);
-    btn.style.display = unlocked ? '' : 'none';
-    /* Show/update "Lv X" label on locked cards */
-    let lockLabel = btn.querySelector('.mode-card-lock-label');
-    if (!unlocked) {
-      if (!lockLabel) {
-        lockLabel = document.createElement('span');
-        lockLabel.className = 'mode-card-lock-label';
-        btn.appendChild(lockLabel);
-      }
-      lockLabel.textContent = `Lv ${getUnlockLevel(mode)}`;
-    } else if (lockLabel) {
-      lockLabel.remove();
-    }
-  });
-  updateHeroCard();
+  /* Sync carousel index to current selectedMode */
+  const modeIdx = CONFIG.MODE_ORDER.indexOf(app.selectedMode);
+  if (modeIdx !== -1) carouselIdx = modeIdx;
+
+  initCarouselListeners();
+  renderCarousel();
+  updateShortcutGrid();
   updateHeroStats();
-  /* Auto-scroll the selected card into view */
-  const selectedCard = $(`.mode-card.selected`);
-  if (selectedCard) selectedCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 }
 
 /* ═══════ Play type selector ═══════ */

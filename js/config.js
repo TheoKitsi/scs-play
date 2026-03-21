@@ -167,6 +167,15 @@ export const CONFIG = {
   UNLOCK_ULTRA:  7,        // Level 8 = 15,000 XP (~5 hrs)
   UNLOCK_COMPETITION: 5,   // Same as expert
 
+  /* ─── Canonical mode order for carousel ─── */
+  MODE_ORDER: [
+    'klassik', 'beginner', 'expert', 'ultra',
+    'mathe', 'algebra',
+    'worte', 'hauptstaedte',
+    'memo', 'sequenz',
+    'stroop', 'fokus', 'chaos'
+  ],
+
   /* ─── Continue (IAP lives) ─── */
   CONTINUE_EXTRA_TIME: 15,
 
