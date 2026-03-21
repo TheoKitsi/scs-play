@@ -249,6 +249,11 @@ body.light-theme .mode-indicator{
   background:rgba(108,92,231,.08);
   color:var(--primary-text);border-color:rgba(108,92,231,.15);
 }
+body.light-theme .mode-rule-label{
+  color:rgba(0,0,0,0.55);
+  background:rgba(0,0,0,0.04);
+  border-color:rgba(0,0,0,0.06);
+}
 body.light-theme .hud-timer{color:var(--text)}
 body.light-theme .hud-label{color:var(--text-dim)}
 body.light-theme .hud-value{color:var(--text)}
@@ -266,6 +271,7 @@ body.light-theme .corner-text{
 body.light-theme .center-text{color:#1a1a2e}
 body.light-theme .math-eq{color:#1a1a2e;text-shadow:0 0 12px rgba(0,0,0,.1)}
 body.light-theme .word-display{color:#1a1a2e;text-shadow:0 0 10px rgba(0,0,0,.08)}
+body.light-theme .capitals-display{color:#1a1a2e;text-shadow:0 0 12px rgba(56,189,248,.15)}
 body.light-theme .memo-question{color:rgba(26,26,46,0.8);text-shadow:0 0 10px rgba(0,0,0,.1)}
 
 /* ─── Center platform ─── */

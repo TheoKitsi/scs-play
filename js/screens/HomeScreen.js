@@ -132,7 +132,8 @@ const MODE_DESC_KEYS = {
   expert: 'mode_expert_desc', ultra: 'mode_ultra_desc',
   mathe: 'mode_mathe_desc', worte: 'mode_worte_desc', memo: 'mode_memo_desc',
   sequenz: 'mode_sequenz_desc',
-  stroop: 'mode_stroop_desc', fokus: 'mode_fokus_desc', chaos: 'mode_chaos_desc'
+  stroop: 'mode_stroop_desc', fokus: 'mode_fokus_desc', chaos: 'mode_chaos_desc',
+  hauptstaedte: 'mode_hauptstaedte_desc', algebra: 'mode_algebra_desc'
 };
 
 const MODE_AURA = {
@@ -147,6 +148,8 @@ const MODE_AURA = {
   stroop:   'rgba(239,68,68,0.28)',
   fokus:    'rgba(139,92,246,0.25)',
   chaos:    'rgba(249,115,22,0.28)',
+  hauptstaedte: 'rgba(56,189,248,0.25)',
+  algebra:  'rgba(251,191,36,0.25)',
 };
 
 export function updateHeroCard() {
@@ -221,6 +224,8 @@ function getUnlockLevel(mode) {
     stroop: CONFIG.UNLOCK_STROOP,
     fokus: CONFIG.UNLOCK_FOKUS,
     chaos: CONFIG.UNLOCK_CHAOS,
+    hauptstaedte: CONFIG.UNLOCK_HAUPTSTAEDTE,
+    algebra: CONFIG.UNLOCK_ALGEBRA,
   };
   return (map[mode] ?? 0) + 1;
 }
@@ -258,7 +263,7 @@ export function updateModeSelector() {
 export function updatePlayTypeSelector() {
   const { save } = app;
   const isSequenz = app.selectedMode === 'sequenz';
-  const isBrainReflex = ['mathe','worte','memo','sequenz','stroop','fokus','chaos'].includes(app.selectedMode);
+  const isBrainReflex = ['mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra'].includes(app.selectedMode);
   /* Sequenz forces endless — auto-select and disable others */
   if (isSequenz && app.selectedPlayType !== 'endless') {
     app.selectedPlayType = 'endless';

@@ -327,6 +327,31 @@
   text-shadow:0 0 15px rgba(255,255,255,.3);
 }
 
+/* ─── Capitals mode - center country display ─── */
+.capitals-display{
+  font-size:clamp(18px, 5vw, 28px);
+  letter-spacing:1px;
+  text-transform:uppercase;
+  font-weight:900;
+  text-shadow:0 0 18px rgba(56,189,248,.35);
+}
+
+/* ─── Capitals mode - corner auto-sizing for long city names ─── */
+.corner-capitals{
+  font-size:clamp(10px, 2.5vw, 16px) !important;
+  letter-spacing:0;
+  word-break:break-word;
+  hyphens:auto;
+  line-height:1.15;
+}
+
+/* ─── Algebra mode - corner styling ─── */
+.corner-algebra{
+  font-family:var(--font-mono,'SF Mono','Menlo','Consolas',monospace);
+  font-size:clamp(12px, 3vw, 18px) !important;
+  letter-spacing:1px;
+}
+
 /* ─── Memo mode — hidden corners (Verdeckte Ecken) ─── */
 .corner-shape.memo-covered{
   background:rgba(255,255,255,0.04) !important;
@@ -409,6 +434,14 @@
 @keyframes nearMissHint{
   0%,10%{box-shadow:0 0 25px rgba(46,213,115,.6);border-color:rgba(46,213,115,.7)}
   100%{box-shadow:none;border-color:rgba(255,255,255,.08)}
+}
+
+/* ─── Correct answer flash — briefly enlarges on wrong answer ─── */
+.corner-text.correct-flash{
+  transform:scale(1.35);
+  color:#2ED573 !important;
+  text-shadow:0 0 14px rgba(46,213,115,.6) !important;
+  transition:transform .15s ease-out, color .1s ease-out;
 }
 
 /* ─── Score popup at corner position ─── */
@@ -527,6 +560,9 @@
   .math-eq{font-size:22px}
   .word-display{font-size:18px}
   .corner-shape.memo-covered::after{font-size:22px}
+  .capitals-display{font-size:18px}
+  .corner-capitals{font-size:10px !important}
+  .corner-algebra{font-size:12px !important}
 }
 
 /* ═══════════════════════════════════════════

@@ -158,7 +158,8 @@ export class GameEngine {
   }
 
   get contentType() {
-    if (this.mode === 'mathe') return 'math';
+    if (this.mode === 'mathe' || this.mode === 'algebra') return 'math';
+    if (this.mode === 'hauptstaedte') return 'capitals';
     if (this.mode === 'worte') return 'word';
     if (this.mode === 'stroop') return 'stroop';
     if (this.mode === 'fokus') return 'fokus';
@@ -167,7 +168,7 @@ export class GameEngine {
   }
 
   get isBrainMode() {
-    return this.mode === 'mathe' || this.mode === 'worte';
+    return this.mode === 'mathe' || this.mode === 'worte' || this.mode === 'hauptstaedte' || this.mode === 'algebra';
   }
 
   get isReflexMode() {
@@ -218,7 +219,8 @@ export class GameEngine {
     if (this.mode === 'expert')   return CONFIG.DIRECTIONS_EXPERT;
     if (this.mode === 'klassik')  return CONFIG.DIRECTIONS_KLASSIK;
     if (this.mode === 'mathe' || this.mode === 'worte' || this.mode === 'memo' || this.mode === 'sequenz'
-        || this.mode === 'stroop' || this.mode === 'fokus' || this.mode === 'chaos')
+        || this.mode === 'stroop' || this.mode === 'fokus' || this.mode === 'chaos'
+        || this.mode === 'hauptstaedte' || this.mode === 'algebra')
       return CONFIG.DIRECTIONS_4;
     return CONFIG.DIRECTIONS_BEGINNER;
   }
@@ -316,6 +318,32 @@ export class GameEngine {
       dirs.forEach((d, i) => {
         this.cornerMap[d] = {
           display: '?', value: 0, type: 'math',
+          color: CONFIG.COLORS.normal[i],
+          colorblind: CONFIG.COLORS.colorblind[i],
+          colorIndex: i
+        };
+      });
+      return;
+    }
+
+    if (this.mode === 'algebra') {
+      this.cornerMap = {};
+      dirs.forEach((d, i) => {
+        this.cornerMap[d] = {
+          display: '?', value: 0, type: 'algebra',
+          color: CONFIG.COLORS.normal[i],
+          colorblind: CONFIG.COLORS.colorblind[i],
+          colorIndex: i
+        };
+      });
+      return;
+    }
+
+    if (this.mode === 'hauptstaedte') {
+      this.cornerMap = {};
+      dirs.forEach((d, i) => {
+        this.cornerMap[d] = {
+          display: '?', value: '', type: 'capitals',
           color: CONFIG.COLORS.normal[i],
           colorblind: CONFIG.COLORS.colorblind[i],
           colorIndex: i
@@ -561,6 +589,8 @@ export class GameEngine {
     }
 
     if (this.mode === 'mathe')  { this._spawnMath();  return; }
+    if (this.mode === 'algebra') { this._spawnAlgebra(); return; }
+    if (this.mode === 'hauptstaedte') { this._spawnHauptstaedte(); return; }
     if (this.mode === 'worte')  { this._spawnWord();  return; }
     if (this.mode === 'stroop') { this._spawnStroop(); return; }
     if (this.mode === 'fokus')  { this._spawnFokus();  return; }
@@ -692,6 +722,243 @@ export class GameEngine {
       } else {
         this.cornerMap[d].display = String(distractors[dIdx]);
         this.cornerMap[d].value = distractors[dIdx];
+        dIdx++;
+      }
+    });
+
+    let bonus = null;
+    if (!this.practice) {
+      const roll = this.rng();
+      if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
+      else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
+    }
+
+    this.currentShape = {
+      direction: correctDir, display: equation, type: 'math',
+      color: this.cornerMap[correctDir].color,
+      colorblind: this.cornerMap[correctDir].colorblind,
+      bonus
+    };
+    this.bonusType = bonus;
+    this.lastSpawnTime = performance.now();
+
+    if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
+    if (this.onSpawn) this.onSpawn(this.currentShape);
+    this._scheduleSpawn();
+  }
+
+  /* ═══ HAUPTSTÄDTE (Capitals) spawn ═══ */
+  _getCapitalsTier() {
+    const tiers = CONFIG.CAPITALS_TIERS;
+    let tier = tiers[0];
+    for (const t of tiers) { if (this.correct >= t.threshold) tier = t; }
+    const timeIdx = Math.min(tiers.length - 1, Math.floor(this.elapsed / 20));
+    if (tiers.indexOf(tiers[timeIdx]) > tiers.indexOf(tier)) tier = tiers[timeIdx];
+    return tiers.indexOf(tier);
+  }
+
+  _spawnHauptstaedte() {
+    const dirs = this.directions;
+    const lang = this._lang || 'de';
+    const bank = CONFIG.CAPITALS_BANK;
+    const tierIdx = this._getCapitalsTier();
+
+    /* Filter pool: allow entries up to current tier */
+    const pool = bank.filter(e => e.tier <= tierIdx);
+    /* Pick a random entry */
+    const entry = pool[Math.floor(this.rng() * pool.length)];
+    const countryName = lang === 'en' ? entry.country_en : entry.country_de;
+    const correctCapital = lang === 'en' && entry.capital_en ? entry.capital_en : entry.capital;
+
+    /* Generate 3 distractor capitals from same region first, then fill from global pool */
+    const sameRegion = bank.filter(e => e.region === entry.region && e !== entry);
+    const otherPool = bank.filter(e => e.region !== entry.region);
+    const distractorEntries = [];
+    const usedCapitals = new Set([correctCapital]);
+
+    /* Prefer same-region distractors (plausible wrong answers) */
+    const shuffledRegion = shuffle(sameRegion, this.rng);
+    for (const d of shuffledRegion) {
+      if (distractorEntries.length >= 3) break;
+      const cap = lang === 'en' && d.capital_en ? d.capital_en : d.capital;
+      if (!usedCapitals.has(cap)) {
+        distractorEntries.push(cap);
+        usedCapitals.add(cap);
+      }
+    }
+    /* Fill remaining with global pool */
+    const shuffledGlobal = shuffle(otherPool, this.rng);
+    for (const d of shuffledGlobal) {
+      if (distractorEntries.length >= 3) break;
+      const cap = lang === 'en' && d.capital_en ? d.capital_en : d.capital;
+      if (!usedCapitals.has(cap)) {
+        distractorEntries.push(cap);
+        usedCapitals.add(cap);
+      }
+    }
+
+    /* Place correct + distractors into corners */
+    const correctIdx = Math.floor(this.rng() * dirs.length);
+    const correctDir = dirs[correctIdx];
+    let dIdx = 0;
+    dirs.forEach((d, i) => {
+      if (i === correctIdx) {
+        this.cornerMap[d].display = correctCapital;
+        this.cornerMap[d].value = correctCapital;
+      } else {
+        this.cornerMap[d].display = distractorEntries[dIdx] || '???';
+        this.cornerMap[d].value = distractorEntries[dIdx] || '';
+        dIdx++;
+      }
+    });
+
+    let bonus = null;
+    if (!this.practice) {
+      const roll = this.rng();
+      if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
+      else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
+    }
+
+    this.currentShape = {
+      direction: correctDir, display: countryName, type: 'capitals',
+      color: this.cornerMap[correctDir].color,
+      colorblind: this.cornerMap[correctDir].colorblind,
+      bonus
+    };
+    this.bonusType = bonus;
+    this.lastSpawnTime = performance.now();
+
+    if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
+    if (this.onSpawn) this.onSpawn(this.currentShape);
+    this._scheduleSpawn();
+  }
+
+  /* ═══ ALGEBRA spawn ═══ */
+  _getAlgebraPhase() {
+    const phases = CONFIG.ALGEBRA_PHASES;
+    let phase = phases[0];
+    for (const p of phases) { if (this.correct >= p.threshold) phase = p; }
+    const timeIdx = Math.min(phases.length - 1, Math.floor(this.elapsed / 20));
+    if (phases.indexOf(phases[timeIdx]) > phases.indexOf(phase)) phase = phases[timeIdx];
+    return phase;
+  }
+
+  _generateAlgebraEquation(phase) {
+    switch (phase.type) {
+      case 'linear_add': {
+        /* ax + b = c → solve for x */
+        const a = Math.floor(this.rng() * 8) + 2;    /* 2-9 */
+        const x = Math.floor(this.rng() * 10) + 1;    /* 1-10 */
+        const b = Math.floor(this.rng() * 15) + 1;    /* 1-15 */
+        const c = a * x + b;
+        return { equation: `${a}x + ${b} = ${c}`, answer: x, answerDisplay: String(x) };
+      }
+      case 'linear_sub': {
+        /* ax - b = c → solve for x */
+        const a = Math.floor(this.rng() * 8) + 2;
+        const x = Math.floor(this.rng() * 10) + 2;    /* 2-11: ensure ax > b */
+        const b = Math.floor(this.rng() * (a * x - 1)) + 1;
+        const c = a * x - b;
+        return { equation: `${a}x \u2212 ${b} = ${c}`, answer: x, answerDisplay: String(x) };
+      }
+      case 'two_step': {
+        /* (a + b) × c = ? */
+        const a = Math.floor(this.rng() * 12) + 1;
+        const b = Math.floor(this.rng() * 12) + 1;
+        const c = Math.floor(this.rng() * 8) + 2;
+        const answer = (a + b) * c;
+        return { equation: `(${a} + ${b}) \u00D7 ${c}`, answer, answerDisplay: String(answer) };
+      }
+      case 'square': {
+        /* x² = n → x = ? (use only perfect squares) */
+        const squares = CONFIG.ALGEBRA_PERFECT_SQUARES;
+        const n = squares[Math.floor(this.rng() * squares.length)];
+        const x = Math.round(Math.sqrt(n));
+        return { equation: `x\u00B2 = ${n}`, answer: x, answerDisplay: String(x) };
+      }
+      case 'sqrt': {
+        /* √n = ? */
+        const squares = CONFIG.ALGEBRA_PERFECT_SQUARES;
+        const n = squares[Math.floor(this.rng() * squares.length)];
+        const answer = Math.round(Math.sqrt(n));
+        return { equation: `\u221A${n}`, answer, answerDisplay: String(answer) };
+      }
+      case 'power': {
+        /* aⁿ = ? */
+        const powers = CONFIG.ALGEBRA_POWERS;
+        const p = powers[Math.floor(this.rng() * powers.length)];
+        const exp = p.exps[Math.floor(this.rng() * p.exps.length)];
+        const answer = Math.pow(p.base, exp);
+        const superscript = String(exp).split('').map(d => '\u2070\u00B9\u00B2\u00B3\u2074\u2075\u2076\u2077\u2078\u2079'[+d]).join('');
+        return { equation: `${p.base}${superscript}`, answer, answerDisplay: String(answer) };
+      }
+      case 'fraction_add': {
+        /* a/b + c/d = rn/rd (pre-computed fractions for clean results) */
+        const fracs = CONFIG.ALGEBRA_FRACTIONS;
+        const f = fracs[Math.floor(this.rng() * fracs.length)];
+        const equation = `${f.a}/${f.b} + ${f.c}/${f.d}`;
+        /* Use numeric answer for distractor generation; display fraction result */
+        const answer = f.rd === 1 ? f.rn : f.rn / f.rd;
+        const answerDisplay = f.rd === 1 ? String(f.rn) : `${f.rn}/${f.rd}`;
+        return { equation, answer, answerDisplay, isFraction: f.rd !== 1, rn: f.rn, rd: f.rd };
+      }
+      default:
+        return this._generateAlgebraEquation(CONFIG.ALGEBRA_PHASES[0]);
+    }
+  }
+
+  _generateAlgebraDistractors(correct, count, isFraction, rn, rd) {
+    if (isFraction) {
+      /* For fraction answers, generate plausible fraction distractors */
+      const set = new Set();
+      const tryAdd = (n, d) => {
+        const key = `${n}/${d}`;
+        const val = n / d;
+        if (val > 0 && Math.abs(val - correct) > 0.001 && !set.has(key)) set.add(key);
+      };
+      /* Common fraction mistakes */
+      tryAdd(rn + 1, rd);
+      tryAdd(Math.max(1, rn - 1), rd);
+      tryAdd(rn, rd + 1);
+      tryAdd(rn, Math.max(1, rd - 1));
+      tryAdd(rd, rn); /* swapped */
+      tryAdd(rn + rd, rd);
+      tryAdd(rn, rn + rd);
+      /* Fill remaining */
+      for (let i = 1; set.size < count; i++) {
+        tryAdd(rn + i, rd);
+        if (set.size < count) tryAdd(Math.max(1, rn - i), rd);
+        if (set.size < count) tryAdd(rn + i, rd + 1);
+      }
+      const arr = [...set].slice(0, count);
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(this.rng() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr; /* returns string fractions like "3/4" */
+    }
+    /* Integer answers: reuse math distractor generator */
+    return this._generateDistractors(correct, count);
+  }
+
+  _spawnAlgebra() {
+    const dirs = this.directions;
+    const phase = this._getAlgebraPhase();
+    const { equation, answer, answerDisplay, isFraction, rn, rd } = this._generateAlgebraEquation(phase);
+    const correctIdx = Math.floor(this.rng() * dirs.length);
+    const correctDir = dirs[correctIdx];
+
+    const distractors = this._generateAlgebraDistractors(answer, dirs.length - 1, isFraction, rn, rd);
+
+    let dIdx = 0;
+    dirs.forEach((d, i) => {
+      if (i === correctIdx) {
+        this.cornerMap[d].display = answerDisplay;
+        this.cornerMap[d].value = answer;
+      } else {
+        const dist = distractors[dIdx];
+        this.cornerMap[d].display = String(dist);
+        this.cornerMap[d].value = isFraction ? parseFloat(dist) || 0 : dist;
         dIdx++;
       }
     });

@@ -120,7 +120,8 @@ export function renderCorners(cornerMap, forceAll = false) {
     }
 
     if (isText) {
-      el.innerHTML = `<span class="corner-text">${info.display}</span>`;
+      const extraCls = info.type === 'capitals' ? ' corner-capitals' : info.type === 'algebra' ? ' corner-algebra' : '';
+      el.innerHTML = `<span class="corner-text${extraCls}">${info.display}</span>`;
       el.dataset.value = info.value;
     } else {
       el.textContent = '';
@@ -151,8 +152,26 @@ export function renderCenter(shapeData) {
 
   /* Brain & reflex modes: use neutral platform glow so it doesn't reveal the answer */
   const isBrainLike = shapeData.type === 'math' || shapeData.type === 'word'
-    || shapeData.type === 'stroop' || shapeData.type === 'fokus' || shapeData.type === 'chaos';
+    || shapeData.type === 'stroop' || shapeData.type === 'fokus' || shapeData.type === 'chaos'
+    || shapeData.type === 'capitals';
   const platformColor = isBrainLike ? NEUTRAL_PLATFORM_COLOR : color;
+
+  /* ── CAPITALS: show country name as center stimulus ── */
+  if (shapeData.type === 'capitals') {
+    let span = center.firstChild;
+    if (!span || span.tagName !== 'SPAN') {
+      center.innerHTML = '';
+      span = document.createElement('span');
+      center.appendChild(span);
+    }
+    span.className = 'center-text capitals-display';
+    span.textContent = shapeData.display;
+    center.className = 'center-shape pop-in spawn-pop';
+    if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
+    if (platform) { applyPlatformColor(platform, platformColor); platform.classList.add('platform-active'); }
+    if (!inRush) spawnBurstParticles(platformColor);
+    return;
+  }
 
   if (shapeData.type === 'math' || shapeData.type === 'word') {
     const cls = shapeData.type === 'math' ? 'math-eq' : 'word-display';
@@ -481,6 +500,13 @@ function showNearMiss(correctDir) {
   corner.classList.remove('near-miss-hint');
   requestAnimationFrame(() => { corner.classList.add('near-miss-hint'); });
   setTimeout(() => corner.classList.remove('near-miss-hint'), 600);
+
+  /* Briefly enlarge the correct corner text so player sees the right answer */
+  const textEl = corner.querySelector('.corner-text');
+  if (textEl) {
+    textEl.classList.add('correct-flash');
+    setTimeout(() => textEl.classList.remove('correct-flash'), 400);
+  }
 }
 
 /* ═══════ Corner score pop — pooled ═══════ */
@@ -530,7 +556,7 @@ function cornerScorePop(dir, text) {
 function _showModeInstruction(mode, onDone) {
   const overlay = $('#modeInstructionOverlay');
   if (!overlay) { onDone(); return; }
-  const icons = { mathe:'🧮', worte:'📝', memo:'🧠', sequenz:'🔔', stroop:'🎨', fokus:'🎯', chaos:'🌀' };
+  const icons = { mathe:'🧮', worte:'📝', memo:'🧠', sequenz:'🔔', stroop:'🎨', fokus:'🎯', chaos:'🌀', hauptstaedte:'🌍', algebra:'📐' };
   const iconEl = $('#modeInstructionIcon');
   const titleEl = $('#modeInstructionTitle');
   const textEl = $('#modeInstructionText');
@@ -619,13 +645,26 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
 
   const modeIndicator = $('#modeIndicator');
   if (modeIndicator) {
-    const modeIcons = { beginner:'🟢', klassik:'🔵', expert:'🔷', ultra:'💎', mathe:'🧮', worte:'📝', memo:'🧠', sequenz:'🔔', stroop:'🎨', fokus:'🎯', chaos:'🌀' };
-    const modeLabels = { klassik: t('mode_klassik'), beginner: t('mode_beginner'), mathe: t('mode_mathe'), worte: t('mode_worte'), memo: t('mode_memo'), sequenz: t('mode_sequenz'), stroop: t('mode_stroop'), fokus: t('mode_fokus'), chaos: t('mode_chaos') };
+    const modeIcons = { beginner:'🟢', klassik:'🔵', expert:'🔷', ultra:'💎', mathe:'🧮', worte:'📝', memo:'🧠', sequenz:'🔔', stroop:'🎨', fokus:'🎯', chaos:'🌀', hauptstaedte:'🌍', algebra:'📐' };
+    const modeLabels = { klassik: t('mode_klassik'), beginner: t('mode_beginner'), mathe: t('mode_mathe'), worte: t('mode_worte'), memo: t('mode_memo'), sequenz: t('mode_sequenz'), stroop: t('mode_stroop'), fokus: t('mode_fokus'), chaos: t('mode_chaos'), hauptstaedte: t('mode_hauptstaedte'), algebra: t('mode_algebra') };
     const icon = modeIcons[app.selectedMode] || '';
     if (modeLabels[app.selectedMode]) modeIndicator.textContent = `${icon} ${modeLabels[app.selectedMode]}`;
     else {
       const dirCount = app.selectedMode === 'ultra' ? 12 : app.selectedMode === 'expert' ? 8 : 4;
       modeIndicator.textContent = `${icon} ${dirCount}-DIR`;
+    }
+  }
+
+  /* Persistent rule label — shows the mode's core instruction */
+  const ruleLabelEl = $('#modeRuleLabel');
+  if (ruleLabelEl) {
+    const lang = getLanguage();
+    const labels = CONFIG.RULE_LABELS[lang] || CONFIG.RULE_LABELS.de;
+    const label = labels[app.selectedMode] || '';
+    ruleLabelEl.textContent = label;
+    ruleLabelEl.classList.remove('faded');
+    if (label) {
+      setTimeout(() => ruleLabelEl.classList.add('faded'), 3000);
     }
   }
 
@@ -699,7 +738,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
   }
 
   /* Brain & Reflex modes: show instruction overlay for first 5 plays */
-  const instructionModes = ['mathe','worte','memo','sequenz','stroop','fokus','chaos'];
+  const instructionModes = ['mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra'];
   const instrViews = save.getInstructionViews(app.selectedMode);
   const showInstr = instructionModes.includes(app.selectedMode) && !practice && instrViews < 5;
   if (showInstr) {
@@ -1321,7 +1360,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     /* P4 fix: For brain modes (math/word) use a neutral accent color instead of
        the corner item color, since the center shows text not a colored shape */
     let color;
-    if (shape && (shape.type === 'math' || shape.type === 'word')) {
+    if (shape && (shape.type === 'math' || shape.type === 'word' || shape.type === 'capitals')) {
       color = getComputedStyle(document.documentElement).getPropertyValue('--primary-glow').trim() || '#9D4EDD';
     } else {
       color = shape ? (app.colorblind ? shape.colorblind : shape.color) : '#ffffff';

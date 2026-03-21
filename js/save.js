@@ -165,7 +165,7 @@ export class SaveService {
           if (cloud.dailyChallenges) {
             this.data.dailyChallenges = { ...this.data.dailyChallenges, ...cloud.dailyChallenges };
           }
-          ['scores_klassik','scores_beginner','scores_expert','scores_ultra','scores_mathe','scores_worte','scores_memo','scores_sequenz','scores_stroop','scores_fokus','scores_chaos'].forEach(k => {
+          ['scores_klassik','scores_beginner','scores_expert','scores_ultra','scores_mathe','scores_worte','scores_memo','scores_sequenz','scores_stroop','scores_fokus','scores_chaos','scores_hauptstaedte','scores_algebra'].forEach(k => {
             const ck = k === 'scores_beginner' ? (cloud[k] || cloud.scores_indie) : cloud[k];
             if (ck) this.data[k] = this._mergeScores(this.data[k] || [], ck);
           });
@@ -473,6 +473,8 @@ export class SaveService {
     if (mode === 'stroop')   return this.data.level >= (CONFIG.UNLOCK_STROOP || 0);
     if (mode === 'fokus')    return this.data.level >= (CONFIG.UNLOCK_FOKUS || 0);
     if (mode === 'chaos')    return this.data.level >= (CONFIG.UNLOCK_CHAOS || 0);
+    if (mode === 'hauptstaedte') return this.data.level >= (CONFIG.UNLOCK_HAUPTSTAEDTE || 0);
+    if (mode === 'algebra')  return this.data.level >= (CONFIG.UNLOCK_ALGEBRA || 0);
     return false;
   }
 

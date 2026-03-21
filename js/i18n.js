@@ -220,6 +220,21 @@ const S = {
     instr_stroop:'Ignoriere das Wort! Wische zur FARBE, in der das Wort geschrieben ist.',
     instr_fokus:'Achte nur auf den MITTLEREN Pfeil! Die äußeren Pfeile lenken ab.',
     instr_chaos:'Die Regel wechselt! Sortiere nach dem, was die Anzeige oben verlangt.',
+    /* Hauptstädte mode */
+    mode_hauptstaedte:'HAUPTSTÄDTE', mode_hauptstaedte_desc:'Welche Hauptstadt gehört zum Land?',
+    instr_hauptstaedte:'Ein Land erscheint – wische zur richtigen Hauptstadt!',
+    hauptstaedte:'Hauptstädte', pb_hauptstaedte:'PB Hauptstädte',
+    /* Algebra mode */
+    mode_algebra:'ALGEBRA', mode_algebra_desc:'Löse Gleichungen mit Unbekannten!',
+    instr_algebra:'Löse die Gleichung und wische zur richtigen Lösung!',
+    algebra:'Algebra', pb_algebra:'PB Algebra',
+    /* Clarity overhaul labels */
+    rule_label:'Regel', phase_warning:'ACHTUNG!',
+    worte_stroop_warn:'Wortfarbe ignorieren – lies das Wort!',
+    chaos_new_rule:'NEUE REGEL!', chaos_rule_unlocked:'Neue Regel freigeschaltet!',
+    sequenz_your_turn:'JETZT DU!', sequenz_faster:'SCHNELLER!',
+    memo_memorize:'MERKEN!', memo_new_positions:'Neue Positionen!',
+    wrong_answer_hint:'Richtig war:',
     chaos_rule_color:'FARBE', chaos_rule_shape:'FORM', chaos_rule_size:'GRÖSSE', chaos_rule_math:'MATHE', chaos_rule_stroop:'STROOP',
     mathe:'Mathe', worte:'Wörter', memo:'Memo', sequenz:'Sequenz',
     pb_mathe:'PB Mathe', pb_worte:'PB Wörter', pb_memo:'PB Memo', pb_sequenz:'PB Sequenz',
@@ -589,6 +604,21 @@ const S = {
     instr_stroop:'Ignore the word! Swipe toward the COLOR the word is written in.',
     instr_fokus:'Focus on the CENTER arrow only! The surrounding arrows are distractors.',
     instr_chaos:'The rule changes! Sort by whatever the top banner says.',
+    /* Capitals mode */
+    mode_hauptstaedte:'CAPITALS', mode_hauptstaedte_desc:'Match the country to its capital!',
+    instr_hauptstaedte:'A country appears – swipe to the correct capital!',
+    hauptstaedte:'Capitals', pb_hauptstaedte:'PB Capitals',
+    /* Algebra mode */
+    mode_algebra:'ALGEBRA', mode_algebra_desc:'Solve equations with unknowns!',
+    instr_algebra:'Solve the equation and swipe to the correct answer!',
+    algebra:'Algebra', pb_algebra:'PB Algebra',
+    /* Clarity overhaul labels */
+    rule_label:'Rule', phase_warning:'ATTENTION!',
+    worte_stroop_warn:'Ignore word color – read the word!',
+    chaos_new_rule:'NEW RULE!', chaos_rule_unlocked:'New rule unlocked!',
+    sequenz_your_turn:'YOUR TURN!', sequenz_faster:'FASTER!',
+    memo_memorize:'MEMORIZE!', memo_new_positions:'New positions!',
+    wrong_answer_hint:'Correct was:',
     chaos_rule_color:'COLOR', chaos_rule_shape:'SHAPE', chaos_rule_size:'SIZE', chaos_rule_math:'MATH', chaos_rule_stroop:'STROOP',
     mathe:'Math', worte:'Words', memo:'Memo', sequenz:'Sequence',
     pb_mathe:'PB Math', pb_worte:'PB Words', pb_memo:'PB Memo', pb_sequenz:'PB Sequence',

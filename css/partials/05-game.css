@@ -367,6 +367,29 @@
   box-shadow: 0 4px 12px rgba(124,58,237,0.1);
   text-shadow: none;
 }
+
+/* Persistent rule label — fades to subtle after 3s */
+.mode-rule-label{
+  font-family: 'Space Grotesk', sans-serif;
+  font-size:0.7rem;
+  font-weight:600;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.7);
+  padding:4px 12px;
+  border-radius:16px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.08);
+  transition:opacity 1.5s ease;
+  opacity:0.85;
+  pointer-events:none;
+}
+.mode-rule-label.faded{
+  opacity:0.35;
+}
+.mode-rule-label:empty{
+  display:none;
+}
 .hud-timer{
   font-family: 'Space Grotesk', sans-serif;
   font-size:2.2rem;

@@ -296,11 +296,23 @@
           </div>
           <span class="mode-card-name" data-i18n="mode_mathe">MATHE</span>
         </button>
+        <button class="mode-card" data-mode="algebra">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><rect x="2" y="2" width="48" height="48" rx="10" fill="none" stroke="#FBBF24" stroke-width="1.5" opacity=".35"/><text x="26" y="23" fill="#FBBF24" font-size="9" font-weight="700" text-anchor="middle" opacity=".9">x&#xB2;=9</text><text x="26" y="38" fill="white" font-size="7" text-anchor="middle" opacity=".5">x=?</text></svg>
+          </div>
+          <span class="mode-card-name" data-i18n="mode_algebra">ALGEBRA</span>
+        </button>
         <button class="mode-card" data-mode="worte">
           <div class="mode-card-visual">
             <svg viewBox="0 0 52 52"><rect x="2" y="2" width="20" height="20" rx="6" fill="#FF4757" opacity=".6"/><rect x="30" y="2" width="20" height="20" rx="6" fill="#3742FA" opacity=".6"/><rect x="2" y="30" width="20" height="20" rx="6" fill="#2ED573" opacity=".6"/><rect x="30" y="30" width="20" height="20" rx="6" fill="#FFA502" opacity=".6"/><text x="26" y="30" fill="white" font-size="8" font-weight="600" text-anchor="middle" opacity=".6">Abc</text></svg>
           </div>
           <span class="mode-card-name" data-i18n="mode_worte">W&#214;RTER</span>
+        </button>
+        <button class="mode-card" data-mode="hauptstaedte">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="20" fill="none" stroke="#38BDF8" stroke-width="1.5" opacity=".35"/><ellipse cx="26" cy="26" rx="20" ry="10" fill="none" stroke="#38BDF8" stroke-width="1" opacity=".25"/><line x1="26" y1="6" x2="26" y2="46" stroke="#38BDF8" stroke-width="1" opacity=".25"/><circle cx="18" cy="22" r="2" fill="#38BDF8" opacity=".7"/><text x="26" y="34" fill="white" font-size="6" text-anchor="middle" opacity=".5">Capital?</text></svg>
+          </div>
+          <span class="mode-card-name" data-i18n="mode_hauptstaedte">HAUPTST&#196;DTE</span>
         </button>
         <button class="mode-card" data-mode="sequenz">
           <div class="mode-card-visual">
@@ -550,6 +562,7 @@
     <div class="hud-top">
       <button id="btnPause" class="btn-pause" aria-label="Pause"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-pause"></use></svg></button>
       <div id="modeIndicator" class="mode-indicator">4-DIR</div>
+      <div id="modeRuleLabel" class="mode-rule-label"></div>
       <div id="hudTimer" class="hud-timer">30</div>
     </div>
     <div class="hud-scores">

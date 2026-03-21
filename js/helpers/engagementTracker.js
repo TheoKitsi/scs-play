@@ -315,7 +315,7 @@ export class EngagementTracker {
     const medianSessionMin = this._median(recentSessions.map(s => s.durationSec / 60));
 
     // Score trends across all modes
-    const modes = ['klassik', 'beginner', 'expert', 'ultra', 'mathe', 'worte', 'memo', 'sequenz', 'stroop', 'fokus', 'chaos'];
+    const modes = ['klassik', 'beginner', 'expert', 'ultra', 'mathe', 'worte', 'memo', 'sequenz', 'stroop', 'fokus', 'chaos', 'hauptstaedte', 'algebra'];
     const trends = {};
     let trendSum = 0, trendCount = 0;
     for (const m of modes) {
