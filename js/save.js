@@ -194,8 +194,34 @@ export class SaveService {
   async save() {
     localStorage.setItem(KEY, JSON.stringify(this.data));
     if (this.auth && !this.auth.isGuest) {
-      try { await this.auth.cloudSave('saves', this.data); } catch {}
+      try { await this.auth.cloudSave('saves', this.data); } catch (e) {
+        this._showSyncToast();
+      }
     }
+  }
+
+  _showSyncToast() {
+    let c = document.getElementById('toastContainer');
+    if (!c) {
+      c = document.createElement('div');
+      c.id = 'toastContainer';
+      c.className = 'toast-container';
+      c.setAttribute('role', 'status');
+      c.setAttribute('aria-live', 'polite');
+      document.body.appendChild(c);
+    }
+    const el = document.createElement('div');
+    el.className = 'achievement-toast cat-special';
+    el.style.animationDuration = '5000ms';
+    el.innerHTML = `<span class="toast-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-close"></use></svg></span><span class="toast-text">${this._t('sync_failed')}</span>`;
+    c.appendChild(el);
+    while (c.children.length > 3) c.removeChild(c.firstChild);
+    el.addEventListener('animationend', () => { if (el.parentNode) el.remove(); });
+  }
+
+  _t(key) {
+    const msgs = { sync_failed: navigator.language?.startsWith('de') ? 'Cloud-Sync fehlgeschlagen – lokal gespeichert' : 'Cloud sync failed – saved locally' };
+    return msgs[key] || key;
   }
 
   /* ─── Score ─── */

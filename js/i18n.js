@@ -401,6 +401,8 @@ const S = {
     share_copied:'Kopiert!',
     share_unavailable:'Teilen nicht möglich – Text anzeigen',
     share_copy_prompt:'Text zum Kopieren:',
+    /* Sync */
+    sync_failed:'Cloud-Sync fehlgeschlagen \u2013 lokal gespeichert',
   },
   en: {
     app_title:'SCS Play', app_sub:'Sort · Think · React',
@@ -787,6 +789,8 @@ const S = {
     share_copied:'Copied!',
     share_unavailable:'Share unavailable',
     share_copy_prompt:'Copy this text:',
+    /* Sync */
+    sync_failed:'Cloud sync failed \u2013 saved locally',
   }
 };
 

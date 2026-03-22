@@ -4,6 +4,8 @@
  *  gracefully falls back to guest-only mode.
  */
 
+import { t } from './i18n.js';
+
 /* ══════════════════════════════════════════════════════
  *  🔧  FIREBASE CONFIG — fill in YOUR project values
  * ══════════════════════════════════════════════════════ */
@@ -62,7 +64,7 @@ export class AuthService {
           if (u) {
             this.user = {
               id:       u.uid,
-              name:     u.displayName || u.email?.split('@')[0] || 'User',
+              name:     u.displayName || u.email?.split('@')[0] || t('guest_short'),
               email:    u.email,
               provider: u.providerData?.[0]?.providerId || 'firebase'
             };
@@ -116,7 +118,7 @@ export class AuthService {
   signInAsGuest() {
     this.user = {
       id:       'guest_' + Date.now(),
-      name:     'Gast',
+      name:     t('guest_short'),
       email:    null,
       provider: 'guest'
     };

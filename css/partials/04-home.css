@@ -86,8 +86,8 @@
   display:flex;flex-direction:column;gap:1px;min-width:0;
 }
 .home-greeting{
-  font-size:0.58rem;font-weight:500;
-  color:rgba(255,255,255,0.6);
+  font-size:0.68rem;font-weight:500;
+  color:rgba(255,255,255,0.7);
 }
 .htb-left .user-info-badge{
   font-size:0.72rem;font-weight:700;
@@ -180,12 +180,15 @@
   text-shadow:0 4px 24px rgba(0,0,0,0.7);
 }
 .hero-mode-subtitle{
-  font-size:0.65rem;
+  font-size:0.7rem;
   color:var(--text-dim);
   margin:0;
   font-weight:600;
   line-height:1.2;
   max-width:280px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 .hero-badges{
   display:flex;align-items:center;gap:8px;margin-top:2px;
@@ -249,12 +252,12 @@
 .ad-banner.hidden{display:none}
 .ad-banner-text{
   position:absolute;top:2px;right:6px;
-  font-size:.45rem;letter-spacing:1.5px;text-transform:uppercase;
-  color:var(--text-muted);opacity:.25;
+  font-size:.6rem;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--text-muted);opacity:.45;
 }
 .ad-banner-placeholder{
   display:flex;align-items:center;gap:6px;
-  font-size:.6rem;color:var(--text-muted);opacity:.35;
+  font-size:.65rem;color:var(--text-muted);opacity:.5;
   white-space:nowrap;
 }
 
@@ -337,7 +340,7 @@
 }
 .mode-card-name{
   font-family:'Space Grotesk',sans-serif;
-  font-size:clamp(0.38rem,0.8vh,0.5rem);
+  font-size:clamp(0.5rem,0.8vh,0.58rem);
   font-weight:800;
   white-space:nowrap;
   letter-spacing:0.3px;
@@ -357,16 +360,16 @@
 .mode-card-lock-label{
   position:absolute;bottom:2px;
   font-family:'Space Grotesk',sans-serif;
-  font-size:0.4rem;font-weight:900;letter-spacing:0.5px;
-  color:var(--text-muted);opacity:0.8;
+  font-size:0.55rem;font-weight:900;letter-spacing:0.5px;
+  color:var(--text-muted);opacity:0.9;
   text-transform:uppercase;pointer-events:none;
 }
 .mode-card-soon{
   position:absolute;top:1px;right:3px;
   font-family:'Space Grotesk',sans-serif;
-  font-size:0.38rem;font-weight:900;letter-spacing:0.8px;
+  font-size:0.5rem;font-weight:900;letter-spacing:0.8px;
   color:var(--accent-glow,#EC4899);
-  text-transform:uppercase;opacity:0.8;
+  text-transform:uppercase;opacity:0.9;
 }
 
 /* ═══ PLAY TYPE SELECTOR ═══ */
@@ -382,7 +385,7 @@
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
   padding:3px 3px;border-radius:6px;
   font-family:'Space Grotesk',sans-serif;text-transform:uppercase;
-  font-size:.55rem;font-weight:800;color:var(--text-dim);
+  font-size:.62rem;font-weight:800;color:var(--text-dim);
   background:transparent;border:1px solid rgba(255,255,255,0.08);cursor:pointer;
   transition:all .3s var(--ease-bounce, cubic-bezier(0.34,1.56,0.64,1));
   box-shadow:0 2px 8px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.06);
@@ -398,7 +401,7 @@
   opacity:0.9;line-height:1;min-height:16px;
   display:flex;align-items:center;justify-content:center;
 }
-.play-type-name{font-size:.5rem;font-weight:900;letter-spacing:.3px;white-space:nowrap;}
+.play-type-name{font-size:.58rem;font-weight:900;letter-spacing:.3px;white-space:nowrap;}
 .play-type-btn.selected{
   background:rgba(124,58,237,0.15);
   color:var(--text);
@@ -419,7 +422,7 @@
 .play-type-btn.locked{opacity:.5;cursor:not-allowed;filter:grayscale(1);pointer-events:none}
 .play-type-comp-badge{
   position:absolute;top:1px;right:1px;
-  font-size:.35rem;font-weight:900;letter-spacing:0;
+  font-size:.5rem;font-weight:900;letter-spacing:0;
   color:var(--primary-glow);
   background:rgba(124,58,237,.15);
   padding:0 3px;border-radius:6px;
@@ -502,9 +505,9 @@
   text-shadow:0 0 12px rgba(255,165,2,0.4);
 }
 .hst-label{
-  font-size:0.46rem;font-weight:800;
+  font-size:0.58rem;font-weight:800;
   text-transform:uppercase;letter-spacing:0.9px;
-  color:var(--text-muted);opacity:0.65;
+  color:var(--text-muted);opacity:0.8;
   white-space:nowrap;
 }
 
@@ -690,7 +693,7 @@
   gap:2px;padding:4px 10px;
   background:none;border:none;
   color:var(--text-dim);
-  font-size:0.55rem;font-weight:700;
+  font-size:0.65rem;font-weight:700;
   cursor:pointer;
   transition:color .2s ease, transform .2s ease;
   text-transform:uppercase;letter-spacing:0.3px;
@@ -723,7 +726,7 @@
 }
 .hero-xp-bar .xp-level-num{
   font-family:'Space Grotesk',sans-serif;
-  font-size:0.62rem;font-weight:900;
+  font-size:0.68rem;font-weight:900;
   color:var(--primary-glow);
   white-space:nowrap;
   text-shadow:0 0 12px rgba(124,58,237,0.5);
@@ -744,15 +747,15 @@
   box-shadow:0 0 6px rgba(124,58,237,0.5);
 }
 .hero-xp-bar .xp-percent{
-  font-size:0.55rem;font-weight:700;
+  font-size:0.62rem;font-weight:700;
   color:var(--text-muted);white-space:nowrap;flex-shrink:0;
 }
 .hero-xp-bar .xp-title{
-  font-size:0.55rem;font-weight:700;
+  font-size:0.62rem;font-weight:700;
   color:var(--text-dim);white-space:nowrap;flex-shrink:0;
 }
 .hero-xp-bar .xp-numbers{
-  font-size:0.52rem;font-weight:600;
+  font-size:0.58rem;font-weight:600;
   color:var(--text-dim);white-space:nowrap;flex-shrink:0;
   letter-spacing:0.3px;
 }

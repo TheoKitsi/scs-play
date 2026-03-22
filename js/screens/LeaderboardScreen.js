@@ -50,9 +50,10 @@ function renderLeaderboard() {
 
   const avatar = save.getAvatar();
   const medals = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'];
+  const medalLabels = ['1st place', '2nd place', '3rd place'];
 
   list.innerHTML = scores.slice(0, 20).map((s, i) => {
-    const medal = i < 3 ? `<span class="lb-rank-icon">${medals[i]}</span>` : `<span class="lb-rank-num">#${i + 1}</span>`;
+    const medal = i < 3 ? `<span class="lb-rank-icon" role="img" aria-label="${medalLabels[i]}">${medals[i]}</span>` : `<span class="lb-rank-num">#${i + 1}</span>`;
     const relDate = relativeDate(s.date);
 
     return `
