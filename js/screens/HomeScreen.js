@@ -267,6 +267,7 @@ function navigateCarousel(direction) {
   updateBackdropAura();
   updateHeroStats();
   updatePlayTypeSelector();
+  updateQuickShortcuts();
   setTimeout(() => { carouselAnimating = false; }, 360);
 }
 
@@ -279,6 +280,7 @@ function goToSlide(idx) {
   updateBackdropAura();
   updateHeroStats();
   updatePlayTypeSelector();
+  updateQuickShortcuts();
   setTimeout(() => { carouselAnimating = false; }, 360);
 }
 
@@ -335,6 +337,33 @@ export function updateHeroStats() {
   if (pbEl)     pbEl.textContent     = pb     > 0 ? pb.toLocaleString()     : '—';
   if (streakEl) streakEl.textContent = streak > 0 ? streak                  : '—';
   if (gamesEl)  gamesEl.textContent  = games  > 0 ? games.toLocaleString()  : '—';
+}
+
+/* ═══════ Quick shortcuts strip ═══════ */
+function updateQuickShortcuts() {
+  const el = $('#quickShortcuts');
+  if (!el) return;
+  const modes = CONFIG.MODE_ORDER;
+  const MAX = 5;
+  // Sort: current first, then up to MAX-1 others (unlocked preferred)
+  const current = app.selectedMode;
+  const others = modes.filter(m => m !== current);
+  const picks = [current, ...others].slice(0, MAX);
+  el.innerHTML = picks.map(m => {
+    const sel = m === current ? ' selected' : '';
+    const name = t(`mode_${m}`) || m.toUpperCase();
+    return `<button class="qs-chip${sel}" data-mode="${m}">
+      <span class="qs-chip-icon">${getModeSVG(m)}</span>
+      <span class="qs-chip-name">${name}</span>
+    </button>`;
+  }).join('');
+  el.querySelectorAll('.qs-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = modes.indexOf(btn.dataset.mode);
+      if (idx !== -1) goToSlide(idx);
+      updateQuickShortcuts();
+    });
+  });
 }
 
 /* ═══════ Mode unlock level helper ═══════ */
@@ -433,6 +462,7 @@ export function showHome() {
   updateModeSelector();
   updatePlayTypeSelector();
   updateHeroStats();
+  updateQuickShortcuts();
   updateAdBanner(save);
   applyTheme(save.getActiveTheme());
   document.body.classList.toggle('ad-free', isAdFree(save));

@@ -242,7 +242,8 @@
     <div class="home-bottom-sheet" id="homeBottomSheet">
       <div class="sheet-handle"></div>
 
-
+      <!-- QUICK SHORTCUTS — 1 row of 5 most-played modes -->
+      <div class="quick-shortcuts" id="quickShortcuts" role="group" aria-label="Schnellzugriff"></div>
 
       <!-- MODE CAROUSEL (hidden — used as SVG template source) -->
       <div class="mode-carousel mode-carousel--hidden" id="modeCarousel" role="group" aria-label="Spielmodus">
@@ -722,7 +723,9 @@
       <button class="lb-mode-btn" data-mode="expert" data-i18n="mode_expert">EXPERT</button>
       <button class="lb-mode-btn" data-mode="ultra" data-i18n="mode_ultra">ULTRA</button>
       <button class="lb-mode-btn" data-mode="mathe" data-i18n="mode_mathe">MATHE</button>
+      <button class="lb-mode-btn" data-mode="algebra" data-i18n="mode_algebra">ALGEBRA</button>
       <button class="lb-mode-btn" data-mode="worte" data-i18n="mode_worte">WÖRTER</button>
+      <button class="lb-mode-btn" data-mode="hauptstaedte" data-i18n="mode_hauptstaedte">HAUPTSTÄDTE</button>
       <button class="lb-mode-btn" data-mode="memo" data-i18n="mode_memo">MEMO</button>
       <button class="lb-mode-btn" data-mode="sequenz" data-i18n="mode_sequenz">SEQUENZ</button>
       <button class="lb-mode-btn" data-mode="stroop" data-i18n="mode_stroop">STROOP</button>
@@ -833,11 +836,11 @@
     </div>
     <!-- Lives indicator (premium tab only) -->
     <div id="shopLivesBar" class="shop-lives-bar">
-      <svg class="ui-icon" viewBox="0 0 24 24" style="fill:var(--color-heart);width:18px;height:18px"><use href="#icon-heart"></use></svg>
+      <svg class="ui-icon" viewBox="0 0 24 24" style="color:var(--color-heart);width:18px;height:18px"><use href="#icon-heart"></use></svg>
       <span id="shopLivesCount">3</span>
       <span class="shop-lives-label" data-i18n="lives_label">Leben</span>
       <span class="shop-lives-sep">&middot;</span>
-      <svg class="ui-icon" viewBox="0 0 24 24" style="fill:var(--color-fire);width:18px;height:18px"><use href="#icon-fire"></use></svg>
+      <svg class="ui-icon" viewBox="0 0 24 24" style="color:var(--color-fire);width:18px;height:18px"><use href="#icon-fire"></use></svg>
       <span id="shopFireCount">0</span>
     </div>
     <!-- Tab content -->

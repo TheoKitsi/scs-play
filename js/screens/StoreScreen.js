@@ -30,7 +30,7 @@ export function updateShopLives() {
   const fireEl = $('#shopFireCount');
   if (fireEl) fireEl.textContent = save.getFireBalance();
   const bar = $('#shopLivesBar');
-  if (bar) bar.style.display = '';
+  if (bar) bar.style.display = shopTab === 'premium' ? '' : 'none';
 }
 
 function renderShopTabs() {
