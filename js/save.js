@@ -83,8 +83,7 @@ function defaults() {
       language: 'auto',
       gameMode: 'klassik',
       playType: 'blitz',          // blitz | classic | endless | competition
-      tutorialDone: false,
-      themeMode: 'dark'            // dark only (v17)
+      tutorialDone: false
     },
     /* v20: Per-mode instruction view counter */
     instructionViews: {},

@@ -329,19 +329,12 @@ export function updateHeroStats() {
   const pb     = save.getPB(app.selectedMode);
   const streak = save.getDailyLoginStreak ? save.getDailyLoginStreak() : (save.data?.loginStreak || 0);
   const games  = save.getGamesPlayed ? save.getGamesPlayed() : (save.data?.gamesPlayed || 0);
-  const level  = save.getLevel ? save.getLevel() : 0;
-  const lvName = save.getLevelName ? save.getLevelName() : '';
-  const fire   = save.getFireBalance ? save.getFireBalance() : 0;
   const pbEl     = $('#hstPB');
   const streakEl = $('#hstStreak');
   const gamesEl  = $('#hstGames');
-  const levelEl  = $('#hstLevel');
-  const fireEl   = $('#hstFire');
   if (pbEl)     pbEl.textContent     = pb     > 0 ? pb.toLocaleString()     : '—';
   if (streakEl) streakEl.textContent = streak > 0 ? streak                  : '—';
   if (gamesEl)  gamesEl.textContent  = games  > 0 ? games.toLocaleString()  : '—';
-  if (levelEl)  levelEl.textContent  = level  > 0 ? `Lv.${level} ${lvName}` : 'Lv.0';
-  if (fireEl)   fireEl.textContent   = fire   > 0 ? fire.toLocaleString()   : '0';
 }
 
 /* ═══════ Mode unlock level helper ═══════ */
