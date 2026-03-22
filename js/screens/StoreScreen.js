@@ -12,11 +12,13 @@ import { getBodyFx }        from './HomeScreen.js';
 import { updateLivesDisplay } from './ResultsScreen.js';
 
 const IAP_ITEMS = [
-  { id: 'adfree',       price: '1,99 \u20AC', lives: 0 },
+  { id: 'adfree',       price: '4,99 \u20AC', lives: 0 },
   { id: 'lives3',       price: '0,99 \u20AC', lives: 3 },
   { id: 'lives10',      price: '2,99 \u20AC', lives: 10 },
-  { id: 'avatar_photo', price: '0,99 \u20AC', lives: 0 },
-  { id: 'vip',          price: '4,99 \u20AC', lives: 5 }
+  { id: 'avatar_photo', price: '1,99 \u20AC', lives: 0 },
+  { id: 'vip_bronze',   price: '9,99 \u20AC', lives: 5 },
+  { id: 'vip_silber',   price: '19,99 \u20AC', lives: 10 },
+  { id: 'vip_gold',     price: '29,99 \u20AC', lives: 20 }
 ];
 
 let shopTab = 'premium';
@@ -41,10 +43,11 @@ function renderStoreItems() {
   if (!list) return;
   list.className = 'store-list';
   list.innerHTML = IAP_ITEMS.map((item, i) => {
-    const owned = (item.id === 'adfree' || item.id === 'vip') && save.hasPurchase(item.id);
+    const isVip = item.id.startsWith('vip_');
+    const owned = (item.id === 'adfree' || isVip) && save.hasPurchase(item.id);
     const delay = (i * 0.08).toPrecision(2);
     return `
-      <div class="store-item ${owned ? 'owned' : ''} ${item.id === 'vip' || item.id === 'adfree' ? 'premium-glow-item' : ''}" data-iap="${item.id}" style="animation: popIn 0.4s forwards; opacity: 0; animation-delay: ${delay}s;">
+      <div class="store-item ${owned ? 'owned' : ''} ${isVip || item.id === 'adfree' ? 'premium-glow-item' : ''}" data-iap="${item.id}" style="animation: popIn 0.4s forwards; opacity: 0; animation-delay: ${delay}s;">
         <div class="store-item-info">
           <span class="store-item-name">${t('iap_' + item.id)}</span>
           <span class="store-item-desc">${t('iap_' + item.id + '_desc')}</span>
@@ -161,10 +164,11 @@ async function handlePurchase(id) {
   const confirmed = confirm(t('iap_confirm') + `\n${t('iap_' + id)} - ${item.price}`);
   if (!confirmed) return;
 
-  if (id === 'adfree' || id === 'vip') await save.setPurchase(id);
+  const isVip = id.startsWith('vip_');
+  if (id === 'adfree' || isVip) await save.setPurchase(id);
   if (id === 'avatar_photo') await save.setPurchase('avatar_photo');
   if (item.lives > 0) await save.addLives(item.lives);
-  if (id === 'vip') await save.setPurchase('adfree');
+  if (isVip) await save.setPurchase('adfree');
 
   const bodyFx = getBodyFx();
   bodyFx.achievementToast(t('iap_success'));

@@ -60,7 +60,7 @@
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:calc(env(safe-area-inset-top, 8px) + 4px) 10px 2px;
+  padding:calc(env(safe-area-inset-top, 8px) + 4px) 6px 2px;
   z-index:10;
   flex-shrink:0;
 }
@@ -215,7 +215,7 @@
   scrollbar-width:none;
   -ms-overflow-style:none;
   overscroll-behavior:contain;
-  padding:0 8px;
+  padding:0 4px;
   padding-bottom:calc(60px + env(safe-area-inset-bottom, 0px));
   display:flex;
   flex-direction:column;
@@ -693,7 +693,7 @@
   z-index:10;
   width:100%;
   display:flex;align-items:center;gap:6px;
-  padding:0 16px 2px;
+  padding:0 10px 2px;
   flex-shrink:0;
 }
 .hero-xp-bar .xp-level-num{
