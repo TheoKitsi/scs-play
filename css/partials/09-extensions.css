@@ -490,7 +490,7 @@ body.mode-worte .center-platform{
 
 /* ─── 320px small devices (iPhone SE, small Androids) ─── */
 @media(max-width:374px){
-  .screen{padding-left:calc(10px + var(--safe-left));padding-right:calc(10px + var(--safe-right))}
+  .screen{padding-left:calc(4px + var(--safe-left));padding-right:calc(4px + var(--safe-right))}
   .screen-content{gap:10px}
   .home-content{gap:6px !important}
   .mode-grid-2x2{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -522,7 +522,7 @@ body.mode-worte .center-platform{
   .btn-play{font-size:.85rem !important;padding:8px 16px !important}
   .ach-list{gap:4px}
   .results-stats-grid{gap:8px}
-  .ad-banner{margin-left:calc(-10px - var(--safe-left));margin-right:calc(-10px - var(--safe-right));width:calc(100% + 20px + var(--safe-left) + var(--safe-right));min-height:64px}
+  .ad-banner{margin-left:calc(-4px - var(--safe-left));margin-right:calc(-4px - var(--safe-right));width:calc(100% + 8px + var(--safe-left) + var(--safe-right));min-height:64px}
   .pause-panel,.continue-panel{width:calc(100% - 24px)}
   /* Corner / center collision prevention */
   .corner-shape{width:52px;height:52px}
