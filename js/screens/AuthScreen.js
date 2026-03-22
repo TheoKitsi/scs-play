@@ -9,6 +9,15 @@ import app                  from '../appState.js';
 export function bindAuth(showHome) {
   const { auth } = app;
 
+  // When Firebase isn't configured, hide cloud-auth UI once auth init completes
+  auth.onAuthStateChanged(() => {
+    if (!auth.fbReady) {
+      $('#btnGoogle')?.closest('.auth-buttons')?.classList.add('hidden');
+      $('#btnShowEmail')?.closest('.auth-form-toggle')?.classList.add('hidden');
+      $('#authEmailForm')?.classList.add('hidden');
+    }
+  });
+
   $('#btnGoogle')?.addEventListener('click', async () => {
     try { await auth.signInWithGoogle?.(); showHome(); }
     catch { setText('#authError', t('auth_error')); }

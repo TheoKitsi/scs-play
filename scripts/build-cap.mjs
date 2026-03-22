@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
-   SCS Play — Capacitor Build Script
-   Copies web assets into www/ for Capacitor sync
+   SCS Play — Dev Build Script
+   Copies web assets into docs/ (unbundled)
    Usage: node scripts/build-cap.mjs
    ═══════════════════════════════════════════════ */
 import { cpSync, mkdirSync, rmSync, existsSync } from 'fs';
@@ -9,14 +9,14 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
-const www = resolve(root, 'www');
+const out = resolve(root, 'docs');
 
 // Clean previous build
-if (existsSync(www)) rmSync(www, { recursive: true, force: true });
-mkdirSync(www, { recursive: true });
+if (existsSync(out)) rmSync(out, { recursive: true, force: true });
+mkdirSync(out, { recursive: true });
 
-// Copy web assets (everything except node_modules, android, www, scripts, .git)
-const exclude = new Set(['node_modules', 'android', 'www', '.git', 'scripts', 'package.json', 'package-lock.json', 'capacitor.config.json']);
+// Copy web assets (everything except node_modules, android, docs, scripts, .git)
+const exclude = new Set(['node_modules', 'android', 'www', 'docs', '.git', '.github', '.gitignore', 'scripts', 'package.json', 'package-lock.json', 'capacitor.config.json']);
 
 import { readdirSync, statSync, copyFileSync } from 'fs';
 
@@ -35,5 +35,5 @@ function copyDir(src, dest) {
   }
 }
 
-copyDir(root, www);
-console.log('✓ Web assets copied to www/');
+copyDir(root, out);
+console.log('✓ Web assets copied to docs/');

@@ -1,5 +1,6 @@
 /* ─── Accessibility (screen reader only / skip link) ─── */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.hidden{display:none!important}
 .sr-skip-link{
   position:absolute;top:-100%;left:50%;transform:translateX(-50%);
   z-index:9999;padding:8px 16px;border-radius:8px;

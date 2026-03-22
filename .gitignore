@@ -1,7 +1,8 @@
 # Dependencies
 node_modules/
 
-# Capacitor build output
+# Build output (CI builds fresh for deployment)
+docs/
 www/
 android/app/src/main/assets/public/
 

@@ -1,7 +1,7 @@
 {
   "appId": "com.scs.play",
   "appName": "SCS Play",
-  "webDir": "www",
+  "webDir": "docs",
   "server": {
     "androidScheme": "https"
   },
