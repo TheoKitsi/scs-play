@@ -501,14 +501,13 @@ body.mode-worte .center-platform{
   .play-type-icon--text{font-size:.9rem}
   .play-type-icon svg{width:14px;height:14px}
   .play-type-selector{display:flex;flex-wrap:nowrap;gap:2px}
-  .home-bottom-sheet{padding:0 8px;gap:4px;padding-bottom:calc(72px + env(safe-area-inset-bottom, 0px))}
+  .home-bottom-sheet{padding:0 8px;gap:4px;padding-bottom:calc(46px + 8px + env(safe-area-inset-bottom, 0px))}
   .hero-stats-zone{min-height:36px;padding:2px 0;gap:3px}
   .hst-item{padding:3px 2px}
   .hst-value{font-size:0.75rem}
   .daily-card{padding:4px 8px;gap:4px}
   .btn-daily-cta{padding:4px 10px;font-size:0.6rem}
   .hero-xp-bar{padding:0 8px}
-  .sheet-spacer{height:4px}
   .footer-label{font-size:.6rem}
   .footer-nav{gap:2px;padding:2px 4px;padding-bottom:max(calc(2px + var(--safe-bottom)), 14px)}
   .footer-item{padding:6px 2px 4px}
