@@ -6,7 +6,7 @@
     "androidScheme": "https"
   },
   "android": {
-    "backgroundColor": "#0F172A",
+    "backgroundColor": "#0f0c29",
     "allowMixedContent": false,
     "captureInput": true,
     "webContentsDebuggingEnabled": false
@@ -15,14 +15,14 @@
     "SplashScreen": {
       "launchAutoHide": true,
       "launchShowDuration": 1500,
-      "backgroundColor": "#0F172A",
+      "backgroundColor": "#0f0c29",
       "showSpinner": false,
       "androidSpinnerStyle": "small",
       "spinnerColor": "#9D4EDD"
     },
     "StatusBar": {
       "style": "DARK",
-      "backgroundColor": "#0F172A"
+      "backgroundColor": "#0f0c29"
     },
     "Keyboard": {
       "resize": "none"

@@ -6,6 +6,8 @@ body.light-theme{
   --error:#C53030;
   --warning:#B45309;
   --info:#0369A1;
+  --color-heart:#E04060;
+  --color-fire:#D48800;
 
   /* "on-surface" tokens for light theme */
   --text-on-surface:#1a1a2e;
@@ -236,9 +238,7 @@ body.light-theme .btn-pause{
   border-color:rgba(0,0,0,.08);
   color:var(--text);
 }
-body.light-theme .footer-item-fs{
-  color:var(--text-dim);
-}
+
 body.light-theme .mode-indicator{
   background:rgba(108,92,231,.08);
   color:var(--primary-text);border-color:rgba(108,92,231,.15);
@@ -371,7 +371,7 @@ body.light-theme .hud-value.on-fire{
 }
 
 /* ─── Endless hearts ─── */
-body.light-theme .hud-endless-lives .endless-heart svg{fill:#e04060}
+body.light-theme .hud-endless-lives .endless-heart svg{fill:var(--color-heart)}
 
 /* ─── Competition target ─── */
 body.light-theme .hud-comp-target{

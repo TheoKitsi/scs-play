@@ -187,6 +187,8 @@ function buildSlide(mode) {
     const lv = save.getModeLevel ? save.getModeLevel(mode) : 0;
     const lvName = save.getModeLevelName ? save.getModeLevelName(mode, getLanguage()) : '';
     const aura = MODE_AURA[mode] || 'rgba(124,58,237,0.5)';
+    const lvProgress = save.getModeLevelProgress ? save.getModeLevelProgress(mode) : 0;
+    const lvPct = Math.round(Math.min(1, Math.max(0, lvProgress)) * 100);
     slide.innerHTML = `
       <div class="hero-slide-visual" style="--slide-aura:${aura}">${getModeSVG(mode)}</div>
       <span class="hero-slide-name">${t(`mode_${mode}`) || mode.toUpperCase()}</span>
@@ -194,7 +196,8 @@ function buildSlide(mode) {
       <div class="hero-slide-badges">
         <span class="hero-slide-badge hero-slide-badge--pb">${pb > 0 ? `PB ${pb.toLocaleString()}` : (t('hero_first_record') || '--')}</span>
         ${lv > 0 ? `<span class="hero-slide-badge hero-slide-badge--level">Lv.${lv} ${lvName}</span>` : ''}
-      </div>`;
+      </div>
+      <div class="hero-slide-level-bar"><div class="hero-slide-level-fill" style="width:${lvPct}%"></div></div>`;
   } else {
     const unlockLv = getUnlockLevel(mode);
     slide.innerHTML = `
@@ -438,12 +441,19 @@ export function updateHeroStats() {
   const pb     = save.getPB(app.selectedMode);
   const streak = save.getDailyLoginStreak ? save.getDailyLoginStreak() : (save.data?.loginStreak || 0);
   const games  = save.getGamesPlayed ? save.getGamesPlayed() : (save.data?.gamesPlayed || 0);
+  const level  = save.getLevel ? save.getLevel() : 0;
+  const lvName = save.getLevelName ? save.getLevelName() : '';
+  const fire   = save.getFireBalance ? save.getFireBalance() : 0;
   const pbEl     = $('#hstPB');
   const streakEl = $('#hstStreak');
   const gamesEl  = $('#hstGames');
+  const levelEl  = $('#hstLevel');
+  const fireEl   = $('#hstFire');
   if (pbEl)     pbEl.textContent     = pb     > 0 ? pb.toLocaleString()     : '—';
   if (streakEl) streakEl.textContent = streak > 0 ? streak                  : '—';
   if (gamesEl)  gamesEl.textContent  = games  > 0 ? games.toLocaleString()  : '—';
+  if (levelEl)  levelEl.textContent  = level  > 0 ? `Lv.${level} ${lvName}` : 'Lv.0';
+  if (fireEl)   fireEl.textContent   = fire   > 0 ? fire.toLocaleString()   : '0';
 }
 
 /* ═══════ Mode unlock level helper ═══════ */

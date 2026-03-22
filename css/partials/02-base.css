@@ -15,6 +15,12 @@
 }
 button:focus:not(:focus-visible){outline:none}
 
+/* ─── Icon color utilities ─── */
+.icon-heart{color:var(--color-heart)}
+.icon-fire{color:var(--color-fire)}
+.fill-heart{fill:var(--color-heart)}
+.fill-fire{fill:var(--color-fire)}
+
 /* ─── Smartphone touch UX ─── */
 body{
   -webkit-tap-highlight-color:transparent;

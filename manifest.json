@@ -37,6 +37,42 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [],
+  "screenshots": [
+    {
+      "src": "screenshots/galaxy-s25/02-home-top.png",
+      "sizes": "1236x2745",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Home screen with game modes"
+    },
+    {
+      "src": "screenshots/galaxy-s25/08-game-active.png",
+      "sizes": "1236x2745",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Active gameplay"
+    },
+    {
+      "src": "screenshots/galaxy-s25/10-results.png",
+      "sizes": "1236x2745",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Results screen"
+    },
+    {
+      "src": "screenshots/small-android/02-home-top.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Home screen"
+    },
+    {
+      "src": "screenshots/small-android/08-game-active.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Active gameplay"
+    }
+  ],
   "prefer_related_applications": false
 }

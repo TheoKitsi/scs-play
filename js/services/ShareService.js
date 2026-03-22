@@ -95,38 +95,22 @@ export async function shareScore(stats, getBodyFx) {
     return ok;
   }
 
-  // 1. Capacitor Share
-  if (window.Capacitor?.Plugins?.Share) {
-    try {
-      await window.Capacitor.Plugins.Share.share({
-        title: title, text: text, dialogTitle: title
-      });
-      return;
-    } catch (e) { console.warn('Capacitor share failed:', e); }
+  const strategies = [
+    { test: () => window.Capacitor?.Plugins?.Share,
+      run:  async () => { await window.Capacitor.Plugins.Share.share({ title, text, dialogTitle: title }); } },
+    { test: () => navigator.share,
+      run:  async () => { await navigator.share({ title, text }); } },
+    { test: () => navigator.clipboard?.writeText,
+      run:  async () => { await navigator.clipboard.writeText(text); _showToast(copiedMsg); } },
+    { test: () => true,
+      run:  async () => { if (_fallbackCopy(text)) { _showToast(copiedMsg); return; } throw new Error('execCommand failed'); } }
+  ];
+
+  for (const s of strategies) {
+    if (!s.test()) continue;
+    try { await s.run(); return; } catch { /* fall through to next strategy */ }
   }
 
-  // 2. Web Share API (only works in secure contexts with user gesture)
-  if (navigator.share) {
-    try { await navigator.share({ title: title, text: text }); return; }
-    catch (e) { console.warn('Web Share failed:', e); }
-  }
-
-  // 3. Clipboard API
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      _showToast(copiedMsg);
-      return;
-    } catch (e) { console.warn('Clipboard API failed:', e); }
-  }
-
-  // 4. execCommand fallback
-  if (_fallbackCopy(text)) {
-    _showToast(copiedMsg);
-    return;
-  }
-
-  // 5. Last resort — show text to manually copy
   _showToast(`⚠️ ${t('share_unavailable')}`);
   prompt(t('share_copy_prompt'), text);
 }

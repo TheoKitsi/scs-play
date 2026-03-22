@@ -285,7 +285,6 @@
   position: relative; overflow-y: auto; overflow-x: hidden;
   max-height: calc(100vh - var(--safe-top) - var(--safe-bottom) - 22px);
   max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 22px);
-  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -741,7 +740,6 @@
   gap: 12px;
   max-height: calc(100dvh - 280px);
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.15) transparent;

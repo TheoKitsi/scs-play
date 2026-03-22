@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════
    SCS Play — Service Worker
    ═══════════════════════════════════════ */
-const CACHE = 'scs-v41';
+const CACHE = 'scs-v43';
 const ASSETS = [
   './',
   './index.html',

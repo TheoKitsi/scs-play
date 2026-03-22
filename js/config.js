@@ -3,6 +3,8 @@
    Modes: Beginner / Expert / Ultra
    Play Types: Blitz / Classic / Endless / Competition
    ═══════════════════════════════════════════════════════ */
+export const DEBUG = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
 export const CONFIG = {
   /* ─── Timer (per play type) ─── */
   GAME_DURATION: 30,                  // default (Blitz)
@@ -14,7 +16,7 @@ export const CONFIG = {
   DURATION_COMPETITION_BRAIN: [26, 32, 39, 45, 52, 58, 65, 71, 78, 78], // ~30% more for brain/reflex
 
   /* ─── Endless mode ─── */
-  ENDLESS_MAX_MISSES: 3,              // total misses allowed in endless
+  ENDLESS_MAX_MISSES: 5,              // total misses allowed in endless
 
   /* ─── Competition levels ─── */
   COMPETITION_LEVELS: 10,
@@ -274,7 +276,7 @@ export const CONFIG = {
   },
   WORD_CAT_EMOJIS: {
     tier: '🐾', essen: '🍎', sport: '⚽', farbe: '🎨',
-    animal: '🐾', food: '🍎', sport: '⚽', color: '🎨',
+    animal: '🐾', food: '🍎', color: '🎨',
   },
   
   WORD_EMOJI_BANKS: {
@@ -284,7 +286,6 @@ export const CONFIG = {
     farbe:  ['🔴','🟦','🟩','🟨','🟣','🟧','⚪','🟤','⚫','🔲'],
     animal: ['🐾','🐶','🐱','🦁','🦊','🐸','🦆','🐝','🦋','🐴'],
     food:   ['🍎','🍔','🍕','🌮','🍉','🥐','🍩','🍪','🍓','🍒'],
-    sport:  ['⚽','🏀','🎾','🏓','🏂','🎿','🥊','🏈','⛳','🏹'],
     color:  ['🔴','🟦','🟩','🟨','🟣','🟧','⚪','🟤','⚫','🔲'],
   },
 

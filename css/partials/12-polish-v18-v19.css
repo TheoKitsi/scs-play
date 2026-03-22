@@ -295,7 +295,6 @@ body:not(.light-theme) .setting-row:hover{
 /* ─── Mode Chip Scroll Snap ─── */
 .mode-picker{
   scroll-snap-type:x mandatory;
-  -webkit-overflow-scrolling:touch;
 }
 .mode-chip{
   scroll-snap-align:center;

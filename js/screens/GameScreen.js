@@ -1142,8 +1142,8 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     effects.scorePop(
       window.innerWidth / 2,
       window.innerHeight / 2 - 60,
-      t('life_earned') || '+1 ❤️',
-      '#FF6B81',
+      t('life_earned') || '+1',
+      'var(--color-heart, #FF6B81)',
       true
     );
     effects.flash('#FF6B8140', 250);

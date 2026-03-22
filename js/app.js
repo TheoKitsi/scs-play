@@ -3,7 +3,7 @@
    Wires all modules, binds events, boots.
    ═══════════════════════════════════════ */
 import { haptic } from './helpers/haptics.js';
-import { CONFIG }           from './config.js';
+import { CONFIG, DEBUG }    from './config.js';
 import { t }                from './i18n.js';
 import { $, $$, showScreen } from './helpers/dom.js';
 import { AudioManager }     from './audio.js';
@@ -45,14 +45,6 @@ app.auth  = new AuthService();
 app.save  = new SaveService(app.auth);
 app.game  = new GameEngine();
 
-/* ═══════ Fullscreen toggle ═══════ */
-function toggleFullscreen() {
-  if (document.fullscreenElement) {
-    document.exitFullscreen?.().catch(() => {});
-  } else {
-    document.documentElement.requestFullscreen?.().catch(() => {});
-  }
-}
 
 /* ═══════ Offline / Online indicator ═══════ */
 function initOfflineIndicator() {
@@ -104,11 +96,11 @@ app.releaseWakeLock = releaseWakeLock;
 /* ═══════ Global error boundary ═══════ */
 function initErrorBoundary() {
   window.addEventListener('error', (e) => {
-    console.error('[SCS Error]', e.message, e.filename, ':', e.lineno);
+    if (DEBUG) console.error('[SCS Error]', e.message, e.filename, ':', e.lineno);
     e.preventDefault();
   });
   window.addEventListener('unhandledrejection', (e) => {
-    console.error('[SCS Rejection]', e.reason);
+    if (DEBUG) console.error('[SCS Rejection]', e.reason);
     e.preventDefault();
   });
 }
@@ -160,26 +152,18 @@ function initBackButton() {
 }
 
 /* ═══════ Stat tooltips ═══════ */
+function _showTooltip(i18nKey, el) {
+  getBodyFx().achievementToast(t(i18nKey));
+  app.audio.tap();
+  if (el) { el.classList.add('stat-tapped'); setTimeout(() => el.classList.remove('stat-tapped'), 300); }
+}
+
 function bindStatTooltips() {
-  const { audio } = app;
   $$('.stat-clickable').forEach(el => {
-    el.addEventListener('click', () => {
-      const key = el.dataset.tooltip;
-      if (!key) return;
-      getBodyFx().achievementToast(t(key));
-      audio.tap();
-      el.classList.add('stat-tapped');
-      setTimeout(() => el.classList.remove('stat-tapped'), 300);
-    });
+    el.addEventListener('click', () => { const key = el.dataset.tooltip; if (key) _showTooltip(key, el); });
   });
-  $('#xpSection')?.addEventListener('click', () => {
-    getBodyFx().achievementToast(t('tooltip_level'));
-    audio.tap();
-  });
-  $('#homeLivesBadge')?.addEventListener('click', () => {
-    getBodyFx().achievementToast(t('tooltip_lives'));
-    audio.tap();
-  });
+  $('#xpSection')?.addEventListener('click', () => _showTooltip('tooltip_level'));
+  $('#homeLivesBadge')?.addEventListener('click', () => _showTooltip('tooltip_lives'));
 }
 
 /* ═══════ Navigation wrappers ═══════ */
@@ -282,7 +266,6 @@ function bindEvents() {
   /* ─ Game controls ─ */
   $('#btnStopPractice')?.addEventListener('click', () => stopPractice(navShowHome));
   $('#btnPause')?.addEventListener('click',        (e) => { e.stopPropagation(); pauseGame(); });
-  $('#btnFullscreen')?.addEventListener('click',   (e) => { e.stopPropagation(); toggleFullscreen(); });
   $('#btnResume')?.addEventListener('click',        () => resumeGame());
   $('#btnPauseRestart')?.addEventListener('click',  () => restartGame(navShowTutorial, navShowResults, navShowHome, navShowContinuePrompt));
   $('#btnPauseSettings')?.addEventListener('click', () => {

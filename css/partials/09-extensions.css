@@ -12,7 +12,7 @@
 #engagementReport .screen-content{
   height:100%;max-height:100%;align-items:stretch;justify-content:flex-start;
   gap:10px;padding-top:8px;padding-bottom:8px;
-  overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  overflow-x:hidden;overflow-y:auto;
   overscroll-behavior:contain;touch-action:pan-y;
 }
 .er-content{
@@ -276,7 +276,6 @@ body.ad-free #game .game-ad-banner{display:none}
   padding-bottom:8px;
   overflow-x:hidden;
   overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
   touch-action:pan-y;
 }
@@ -313,7 +312,6 @@ body.ad-free #game .game-ad-banner{display:none}
   flex:1 1 0;
   min-height:0;
   overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
 }
 #avatarSelect .avatar-grid,
 #avatarSelect .avatar-color-grid{
@@ -503,7 +501,7 @@ body.mode-worte .center-platform{
   .play-type-icon--text{font-size:.9rem}
   .play-type-icon svg{width:14px;height:14px}
   .play-type-selector{display:flex;flex-wrap:nowrap;gap:2px}
-  .home-bottom-sheet{padding:0 8px;gap:4px;padding-bottom:calc(56px + env(safe-area-inset-bottom, 0px))}
+  .home-bottom-sheet{padding:0 8px;gap:4px;padding-bottom:calc(72px + env(safe-area-inset-bottom, 0px))}
   .hero-stats-zone{min-height:36px;padding:2px 0;gap:3px}
   .hst-item{padding:3px 2px}
   .hst-value{font-size:0.75rem}
@@ -512,8 +510,8 @@ body.mode-worte .center-platform{
   .hero-xp-bar{padding:0 8px}
   .shortcut-grid{gap:4px}
   .sheet-spacer{height:4px}
-  .footer-label{font-size:.52rem}
-  .footer-nav{gap:2px;padding:2px 4px;padding-bottom:max(calc(2px + var(--safe-bottom)), 6px)}
+  .footer-label{font-size:.6rem}
+  .footer-nav{gap:2px;padding:2px 4px;padding-bottom:max(calc(2px + var(--safe-bottom)), 14px)}
   .footer-item{padding:6px 2px 4px}
   .brand-cell{width:34px;height:42px;font-size:1.05rem}
   .brand-row{gap:3px}
@@ -553,8 +551,7 @@ body.mode-worte .center-platform{
   /* HUD compact on tiny screens */
   .hud-multiplier{font-size:1rem}
   .mode-indicator{font-size:.7rem;padding:5px 10px}
-  /* Hide fullscreen on very small screens */
-  .footer-item-fs{display:none}
+
   /* Auth */
   .btn-guest-hero{padding:14px 20px;font-size:.95rem}
   /* Home */

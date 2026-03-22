@@ -43,12 +43,6 @@
 
 <!-- SVG Icon Sprite (hidden) -->
 <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" focusable="false">
-  <defs>
-    <filter id="noiseFilter">
-      <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" stitchTiles="stitch"/>
-      <feColorMatrix type="matrix" values="1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 0.1 0" />
-    </filter>
-  </defs>
   <symbol id="icon-trophy" viewBox="0 0 24 24">
     <path fill="currentColor" d="M7 4V3a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4H11A4 4 0 0 1 7 4z"></path>
     <path fill="currentColor" d="M5 8v2a5 5 0 0 0 5 5h4a5 5 0 0 0 5-5V8H5z"></path>
@@ -72,14 +66,8 @@
   <symbol id="icon-cart" viewBox="0 0 24 24">
     <path fill="currentColor" d="M7 4h-2l-1 2v1h2l3.6 7.59-1.35 2.45A1 1 0 009 18h9v-2H10.4l.9-1.63L18 6H7V4z"></path>
   </symbol>
-  <symbol id="icon-edit" viewBox="0 0 24 24">
-    <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path>
-  </symbol>
   <symbol id="icon-eye" viewBox="0 0 24 24">
     <path fill="currentColor" d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 11a4 4 0 110-8 4 4 0 010 8z"></path>
-  </symbol>
-  <symbol id="icon-arrow-right" viewBox="0 0 24 24">
-    <path fill="currentColor" d="M10 6l6 6-6 6V6z"></path>
   </symbol>
   <symbol id="icon-pause" viewBox="0 0 24 24">
     <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/>
@@ -101,28 +89,12 @@
   <symbol id="icon-fire" viewBox="0 0 24 24">
     <path fill="currentColor" d="M12 23c-3.866 0-7-3.358-7-7.5 0-3.336 2.178-6.318 4.5-8.5.372-.35.978-.015.894.493C10.1 9.52 11.567 11 13 11c.778 0 1.5-.334 2-1 .312-.416.92-.37 1.09.095C17.327 13.1 19 15.378 19 17.5c0 2.761-1.79 5.5-7 5.5z"/>
   </symbol>
-  <symbol id="icon-home" viewBox="0 0 24 24">
-    <path fill="currentColor" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/>
-  </symbol>
-  <symbol id="icon-fullscreen" viewBox="0 0 24 24">
-    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
-  </symbol>
   <symbol id="icon-star" viewBox="0 0 24 24">
     <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
   </symbol>
   <symbol id="icon-refresh" viewBox="0 0 24 24">
     <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 4v6h6M23 20v-6h-6"/>
     <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>
-  </symbol>
-  <symbol id="icon-brain" viewBox="0 0 24 24">
-    <path fill="currentColor" d="M12 2C8.5 2 6 4.5 6 7c0 1.2.5 2.3 1.2 3.2C6.5 11.1 6 12.5 6 14c0 3.3 2.7 6 6 6s6-2.7 6-6c0-1.5-.5-2.9-1.2-3.8C17.5 9.3 18 8.2 18 7c0-2.5-2.5-5-6-5zm0 2c2 0 4 1.5 4 3 0 .9-.4 1.6-1 2.2l-.4.4.5.5c.6.7 1 1.7 1.1 2.8H12V6h-1v6.9H7.8c.1-1.1.5-2.1 1.1-2.8l.5-.5-.4-.4C8.4 8.6 8 7.9 8 7c0-1.5 2-3 4-3z"/>
-  </symbol>
-  <symbol id="icon-math" viewBox="0 0 24 24">
-    <path fill="currentColor" d="M4 4h7v2H6v4h5v2H6v4h5v2H4V4zm9 0h7v2h-3v14h-2V6h-2V4zm-5 2v2H6V6h2z"/>
-    <text x="15" y="14" font-size="8" font-weight="bold" fill="currentColor" text-anchor="middle">÷</text>
-  </symbol>
-  <symbol id="icon-book" viewBox="0 0 24 24">
-    <path fill="currentColor" d="M6 2h12a2 2 0 012 2v16a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zm0 2v16h12V4H6zm2 2h8v2H8V6zm0 4h8v2H8v-2z"/>
   </symbol>
 </svg>
 
@@ -233,11 +205,11 @@
         </div>
         <div class="htb-right">
           <div class="resource-pill" id="homeLivesBadge">
-            <svg class="ui-icon" viewBox="0 0 24 24" style="color:#FF4757;width:16px;height:16px"><use href="#icon-heart"></use></svg>
+            <svg class="ui-icon" viewBox="0 0 24 24" style="color:var(--color-heart);width:16px;height:16px"><use href="#icon-heart"></use></svg>
             <span id="homeLivesCount">3</span>
           </div>
           <div class="resource-pill" id="homeFireBadge">
-            <svg class="ui-icon" viewBox="0 0 24 24" style="color:#FFA502;width:16px;height:16px"><use href="#icon-fire"></use></svg>
+            <svg class="ui-icon" viewBox="0 0 24 24" style="color:var(--color-fire);width:16px;height:16px"><use href="#icon-fire"></use></svg>
             <span id="homeFireCount">0</span>
           </div>
         </div>
@@ -385,19 +357,32 @@
         </button>
       </div>
 
-      <!-- Stats Spotlight (3 cells) -->
+      <!-- Stats Spotlight (5 cells: 3+2 grid) -->
       <div class="hero-stats-zone" id="heroStatsZone">
-        <div class="hst-item">
+        <div class="hst-item hst-item--gold">
+          <svg class="hst-icon" viewBox="0 0 24 24"><use href="#icon-trophy"></use></svg>
           <span class="hst-value" id="hstPB">&#x2014;</span>
           <span class="hst-label" data-i18n="hst_pb">Bestpunktzahl</span>
         </div>
-        <div class="hst-item">
+        <div class="hst-item hst-item--accent">
+          <svg class="hst-icon" viewBox="0 0 24 24"><use href="#icon-star"></use></svg>
           <span class="hst-value hst-value--streak" id="hstStreak">&#x2014;</span>
           <span class="hst-label" data-i18n="hst_streak">Tage-Streak</span>
         </div>
-        <div class="hst-item">
+        <div class="hst-item hst-item--purple">
+          <svg class="hst-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg>
           <span class="hst-value hst-value--games" id="hstGames">&#x2014;</span>
           <span class="hst-label" data-i18n="hst_games">Spiele gesamt</span>
+        </div>
+        <div class="hst-item hst-item--purple">
+          <svg class="hst-icon" viewBox="0 0 24 24"><use href="#icon-trophy"></use></svg>
+          <span class="hst-value hst-value--level" id="hstLevel">&#x2014;</span>
+          <span class="hst-label" data-i18n="hst_level">Level</span>
+        </div>
+        <div class="hst-item hst-item--fire">
+          <svg class="hst-icon" style="fill:var(--color-fire)" viewBox="0 0 24 24"><use href="#icon-fire"></use></svg>
+          <span class="hst-value hst-value--fire" id="hstFire">&#x2014;</span>
+          <span class="hst-label" data-i18n="hst_fire">Feuer</span>
         </div>
       </div>
 
@@ -459,10 +444,7 @@
         <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-gear"></use></svg></span>
         <span class="footer-label" data-i18n="settings_footer">Settings</span>
       </button>
-      <button id="btnFullscreen" class="footer-item footer-item-fs" aria-label="Fullscreen">
-        <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-fullscreen"></use></svg></span>
-        <span class="footer-label">&#x26F6;</span>
-      </button>
+
     </nav>
   </div>
 </div>
@@ -480,13 +462,13 @@
       <div class="tutorial-slide active" data-step="0">
         <div class="tut-visual">
           <div class="tut-mock-corners">
-            <span class="tut-corner tut-c-ul" style="background:#FF4757"></span>
-            <span class="tut-corner tut-c-ur" style="background:#3742FA"></span>
-            <span class="tut-corner tut-c-dl" style="background:#2ED573"></span>
-            <span class="tut-corner tut-c-dr" style="background:#FFA502"></span>
+            <span class="tut-corner tut-c-ul"></span>
+            <span class="tut-corner tut-c-ur"></span>
+            <span class="tut-corner tut-c-dl"></span>
+            <span class="tut-corner tut-c-dr"></span>
           </div>
           <div class="tut-mock-center">
-            <span class="tut-shape-dot" style="background:#FF4757"></span>
+            <span class="tut-shape-dot tut-dot-red"></span>
           </div>
         </div>
         <p data-i18n="tutorial_step1">Jede Ecke zeigt eine Farbe. In der Mitte erscheint eine Form.</p>
@@ -494,13 +476,13 @@
       <div class="tutorial-slide" data-step="1">
         <div class="tut-visual tut-try-area" id="tutTryArea">
           <div class="tut-try-corners">
-            <span class="tut-try-corner tut-tc-ul" style="background:#FF4757"></span>
-            <span class="tut-try-corner tut-tc-ur" style="background:#3742FA"></span>
-            <span class="tut-try-corner tut-tc-dl" style="background:#2ED573"></span>
-            <span class="tut-try-corner tut-tc-dr" style="background:#FFA502"></span>
+            <span class="tut-try-corner tut-tc-ul"></span>
+            <span class="tut-try-corner tut-tc-ur"></span>
+            <span class="tut-try-corner tut-tc-dl"></span>
+            <span class="tut-try-corner tut-tc-dr"></span>
           </div>
           <div class="tut-try-center" id="tutTryCenter">
-            <span class="tut-shape-dot" style="background:#FF4757" id="tutTryDot"></span>
+            <span class="tut-shape-dot tut-dot-red" id="tutTryDot"></span>
           </div>
           <div class="tut-try-hint" id="tutTryHint">
             <svg viewBox="0 0 24 24" width="20" height="20" style="fill:white;opacity:.6"><path d="M9 3a3 3 0 016 0v5.5l4.12 2.06A2 2 0 0120 12.44V17a6 6 0 01-6 6H10a6 6 0 01-6-6v-3a2 2 0 012-2h.5L9 8.5V3z"/></svg>
@@ -585,9 +567,11 @@
     <div id="hudFever" class="hud-fever"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:currentColor;width:14px;height:14px;vertical-align:middle"><use href="#icon-fire"></use></svg> FEVER</div>
     <!-- Endless lives display -->
     <div id="hudEndlessLives" class="hud-endless-lives" style="display:none">
-      <span class="endless-heart"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FF4757"><use href="#icon-heart"></use></svg></span>
-      <span class="endless-heart"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FF4757"><use href="#icon-heart"></use></svg></span>
-      <span class="endless-heart"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FF4757"><use href="#icon-heart"></use></svg></span>
+      <span class="endless-heart"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:var(--color-heart)"><use href="#icon-heart"></use></svg></span>
+      <span class="endless-heart"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:var(--color-heart)"><use href="#icon-heart"></use></svg></span>
+      <span class="endless-heart"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:var(--color-heart)"><use href="#icon-heart"></use></svg></span>
+      <span class="endless-heart"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:var(--color-heart)"><use href="#icon-heart"></use></svg></span>
+      <span class="endless-heart"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:var(--color-heart)"><use href="#icon-heart"></use></svg></span>
     </div>
     <!-- Competition target -->
     <div id="hudCompTarget" class="hud-comp-target" style="display:none"></div>
@@ -706,7 +690,7 @@
 
       <div class="results-xp">
         <div id="resXP" class="xp-earned"></div>
-        <div id="resFireEarned" class="xp-earned" style="color:var(--gold)"></div>
+        <div id="resFireEarned" class="xp-earned" style="color:var(--color-fire)"></div>
         <div class="xp-bar"><div id="resXPBar" class="xp-bar-fill"></div></div>
         <div id="resNextLevel" class="xp-next"></div>
       </div>
@@ -869,11 +853,11 @@
     </div>
     <!-- Lives indicator (premium tab only) -->
     <div id="shopLivesBar" class="shop-lives-bar">
-      <svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FF4757;width:18px;height:18px"><use href="#icon-heart"></use></svg>
+      <svg class="ui-icon" viewBox="0 0 24 24" style="fill:var(--color-heart);width:18px;height:18px"><use href="#icon-heart"></use></svg>
       <span id="shopLivesCount">3</span>
       <span class="shop-lives-label" data-i18n="lives_label">Leben</span>
       <span class="shop-lives-sep">&middot;</span>
-      <svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FFA502;width:18px;height:18px"><use href="#icon-fire"></use></svg>
+      <svg class="ui-icon" viewBox="0 0 24 24" style="fill:var(--color-fire);width:18px;height:18px"><use href="#icon-fire"></use></svg>
       <span id="shopFireCount">0</span>
     </div>
     <!-- Tab content -->
