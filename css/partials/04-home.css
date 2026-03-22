@@ -6,8 +6,8 @@
 #home{
   padding:0 !important;
   overflow:hidden;
-  align-items:stretch;      /* override .screen align-items:center — home must be full-width */
-  justify-content:flex-start; /* override .screen justify-content:center */
+  align-items:stretch !important;
+  justify-content:flex-start !important;
 }
 .home-viewport{
   width:100%;               /* explicit full-width inside the now-stretched flex column */
