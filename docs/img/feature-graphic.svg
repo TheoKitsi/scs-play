@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" width="1024" height="500">
+  <defs>
+    <linearGradient id="fbg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f0c29"/>
+      <stop offset="40%" stop-color="#1a1145"/>
+      <stop offset="100%" stop-color="#302b63"/>
+    </linearGradient>
+    <radialGradient id="fglow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#7C3AED" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="500" fill="url(#fbg)"/>
+  <rect width="1024" height="500" fill="url(#fglow)"/>
+
+  <!-- 4 Corner shapes with glow -->
+  <!-- Top-left: Red circle -->
+  <circle cx="180" cy="140" r="55" fill="#FF4757" opacity="0.9"/>
+  <circle cx="180" cy="140" r="80" fill="#FF4757" opacity="0.08"/>
+
+  <!-- Top-right: Blue square -->
+  <rect x="790" y="85" width="110" height="110" rx="20" fill="#3742FA" opacity="0.9"/>
+  <rect x="770" y="65" width="150" height="150" rx="30" fill="#3742FA" opacity="0.06"/>
+
+  <!-- Bottom-left: Green triangle -->
+  <polygon points="180,310 240,420 120,420" fill="#2ED573" opacity="0.9"/>
+  <polygon points="180,290 260,440 100,440" fill="#2ED573" opacity="0.06"/>
+
+  <!-- Bottom-right: Orange star -->
+  <polygon points="845,310 860,355 905,360 872,388 882,432 845,412 808,432 818,388 785,360 830,355" fill="#FFA502" opacity="0.9"/>
+  <circle cx="845" cy="370" r="65" fill="#FFA502" opacity="0.06"/>
+
+  <!-- Center swipe trail -->
+  <path d="M512,260 Q460,220 410,180" stroke="white" stroke-width="4" fill="none" opacity="0.2" stroke-linecap="round"/>
+
+  <!-- Center dot -->
+  <circle cx="512" cy="260" r="24" fill="white" opacity="0.9"/>
+  <circle cx="512" cy="260" r="16" fill="#7C3AED"/>
+
+  <!-- Title text -->
+  <text x="512" y="255" fill="white" font-family="'Space Grotesk','Outfit',sans-serif" font-size="82" font-weight="900" text-anchor="middle" opacity="0" dy="-40">
+    SCS PLAY
+  </text>
+
+  <!-- Simulated title with manual positioning since custom fonts may not render -->
+  <text x="512" y="200" fill="white" font-family="sans-serif" font-size="72" font-weight="900" text-anchor="middle" letter-spacing="6">SCS PLAY</text>
+  <text x="512" y="240" fill="#9D4EDD" font-family="sans-serif" font-size="22" font-weight="600" text-anchor="middle" letter-spacing="8" opacity="0.8">SWIPE · SORT · SCORE</text>
+
+  <!-- Subtle grid pattern -->
+  <line x1="0" y1="250" x2="1024" y2="250" stroke="white" stroke-width="0.5" opacity="0.03"/>
+  <line x1="512" y1="0" x2="512" y2="500" stroke="white" stroke-width="0.5" opacity="0.03"/>
+</svg>
