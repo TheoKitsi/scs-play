@@ -251,10 +251,6 @@ const S = {
     daily_complete:'TÄGLICHE HERAUSFORDERUNG ✓',
     daily_reward_summary:'+2 ❤️ Leben · +100 XP verdient!',
     settings_short:'Mehr',
-    theme_mode:'Design',
-    theme_auto:'Automatisch',
-    theme_dark:'Dunkel',
-    theme_light:'Hell',
     lang_auto:'Automatisch',
     /* Achievement categories */
     ach_cat_basics:'Grundlagen',
@@ -639,10 +635,6 @@ const S = {
     daily_complete:'DAILY CHALLENGE ✓',
     daily_reward_summary:'+2 ❤️ Lives · +100 XP earned!',
     settings_short:'More',
-    theme_mode:'Theme',
-    theme_auto:'Automatic',
-    theme_dark:'Dark',
-    theme_light:'Light',
     lang_auto:'Automatic',
     /* Achievement categories */
     ach_cat_basics:'Basics',

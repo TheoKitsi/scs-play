@@ -84,7 +84,7 @@ function defaults() {
       gameMode: 'klassik',
       playType: 'blitz',          // blitz | classic | endless | competition
       tutorialDone: false,
-      themeMode: 'auto'           // auto | dark | light (v17)
+      themeMode: 'dark'            // dark only (v17)
     },
     /* v20: Per-mode instruction view counter */
     instructionViews: {},

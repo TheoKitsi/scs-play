@@ -1,10 +1,9 @@
 /* ═══════════════════════════════════════
    SCS Play — Settings Screen
-   Toggles, language, theme mode.
+   Toggles, language.
    ═══════════════════════════════════════ */
 import { t, setLanguage }   from '../i18n.js';
 import { $, $$, localise, showScreen } from '../helpers/dom.js';
-import { applyThemeMode }   from '../services/ThemeService.js';
 import app                   from '../appState.js';
 
 export function showSettings(fromPause, showHome) {
@@ -15,8 +14,6 @@ export function showSettings(fromPause, showHome) {
   $('#toggleHaptics').checked    = save.getSetting('haptics');
   $('#toggleSound').checked      = save.getSetting('sound');
   $('#toggleMusic').checked      = save.getSetting('music');
-  const thMode = $('#selectThemeMode');
-  if (thMode) thMode.value = save.getSetting('themeMode') || 'auto';
   $('#selectLang').value         = save.getSetting('language') || 'auto';
 
   $$('.btn-back, .btn-back-bottom', $('#settings')).forEach(btn => {
@@ -51,15 +48,6 @@ export function bindSettings(showHome) {
   bind('#toggleHaptics', 'haptics');
   bind('#toggleSound', 'sound', v => audio.toggle(v));
   bind('#toggleMusic', 'music', v => audio.toggleMusic(v));
-
-  const themeEl = $('#selectThemeMode');
-  if (themeEl) {
-    themeEl.addEventListener('change', async () => {
-      await save.setSetting('themeMode', themeEl.value);
-      applyThemeMode(themeEl.value);
-      app.engagement?.trackThemeChange();
-    });
-  }
 
   const langEl = $('#selectLang');
   if (langEl) {

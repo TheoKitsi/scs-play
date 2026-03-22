@@ -207,14 +207,11 @@
 }
 .setting-row{
   transition:all .2s;
-}
-/* Dark-theme safety: ensure setting cards stay dark */
-body:not(.light-theme) .setting-row{
   background:rgba(255,255,255,0.04);
   border-color:rgba(255,255,255,0.06);
   box-shadow:0 1px 4px rgba(0,0,0,0.15);
 }
-body:not(.light-theme) .setting-row:hover{
+.setting-row:hover{
   background:rgba(255,255,255,0.07);
   border-color:rgba(255,255,255,0.1);
 }
@@ -356,15 +353,6 @@ body:not(.light-theme) .setting-row:hover{
   border-radius:10px;padding:2px 8px;
   margin-left:6px;
 }
-
-/* ─── Light Theme Additions ─── */
-body.light-theme .countdown-num[data-n="3"]{background:linear-gradient(180deg,#4A56E8,#2B35D8);-webkit-background-clip:text;background-clip:text}
-body.light-theme .countdown-num[data-n="2"]{background:linear-gradient(180deg,#E8B800,#D4A700);-webkit-background-clip:text;background-clip:text}
-body.light-theme .countdown-num[data-n="1"]{background:linear-gradient(180deg,#E8354A,#D42040);-webkit-background-clip:text;background-clip:text}
-body.light-theme .results-xp-ring .ring-bg{stroke:rgba(0,0,0,.06)}
-body.light-theme .milestone-flash{background:radial-gradient(circle at center,rgba(255,215,0,.06),transparent 70%)}
-body.light-theme .store-item.premium{background:linear-gradient(135deg,rgba(255,215,0,.06),rgba(255,215,0,.02))}
-body.light-theme .weekend-badge{background:rgba(255,215,0,.1);border-color:rgba(255,215,0,.25)}
 
 /* ═══════════════════════════════════════════
    v22 FIXES: Overlay screen layouts

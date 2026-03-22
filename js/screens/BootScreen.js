@@ -5,7 +5,7 @@
 import { CONFIG }              from '../config.js';
 import { t, setLanguage }      from '../i18n.js';
 import { $, $$, setText, localise, showScreen } from '../helpers/dom.js';
-import { applyTheme, applyThemeMode, listenSystemTheme } from '../services/ThemeService.js';
+import { applyTheme } from '../services/ThemeService.js';
 import { isAdFree }            from '../services/AdService.js';
 import { EngagementTracker }   from '../helpers/engagementTracker.js';
 import app                     from '../appState.js';
@@ -62,10 +62,6 @@ export async function boot(showHome, showAuth) {
     setLanguage(langSetting);
   }
   localise(t);
-
-  /* Auto-detect theme mode */
-  applyThemeMode(save.getSetting('themeMode') || 'auto');
-  listenSystemTheme(() => save.getSetting('themeMode') || 'auto');
 
   applyTheme(save.getActiveTheme());
   document.body.classList.toggle('ad-free', isAdFree(save));

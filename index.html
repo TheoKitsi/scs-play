@@ -236,23 +236,13 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
 
-      <!-- Pin button -->
-      <div class="hero-carousel-footer">
-        <button class="hero-pin-btn" id="heroPinBtn" aria-label="Shortcut hinzufügen">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span id="heroPinLabel">Shortcut</span>
-        </button>
-      </div>
     </div>
 
     <!-- ═══ BOTTOM SHEET — scrollable lower section ═══ -->
     <div class="home-bottom-sheet" id="homeBottomSheet">
       <div class="sheet-handle"></div>
 
-      <!-- SHORTCUT PINBOARD — 4x2 grid of pinned modes -->
-      <div class="shortcut-grid" id="shortcutGrid" role="group" aria-label="Shortcuts">
-        <!-- JS renders 8 shortcut slots here -->
-      </div>
+
 
       <!-- MODE CAROUSEL (hidden — used as SVG template source) -->
       <div class="mode-carousel mode-carousel--hidden" id="modeCarousel" role="group" aria-label="Spielmodus">
@@ -792,7 +782,7 @@
       <label class="setting-row"><span data-i18n="haptics">Haptik</span><input id="toggleHaptics" type="checkbox"></label>
       <label class="setting-row"><span data-i18n="sound">Sound</span><input id="toggleSound" type="checkbox"></label>
       <label class="setting-row"><span data-i18n="music">Musik</span><input id="toggleMusic" type="checkbox"></label>
-      <!-- Theme selector removed — dark only -->
+
       <label class="setting-row">
         <span data-i18n="language">Sprache</span>
         <select id="selectLang"><option value="auto" data-i18n="lang_auto">Automatisch</option><option value="de">Deutsch</option><option value="en">English</option></select>

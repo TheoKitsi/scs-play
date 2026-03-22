@@ -227,7 +227,6 @@ function renderCarousel() {
 
   positionSlides();
   updateBackdropAura();
-  updatePinButton();
 }
 
 /** Position slides relative to carouselIdx (infinite wrapping) */
@@ -266,10 +265,8 @@ function navigateCarousel(direction) {
   carouselIdx = ((carouselIdx + direction) % total + total) % total;
   positionSlides();
   updateBackdropAura();
-  updatePinButton();
   updateHeroStats();
   updatePlayTypeSelector();
-  updateShortcutGrid();
   setTimeout(() => { carouselAnimating = false; }, 360);
 }
 
@@ -280,10 +277,8 @@ function goToSlide(idx) {
   carouselIdx = idx;
   positionSlides();
   updateBackdropAura();
-  updatePinButton();
   updateHeroStats();
   updatePlayTypeSelector();
-  updateShortcutGrid();
   setTimeout(() => { carouselAnimating = false; }, 360);
 }
 
@@ -294,24 +289,6 @@ function updateBackdropAura() {
   if (heroBackdrop) {
     const aura = MODE_AURA[currentMode] || 'rgba(124,58,237,0.35)';
     heroBackdrop.style.background = `radial-gradient(ellipse 80% 70% at 50% 40%, ${aura} 0%, rgba(124,58,237,0.08) 50%, transparent 100%)`;
-  }
-}
-
-/** Update pin button state */
-function updatePinButton() {
-  const btn = $('#heroPinBtn');
-  if (!btn) return;
-  const currentMode = CONFIG.MODE_ORDER[carouselIdx];
-  const pinned = app.save.data.pinnedModes || [];
-  const isPinned = pinned.includes(currentMode);
-  btn.classList.toggle('pinned', isPinned);
-  const label = $('#heroPinLabel');
-  if (label) {
-    if (currentMode === 'klassik') {
-      label.textContent = 'Fixiert';
-    } else {
-      label.textContent = isPinned ? 'Entfernen' : 'Pinnen';
-    }
   }
 }
 
@@ -344,95 +321,6 @@ function initCarouselListeners() {
     }, { passive: true });
   }
 
-  // Pin button
-  const pinBtn = $('#heroPinBtn');
-  if (pinBtn) {
-    pinBtn.addEventListener('click', () => {
-      const currentMode = CONFIG.MODE_ORDER[carouselIdx];
-      if (!app.save.isModeUnlocked(currentMode)) return;
-      togglePin(currentMode);
-    });
-  }
-}
-
-/* ═══════ Shortcut Pinboard ═══════ */
-
-const SHORTCUT_SLOTS = 8; // 4x2 grid
-
-/** Toggle a mode's pinned state */
-function togglePin(mode) {
-  // FARBEN (klassik) is always locked at slot 0
-  if (mode === 'klassik') return;
-  const pinned = app.save.data.pinnedModes || [];
-
-  if (pinned.includes(mode)) {
-    // Unpin: replace with null (but protect slot 0 = klassik)
-    const idx = pinned.indexOf(mode);
-    if (idx === 0) return; // slot 0 is reserved
-    pinned[idx] = null;
-  } else {
-    // Pin: find first empty slot
-    const emptyIdx = pinned.indexOf(null);
-    if (emptyIdx !== -1) {
-      pinned[emptyIdx] = mode;
-    } else if (pinned.length < SHORTCUT_SLOTS) {
-      pinned.push(mode);
-    } else {
-      return; // No empty slots
-    }
-  }
-  // Ensure slot 0 is always klassik
-  if (pinned[0] !== 'klassik') {
-    // Remove klassik from wherever it is
-    const kIdx = pinned.indexOf('klassik');
-    if (kIdx > 0) pinned[kIdx] = null;
-    pinned[0] = 'klassik';
-  }
-  // Ensure array is always SHORTCUT_SLOTS long
-  while (pinned.length < SHORTCUT_SLOTS) pinned.push(null);
-  app.save.data.pinnedModes = pinned.slice(0, SHORTCUT_SLOTS);
-  app.save.save();
-  updateShortcutGrid();
-  updatePinButton();
-}
-
-/** Render the shortcut grid */
-export function updateShortcutGrid() {
-  const grid = $('#shortcutGrid');
-  if (!grid) return;
-
-  const pinned = app.save.data.pinnedModes || [];
-  // Ensure slot 0 is always klassik
-  if (pinned[0] !== 'klassik') pinned[0] = 'klassik';
-  // Ensure we always have SHORTCUT_SLOTS entries
-  while (pinned.length < SHORTCUT_SLOTS) pinned.push(null);
-
-  grid.innerHTML = '';
-  pinned.slice(0, SHORTCUT_SLOTS).forEach((mode, i) => {
-    const slot = document.createElement('button');
-    slot.className = 'shortcut-slot';
-
-    if (mode && app.save.isModeUnlocked(mode)) {
-      slot.dataset.mode = mode;
-      if (mode === app.selectedMode) slot.classList.add('selected');
-      const svgHTML = getModeSVG(mode);
-      const modeName = t(`mode_${mode}`) || mode.toUpperCase();
-      slot.innerHTML = `<div class="shortcut-visual">${svgHTML}</div><span class="shortcut-name">${modeName}</span>`;
-      slot.addEventListener('click', () => {
-        app.selectedMode = mode;
-        // Sync carousel to this mode
-        const modeIdx = CONFIG.MODE_ORDER.indexOf(mode);
-        if (modeIdx !== -1) goToSlide(modeIdx);
-        updateShortcutGrid();
-        updatePlayTypeSelector();
-        updateHeroStats();
-      });
-    } else {
-      slot.classList.add('empty');
-      slot.innerHTML = `<svg class="shortcut-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`;
-    }
-    grid.appendChild(slot);
-  });
 }
 
 /* ═══════ Hero stats spotlight ═══════ */
@@ -484,7 +372,6 @@ export function updateModeSelector() {
 
   initCarouselListeners();
   renderCarousel();
-  updateShortcutGrid();
   updateHeroStats();
 }
 

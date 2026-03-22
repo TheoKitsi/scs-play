@@ -508,7 +508,6 @@ body.mode-worte .center-platform{
   .daily-card{padding:4px 8px;gap:4px}
   .btn-daily-cta{padding:4px 10px;font-size:0.6rem}
   .hero-xp-bar{padding:0 8px}
-  .shortcut-grid{gap:4px}
   .sheet-spacer{height:4px}
   .footer-label{font-size:.6rem}
   .footer-nav{gap:2px;padding:2px 4px;padding-bottom:max(calc(2px + var(--safe-bottom)), 14px)}
