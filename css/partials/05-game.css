@@ -231,7 +231,7 @@
   justify-content: space-around;
   align-items: center;
   padding: 8px 14px;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(8px + max(env(safe-area-inset-bottom, 0px), 6px));
   background: var(--bg, #030014);
   border-top: none;
   border-radius: 0;

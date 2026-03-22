@@ -219,7 +219,7 @@
   -ms-overflow-style:none;
   overscroll-behavior:contain;
   padding:0 8px;
-  padding-bottom:calc(60px + env(safe-area-inset-bottom, 0px));
+  padding-bottom:calc(56px + env(safe-area-inset-bottom, 0px));
   display:flex;
   flex-direction:column;
   gap:6px;
@@ -611,7 +611,7 @@
 /* ═══ FLOATING PLAY FAB ═══ */
 .btn-play-fab{
   position:absolute;
-  bottom:calc(48px + 8px + env(safe-area-inset-bottom, 0px));
+  bottom:calc(46px + 4px + env(safe-area-inset-bottom, 0px));
   left:50%;
   transform:translateX(-50%);
   z-index:20;
@@ -659,7 +659,7 @@
   backdrop-filter:blur(16px);
   -webkit-backdrop-filter:blur(16px);
   padding:0 8px;
-  padding-bottom:env(safe-area-inset-bottom, 0px);
+  padding-bottom:max(env(safe-area-inset-bottom, 0px), 6px);
 }
 .footer-item{
   display:flex;flex-direction:column;
@@ -758,8 +758,9 @@
   gap:4px;
   padding:4px 16px;
   transition:transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-             opacity 0.35s ease;
-  will-change:transform, opacity;
+             opacity 0.35s ease,
+             filter 0.35s ease;
+  will-change:transform, opacity, filter;
   user-select:none;
   -webkit-user-select:none;
 }
@@ -767,18 +768,21 @@
   transform:translateX(0);
   opacity:1;
   z-index:2;
+  filter:blur(0);
 }
 .hero-slide[data-pos="prev"]{
-  transform:translateX(-35%) scale(0.78);
+  transform:translateX(-35%) scale(0.72);
   opacity:0.35;
   z-index:1;
   pointer-events:none;
+  filter:blur(3px);
 }
 .hero-slide[data-pos="next"]{
-  transform:translateX(35%) scale(0.78);
+  transform:translateX(35%) scale(0.72);
   opacity:0.35;
   z-index:1;
   pointer-events:none;
+  filter:blur(3px);
 }
 .hero-slide[data-pos="hidden"]{
   transform:translateX(200%);
@@ -885,21 +889,21 @@
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:2px 16px 4px;
+  padding:0 16px;
   flex-shrink:0;
   width:100%;
 }
 .hero-dots{display:none;}
 .hero-dot{display:none;}
 .hero-pin-btn{
-  display:flex;align-items:center;gap:4px;
-  padding:3px 10px;
+  display:flex;align-items:center;gap:5px;
+  padding:5px 14px;
   background:rgba(255,255,255,0.06);
   border:1px solid rgba(255,255,255,0.12);
-  border-radius:14px;
+  border-radius:16px;
   color:var(--text-dim);
   font-family:'Space Grotesk',sans-serif;
-  font-size:0.55rem;font-weight:800;
+  font-size:0.62rem;font-weight:800;
   text-transform:uppercase;letter-spacing:0.5px;
   cursor:pointer;
   transition:all 0.2s ease;
@@ -964,10 +968,10 @@
 }
 .shortcut-slot.empty{
   border-style:dashed;
-  border-color:rgba(255,255,255,0.06);
+  border-color:rgba(255,255,255,0.15);
   background:transparent;
   cursor:default;
-  opacity:0.4;
+  opacity:0.55;
 }
 .shortcut-slot.empty:hover{transform:none;background:transparent;}
 .shortcut-visual{
@@ -997,8 +1001,8 @@
   text-align:center;
 }
 .shortcut-empty-icon{
-  width:20px;height:20px;
-  color:rgba(255,255,255,0.15);
+  width:24px;height:24px;
+  color:rgba(255,255,255,0.3);
 }
 
 
