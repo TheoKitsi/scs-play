@@ -89,8 +89,8 @@ function defaults() {
     instructionViews: {},
     /* v7: Avatar */
     avatar: null,   // { icon: 'star', colorIndex: 3 }
-    /* v34: Hero carousel shortcut pinboard (8 user slots = 4x2 grid) */
-    pinnedModes: ['klassik', 'beginner', 'mathe', 'stroop', null, null, null, null]
+    /* v34: Hero carousel shortcut pinboard (4 user slots) */
+    pinnedModes: [null, null, null, null]
   };
 }
 

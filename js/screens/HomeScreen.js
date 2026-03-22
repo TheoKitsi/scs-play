@@ -189,6 +189,8 @@ function buildSlide(mode) {
     const aura = MODE_AURA[mode] || 'rgba(124,58,237,0.5)';
     const lvProgress = save.getModeLevelProgress ? save.getModeLevelProgress(mode) : 0;
     const lvPct = Math.round(Math.min(1, Math.max(0, lvProgress)) * 100);
+    const pins = save.data.pinnedModes || [null,null,null,null];
+    const isPinned = pins.includes(mode);
     slide.innerHTML = `
       <div class="hero-slide-visual" style="--slide-aura:${aura}">${getModeSVG(mode)}</div>
       <span class="hero-slide-name">${t(`mode_${mode}`) || mode.toUpperCase()}</span>
@@ -197,7 +199,10 @@ function buildSlide(mode) {
         <span class="hero-slide-badge hero-slide-badge--pb">${pb > 0 ? `PB ${pb.toLocaleString()}` : (t('hero_first_record') || '--')}</span>
         ${lv > 0 ? `<span class="hero-slide-badge hero-slide-badge--level">Lv.${lv} ${lvName}</span>` : ''}
       </div>
-      <div class="hero-slide-level-bar"><div class="hero-slide-level-fill" style="width:${lvPct}%"></div></div>`;
+      <div class="hero-slide-level-bar"><div class="hero-slide-level-fill" style="width:${lvPct}%"></div></div>
+      <button class="hero-pin-btn ${isPinned ? 'pinned' : ''}" data-pin-mode="${mode}" aria-label="${isPinned ? 'Unpin' : 'Pin'}">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="${isPinned ? 'M16 9V4h1V2H7v2h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z' : 'M14 4v5c0 1.12.37 2.16 1 3H9c.65-.86 1-1.9 1-3V4h4m3-2H7v2h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3V4h1V2z'}"/></svg>
+      </button>`;
   } else {
     const unlockLv = getUnlockLevel(mode);
     slide.innerHTML = `
@@ -321,6 +326,15 @@ function initCarouselListeners() {
         navigateCarousel(dx < 0 ? 1 : -1);
       }
     }, { passive: true });
+
+    // Delegated pin/unpin click
+    slider.addEventListener('click', (e) => {
+      const btn = e.target.closest('.hero-pin-btn');
+      if (!btn) return;
+      e.stopPropagation();
+      const mode = btn.dataset.pinMode;
+      togglePin(mode);
+    });
   }
 
 }
@@ -339,29 +353,58 @@ export function updateHeroStats() {
   if (gamesEl)  gamesEl.textContent  = games  > 0 ? games.toLocaleString()  : '—';
 }
 
-/* ═══════ Quick shortcuts strip ═══════ */
+/* ═══════ Quick shortcuts — 4 pinnable slots ═══════ */
+function togglePin(mode) {
+  const { save } = app;
+  const pins = save.data.pinnedModes || [null, null, null, null];
+  // Ensure exactly 4 slots
+  while (pins.length < 4) pins.push(null);
+  const idx = pins.indexOf(mode);
+  if (idx !== -1) {
+    // Unpin
+    pins[idx] = null;
+  } else {
+    // Pin into first empty slot
+    const empty = pins.indexOf(null);
+    if (empty !== -1) pins[empty] = mode;
+  }
+  save.data.pinnedModes = pins.slice(0, 4);
+  save.save();
+  renderCarousel();          // re-render pin icons on slides
+  updateQuickShortcuts();
+}
+
 function updateQuickShortcuts() {
   const el = $('#quickShortcuts');
   if (!el) return;
-  const modes = CONFIG.MODE_ORDER;
-  const MAX = 5;
-  // Sort: current first, then up to MAX-1 others (unlocked preferred)
+  const { save } = app;
+  const pins = (save.data.pinnedModes || [null, null, null, null]).slice(0, 4);
+  while (pins.length < 4) pins.push(null);
   const current = app.selectedMode;
-  const others = modes.filter(m => m !== current);
-  const picks = [current, ...others].slice(0, MAX);
-  el.innerHTML = picks.map(m => {
-    const sel = m === current ? ' selected' : '';
-    const name = t(`mode_${m}`) || m.toUpperCase();
-    return `<button class="qs-chip${sel}" data-mode="${m}">
-      <span class="qs-chip-icon">${getModeSVG(m)}</span>
-      <span class="qs-chip-name">${name}</span>
-    </button>`;
+
+  el.innerHTML = pins.map((m, i) => {
+    if (m) {
+      const isActive = m === current ? ' active' : '';
+      const name = t(`mode_${m}`) || m.toUpperCase();
+      return `<button class="qs-slot filled${isActive}" data-mode="${m}" data-slot="${i}">
+        <span class="qs-slot-icon">${getModeSVG(m)}</span>
+      </button>`;
+    }
+    return `<button class="qs-slot empty" data-slot="${i}"><span class="qs-slot-plus">+</span></button>`;
   }).join('');
-  el.querySelectorAll('.qs-chip').forEach(btn => {
+
+  el.querySelectorAll('.qs-slot').forEach(btn => {
     btn.addEventListener('click', () => {
-      const idx = modes.indexOf(btn.dataset.mode);
-      if (idx !== -1) goToSlide(idx);
-      updateQuickShortcuts();
+      const mode = btn.dataset.mode;
+      if (mode) {
+        // Navigate to pinned mode
+        const idx = CONFIG.MODE_ORDER.indexOf(mode);
+        if (idx !== -1) goToSlide(idx);
+        updateQuickShortcuts();
+      } else {
+        // Empty slot → pin current carousel mode
+        togglePin(current);
+      }
     });
   });
 }

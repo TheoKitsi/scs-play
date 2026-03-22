@@ -509,7 +509,7 @@ body.mode-worte .center-platform{
   .btn-daily-cta{padding:4px 10px;font-size:0.6rem}
   .hero-xp-bar{padding:0 8px}
   .footer-label{font-size:.6rem}
-  .footer-nav{gap:2px;padding:2px 4px;padding-bottom:max(calc(2px + var(--safe-bottom)), 14px)}
+  .footer-nav{gap:2px;padding:2px 4px;padding-bottom:max(calc(2px + var(--safe-bottom)), 4px)}
   .footer-item{padding:6px 2px 4px}
   .brand-cell{width:34px;height:42px;font-size:1.05rem}
   .brand-row{gap:3px}
