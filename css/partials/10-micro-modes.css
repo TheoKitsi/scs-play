@@ -345,6 +345,27 @@
   line-height:1.15;
 }
 
+/* ─── Wissen mode - center question display ─── */
+.wissen-display{
+  font-size:clamp(14px, 4vw, 22px);
+  letter-spacing:0.5px;
+  font-weight:800;
+  line-height:1.25;
+  text-shadow:0 0 18px rgba(251,191,36,.3);
+  max-width:92%;
+  overflow-wrap:break-word;
+  word-break:break-word;
+}
+
+/* ─── Wissen mode - corner auto-sizing for answer text ─── */
+.corner-wissen{
+  font-size:clamp(10px, 2.5vw, 15px) !important;
+  letter-spacing:0;
+  word-break:break-word;
+  hyphens:auto;
+  line-height:1.15;
+}
+
 /* ─── Algebra mode - corner styling ─── */
 .corner-algebra{
   font-family:var(--font-mono,'SF Mono','Menlo','Consolas',monospace);
@@ -563,6 +584,8 @@
   .capitals-display{font-size:18px}
   .corner-capitals{font-size:10px !important}
   .corner-algebra{font-size:12px !important}
+  .wissen-display{font-size:14px}
+  .corner-wissen{font-size:10px !important}
 }
 
 /* ═══════════════════════════════════════════

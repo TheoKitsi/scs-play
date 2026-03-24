@@ -5,9 +5,9 @@
    ================================================================ */
 
 // ── Mode & Play-Type Constants ──────────────────────────────────
-export const ALL_MODES      = ['klassik','beginner','expert','ultra','mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra'];
+export const ALL_MODES      = ['klassik','beginner','expert','ultra','mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra','wissen'];
 export const SORT_MODES     = ['klassik','beginner','expert','ultra'];
-export const BRAIN_MODES    = ['mathe','worte','hauptstaedte','algebra'];
+export const BRAIN_MODES    = ['mathe','worte','hauptstaedte','algebra','wissen'];
 export const MEMORY_MODES   = ['memo','sequenz'];
 export const REFLEX_MODES   = ['stroop','fokus','chaos'];
 export const ALL_PLAY_TYPES = ['blitz','classic','endless','competition'];
@@ -16,11 +16,11 @@ const MODE_NAMES = {
   de: { klassik:'Klassik', beginner:'Formen', expert:'Expert', ultra:'Ultra',
         mathe:'Mathe', worte:'Wörter', memo:'Memo', sequenz:'Sequenz',
         stroop:'Stroop', fokus:'Fokus', chaos:'Chaos',
-        hauptstaedte:'Hauptstädte', algebra:'Algebra' },
+        hauptstaedte:'Hauptstädte', algebra:'Algebra', wissen:'Wissen' },
   en: { klassik:'Classic', beginner:'Shapes', expert:'Expert', ultra:'Ultra',
         mathe:'Math', worte:'Words', memo:'Memo', sequenz:'Sequence',
         stroop:'Stroop', fokus:'Focus', chaos:'Chaos',
-        hauptstaedte:'Capitals', algebra:'Algebra' }
+        hauptstaedte:'Capitals', algebra:'Algebra', wissen:'Knowledge' }
 };
 const PT_NAMES = {
   de: { blitz:'Blitz', classic:'Standard', endless:'Endlos', competition:'Wettkampf' },
@@ -110,7 +110,7 @@ const M = {
   bestScoreHiAcc:  (s,a)     => a.bestScoreWithHighAcc || 0,
 
   /* PBs from save */
-  anyPB:        (s) => Math.max(0, ...[s.pb_klassik,s.pb_beginner,s.pb_expert,s.pb_ultra,s.pb_mathe,s.pb_worte,s.pb_memo,s.pb_sequenz,s.pb_stroop,s.pb_fokus,s.pb_chaos,s.pb_hauptstaedte,s.pb_algebra].map(v=>v||0)),
+  anyPB:        (s) => Math.max(0, ...[s.pb_klassik,s.pb_beginner,s.pb_expert,s.pb_ultra,s.pb_mathe,s.pb_worte,s.pb_memo,s.pb_sequenz,s.pb_stroop,s.pb_fokus,s.pb_chaos,s.pb_hauptstaedte,s.pb_algebra,s.pb_wissen].map(v=>v||0)),
   modePB:       (s,a,m)   => s[`pb_${m}`] || 0,
   ptBestScore:  (s,a,m,p) => a.playTypeBestScore[p] || 0,
   mpBestScore:  (s,a,m,p) => a.modePlayTypeBestScore[`${m}_${p}`] || 0,

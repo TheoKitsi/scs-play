@@ -857,9 +857,18 @@ export class EffectsManager {
     const el = document.createElement('div');
     el.className = 'achievement-toast';
     if (category) el.classList.add(`cat-${category}`);
+    el.style.setProperty('--toast-dur', dur + 'ms');
     el.style.animationDuration = dur + 'ms';
     el.innerHTML = `<span class="toast-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-trophy"></use></svg></span><span class="toast-text">${text}</span>`;
     container.appendChild(el);
+
+    // Tap to dismiss
+    el.addEventListener('click', () => {
+      el.style.transition = 'opacity 0.25s, transform 0.25s';
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(100px)';
+      setTimeout(() => { if (el.parentNode) el.remove(); }, 300);
+    });
 
     // keep at most 3 toasts stacked
     while (container.children.length > 3) container.removeChild(container.firstChild);

@@ -677,7 +677,7 @@
 .play-fab-wrap{
   display:flex;
   justify-content:center;
-  padding:4px 0 2px;
+  padding:8px 0;
   flex-shrink:0;
 }
 .btn-play-fab{
@@ -838,17 +838,17 @@
 }
 .hero-slide[data-pos="prev"]{
   transform:translateX(-35%) scale(0.72);
-  opacity:0.35;
+  opacity:0.55;
   z-index:1;
   pointer-events:none;
-  filter:blur(3px);
+  filter:blur(1.5px);
 }
 .hero-slide[data-pos="next"]{
   transform:translateX(35%) scale(0.72);
-  opacity:0.35;
+  opacity:0.55;
   z-index:1;
   pointer-events:none;
-  filter:blur(3px);
+  filter:blur(1.5px);
 }
 .hero-slide[data-pos="hidden"]{
   transform:translateX(200%);

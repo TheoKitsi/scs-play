@@ -229,6 +229,10 @@ const S = {
     mode_algebra:'ALGEBRA', mode_algebra_desc:'Löse Gleichungen mit Unbekannten!',
     instr_algebra:'Löse die Gleichung und wische zur richtigen Lösung!',
     algebra:'Algebra', pb_algebra:'PB Algebra',
+    /* Wissen mode */
+    mode_wissen:'WISSEN', mode_wissen_desc:'Allgemeinwissen auf die Probe stellen!',
+    instr_wissen:'Eine Frage erscheint – wische zur richtigen Antwort!',
+    wissen:'Wissen', pb_wissen:'PB Wissen',
     /* Clarity overhaul labels */
     rule_label:'Regel', phase_warning:'ACHTUNG!',
     worte_stroop_warn:'Wortfarbe ignorieren – lies das Wort!',
@@ -245,6 +249,28 @@ const S = {
     sequenz_endless_only:'Sequenz: nur Highscore-Modus',
     near_miss:'Knapp!',
     timer_bar:'Zeitbalken',
+    /* Pin feedback */
+    pin_added:'{mode} auf Startseite fixiert',
+    pin_removed:'{mode} von Startseite entfernt',
+    /* Onboarding hints */
+    hint_carousel:'Wische links oder rechts, um alle Spielmodi zu entdecken!',
+    hint_playflow:'Wähle einen Modus, dann den Spieltyp, und tippe SPIELEN!',
+    hint_pin:'Tippe den Pin, um Spiele auf deine Startseite zu fixieren.',
+    hint_shortcuts:'Tippe auf ein fixiertes Spiel, um es direkt zu starten!',
+    hint_ok:'Verstanden',
+    hint_dismiss:'Nicht mehr anzeigen',
+    /* Wheel of Fortune */
+    wheel_title:'GLÜCKSRAD',
+    wheel_spin:'DREHEN!',
+    wheel_daily_spin:'Täglicher Gratis-Dreh!',
+    wheel_ad_spin:'Werbung schauen für Extra-Dreh',
+    wheel_prize_life:'{n} Leben',
+    wheel_prize_fire:'{n} Fire',
+    wheel_prize_xp:'{n} XP',
+    wheel_prize_jackpot:'JACKPOT!',
+    wheel_won:'Du hast gewonnen:',
+    wheel_used:'Morgen wieder drehen!',
+    wheel_streak:'Dreh-Serie: {n} Tage',
     /* Daily rewards, theme, footer */
     daily_reward_text:'+2 ❤️ · +100 XP',
     daily_reward_earned:'+{l} Leben & +{x} XP erhalten!',
@@ -402,7 +428,7 @@ const S = {
   },
   en: {
     app_title:'SCS Play', app_sub:'Sort · Think · React',
-    play:'PLAY', practice:'PRACTICE', leaderboard:'LEADERBOARD', settings:'SETTINGS', settings_footer:'SETTINGS',
+    play:'PLAY', practice:'PRACTICE', leaderboard:'LEADERBOARD', settings:'SETTINGS', settings_footer:'MORE',
     login:'Sign In', logout:'Sign Out', guest:'Play as Guest',
     google_login:'Sign in with Google', apple_login:'Sign in with Apple',
     email_login:'Sign in with Email', email_placeholder:'Email address',
@@ -613,6 +639,10 @@ const S = {
     mode_algebra:'ALGEBRA', mode_algebra_desc:'Solve equations with unknowns!',
     instr_algebra:'Solve the equation and swipe to the correct answer!',
     algebra:'Algebra', pb_algebra:'PB Algebra',
+    /* Wissen mode */
+    mode_wissen:'KNOWLEDGE', mode_wissen_desc:'Test your general knowledge!',
+    instr_wissen:'A question appears – swipe to the correct answer!',
+    wissen:'Knowledge', pb_wissen:'PB Knowledge',
     /* Clarity overhaul labels */
     rule_label:'Rule', phase_warning:'ATTENTION!',
     worte_stroop_warn:'Ignore word color – read the word!',
@@ -629,6 +659,28 @@ const S = {
     sequenz_endless_only:'Sequence: highscore mode only',
     near_miss:'Close!',
     timer_bar:'Timer bar',
+    /* Pin feedback */
+    pin_added:'{mode} pinned to home',
+    pin_removed:'{mode} removed from home',
+    /* Onboarding hints */
+    hint_carousel:'Swipe left or right to discover all game modes!',
+    hint_playflow:'Select a mode, then a play type, and tap PLAY!',
+    hint_pin:'Tap the pin to add games to your home shortcuts.',
+    hint_shortcuts:'Tap a pinned game to start it instantly!',
+    hint_ok:'Got it',
+    hint_dismiss:'Don\'t show again',
+    /* Wheel of Fortune */
+    wheel_title:'WHEEL OF FORTUNE',
+    wheel_spin:'SPIN!',
+    wheel_daily_spin:'Free daily spin!',
+    wheel_ad_spin:'Watch ad for extra spin',
+    wheel_prize_life:'{n} Lives',
+    wheel_prize_fire:'{n} Fire',
+    wheel_prize_xp:'{n} XP',
+    wheel_prize_jackpot:'JACKPOT!',
+    wheel_won:'You won:',
+    wheel_used:'Spin again tomorrow!',
+    wheel_streak:'Spin streak: {n} days',
     /* Daily rewards, theme, footer */
     daily_reward_text:'+2 ❤️ · +100 XP',
     daily_reward_earned:'+{l} lives & +{x} XP earned!',
@@ -647,7 +699,7 @@ const S = {
     ach_filter_all:'All',
     ach_filter_earned:'Earned',
     ach_filter_locked:'Locked',
-    ach_filter_close:'Close',
+    ach_filter_close:'Almost',
     ach_search_placeholder:'Search achievements...',
     ach_next_target:'Next target',
     ach_complete:'Complete!',
@@ -779,7 +831,7 @@ const S = {
     share_insane_streak:'Insane {n} streak!',
     share_challenge:'Can you beat this?',
     share_copied:'Copied!',
-    share_unavailable:'Share unavailable',
+    share_unavailable:'Share unavailable \u2013 show text',
     share_copy_prompt:'Copy this text:',
     /* Sync */
     sync_failed:'Cloud sync failed \u2013 saved locally',

@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════
    SCS Play — Service Worker
    ═══════════════════════════════════════ */
-const CACHE = 'scs-v44';
+const CACHE = 'scs-v46';
 const ASSETS = [
   './',
   './index.html',
@@ -35,6 +35,7 @@ const ASSETS = [
   './js/helpers/haptics.js',
   './js/helpers/microFeedback.js',
   './js/helpers/engagementTracker.js',
+  './js/helpers/onboardingHints.js',
   /* ─── Renderers ─── */
   './js/renderers/shapes.js',
   './js/renderers/avatars.js',
@@ -57,6 +58,7 @@ const ASSETS = [
   './js/screens/StoreScreen.js',
   './js/screens/AvatarScreen.js',
   './js/screens/EngagementReportScreen.js',
+  './js/screens/WheelScreen.js',
   /* ─── Achievements ─── */
   './js/achievements/AchievementSystem.js'
 ];

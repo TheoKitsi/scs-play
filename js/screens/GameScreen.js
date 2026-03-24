@@ -120,7 +120,7 @@ export function renderCorners(cornerMap, forceAll = false) {
     }
 
     if (isText) {
-      const extraCls = info.type === 'capitals' ? ' corner-capitals' : info.type === 'algebra' ? ' corner-algebra' : '';
+      const extraCls = info.type === 'capitals' ? ' corner-capitals' : info.type === 'algebra' ? ' corner-algebra' : info.type === 'wissen' ? ' corner-wissen' : '';
       el.innerHTML = `<span class="corner-text${extraCls}">${info.display}</span>`;
       el.dataset.value = info.value;
     } else {
@@ -153,7 +153,7 @@ export function renderCenter(shapeData) {
   /* Brain & reflex modes: use neutral platform glow so it doesn't reveal the answer */
   const isBrainLike = shapeData.type === 'math' || shapeData.type === 'word'
     || shapeData.type === 'stroop' || shapeData.type === 'fokus' || shapeData.type === 'chaos'
-    || shapeData.type === 'capitals';
+    || shapeData.type === 'capitals' || shapeData.type === 'wissen';
   const platformColor = isBrainLike ? NEUTRAL_PLATFORM_COLOR : color;
 
   /* ── CAPITALS: show country name as center stimulus ── */
@@ -165,6 +165,23 @@ export function renderCenter(shapeData) {
       center.appendChild(span);
     }
     span.className = 'center-text capitals-display';
+    span.textContent = shapeData.display;
+    center.className = 'center-shape pop-in spawn-pop';
+    if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
+    if (platform) { applyPlatformColor(platform, platformColor); platform.classList.add('platform-active'); }
+    if (!inRush) spawnBurstParticles(platformColor);
+    return;
+  }
+
+  /* ── WISSEN: show question as center stimulus ── */
+  if (shapeData.type === 'wissen') {
+    let span = center.firstChild;
+    if (!span || span.tagName !== 'SPAN') {
+      center.innerHTML = '';
+      span = document.createElement('span');
+      center.appendChild(span);
+    }
+    span.className = 'center-text wissen-display';
     span.textContent = shapeData.display;
     center.className = 'center-shape pop-in spawn-pop';
     if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
@@ -556,7 +573,7 @@ function cornerScorePop(dir, text) {
 function _showModeInstruction(mode, onDone) {
   const overlay = $('#modeInstructionOverlay');
   if (!overlay) { onDone(); return; }
-  const icons = { mathe:'🧮', worte:'📝', memo:'🧠', sequenz:'🔔', stroop:'🎨', fokus:'🎯', chaos:'🌀', hauptstaedte:'🌍', algebra:'📐' };
+  const icons = { mathe:'🧮', worte:'📝', memo:'🧠', sequenz:'🔔', stroop:'🎨', fokus:'🎯', chaos:'🌀', hauptstaedte:'🌍', algebra:'📐', wissen:'💡' };
   const iconEl = $('#modeInstructionIcon');
   const titleEl = $('#modeInstructionTitle');
   const textEl = $('#modeInstructionText');
@@ -645,8 +662,8 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
 
   const modeIndicator = $('#modeIndicator');
   if (modeIndicator) {
-    const modeIcons = { beginner:'🟢', klassik:'🔵', expert:'🔷', ultra:'💎', mathe:'🧮', worte:'📝', memo:'🧠', sequenz:'🔔', stroop:'🎨', fokus:'🎯', chaos:'🌀', hauptstaedte:'🌍', algebra:'📐' };
-    const modeLabels = { klassik: t('mode_klassik'), beginner: t('mode_beginner'), mathe: t('mode_mathe'), worte: t('mode_worte'), memo: t('mode_memo'), sequenz: t('mode_sequenz'), stroop: t('mode_stroop'), fokus: t('mode_fokus'), chaos: t('mode_chaos'), hauptstaedte: t('mode_hauptstaedte'), algebra: t('mode_algebra') };
+    const modeIcons = { beginner:'🟢', klassik:'🔵', expert:'🔷', ultra:'💎', mathe:'🧮', worte:'📝', memo:'🧠', sequenz:'🔔', stroop:'🎨', fokus:'🎯', chaos:'🌀', hauptstaedte:'🌍', algebra:'📐', wissen:'💡' };
+    const modeLabels = { klassik: t('mode_klassik'), beginner: t('mode_beginner'), mathe: t('mode_mathe'), worte: t('mode_worte'), memo: t('mode_memo'), sequenz: t('mode_sequenz'), stroop: t('mode_stroop'), fokus: t('mode_fokus'), chaos: t('mode_chaos'), hauptstaedte: t('mode_hauptstaedte'), algebra: t('mode_algebra'), wissen: t('mode_wissen') };
     const icon = modeIcons[app.selectedMode] || '';
     if (modeLabels[app.selectedMode]) modeIndicator.textContent = `${icon} ${modeLabels[app.selectedMode]}`;
     else {
@@ -696,7 +713,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
       compTargetEl.textContent = t('competition_target', { n: CONFIG.COMPETITION_SCORE_TARGETS[level] || 2000 });
     }
   } else {
-    const isBrainLikeMode = ['mathe','worte','stroop','fokus','chaos'].includes(app.selectedMode);
+    const isBrainLikeMode = ['mathe','worte','stroop','fokus','chaos','hauptstaedte','algebra','wissen'].includes(app.selectedMode);
     const blitzDur = isBrainLikeMode ? (CONFIG.DURATION_BLITZ_BRAIN || CONFIG.DURATION_BLITZ) : CONFIG.DURATION_BLITZ;
     const dur = app.selectedPlayType === 'classic' ? CONFIG.DURATION_CLASSIC : blitzDur;
     if (timerEl) { timerEl.style.visibility = 'visible'; timerEl.textContent = dur; }
@@ -738,7 +755,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
   }
 
   /* Brain & Reflex modes: show instruction overlay for first 5 plays */
-  const instructionModes = ['mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra'];
+  const instructionModes = ['mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra','wissen'];
   const instrViews = save.getInstructionViews(app.selectedMode);
   const showInstr = instructionModes.includes(app.selectedMode) && !practice && instrViews < 5;
   if (showInstr) {

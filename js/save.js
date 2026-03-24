@@ -27,6 +27,9 @@ function defaults() {
     scores_stroop:   [],
     scores_fokus:    [],
     scores_chaos:    [],
+    scores_hauptstaedte:[],
+    scores_algebra:  [],
+    scores_wissen:   [],
     pb_klassik:  0,
     pb_beginner: 0,
     pb_expert:   0,
@@ -39,6 +42,9 @@ function defaults() {
     pb_stroop:   0,
     pb_fokus:    0,
     pb_chaos:    0,
+    pb_hauptstaedte:0,
+    pb_algebra:  0,
+    pb_wissen:   0,
     /* Endless PBs (by correct count) */
     pb_endless_klassik:  0,
     pb_endless_beginner: 0,
@@ -51,6 +57,9 @@ function defaults() {
     pb_endless_stroop:   0,
     pb_endless_fokus:    0,
     pb_endless_chaos:    0,
+    pb_endless_hauptstaedte:0,
+    pb_endless_algebra:  0,
+    pb_endless_wissen:   0,
     totalXP:   0,
     level:     0,
     gamesPlayed: 0,
@@ -90,7 +99,14 @@ function defaults() {
     /* v7: Avatar */
     avatar: null,   // { icon: 'star', colorIndex: 3 }
     /* v34: Hero carousel shortcut pinboard (4 user slots) */
-    pinnedModes: [null, null, null, null]
+    pinnedModes: [null, null, null, null],
+    /* v46: Onboarding hints tracking */
+    hintsShown: {},
+    /* v46: Wheel of Fortune */
+    lastWheelSpin: null,
+    wheelSpinsToday: 0,
+    wheelStreak: 0,
+    lastWheelDate: null
   };
 }
 
@@ -155,6 +171,14 @@ export class SaveService {
           this.data.pb_stroop = Math.max(this.data.pb_stroop || 0, cloud.pb_stroop || 0);
           this.data.pb_fokus = Math.max(this.data.pb_fokus || 0, cloud.pb_fokus || 0);
           this.data.pb_chaos = Math.max(this.data.pb_chaos || 0, cloud.pb_chaos || 0);
+          this.data.pb_wissen = Math.max(this.data.pb_wissen || 0, cloud.pb_wissen || 0);
+          this.data.pb_hauptstaedte = Math.max(this.data.pb_hauptstaedte || 0, cloud.pb_hauptstaedte || 0);
+          this.data.pb_algebra = Math.max(this.data.pb_algebra || 0, cloud.pb_algebra || 0);
+          /* Endless PBs */
+          ['klassik','beginner','expert','ultra','mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra','wissen'].forEach(m => {
+            const k = 'pb_endless_' + m;
+            this.data[k] = Math.max(this.data[k] || 0, cloud[k] || 0);
+          });
           this.data.totalXP = Math.max(this.data.totalXP, cloud.totalXP || 0);
           this.data.level = Math.max(this.data.level, cloud.level || 0);
           this.data.gamesPlayed = Math.max(this.data.gamesPlayed, cloud.gamesPlayed || 0);
@@ -166,7 +190,7 @@ export class SaveService {
           if (cloud.dailyChallenges) {
             this.data.dailyChallenges = { ...this.data.dailyChallenges, ...cloud.dailyChallenges };
           }
-          ['scores_klassik','scores_beginner','scores_expert','scores_ultra','scores_mathe','scores_worte','scores_memo','scores_sequenz','scores_stroop','scores_fokus','scores_chaos','scores_hauptstaedte','scores_algebra'].forEach(k => {
+          ['scores_klassik','scores_beginner','scores_expert','scores_ultra','scores_mathe','scores_worte','scores_memo','scores_sequenz','scores_stroop','scores_fokus','scores_chaos','scores_hauptstaedte','scores_algebra','scores_wissen'].forEach(k => {
             const ck = k === 'scores_beginner' ? (cloud[k] || cloud.scores_indie) : cloud[k];
             if (ck) this.data[k] = this._mergeScores(this.data[k] || [], ck);
           });
@@ -502,6 +526,7 @@ export class SaveService {
     if (mode === 'chaos')    return this.data.level >= (CONFIG.UNLOCK_CHAOS || 0);
     if (mode === 'hauptstaedte') return this.data.level >= (CONFIG.UNLOCK_HAUPTSTAEDTE || 0);
     if (mode === 'algebra')  return this.data.level >= (CONFIG.UNLOCK_ALGEBRA || 0);
+    if (mode === 'wissen')   return this.data.level >= (CONFIG.UNLOCK_WISSEN || 0);
     return false;
   }
 

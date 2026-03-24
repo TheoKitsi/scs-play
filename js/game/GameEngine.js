@@ -160,6 +160,7 @@ export class GameEngine {
   get contentType() {
     if (this.mode === 'mathe' || this.mode === 'algebra') return 'math';
     if (this.mode === 'hauptstaedte') return 'capitals';
+    if (this.mode === 'wissen') return 'wissen';
     if (this.mode === 'worte') return 'word';
     if (this.mode === 'stroop') return 'stroop';
     if (this.mode === 'fokus') return 'fokus';
@@ -168,7 +169,7 @@ export class GameEngine {
   }
 
   get isBrainMode() {
-    return this.mode === 'mathe' || this.mode === 'worte' || this.mode === 'hauptstaedte' || this.mode === 'algebra';
+    return this.mode === 'mathe' || this.mode === 'worte' || this.mode === 'hauptstaedte' || this.mode === 'algebra' || this.mode === 'wissen';
   }
 
   get isReflexMode() {
@@ -220,7 +221,7 @@ export class GameEngine {
     if (this.mode === 'klassik')  return CONFIG.DIRECTIONS_KLASSIK;
     if (this.mode === 'mathe' || this.mode === 'worte' || this.mode === 'memo' || this.mode === 'sequenz'
         || this.mode === 'stroop' || this.mode === 'fokus' || this.mode === 'chaos'
-        || this.mode === 'hauptstaedte' || this.mode === 'algebra')
+        || this.mode === 'hauptstaedte' || this.mode === 'algebra' || this.mode === 'wissen')
       return CONFIG.DIRECTIONS_4;
     return CONFIG.DIRECTIONS_BEGINNER;
   }
@@ -344,6 +345,20 @@ export class GameEngine {
       dirs.forEach((d, i) => {
         this.cornerMap[d] = {
           display: '?', value: '', type: 'capitals',
+          color: CONFIG.COLORS.normal[i],
+          colorblind: CONFIG.COLORS.colorblind[i],
+          colorIndex: i
+        };
+      });
+      return;
+    }
+
+    if (this.mode === 'wissen') {
+      this._wissenUsed = new Set();
+      this.cornerMap = {};
+      dirs.forEach((d, i) => {
+        this.cornerMap[d] = {
+          display: '?', value: '', type: 'wissen',
           color: CONFIG.COLORS.normal[i],
           colorblind: CONFIG.COLORS.colorblind[i],
           colorIndex: i
@@ -591,6 +606,7 @@ export class GameEngine {
     if (this.mode === 'mathe')  { this._spawnMath();  return; }
     if (this.mode === 'algebra') { this._spawnAlgebra(); return; }
     if (this.mode === 'hauptstaedte') { this._spawnHauptstaedte(); return; }
+    if (this.mode === 'wissen') { this._spawnWissen(); return; }
     if (this.mode === 'worte')  { this._spawnWord();  return; }
     if (this.mode === 'stroop') { this._spawnStroop(); return; }
     if (this.mode === 'fokus')  { this._spawnFokus();  return; }
@@ -821,6 +837,70 @@ export class GameEngine {
 
     this.currentShape = {
       direction: correctDir, display: countryName, type: 'capitals',
+      color: this.cornerMap[correctDir].color,
+      colorblind: this.cornerMap[correctDir].colorblind,
+      bonus
+    };
+    this.bonusType = bonus;
+    this.lastSpawnTime = performance.now();
+
+    if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
+    if (this.onSpawn) this.onSpawn(this.currentShape);
+    this._scheduleSpawn();
+  }
+
+  /* ═══ WISSEN (General Knowledge) spawn ═══ */
+  _getWissenTier() {
+    const tiers = CONFIG.WISSEN_TIERS;
+    let tier = tiers[0];
+    for (const t of tiers) { if (this.correct >= t.threshold) tier = t; }
+    const timeIdx = Math.min(tiers.length - 1, Math.floor(this.elapsed / 20));
+    if (tiers.indexOf(tiers[timeIdx]) > tiers.indexOf(tier)) tier = tiers[timeIdx];
+    return tiers.indexOf(tier);
+  }
+
+  _spawnWissen() {
+    const dirs = this.directions;
+    const lang = this._lang || 'de';
+    const bank = CONFIG.WISSEN_BANK;
+    const tierIdx = this._getWissenTier();
+
+    /* Filter pool by tier, exclude recently used questions */
+    let pool = bank.filter(e => e.tier <= tierIdx && !this._wissenUsed.has(e));
+    /* If pool exhausted, reset tracking */
+    if (pool.length === 0) {
+      this._wissenUsed.clear();
+      pool = bank.filter(e => e.tier <= tierIdx);
+    }
+
+    const entry = pool[Math.floor(this.rng() * pool.length)];
+    this._wissenUsed.add(entry);
+    const question = lang === 'en' ? entry.q_en : entry.q_de;
+    const correctAnswer = entry.a.find(x => x.ok);
+    const correctText = lang === 'en' ? correctAnswer.en : correctAnswer.de;
+
+    /* Build shuffled answer list */
+    const answers = shuffle(entry.a, this.rng);
+
+    /* Place answers into corners */
+    const correctIdx = answers.indexOf(correctAnswer);
+    const correctDir = dirs[correctIdx];
+    dirs.forEach((d, i) => {
+      const ans = answers[i];
+      const text = lang === 'en' ? ans.en : ans.de;
+      this.cornerMap[d].display = text;
+      this.cornerMap[d].value = text;
+    });
+
+    let bonus = null;
+    if (!this.practice) {
+      const roll = this.rng();
+      if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
+      else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
+    }
+
+    this.currentShape = {
+      direction: correctDir, display: question, type: 'wissen',
       color: this.cornerMap[correctDir].color,
       colorblind: this.cornerMap[correctDir].colorblind,
       bonus

@@ -10,6 +10,8 @@ import { avatarSVG }        from '../renderers/avatars.js';
 import { updateAdBanner, isAdFree } from '../services/AdService.js';
 import { applyTheme }       from '../services/ThemeService.js';
 import { EffectsManager }   from '../effects.js';
+import { checkOnboardingHints } from '../helpers/onboardingHints.js';
+import { updateWheelCard } from './WheelScreen.js';
 import app                   from '../appState.js';
 
 /* ═══════ Hero Carousel State ═══════ */
@@ -139,7 +141,8 @@ const MODE_DESC_KEYS = {
   mathe: 'mode_mathe_desc', worte: 'mode_worte_desc', memo: 'mode_memo_desc',
   sequenz: 'mode_sequenz_desc',
   stroop: 'mode_stroop_desc', fokus: 'mode_fokus_desc', chaos: 'mode_chaos_desc',
-  hauptstaedte: 'mode_hauptstaedte_desc', algebra: 'mode_algebra_desc'
+  hauptstaedte: 'mode_hauptstaedte_desc', algebra: 'mode_algebra_desc',
+  wissen: 'mode_wissen_desc'
 };
 
 const MODE_AURA = {
@@ -156,6 +159,7 @@ const MODE_AURA = {
   chaos:    'rgba(249,115,22,0.28)',
   hauptstaedte: 'rgba(56,189,248,0.25)',
   algebra:  'rgba(251,191,36,0.25)',
+  wissen:   'rgba(251,191,36,0.22)',
 };
 
 export function updateHeroCard() {
@@ -267,11 +271,19 @@ function navigateCarousel(direction) {
   if (carouselAnimating) return;
   carouselAnimating = true;
   const total = CONFIG.MODE_ORDER.length;
+  const prevPlayType = app.selectedPlayType;
   carouselIdx = ((carouselIdx + direction) % total + total) % total;
   positionSlides();
   updateBackdropAura();
   updateHeroStats();
   updatePlayTypeSelector();
+  // Restore play type if the new mode supports it (A6 fix)
+  if (app.selectedMode !== 'sequenz' && prevPlayType) {
+    app.selectedPlayType = prevPlayType;
+    $$('.play-type-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.play === prevPlayType);
+    });
+  }
   updateQuickShortcuts();
   setTimeout(() => { carouselAnimating = false; }, 360);
 }
@@ -280,11 +292,19 @@ function navigateCarousel(direction) {
 function goToSlide(idx) {
   if (carouselAnimating || idx === carouselIdx) return;
   carouselAnimating = true;
+  const prevPlayType = app.selectedPlayType;
   carouselIdx = idx;
   positionSlides();
   updateBackdropAura();
   updateHeroStats();
   updatePlayTypeSelector();
+  // Restore play type if the new mode supports it (A6 fix)
+  if (app.selectedMode !== 'sequenz' && prevPlayType) {
+    app.selectedPlayType = prevPlayType;
+    $$('.play-type-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.play === prevPlayType);
+    });
+  }
   updateQuickShortcuts();
   setTimeout(() => { carouselAnimating = false; }, 360);
 }
@@ -360,9 +380,11 @@ function togglePin(mode) {
   // Ensure exactly 4 slots
   while (pins.length < 4) pins.push(null);
   const idx = pins.indexOf(mode);
+  let wasPinned = false;
   if (idx !== -1) {
     // Unpin
     pins[idx] = null;
+    wasPinned = true;
   } else {
     // Pin into first empty slot
     const empty = pins.indexOf(null);
@@ -372,6 +394,11 @@ function togglePin(mode) {
   save.save();
   renderCarousel();          // re-render pin icons on slides
   updateQuickShortcuts();
+
+  // Toast feedback
+  const modeName = t(`mode_${mode}`) || mode.toUpperCase();
+  const msg = wasPinned ? t('pin_removed', { mode: modeName }) : t('pin_added', { mode: modeName });
+  getBodyFx().achievementToast(msg);
 }
 
 function updateQuickShortcuts() {
@@ -425,6 +452,7 @@ function getUnlockLevel(mode) {
     chaos: CONFIG.UNLOCK_CHAOS,
     hauptstaedte: CONFIG.UNLOCK_HAUPTSTAEDTE,
     algebra: CONFIG.UNLOCK_ALGEBRA,
+    wissen: CONFIG.UNLOCK_WISSEN,
   };
   return (map[mode] ?? 0) + 1;
 }
@@ -444,7 +472,7 @@ export function updateModeSelector() {
 export function updatePlayTypeSelector() {
   const { save } = app;
   const isSequenz = app.selectedMode === 'sequenz';
-  const isBrainReflex = ['mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra'].includes(app.selectedMode);
+  const isBrainReflex = ['mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra','wissen'].includes(app.selectedMode);
   /* Sequenz forces endless — auto-select and disable others */
   if (isSequenz && app.selectedPlayType !== 'endless') {
     app.selectedPlayType = 'endless';
@@ -558,6 +586,7 @@ export function showHome() {
 
   updateAvatarDisplay();
   checkDailyLogin();
+  updateWheelCard();
 
   /* Weekend XP bonus badge */
   const weekendBadge = $('#weekendBadge');
@@ -573,4 +602,7 @@ export function showHome() {
     const rate = save.getXPRate ? save.getXPRate() : 1;
     xpRateHint.textContent = rate < 1 ? t('xp_rate_info', { n: Math.round(rate * 100) }) : '';
   }
+
+  /* Onboarding hints for first-time users */
+  checkOnboardingHints();
 }

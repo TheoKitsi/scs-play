@@ -38,6 +38,8 @@ import { showAvatarSelect, bindAvatarSave }
                             from './screens/AvatarScreen.js';
 import { showEngagementReport }
                             from './screens/EngagementReportScreen.js';
+import { bindWheel, updateWheelCard }
+                            from './screens/WheelScreen.js';
 
 /* ═══════ Instantiate core services ═══════ */
 app.audio = new AudioManager();
@@ -56,7 +58,7 @@ function initOfflineIndicator() {
     if (msgEl) msgEl.textContent = isOnline ? t('online_msg') : t('offline_msg');
     toast.classList.toggle('online', isOnline);
     toast.classList.add('active');
-    setTimeout(() => toast.classList.remove('active'), 3500);
+    setTimeout(() => toast.classList.remove('active'), 5000);
   }
 
   window.addEventListener('offline', () => showToast(false));
@@ -207,6 +209,9 @@ function bindEvents() {
         else if (mode === 'stroop') reqLevel = (CONFIG.UNLOCK_STROOP || 0) + 1;
         else if (mode === 'fokus') reqLevel = (CONFIG.UNLOCK_FOKUS || 0) + 1;
         else if (mode === 'chaos') reqLevel = (CONFIG.UNLOCK_CHAOS || 0) + 1;
+        else if (mode === 'hauptstaedte') reqLevel = (CONFIG.UNLOCK_HAUPTSTAEDTE || 0) + 1;
+        else if (mode === 'algebra') reqLevel = (CONFIG.UNLOCK_ALGEBRA || 0) + 1;
+        else if (mode === 'wissen') reqLevel = (CONFIG.UNLOCK_WISSEN || 0) + 1;
         getBodyFx().achievementToast(t('mode_locked_toast', { n: reqLevel }));
         return;
       }
@@ -294,6 +299,7 @@ function bindEvents() {
 
   /* ─ Shop tabs ─ */
   bindShopTabs();
+  bindWheel();
 
   /* ─ Back button fallback ─ */
   $$('.btn-back').forEach(btn => {

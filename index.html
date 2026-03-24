@@ -295,6 +295,12 @@
           </div>
           <span class="mode-card-name" data-i18n="mode_hauptstaedte">HAUPTST&#196;DTE</span>
         </button>
+        <button class="mode-card" data-mode="wissen">
+          <div class="mode-card-visual">
+            <svg viewBox="0 0 52 52"><circle cx="26" cy="20" r="10" fill="none" stroke="#FBBF24" stroke-width="1.5" opacity=".5"/><line x1="26" y1="30" x2="26" y2="38" stroke="#FBBF24" stroke-width="2" opacity=".5"/><circle cx="26" cy="42" r="1.5" fill="#FBBF24" opacity=".6"/><text x="26" y="24" fill="#FBBF24" font-size="10" font-weight="700" text-anchor="middle" opacity=".8">?!</text></svg>
+          </div>
+          <span class="mode-card-name" data-i18n="mode_wissen">WISSEN</span>
+        </button>
         <button class="mode-card" data-mode="sequenz">
           <div class="mode-card-visual">
             <svg viewBox="0 0 52 52"><circle cx="10" cy="10" r="5.5" fill="#FF4757" opacity=".35"/><circle cx="42" cy="10" r="5.5" fill="#3742FA" opacity=".35"/><circle cx="10" cy="42" r="5.5" fill="#2ED573" opacity=".35"/><circle cx="42" cy="42" r="5.5" fill="#FFA502" opacity=".35"/><text x="8" y="14" fill="#FF4757" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">1</text><text x="44" y="14" fill="#3742FA" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">2</text><text x="8" y="46" fill="#2ED573" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">3</text><text x="44" y="46" fill="#FFA502" font-size="7" font-weight="700" text-anchor="middle" opacity=".9">4</text><polyline points="10,10 42,10 10,42 42,42" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 3" opacity=".4"/></svg>
@@ -382,6 +388,24 @@
         <div class="daily-right">
           <button id="btnDaily" class="btn btn-daily-cta" data-i18n="play">Spielen</button>
           <span class="daily-timer" id="dailyTimer"></span>
+        </div>
+      </div>
+
+      <!-- Wheel of Fortune Card -->
+      <div class="wheel-card" id="wheelCard">
+        <div class="daily-left">
+          <div class="daily-icon-wrap wheel-icon-wrap">
+            <svg class="ui-icon" viewBox="0 0 24 24" style="fill:#FFA502;width:22px;height:22px">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+            </svg>
+          </div>
+          <div class="daily-info">
+            <span class="daily-title" data-i18n="wheel_title">GL&Uuml;CKSRAD</span>
+            <span class="daily-reward wheel-reward" id="wheelReward" data-i18n="wheel_daily_spin">T&auml;glicher Gratis-Dreh!</span>
+          </div>
+        </div>
+        <div class="daily-right">
+          <button id="btnWheel" class="btn btn-wheel-cta" data-i18n="wheel_spin">DREHEN!</button>
         </div>
       </div>
 
@@ -726,6 +750,7 @@
       <button class="lb-mode-btn" data-mode="algebra" data-i18n="mode_algebra">ALGEBRA</button>
       <button class="lb-mode-btn" data-mode="worte" data-i18n="mode_worte">WÖRTER</button>
       <button class="lb-mode-btn" data-mode="hauptstaedte" data-i18n="mode_hauptstaedte">HAUPTSTÄDTE</button>
+      <button class="lb-mode-btn" data-mode="wissen" data-i18n="mode_wissen">WISSEN</button>
       <button class="lb-mode-btn" data-mode="memo" data-i18n="mode_memo">MEMO</button>
       <button class="lb-mode-btn" data-mode="sequenz" data-i18n="mode_sequenz">SEQUENZ</button>
       <button class="lb-mode-btn" data-mode="stroop" data-i18n="mode_stroop">STROOP</button>
@@ -924,6 +949,21 @@
 <div id="offlineToast" class="offline-toast" aria-live="polite" role="status">
   <span class="offline-icon">&#x26A0;</span>
   <span id="offlineMsg" class="offline-msg">Offline</span>
+</div>
+
+<!-- ═══════ WHEEL OF FORTUNE OVERLAY ═══════ -->
+<div id="wheelOverlay" class="wheel-overlay">
+  <div class="wheel-panel">
+    <button class="wheel-close" id="btnWheelClose" aria-label="Close">&times;</button>
+    <h2 class="wheel-heading" data-i18n="wheel_title">GL&Uuml;CKSRAD</h2>
+    <div class="wheel-container">
+      <canvas id="wheelCanvas" width="300" height="300"></canvas>
+      <div class="wheel-pointer"></div>
+    </div>
+    <div class="wheel-result" id="wheelResult"></div>
+    <button id="btnWheelSpin" class="btn-wheel-spin" data-i18n="wheel_spin">DREHEN!</button>
+    <button id="btnWheelAd" class="btn-wheel-ad" style="display:none" data-i18n="wheel_ad_spin">Werbung schauen f&uuml;r Extra-Dreh</button>
+  </div>
 </div>
 
 <!-- ═══════ LANDSCAPE WARNING ═══════ -->

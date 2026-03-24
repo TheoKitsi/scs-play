@@ -76,10 +76,7 @@
   display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 .pause-panel .btn { width: 100%; margin-top: 4px; }
-@keyframes pauseSlideIn { /* Left for reference if needed elsewhere */
-  0% { transform: scale(0.85) translateY(40px); opacity: 0; }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
-}
+
 
 /* Pause overlay layout — stack ad + panel vertically */
 .pause-overlay {
@@ -603,6 +600,154 @@
 .achievement-toast.cat-cumulative{border-left:3px solid var(--ach-collection)}
 .achievement-toast.cat-endless,
 .achievement-toast.cat-mastery{border-left:3px solid var(--ach-milestone)}
+
+/* ═══════════════════════════════════════════
+   ONBOARDING HINTS OVERLAY
+   ═══════════════════════════════════════════ */
+.onboarding-overlay{
+  position:fixed;inset:0;z-index:100000;
+  background:rgba(0,0,0,0.75);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.35s ease;
+}
+.onboarding-overlay.active{opacity:1;pointer-events:auto}
+.onboarding-spotlight{
+  position:absolute;
+  box-shadow:0 0 0 9999px rgba(0,0,0,0.7);
+  border:2px solid rgba(124,58,237,0.6);
+  transition:all 0.4s ease;
+  pointer-events:none;
+}
+.onboarding-bubble{
+  position:relative;z-index:1;
+  max-width:320px;width:calc(100% - 48px);
+  background:rgba(15,23,42,0.95);
+  border:1px solid rgba(124,58,237,0.4);
+  border-radius:var(--radius-lg);
+  padding:24px 20px 18px;
+  text-align:center;
+  box-shadow:0 16px 48px rgba(0,0,0,0.5),0 0 24px rgba(124,58,237,0.2);
+}
+.onboarding-text{
+  font-size:1rem;font-weight:600;
+  color:var(--text);line-height:1.5;
+  margin:0 0 16px;
+}
+.onboarding-actions{
+  display:flex;justify-content:center;gap:12px;
+}
+.onboarding-btn-ok{
+  padding:10px 32px;border-radius:var(--radius-sm);
+  font-size:0.9rem;font-weight:800;
+  letter-spacing:1px;text-transform:uppercase;
+  color:white;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--primary),var(--accent));
+  box-shadow:0 4px 16px rgba(124,58,237,0.4);
+  transition:transform 0.15s ease;
+}
+.onboarding-btn-ok:active{transform:scale(0.95)}
+
+/* ═══════════════════════════════════════════
+   WHEEL OF FORTUNE OVERLAY
+   ═══════════════════════════════════════════ */
+.wheel-overlay{
+  position:fixed;inset:0;z-index:90000;
+  background:rgba(3,0,20,0.92);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.35s ease;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.wheel-overlay.active{opacity:1;pointer-events:auto}
+.wheel-panel{
+  position:relative;
+  width:calc(100% - 32px);max-width:360px;
+  background:rgba(15,23,42,0.95);
+  border:1px solid rgba(255,165,2,0.3);
+  border-radius:var(--radius-xl);
+  padding:24px 20px 20px;
+  text-align:center;
+  box-shadow:0 16px 64px rgba(0,0,0,0.6),0 0 32px rgba(255,165,2,0.15);
+}
+.wheel-close{
+  position:absolute;top:12px;right:14px;
+  background:none;border:none;color:var(--text-dim);
+  font-size:1.5rem;cursor:pointer;padding:4px 8px;line-height:1;
+  opacity:.6;transition:opacity .2s;
+}
+.wheel-close:hover{opacity:1}
+.wheel-heading{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:1.3rem;font-weight:900;
+  letter-spacing:2px;color:var(--color-fire);
+  margin:0 0 16px;
+}
+.wheel-container{
+  position:relative;
+  width:300px;height:300px;
+  margin:0 auto 16px;
+}
+.wheel-container canvas{display:block;width:100%;height:100%}
+.wheel-pointer{
+  position:absolute;top:-8px;left:50%;
+  transform:translateX(-50%);
+  width:0;height:0;
+  border-left:12px solid transparent;
+  border-right:12px solid transparent;
+  border-top:20px solid #FFD700;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+  z-index:2;
+}
+.wheel-result{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:1.1rem;font-weight:800;
+  color:var(--text);min-height:28px;
+  margin:8px 0;opacity:0;transition:opacity .4s ease;
+}
+.wheel-result.wheel-result-show{opacity:1}
+.btn-wheel-spin{
+  display:inline-block;padding:12px 36px;
+  border:none;border-radius:var(--radius-sm);
+  font-family:'Space Grotesk',sans-serif;
+  font-size:1rem;font-weight:900;
+  letter-spacing:1.5px;text-transform:uppercase;
+  color:white;cursor:pointer;
+  background:linear-gradient(135deg,#FFA502,#FF6B35);
+  box-shadow:0 6px 20px rgba(255,165,2,0.4);
+  transition:transform .15s ease,opacity .2s ease;
+}
+.btn-wheel-spin:active{transform:scale(0.95)}
+.btn-wheel-spin:disabled{opacity:0.4;cursor:default}
+.btn-wheel-ad{
+  display:block;margin:10px auto 0;
+  padding:8px 20px;
+  border:1px solid rgba(255,165,2,0.3);border-radius:var(--radius-xs);
+  background:rgba(255,165,2,0.1);
+  color:var(--color-fire);
+  font-size:0.8rem;font-weight:700;
+  cursor:pointer;transition:background .2s;
+}
+.btn-wheel-ad:hover{background:rgba(255,165,2,0.2)}
+
+/* Home wheel card — same layout as daily-card */
+.wheel-card{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 10px;gap:8px;
+  border-radius:var(--radius-sm);
+  background:linear-gradient(135deg,rgba(255,165,2,0.12),rgba(255,107,53,0.06));
+  border:1px solid rgba(255,165,2,0.2);
+}
+.wheel-card.wheel-done{opacity:0.55}
+.wheel-icon-wrap{animation:wheelGlow 2s ease-in-out infinite alternate}
+@keyframes wheelGlow{0%{filter:drop-shadow(0 0 4px rgba(255,165,2,0.3))}100%{filter:drop-shadow(0 0 12px rgba(255,165,2,0.7))}}
+.btn-wheel-cta{
+  padding:6px 14px;border-radius:8px;font-size:.7rem;font-weight:700;
+  background:var(--color-fire);color:white;border:none;cursor:pointer;
+  white-space:nowrap;letter-spacing:.5px;
+  transition:background .2s ease,transform .1s ease;
+}
+.btn-wheel-cta:active{transform:scale(.95)}
 
 /* ═══════════════════════════════════════════
    ACHIEVEMENT SYSTEM v22 — Clean, consistent with Leaderboard
