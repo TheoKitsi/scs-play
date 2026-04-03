@@ -242,8 +242,8 @@
   box-shadow: none;
 }
 
-/* PWA standalone — extra safe area for gesture nav (e.g. S25 Ultra ~22dp) */
-@media (display-mode: fullscreen), (display-mode: standalone) {
+/* PWA standalone — extra safe area for gesture nav */
+@media (display-mode: standalone) {
   .footer-nav {
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 10px), 20px);
   }
