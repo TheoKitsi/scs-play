@@ -1,11 +1,12 @@
 {
   "name": "scs-play",
-  "version": "1.0.0",
-  "description": "SCS Play — Blitzschnelles Reaktions-Sortierspiel",
+  "version": "2.0.0",
+  "description": "SCS Play — 14 game modes, reflexes, brain training, speed",
   "private": true,
   "scripts": {
     "build": "node scripts/build-cap.mjs",
     "build:prod": "node scripts/build-prod.mjs",
+    "smoke-test": "node scripts/smoke-test.mjs",
     "visual-review": "node scripts/visual-review.mjs",
     "contrast-audit": "node scripts/contrast-audit.mjs",
     "cap:sync": "node scripts/build-prod.mjs && npx cap sync android",

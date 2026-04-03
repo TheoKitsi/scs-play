@@ -8,16 +8,16 @@ import { $ }         from '../helpers/dom.js';
 import { EffectsManager } from '../effects.js';
 import app           from '../appState.js';
 
-/* ─── Prize table (weighted) ─── */
+/* ─── Prize table (weighted, v23 rebalanced) ─── */
 const PRIZES = [
-  { type: 'life', amount: 1,  weight: 30, color: '#EF4444', label: () => t('wheel_prize_life', { n: 1 }) },
-  { type: 'life', amount: 2,  weight: 15, color: '#F87171', label: () => t('wheel_prize_life', { n: 2 }) },
-  { type: 'fire', amount: 5,  weight: 25, color: '#FFA502', label: () => t('wheel_prize_fire', { n: 5 }) },
-  { type: 'fire', amount: 15, weight: 10, color: '#FBBF24', label: () => t('wheel_prize_fire', { n: 15 }) },
-  { type: 'xp',   amount: 50, weight: 15, color: '#7C3AED', label: () => t('wheel_prize_xp', { n: 50 }) },
-  { type: 'xp',   amount: 200,weight: 3,  color: '#9D4EDD', label: () => t('wheel_prize_xp', { n: 200 }) },
+  { type: 'life', amount: 1,  weight: 25, color: '#EF4444', label: () => t('wheel_prize_life', { n: 1 }) },
+  { type: 'life', amount: 2,  weight: 8,  color: '#F87171', label: () => t('wheel_prize_life', { n: 2 }) },
+  { type: 'fire', amount: 3,  weight: 28, color: '#FFA502', label: () => t('wheel_prize_fire', { n: 3 }) },
+  { type: 'fire', amount: 10, weight: 12, color: '#FBBF24', label: () => t('wheel_prize_fire', { n: 10 }) },
+  { type: 'xp',   amount: 30, weight: 18, color: '#7C3AED', label: () => t('wheel_prize_xp', { n: 30 }) },
+  { type: 'xp',   amount: 150,weight: 4,  color: '#9D4EDD', label: () => t('wheel_prize_xp', { n: 150 }) },
   { type: 'jackpot', amount: 0, weight: 2, color: '#FFD700', label: () => t('wheel_prize_jackpot') },
-  { type: 'fire', amount: 10, weight: 0,  color: '#EC4899', label: () => t('wheel_prize_fire', { n: 10 }) },
+  { type: 'fire', amount: 5,  weight: 3,  color: '#EC4899', label: () => t('wheel_prize_fire', { n: 5 }) },
 ];
 
 // Fill the 8th slice to make it 8 equal segments
@@ -64,15 +64,20 @@ function drawWheel(canvas, angle) {
     const start = i * SEG_ANGLE;
     const end = start + SEG_ANGLE;
 
-    // Segment fill
+    // Segment fill with radial gradient
+    const grad = ctx.createRadialGradient(0, 0, r * 0.15, 0, 0, r);
+    const baseColor = SEGMENTS[i].color;
+    grad.addColorStop(0, baseColor + '40');
+    grad.addColorStop(0.5, baseColor + 'CC');
+    grad.addColorStop(1, baseColor);
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.arc(0, 0, r, start, end);
     ctx.closePath();
-    ctx.fillStyle = SEGMENTS[i].color;
+    ctx.fillStyle = grad;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
     // Label
@@ -82,20 +87,35 @@ function drawWheel(canvas, angle) {
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 11px "Space Grotesk", sans-serif';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
     ctx.shadowBlur = 4;
     const labelText = SEGMENTS[i].label();
     ctx.fillText(labelText, r * 0.62, 0);
     ctx.restore();
   }
 
-  // Center circle
+  // Outer ring glow
   ctx.beginPath();
-  ctx.arc(0, 0, 18, 0, 2 * Math.PI);
-  ctx.fillStyle = '#1F1F1F';
+  ctx.arc(0, 0, r + 2, 0, 2 * Math.PI);
+  ctx.strokeStyle = 'rgba(255,215,0,0.25)';
+  ctx.lineWidth = 4;
+  ctx.shadowColor = 'rgba(255,215,0,0.3)';
+  ctx.shadowBlur = 12;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Center circle
+  const centerGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 22);
+  centerGrad.addColorStop(0, '#2a2a2a');
+  centerGrad.addColorStop(1, '#1a1a1a');
+  ctx.beginPath();
+  ctx.arc(0, 0, 20, 0, 2 * Math.PI);
+  ctx.fillStyle = centerGrad;
   ctx.fill();
   ctx.strokeStyle = '#FFD700';
   ctx.lineWidth = 3;
+  ctx.shadowColor = 'rgba(255,215,0,0.4)';
+  ctx.shadowBlur = 8;
   ctx.stroke();
 
   ctx.restore();
@@ -111,17 +131,18 @@ function spinWheel(prizeIdx) {
     const targetSeg = prizeIdx;
     // Land in the middle of the target segment (top = -PI/2 is the pointer position)
     const targetAngle = -(targetSeg * SEG_ANGLE + SEG_ANGLE / 2) - Math.PI / 2;
-    const fullRotations = 4 + Math.floor(Math.random() * 3); // 4-6 full rotations
+    const fullRotations = 5 + Math.floor(Math.random() * 3); // 5-7 full rotations
     const totalAngle = fullRotations * 2 * Math.PI + (targetAngle - (currentAngle % (2 * Math.PI)));
     const endAngle = currentAngle + totalAngle;
-    const duration = 3500 + Math.random() * 1500; // 3.5-5 seconds
+    const duration = 4000 + Math.random() * 1500; // 4-5.5 seconds
 
     const start = performance.now();
     function frame(now) {
       const elapsed = now - start;
       const progress = Math.min(1, elapsed / duration);
-      // Ease-out cubic
-      const eased = 1 - Math.pow(1 - progress, 3);
+      // Ease-out quartic with subtle overshoot for satisfying landing
+      const t = 1 - progress;
+      const eased = 1 - (t * t * t * t);
       const angle = currentAngle + totalAngle * eased;
       drawWheel(canvas, angle);
 

@@ -52,7 +52,7 @@ export const CONFIG = {
   STREAK_TIME_BONUS: 2,           // seconds added per correct after threshold
   WRONG_TIME_PENALTY: 1,          // seconds removed per wrong answer
   WRONG_TIME_PENALTY_BRAIN: 0,    // brain modes: no penalty for wrong (reading takes time)
-  ENDLESS_LIFE_STREAK: 10,        // earn +1 life every N streak in endless
+  ENDLESS_LIFE_STREAK: 15,        // earn +1 life every N streak in endless
 
   /* ─── Direct speed-up on correct ─── */
   SPEED_CORRECT_DIVISOR: 90,      // ~90 correct answers from start to min interval (gentler curve)
@@ -82,6 +82,7 @@ export const CONFIG = {
   /* ─── Swipe detection ─── */
   SWIPE_MIN_DISTANCE: 30,
   SWIPE_MAX_TIME: 800,
+  SWIPE_MIN_VELOCITY: 0.3,   // px/ms — reject slow drags (v22)
 
   /* ─── Colours (12 for Ultra, first 4 for Beginner, first 8 for Expert) ─── */
   COLORS: {
@@ -106,55 +107,69 @@ export const CONFIG = {
   DIAMOND_CHANCE:   0.07,
   GOLDEN_MULT:      3,
   DIAMOND_MULT:     5,
-  FEVER_STREAK:     15,
-  FEVER_STREAK_BRAIN: 8,
-  FEVER_DURATION:   5000,
+  FEVER_STREAK:     20,
+  FEVER_STREAK_BRAIN: 12,
+  FEVER_DURATION:   4000,
   FEVER_COOLDOWN_MS: 3000,
   FEVER_MULT:       2,
 
   /* ─── XP / Levels ─── */
-  XP_PER_100_SCORE: 3,
+  XP_PER_100_SCORE: 2,
   LEVEL_THRESHOLDS: [
     0,          // Lv 0: Start
-    50,         // Lv 1: ~2 games
-    200,        // Lv 2: ~7 games
-    500,        // Lv 3: ~17 games
-    1200,       // Lv 4: ~40 games
-    3000,       // Lv 5: ~100 games (~1 hr)
-    7000,       // Lv 6: ~230 games (~2.5 hr)
-    15000,      // Lv 7: ~500 games (~5 hr)
-    30000,      // Lv 8: ~1000 games (~10 hr)
-    60000,      // Lv 9: ~2000 games (~20 hr)
-    120000,     // Lv 10: ~4000 games (~40 hr)
-    200000,     // Lv 11: ~6700 games (~65 hr)
-    350000,     // Lv 12: ~12000 games (~100 hr)
-    600000,     // Lv 13: ~20000 games (~160 hr)
-    1000000,    // Lv 14: ~33000 games (~250 hr)
-    1600000,    // Lv 15: ~53000 games (~400 hr)
-    2500000,    // Lv 16: ~83000 games (~600 hr)
-    4000000,    // Lv 17: ~133000 games
-    6500000,    // Lv 18: ~217000 games
-    10000000    // Lv 19: ~333000 games
+    100,        // Lv 1: ~5 games
+    400,        // Lv 2: ~20 games
+    1000,       // Lv 3: ~50 games
+    2500,       // Lv 4: ~125 games
+    5000,       // Lv 5: ~250 games (~2-3 days)
+    10000,      // Lv 6: ~500 games
+    20000,      // Lv 7: ~1000 games
+    40000,      // Lv 8: ~2000 games
+    80000,      // Lv 9: ~4000 games
+    150000,     // Lv 10: ~7500 games (~2 weeks)
+    250000,     // Lv 11
+    400000,     // Lv 12
+    650000,     // Lv 13
+    1000000,    // Lv 14
+    1500000,    // Lv 15
+    2200000,    // Lv 16
+    3200000,    // Lv 17
+    4500000,    // Lv 18
+    6500000,    // Lv 19
+    9000000,    // Lv 20
+    12000000,   // Lv 21
+    16000000,   // Lv 22
+    21000000,   // Lv 23
+    27000000,   // Lv 24
+    35000000,   // Lv 25
+    45000000,   // Lv 26
+    58000000,   // Lv 27
+    75000000,   // Lv 28
+    100000000   // Lv 29
   ],
   LEVEL_NAMES_DE: [
     'Neuling','Anfänger','Lehrling','Aufsteiger','Geselle',
     'Profi','Experte','Meister','Veteran','Könner',
     'Großmeister','Champion','Legende','Titan','Phänomen',
-    'Mythisch','Unsterblich','Göttlich','Transzendent','Gott'
+    'Mythisch','Unsterblich','Göttlich','Transzendent','Gott',
+    'Arcana','Ewiger','Urkraft','Kosmisch','Absolut',
+    'Omega','Unendlich','Allwissend','Schöpfer','Ultimativ'
   ],
   LEVEL_NAMES_EN: [
     'Rookie','Beginner','Apprentice','Rising Star','Journeyman',
     'Pro','Expert','Master','Veteran','Adept',
     'Grand Master','Champion','Legend','Titan','Phenomenon',
-    'Mythic','Immortal','Divine','Transcendent','God'
+    'Mythic','Immortal','Divine','Transcendent','God',
+    'Arcana','Eternal','Primal','Cosmic','Absolute',
+    'Omega','Infinite','Omniscient','Creator','Ultimate'
   ],
 
-  /* ─── Daily XP diminishing returns (v12) ─── */
+  /* ─── Daily XP diminishing returns (v23) ─── */
   DAILY_XP_BRACKETS: [
-    { limit: 5000,   rate: 1.0 },   // first 5000 XP: full rate
-    { limit: 10000,  rate: 0.5 },   // 5000-10000: half rate
-    { limit: 20000,  rate: 0.25 },  // 10000-20000: quarter rate
-    { limit: Infinity, rate: 0.1 }  // beyond: 10%
+    { limit: 3000,   rate: 1.0 },   // first 3000 XP: full rate
+    { limit: 6000,   rate: 0.4 },   // 3000-6000: 40% rate
+    { limit: 12000,  rate: 0.15 },  // 6000-12000: 15% rate
+    { limit: Infinity, rate: 0.05 } // beyond: 5%
   ],
 
   /* ─── Corner Shuffle (adaptive — shape modes only) ─── */
@@ -162,7 +177,39 @@ export const CONFIG = {
   CORNER_SHUFFLE_INTERVAL: 10,      // then every N correct
   CORNER_SHUFFLE_STEP: 2,           // reduce interval by 2 each shuffle
   CORNER_SHUFFLE_MIN_INTERVAL: 6,   // never faster than every 6
-  CORNER_SHUFFLE_WARNING_MS: 800,   // warning flash before shuffle  CORNER_SHUFFLE_COLORS: true,      // also shuffle colors when corners shuffle
+  CORNER_SHUFFLE_WARNING_MS: 1400,  // warning flash before shuffle (was 800ms)
+  CORNER_SHUFFLE_COLORS: true,      // also shuffle colors when corners shuffle
+
+  /* ─── Anti-Frustration System (v23 — streak protection removed for tension) ─── */
+  GENTLE_START_COUNT: 5,            // first N answers always at base speed
+  GENTLE_START_NO_RUSH_SEC: 10,     // no rush/shuffle/fever in first N seconds
+  MISS_GRACE_PERIOD_MS: 600,        // delay before next shape after miss
+  MISS_SHOW_CORRECT_MS: 400,        // show correct answer after miss
+  STREAK_PROTECTION_THRESHOLD: Infinity,  // v23: disabled — misses must hurt
+  STREAK_PROTECTION_PENALTY: 1,
+  RUSH_NO_MULTIPLIER_LOSS: true,    // rush misses don't reduce multiplier
+  RUSH_PRE_WARNING_SEC: 2,          // show rush warning N seconds before
+
+  /* ─── Combo Decay (v23) ─── */
+  COMBO_DECAY_THRESHOLD: 2.0,       // multiplier on spawn interval before decay starts
+  COMBO_DECAY_INTERVAL: 500,        // ms between each combo point loss
+  COMBO_DECAY_AMOUNT: 1,            // combo points lost per decay tick
+
+  /* ─── Wissen Mode Overhaul (v22) ─── */
+  WISSEN_GLOBAL_TIMER: true,        // use global timer instead of per-question
+  WISSEN_GAME_DURATION: 60,         // 60 seconds total
+  WISSEN_BASE_POINTS: 100,
+  WISSEN_SPEED_BONUS: [
+    { maxMs: 2000, bonus: 150 },
+    { maxMs: 4000, bonus: 75 },
+    { maxMs: 6000, bonus: 25 },
+    { maxMs: Infinity, bonus: 0 }
+  ],
+  WISSEN_TIME_BONUS_MS: 5000,       // +5s on fast correct answer
+  WISSEN_TIME_BONUS_THRESHOLD: 3000,// answer under 3s = time bonus
+  WISSEN_WRONG_PENALTY_SEC: 3,      // -3s on wrong answer
+  WISSEN_LEVEL_THRESHOLDS: [300, 700, 1200, 1800, 2500],
+  WISSEN_MIN_DISPLAY_MS: 1500,      // minimum time question is visible
   /* ─── Mode unlock levels ─── */
   UNLOCK_KLASSIK: 0,       // Always unlocked
   UNLOCK_EXPERT: 5,        // Level 6 = 3,000 XP (~1 hr)
@@ -383,17 +430,17 @@ export const CONFIG = {
   LIVES_DAILY_LOGIN: 1,
   LIVES_LEVEL_UP: 1,
   LIVES_REWARDED_AD: 1,
-  LIVES_MAX: Infinity,
+  LIVES_MAX: 10,
 
   /* ─── Score milestones (trigger audio+visual celebration) ─── */
   SCORE_MILESTONES: [1000, 2500, 5000, 10000, 25000],
 
-  /* ─── Weekend XP bonus ─── */
-  WEEKEND_XP_MULTIPLIER: 1.5,
+  /* ─── Weekend XP bonus (v23: removed — consistent rewards for habit formation) ─── */
+  WEEKEND_XP_MULTIPLIER: 1.0,
 
-  /* ─── Daily challenge rewards (v17) ─── */
-  DAILY_REWARD_LIVES: 2,
-  DAILY_REWARD_XP: 100,
+  /* ─── Daily challenge rewards ─── */
+  /* DEPRECATED: DAILY_REWARD_LIVES, DAILY_REWARD_XP, DAILY_REWARD_FIRE
+     replaced by escalating tier table in save.js claimDailyReward() */
   DAILY_STREAK_XP_BONUS: 25,   /* +25 XP per streak day, capped at +250 */
 
   /* ═══════════════════════════════════════

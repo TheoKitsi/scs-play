@@ -28,11 +28,12 @@
 
 /* ─── Center shape spawn pop ─── */
 .center-shape.spawn-pop{
-  animation:spawnPop .3s var(--ease-bounce);
+  animation:spawnPop .35s var(--ease-bounce);
 }
 @keyframes spawnPop{
-  0%{transform:scale(0) rotate(-10deg);opacity:0}
-  60%{transform:scale(1.1) rotate(2deg);opacity:1}
+  0%{transform:scale(0) rotate(-12deg);opacity:0;filter:blur(4px)}
+  50%{transform:scale(1.15) rotate(3deg);opacity:1;filter:blur(0)}
+  75%{transform:scale(0.97) rotate(-1deg);opacity:1}
   100%{transform:scale(1) rotate(0);opacity:1}
 }
 

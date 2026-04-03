@@ -1,87 +1,127 @@
 # SCS Play — Store Listing
 
 ## Kurzbeschreibung (80 Zeichen max)
-Wische Formen in die richtigen Ecken — schnelles Brain-Training in 60 Sekunden!
+Reflexe, Gehirn, Geschwindigkeit — 14 Modi, ein Spiel. Trainiere jetzt.
 
 ## Short Description (80 chars max)
-Swipe shapes to matching corners — fast brain training in 60 seconds!
+Reflexes, brain, speed — 14 modes, one game. Train now.
 
-## Vollständige Beschreibung (DE)
+## Vollstaendige Beschreibung (DE)
 
-🎮 SCS PLAY — Swipe · Sort · Score
+SCS PLAY — Swipe. Sort. Score.
 
-Teste deine Reflexe und dein Gehirn! Wische farbige Formen in die passenden Ecken — so schnell wie möglich.
+Teste deine Reflexe. Trainiere dein Gehirn. In 30 oder 60 Sekunden.
 
-⚡ SPIELMODI:
-• KLASSIK — 4 Farben, reine Geschwindigkeit
-• FORMEN — Unterschiedliche Formen sortieren
-• EXPERT — 8 Ecken, doppelte Herausforderung
-• ULTRA — Maximale Komplexität für Profis
-• MATHE — Rechne und wische zur richtigen Antwort
-• WÖRTER — Sortiere Wörter nach Kategorien
-• MEMO — Merke dir die wechselnden Ecken
+14 Spielmodi fordern unterschiedliche kognitive Faehigkeiten — von Farbsortierung und Formerkennung ueber mathematisches Rechnen bis hin zu Gedaechtnistraining und Reaktionsschnelligkeit.
 
-🏆 FEATURES:
-• 4 Spieltypen: Blitz, Standard, Endlos, Wettkampf
-• Corner Shuffle — die Ecken wechseln während des Spiels!
-• Tägliche Herausforderungen mit Bonus-Belohnungen
-• Level-System mit XP und Achievements
-• Leaderboard — miss dich mit anderen
-• Offline spielbar
-• Kein Account nötig — sofort losspielen
+SPIELMODI
 
-📱 Perfekt für:
-• Kurze Pausen (eine Runde = 60 Sekunden)
-• Brain-Training und Reaktionsübung
-• Wettkampf mit Freunden
+Sortieren
+- Farben — 4 Farben, reine Geschwindigkeit
+- Formen — Formen und Farben diagonal zuordnen
+- Expert — 8 Richtungen fuer Fortgeschrittene
+- Ultra — 12 Richtungen, maximale Komplexitaet
 
-Kostenlos. Keine Werbung beim Spielen. Einfach Spaß.
+Denken
+- Mathe — Kopfrechnen unter Zeitdruck
+- Algebra — Gleichungen loesen, Variablen finden
+- Hauptstaedte — Weltwissen testen
+- Wissen — Allgemeinwissen aus vielen Kategorien
+- Woerter — Woerter nach Kategorien sortieren
 
-#SCSPlay #BrainGame #PuzzleGame
+Merken
+- Stroop — Farbname vs. Schriftfarbe
+- Memo — Ecken merken und blind zuordnen
+- Sequenz — Muster merken und wiederholen
+
+Reflex
+- Fokus — Flanker-Test mit Ablenkung
+- Chaos — Wechselnde Regeln in Echtzeit
+
+WAS SCS PLAY BESONDERS MACHT
+
+- Combo-System mit Echtzeit-Decay — bleib schnell oder verliere deinen Multiplikator
+- Fever Mode ab 20er Combo — alles zaehlt doppelt
+- Rush-Runden mit Schnellfeuer-Spawns
+- Corner Shuffle — die Zuordnung aendert sich waehrend des Spiels
+- 30 Level mit steigender XP-Kurve
+- Ueber 100 Achievements, davon versteckte Raritaeten
+- Taegliche Herausforderungen mit Login-Streak-Belohnungen
+- Gluecksrad mit taeglichem Spin
+- 4 Spieltypen: Blitz (30s), Marathon (60s), Endlos, Wettkampf
+- Offline spielbar, kein Account noetig
+
+FUER WEN
+
+- Kurze Pausen: Eine Runde dauert 30-60 Sekunden
+- Gehirntraining: Reaktion, Gedaechtnis, Konzentration messen
+- Wettbewerb: Leaderboard und teilbare Ergebnisse
+
+Kostenlos. Keine Werbung waehrend des Spielens.
 
 ## Full Description (EN)
 
-🎮 SCS PLAY — Swipe · Sort · Score
+SCS PLAY — Swipe. Sort. Score.
 
-Test your reflexes and brain! Swipe colored shapes to the matching corners — as fast as you can.
+Test your reflexes. Train your brain. In 30 or 60 seconds.
 
-⚡ GAME MODES:
-• CLASSIC — 4 colors, pure speed
-• SHAPES — Sort different shapes
-• EXPERT — 8 corners, double the challenge
-• ULTRA — Maximum complexity for pros
-• MATH — Calculate and swipe to the right answer
-• WORDS — Sort words by category
-• MEMO — Remember the changing corners
+14 game modes challenge different cognitive skills — from color sorting and shape recognition to mental math, memory training, and reaction speed.
 
-🏆 FEATURES:
-• 4 play types: Blitz, Standard, Endless, Competition
-• Corner Shuffle — corners change during gameplay!
-• Daily challenges with bonus rewards
-• Level system with XP and achievements
-• Leaderboard — compete with others
-• Works offline
-• No account needed — play instantly
+GAME MODES
 
-📱 Perfect for:
-• Quick breaks (one round = 60 seconds)
-• Brain training and reaction practice
-• Competing with friends
+Sort
+- Colors — 4 colors, pure speed
+- Shapes — Match shapes and colors diagonally
+- Expert — 8 directions for advanced players
+- Ultra — 12 directions, maximum complexity
 
-Free. No ads during gameplay. Just fun.
+Think
+- Math — Mental arithmetic under time pressure
+- Algebra — Solve equations, find variables
+- Capitals — Test your world knowledge
+- Trivia — General knowledge across categories
+- Words — Sort words by category
 
-#SCSPlay #BrainGame #PuzzleGame
+Remember
+- Stroop — Color name vs. ink color
+- Memo — Memorize corners, match blindly
+- Sequence — Remember and replay patterns
 
-## Kategorien
-Primär: Spiel > Puzzle
-Sekundär: Spiel > Lernspiele
+Reflex
+- Focus — Flanker test with distractions
+- Chaos — Rules change in real time
 
-## Screenshots benötigt (Phone)
-1. Boot screen mit Logo
-2. Home screen mit Modus-Auswahl
-3. Gameplay KLASSIK (aktive Runde)
-4. Rush-Modus Effekt
-5. Ergebnis-Screen mit Score
-6. Achievements-Screen
-7. Tutorial interaktive Swipe-Demo
-8. Corner Shuffle Moment
+WHAT MAKES SCS PLAY DIFFERENT
+
+- Combo system with real-time decay — stay fast or lose your multiplier
+- Fever Mode at 20 combo — everything counts double
+- Rush rounds with rapid-fire spawns
+- Corner Shuffle — assignments change mid-game
+- 30 levels with escalating XP curve
+- Over 100 achievements, including hidden rarities
+- Daily challenges with login streak rewards
+- Fortune wheel with daily spin
+- 4 play types: Blitz (30s), Marathon (60s), Endless, Competition
+- Works offline, no account required
+
+WHO IT IS FOR
+
+- Quick breaks: One round takes 30-60 seconds
+- Brain training: Measure reaction, memory, focus
+- Competition: Leaderboard and shareable results
+
+Free. No ads during gameplay.
+
+## Kategorien / Categories
+Primary: Game > Puzzle
+Secondary: Game > Educational
+
+## Screenshots (Phone — 16:9 or 2:3)
+1. Boot screen with logo and tagline
+2. Home screen with mode selection grid
+3. Active gameplay — Farben mode with combo counter
+4. Fever Mode activated — visual effect
+5. Results screen with XP ring and stats
+6. Achievement screen with categories
+7. Daily challenge complete
+8. Rush mode rapid-fire sequence

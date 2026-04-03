@@ -13,8 +13,8 @@
   width:100%;               /* explicit full-width inside the now-stretched flex column */
   display:flex;
   flex-direction:column;
-  height:100dvh;
   height:100vh;
+  height:100dvh;
   position:relative;
   overflow:hidden;
 }
@@ -623,12 +623,17 @@
   transform:translateY(-4px);
   box-shadow:0 12px 32px rgba(251,191,36,0.6), inset 0 1px 2px rgba(255,255,255,0.8);
 }
-.daily-card.daily-done{opacity:0.7;filter:grayscale(0.5) brightness(0.9)}
+.daily-card.daily-done{opacity:0.65;filter:grayscale(0.3) brightness(0.95)}
 .daily-streak-pill{
   font-size:0.6rem;font-weight:700;
   color:var(--gold,#F59E0B);margin-left:4px;
+  animation:streakPillGlow 2s ease-in-out infinite alternate;
 }
 .daily-streak-pill:empty{display:none}
+@keyframes streakPillGlow{
+  0%{text-shadow:0 0 4px rgba(251,191,36,0.2)}
+  100%{text-shadow:0 0 12px rgba(251,191,36,0.6)}
+}
 
 /* (XP meta now inline in .hero-xp-bar) */
 .weekend-badge{
@@ -723,7 +728,7 @@
   flex-shrink:0;
   z-index:10;
   background:rgba(0,0,0,0.6);
-  border-top:1px solid rgba(255,255,255,0.06);
+  border-top:1px solid rgba(255,255,255,0.08);
   backdrop-filter:blur(16px);
   -webkit-backdrop-filter:blur(16px);
   padding:0 8px;

@@ -70,10 +70,12 @@ export async function showResults(stats, canContinue = false) {
 
     if (stats.isDaily) {
       const reward = await save.claimDailyReward();
-      setTimeout(() => {
-        const fx = getBodyFx();
-        fx.achievementToast(t('daily_reward_earned', { l: reward.lives, x: reward.xp }));
-      }, 1500);
+      if (reward) {
+        setTimeout(() => {
+          const fx = getBodyFx();
+          fx.achievementToast(t('daily_reward_earned', { l: reward.lives, x: reward.xp }));
+        }, 1500);
+      }
     }
   }
 

@@ -780,6 +780,49 @@ export class AudioManager {
     this._playNoise(0.12, 0.04 + intensity * 0.02, 3000);
   }
 
+  /** Streak protection shield — warm descending chime (v22) */
+  streakProtected() {
+    if (!this.enabled) return;
+    this._ensure();
+    const t = this.ctx.currentTime;
+    /* Shield activation: ascending 2-note "save" chime */
+    this._play(660, 'triangle', 0.15, 0.06);
+    setTimeout(() => this._play(880, 'sine', 0.2, 0.05), 80);
+    /* Subtle sub impact */
+    const osc = this.ctx.createOscillator();
+    const eg = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(120, t);
+    osc.frequency.exponentialRampToValueAtTime(80, t + 0.15);
+    eg.gain.setValueAtTime(0.06, t);
+    eg.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    osc.connect(eg).connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.25);
+  }
+
+  /** Rush warning — tense double tick before rush starts (v22) */
+  rushWarning() {
+    if (!this.enabled) return;
+    this._ensure();
+    this._play(700, 'square', 0.06, 0.04);
+    setTimeout(() => this._play(800, 'square', 0.06, 0.05), 150);
+    setTimeout(() => this._play(900, 'square', 0.08, 0.06), 300);
+  }
+
+  /** Wissen level-up — bright ascending arpeggio (v22) */
+  wissenLevelUp(level = 1) {
+    if (!this.enabled) return;
+    this._ensure();
+    const baseNotes = [523.25, 659.26, 783.99, 1046.50, 1318.51];
+    const count = Math.min(3 + level, baseNotes.length);
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        this._play(baseNotes[i], 'triangle', 0.18, 0.04 + i * 0.005);
+      }, i * 70);
+    }
+  }
+
   /**
    * Score milestone celebration — ascending fanfare.
    * @param {number} tier — index 0-4 for 1K/2.5K/5K/10K/25K

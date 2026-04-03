@@ -1,7 +1,7 @@
 {
   "name": "SCS Play — Swipe Sort Score",
   "short_name": "SCS Play",
-  "description": "Swipe shapes to matching corners — fast, fun brain training in 60 seconds!",
+  "description": "14 game modes — reflexes, brain training, speed. Swipe, sort, score.",
   "start_url": "./index.html",
   "display": "fullscreen",
   "orientation": "portrait",

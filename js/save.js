@@ -77,6 +77,7 @@ function defaults() {
     /* v11: Daily login */
     lastLoginDate: null,
     loginStreak: 0,
+    _lastDailyRewardDate: null,
     /* v12: Daily XP diminishing returns */
     dailyXPDate: null,
     dailyXPEarned: 0,
@@ -106,7 +107,11 @@ function defaults() {
     lastWheelSpin: null,
     wheelSpinsToday: 0,
     wheelStreak: 0,
-    lastWheelDate: null
+    lastWheelDate: null,
+    /* v23: Daily streak freeze system */
+    streakFreezes: 0,           // banked streak freezes (max 2)
+    streakFreezesUsed: 0,       // total freezes used ever
+    lastStreakFreezeEarned: null // date when last freeze was earned
   };
 }
 
@@ -296,11 +301,17 @@ export class SaveService {
     this.data[modeLevelKey] = this._calcLevel(this.data[modeXPKey]);
     const modeLeveledUp = (this.data[modeLevelKey] || 0) > oldModeLevel;
 
-    /* v11: Award life on level up */
-    if (leveledUp) {
+    /* v11: Award life on level up (v23: every 3 levels only) */
+    let levelUpFire = 0;
+    if (leveledUp && this.data.level % 3 === 0) {
       this.data.lives = Math.min((this.data.lives || 0) + CONFIG.LIVES_LEVEL_UP, CONFIG.LIVES_MAX);
       /* v23: Award fire on level up */
-      this.data.fire = (this.data.fire || 0) + 25;
+      levelUpFire = 25;
+      this.data.fire = (this.data.fire || 0) + levelUpFire;
+    } else if (leveledUp) {
+      /* Non-life levels still get fire */
+      levelUpFire = 15;
+      this.data.fire = (this.data.fire || 0) + levelUpFire;
     }
 
     /* v23: Award fire based on best streak */
@@ -318,7 +329,7 @@ export class SaveService {
       }
     }
     await this.save();
-    return { isNewPB, leveledUp, newLevel: this.data.level, fireEarned: fireEarned + (leveledUp ? 25 : 0), modeLeveledUp, modeLevel: this.data[modeLevelKey] || 0 };
+    return { isNewPB, leveledUp, newLevel: this.data.level, fireEarned: fireEarned + levelUpFire, modeLeveledUp, modeLevel: this.data[modeLevelKey] || 0 };
   }
 
   /* ── Per-mode level getters ── */
@@ -490,25 +501,50 @@ export class SaveService {
     return (this.data.dailyChallenges[key]?.score || this.data.dailyChallenges[isoKey]?.score || 0);
   }
 
-  /* v17: Claim daily challenge rewards (lives + XP, streak-scaled) */
+  /* v23: Claim daily challenge rewards (escalating with streak) */
   async claimDailyReward() {
     const today = new Date().toISOString().slice(0, 10);
     if (this.data._lastDailyRewardDate === today) return null;
     this.data._lastDailyRewardDate = today;
-    const livesReward = CONFIG.DAILY_REWARD_LIVES || 2;
-    const baseXP = CONFIG.DAILY_REWARD_XP || 100;
+
     const streak = this.data.loginStreak || 0;
+
+    /* v23: Escalating daily rewards based on streak tier */
+    let livesReward, baseXP, fireReward;
+    if (streak >= 31) {
+      livesReward = 3; baseXP = 200; fireReward = 10;
+    } else if (streak >= 15) {
+      livesReward = 3; baseXP = 150; fireReward = 8;
+    } else if (streak >= 8) {
+      livesReward = 2; baseXP = 100; fireReward = 5;
+    } else if (streak >= 4) {
+      livesReward = 2; baseXP = 75; fireReward = 3;
+    } else {
+      livesReward = 1; baseXP = 50; fireReward = 0;
+    }
+
     const bonusXP = Math.min(streak * (CONFIG.DAILY_STREAK_XP_BONUS || 25), 250);
     const xpReward = baseXP + bonusXP;
+    this.data.fire = (this.data.fire || 0) + fireReward;
+
+    /* v23: Earn streak freeze every 7-day streak (max 2 banked) */
+    if (streak > 0 && streak % 7 === 0 && (this.data.streakFreezes || 0) < 2) {
+      const lastEarned = this.data.lastStreakFreezeEarned;
+      if (lastEarned !== today) {
+        this.data.streakFreezes = Math.min(2, (this.data.streakFreezes || 0) + 1);
+        this.data.lastStreakFreezeEarned = today;
+      }
+    }
+
     await this.addLives(livesReward);
     this.data.totalXP += xpReward;
     const oldLevel = this.data.level;
     this.data.level = this._calcLevel(this.data.totalXP);
-    if (this.data.level > oldLevel) {
+    if (this.data.level > oldLevel && this.data.level % 3 === 0) {
       this.data.lives = Math.min((this.data.lives || 0) + CONFIG.LIVES_LEVEL_UP, CONFIG.LIVES_MAX);
     }
     await this.save();
-    return { lives: livesReward, xp: xpReward, bonusXP };
+    return { lives: livesReward, xp: xpReward, bonusXP, fire: fireReward };
   }
 
   /* ─── Mode unlock check (v6: competition-gate for Ultra) ─── */
@@ -540,6 +576,30 @@ export class SaveService {
   async addLives(n) { this.data.lives = Math.min((this.data.lives || 0) + n, CONFIG.LIVES_MAX); await this.save(); }
   hasPurchase(id)  { return !!this.data.purchases[id]; }
   async setPurchase(id) { this.data.purchases[id] = true; await this.save(); }
+
+  /* ─── Daily Login Streak (v23: intelligent streak with freezes) ─── */
+  getStreakFreezes() { return this.data.streakFreezes || 0; }
+  getLoginStreak() { return this.data.loginStreak || 0; }
+
+  /** Get streak tier for visual display (flame size) */
+  getStreakTier() {
+    const s = this.data.loginStreak || 0;
+    if (s >= 30) return 'inferno';
+    if (s >= 14) return 'blaze';
+    if (s >= 7)  return 'flame';
+    if (s >= 3)  return 'spark';
+    return 'none';
+  }
+
+  async useStreakFreeze() {
+    if ((this.data.streakFreezes || 0) > 0) {
+      this.data.streakFreezes--;
+      this.data.streakFreezesUsed = (this.data.streakFreezesUsed || 0) + 1;
+      await this.save();
+      return true;
+    }
+    return false;
+  }
 
   /* ─── Avatar (v7) ─── */
   getAvatar() {

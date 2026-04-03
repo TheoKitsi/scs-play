@@ -31,7 +31,7 @@ const PT_NAMES = {
 export const CATEGORIES = [
   { id:'milestones',  name:{ de:'Meilensteine',    en:'Milestones' },      desc:{ de:'Spiele & Fortschritt',          en:'Games & progress' }},
   { id:'scores',      name:{ de:'Highscores',      en:'High Scores' },     desc:{ de:'Punkteziele erreichen',         en:'Reach score targets' }},
-  { id:'streaks',     name:{ de:'Serien',          en:'Streaks' },          desc:{ de:'Ununterbrochene Treffer',       en:'Unbroken hit chains' }},
+  { id:'streaks',     name:{ de:'Combos',          en:'Combos' },           desc:{ de:'Ununterbrochene Treffer',       en:'Unbroken hit chains' }},
   { id:'precision',   name:{ de:'Präzision',       en:'Precision' },        desc:{ de:'Genauigkeit & Perfektion',      en:'Accuracy & perfection' }},
   { id:'speed',       name:{ de:'Geschwindigkeit', en:'Speed' },            desc:{ de:'Reaktionszeit-Rekorde',         en:'Reaction time records' }},
   { id:'modes',       name:{ de:'Spielmodi',       en:'Game Modes' },       desc:{ de:'Modus-Erkundung',              en:'Mode exploration' }},
@@ -155,61 +155,51 @@ const TEMPLATES = [
 
   // ═══════════ MILESTONES ═══════════
   { id:'games_total', cat:'milestones', metric:'gamesPlayed',
-    T:[3,5,10,25,50,100,250,500,1000,2500,5000,10000],
+    T:[5,15,30,75,150,300,750,1500,3000,5000,10000],
     name:{ de:'{n} Spiele', en:'{n} Games' },
     desc:{ de:'Spiele insgesamt {n} Runden', en:'Play {n} total games' }},
 
   { id:'games_m', cat:'milestones', metric:'modeGames',
-    modes:ALL_MODES, T:[3,10,25,50,100,250,500,1000],
+    modes:ALL_MODES, T:[10,30,75,150,300,750,1500],
     name:{ de:'{n}x {mode}', en:'{n}x {mode}' },
     desc:{ de:'{n} Runden im {mode}-Modus', en:'{n} games in {mode} mode' }},
 
   { id:'games_pt', cat:'milestones', metric:'ptGames',
-    pts:ALL_PLAY_TYPES, T:[3,10,25,50,100,250,500],
+    pts:ALL_PLAY_TYPES, T:[10,30,75,150,300,750],
     name:{ de:'{n}x {pt}', en:'{n}x {pt}' },
     desc:{ de:'{n} Runden im {pt}-Modus', en:'{n} {pt} games' }},
 
-  { id:'games_mp', cat:'milestones', metric:'mpGames',
-    modes:ALL_MODES, pts:ALL_PLAY_TYPES, T:[5,25,50,100],
-    name:{ de:'{n}x {mode} {pt}', en:'{n}x {mode} {pt}' },
-    desc:{ de:'{n}x {mode} im {pt}-Modus', en:'{n}x {mode} in {pt}' }},
-
   // ═══════════ SCORES ═══════════
   { id:'score_any', cat:'scores', metric:'anyPB',
-    T:[500,1000,2500,5000,10000,20000,50000,100000],
+    T:[1000,3000,5000,10000,25000,50000,100000],
     name:{ de:'{n} Punkte', en:'{n} Points' },
     desc:{ de:'Erreiche {n} Punkte', en:'Score {n} points' }},
 
   { id:'score_m', cat:'scores', metric:'modePB',
-    modes:ALL_MODES, T:[500,1000,2500,5000,10000,25000,50000],
+    modes:ALL_MODES, T:[1000,3000,5000,10000,25000,50000],
     name:{ de:'{n} in {mode}', en:'{n} in {mode}' },
     desc:{ de:'{n} Punkte im {mode}-Modus', en:'{n} points in {mode}' }},
 
   { id:'score_pt', cat:'scores', metric:'ptBestScore',
-    pts:ALL_PLAY_TYPES, T:[500,1000,2500,5000,10000,25000],
+    pts:ALL_PLAY_TYPES, T:[1000,3000,5000,10000,25000],
     name:{ de:'{n} im {pt}', en:'{n} in {pt}' },
     desc:{ de:'{n} Punkte im {pt}-Modus', en:'{n} points in {pt}' }},
 
-  { id:'score_mp', cat:'scores', metric:'mpBestScore',
-    modes:ALL_MODES, pts:ALL_PLAY_TYPES, T:[1000,5000,10000],
-    name:{ de:'{n} {mode}/{pt}', en:'{n} {mode}/{pt}' },
-    desc:{ de:'{n} Punkte in {mode} {pt}', en:'{n} pts in {mode} {pt}' }},
-
-  // ═══════════ STREAKS ═══════════
+  // ═══════════ STREAKS (renamed to COMBOS) ═══════════
   { id:'streak_any', cat:'streaks', metric:'bestStreak',
-    T:[5,10,15,20,25,30,40,50,75,100],
-    name:{ de:'{n}er Serie', en:'{n} Streak' },
-    desc:{ de:'Erreiche eine {n}er Serie', en:'Reach a {n} streak' }},
+    T:[10,20,30,50,75,100],
+    name:{ de:'{n}er Combo', en:'{n} Combo' },
+    desc:{ de:'Erreiche eine {n}er Combo', en:'Reach a {n} combo' }},
 
   { id:'streak_m', cat:'streaks', metric:'modeBestStreak',
-    modes:ALL_MODES, T:[5,10,15,20,25,30,40,50],
+    modes:ALL_MODES, T:[10,20,30,50],
     name:{ de:'{n}er in {mode}', en:'{n} in {mode}' },
-    desc:{ de:'{n}er Serie in {mode}', en:'{n} streak in {mode}' }},
+    desc:{ de:'{n}er Combo in {mode}', en:'{n} combo in {mode}' }},
 
   { id:'streak_pt', cat:'streaks', metric:'ptBestStreak',
-    pts:ALL_PLAY_TYPES, T:[5,10,20,30,50],
+    pts:ALL_PLAY_TYPES, T:[10,20,30,50],
     name:{ de:'{n}er im {pt}', en:'{n} in {pt}' },
-    desc:{ de:'{n}er Serie im {pt}-Modus', en:'{n} streak in {pt}' }},
+    desc:{ de:'{n}er Combo im {pt}-Modus', en:'{n} combo in {pt}' }},
 
   // ═══════════ PRECISION ═══════════
   { id:'perf_t', cat:'precision', metric:'bestPerfectT',
@@ -234,30 +224,30 @@ const TEMPLATES = [
 
   // ═══════════ SPEED ═══════════
   { id:'react_fast', cat:'speed', metric:'bestReaction', cmp:'lte',
-    T:[600,500,450,400,350,300,250,200],
+    T:[500,400,350,300,250],
     name:{ de:'Blitz {n}ms', en:'Lightning {n}ms' },
     desc:{ de:'Durchschnitt {n}ms Reaktion (10+ Wischer)', en:'Average {n}ms reaction (10+ swipes)' }},
 
   { id:'react_m', cat:'speed', metric:'modeBestReaction', cmp:'lte',
-    modes:ALL_MODES, T:[600,500,400,350,300],
+    modes:ALL_MODES, T:[500,400,350,300],
     name:{ de:'{n}ms in {mode}', en:'{n}ms in {mode}' },
     desc:{ de:'Durchschnitt {n}ms in {mode}', en:'Average {n}ms in {mode}' }},
 
   // ═══════════ MODES ═══════════
   { id:'mode_first', cat:'modes', metric:'modeGames',
-    modes:ALL_MODES, T:[3],
+    modes:ALL_MODES, T:[5],
     name:{ de:'{mode} entdeckt', en:'{mode} Discovered' },
-    desc:{ de:'Spiele {mode} dreimal', en:'Play {mode} three times' }},
+    desc:{ de:'Spiele {mode} fünfmal', en:'Play {mode} five times' }},
 
   { id:'modes_all', cat:'modes', metric:'modesPlayed',
-    T:[7],
+    T:[14],
     name:{ de:'Allrounder', en:'All-Rounder' },
-    desc:{ de:'Spiele alle 7 Modi', en:'Play all 7 modes' }},
+    desc:{ de:'Spiele alle 14 Modi', en:'Play all 14 modes' }},
 
   { id:'combos_all', cat:'modes', metric:'combosPlayed',
-    T:[28],
+    T:[56],
     name:{ de:'Sammler', en:'Collector' },
-    desc:{ de:'Spiele alle 28 Modus/Typ-Kombinationen', en:'Play all 28 mode/type combos' }},
+    desc:{ de:'Spiele alle 56 Modus/Typ-Kombinationen', en:'Play all 56 mode/type combos' }},
 
   { id:'brain_total', cat:'modes', metric:'brainGames',
     T:[10,25,50,100,250,500],
@@ -309,12 +299,12 @@ const TEMPLATES = [
 
   // ═══════════ PROGRESSION ═══════════
   { id:'lvl', cat:'progression', metric:'level',
-    T:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],
+    T:[1,2,3,5,7,10,13,16,20,25,29],
     name:{ de:'Level {n}', en:'Level {n}' },
     desc:{ de:'Erreiche Level {n}', en:'Reach level {n}' }},
 
   { id:'xp_total', cat:'progression', metric:'totalXP',
-    T:[100,500,1000,5000,10000,50000,100000,500000,1000000,5000000,10000000],
+    T:[500,1000,5000,10000,50000,100000,500000,1000000,5000000,10000000],
     name:{ de:'{n} XP', en:'{n} XP' },
     desc:{ de:'{n} XP insgesamt verdient', en:'Earn {n} total XP' }},
 
@@ -330,7 +320,7 @@ const TEMPLATES = [
     desc:{ de:'{n} Tage Login-Serie', en:'{n} day login streak' }},
 
   { id:'daily_gm', cat:'daily', metric:'dailyGameCount',
-    T:[3,5,10,20,30,50],
+    T:[5,10,20,30,50],
     name:{ de:'{n} Spiele heute', en:'{n} Games Today' },
     desc:{ de:'{n} Runden an einem Tag', en:'{n} games in one day' }},
 
@@ -351,14 +341,9 @@ const TEMPLATES = [
     desc:{ de:'{n} kumulative Punkte in {mode}', en:'{n} cumulative pts in {mode}' }},
 
   { id:'cum_corr_m', cat:'cumulative', metric:'modeCorrect',
-    modes:ALL_MODES, T:[100,500,1000,5000,10000],
+    modes:ALL_MODES, T:[500,1000,5000,10000],
     name:{ de:'{n} Treffer {mode}', en:'{n} Correct {mode}' },
     desc:{ de:'{n} Treffer in {mode}', en:'{n} correct in {mode}' }},
-
-  { id:'cum_score_mp', cat:'cumulative', metric:'mpScoreAccum',
-    modes:ALL_MODES, pts:ALL_PLAY_TYPES, T:[10000,50000],
-    name:{ de:'{n} {mode}/{pt}', en:'{n} {mode}/{pt}' },
-    desc:{ de:'{n} Punkte in {mode} {pt}', en:'{n} pts in {mode} {pt}' }},
 
   // ═══════════ MASTERY ═══════════
   { id:'max_mult', cat:'mastery', metric:'maxMult',
@@ -407,15 +392,9 @@ const TEMPLATES = [
 
   /* Streak in mode+playtype combos (narrow cross-product) */
   { id:'streak_mp', cat:'streaks', metric:'modeBestStreak',
-    modes:ALL_MODES, T:[10,25],
-    name:{ de:'{n}er Serie {mode}', en:'{n} Streak {mode}' },
-    desc:{ de:'{n}er Serie in {mode}', en:'{n} streak in {mode}' }},
-
-  /* Golden/Diamond per mode (via achStats -- need tracking; approximate with mode games) */
-  { id:'golden_m', cat:'bonuses', metric:'goldenCaught',
-    T:[10,25,50,100,250],
-    name:{ de:'{n}x Gold gesamt', en:'{n}x Golden Total' },
-    desc:{ de:'{n} goldene Items insgesamt', en:'{n} golden items total' }},
+    modes:ALL_MODES, T:[15,30],
+    name:{ de:'{n}er Combo {mode}', en:'{n} Combo {mode}' },
+    desc:{ de:'{n}er Combo in {mode}', en:'{n} combo in {mode}' }},
 
   /* Score milestones per play type with higher thresholds */
   { id:'score_pt_hi', cat:'scores', metric:'ptBestScore',
@@ -423,15 +402,9 @@ const TEMPLATES = [
     name:{ de:'{n} im {pt}!', en:'{n} in {pt}!' },
     desc:{ de:'{n} Punkte im {pt}-Modus!', en:'{n} points in {pt} mode!' }},
 
-  /* Accuracy in specific play types */
-  { id:'sharp_pt', cat:'precision', metric:'bestSharpT',
-    T:[15,25,40,60],
-    name:{ de:'Präzise x{n}', en:'Precise x{n}' },
-    desc:{ de:'95%+ Genauigkeit mit {n}+ Wischern', en:'95%+ accuracy with {n}+ swipes' }},
-
   /* Mode games at higher thresholds */
   { id:'games_m_hi', cat:'milestones', metric:'modeGames',
-    modes:ALL_MODES, T:[2500,5000],
+    modes:ALL_MODES, T:[3000,5000],
     name:{ de:'{n}x {mode}!', en:'{n}x {mode}!' },
     desc:{ de:'{n} Runden im {mode}-Modus!', en:'{n} games in {mode}!' }},
 
@@ -449,9 +422,45 @@ const TEMPLATES = [
 
   /* Perfect games global */
   { id:'perf_game_g', cat:'mastery', metric:'perfectGames',
-    T:[3,5,10,25,50,100],
+    T:[5,10,25,50,100],
     name:{ de:'{n}x Perfekt', en:'{n}x Perfect' },
     desc:{ de:'{n} Spiele mit 100% Genauigkeit', en:'{n} games with 100% accuracy' }},
+
+  // ═══════════ HIDDEN ACHIEVEMENTS (surprise unlocks) ═══════════
+  { id:'hidden_blitz_1k', cat:'mastery', metric:'anyPB', hidden:true,
+    T:[1500],
+    name:{ de:'Blitzschnell', en:'Lightning Fast' },
+    desc:{ de:'1.500 Punkte in einem Blitz-Spiel', en:'1,500 points in a blitz game' }},
+
+  { id:'hidden_no_miss', cat:'precision', metric:'bestPerfectT', hidden:true,
+    T:[40],
+    name:{ de:'Makellos', en:'Flawless' },
+    desc:{ de:'40 fehlerfreie Antworten am St\u00fcck', en:'40 flawless answers in a row' }},
+
+  { id:'hidden_speed_demon', cat:'speed', metric:'bestReaction', cmp:'lte', hidden:true,
+    T:[200],
+    name:{ de:'Blitzreflex', en:'Speed Demon' },
+    desc:{ de:'Durchschnitt unter 200ms', en:'Average under 200ms' }},
+
+  { id:'hidden_marathon', cat:'mastery', metric:'playtimeMin', hidden:true,
+    T:[120],
+    name:{ de:'Dauerl\u00e4ufer', en:'Marathon Runner' },
+    desc:{ de:'2 Stunden Spielzeit insgesamt', en:'2 hours total playtime' }},
+
+  { id:'hidden_daily_14', cat:'daily', metric:'loginStreak', hidden:true,
+    T:[14],
+    name:{ de:'Zwei Wochen dabei', en:'Two Week Warrior' },
+    desc:{ de:'14 Tage Login-Serie', en:'14 day login streak' }},
+
+  { id:'hidden_all_modes_pb', cat:'mastery', metric:'modesPlayed', hidden:true,
+    T:[14],
+    name:{ de:'Meister aller Klassen', en:'Jack of All Trades' },
+    desc:{ de:'Alle 14 Modi gespielt', en:'Played all 14 modes' }},
+
+  { id:'hidden_fever_3', cat:'bonuses', metric:'feverTriggered', hidden:true,
+    T:[3],
+    name:{ de:'Feuerwalze', en:'On Fire' },
+    desc:{ de:'3x Fever ausgel\u00f6st', en:'Trigger fever 3 times' }},
 ];
 
 
@@ -522,6 +531,7 @@ export function generateAchievements() {
             threshold,
             mode: mode || null,
             pt: pt || null,
+            hidden: !!tmpl.hidden,
             name: {
               de: buildText(tmpl.name, threshold, mode, pt, 'de'),
               en: buildText(tmpl.name, threshold, mode, pt, 'en'),

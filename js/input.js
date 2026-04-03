@@ -92,6 +92,10 @@ export class SwipeHandler {
       return;
     }
 
+    /* ── Velocity gate (v22): reject slow drags even if distance is sufficient ── */
+    const velocity = dist / dt; // px/ms
+    const minVelocity = CONFIG.SWIPE_MIN_VELOCITY || 0.3; // px/ms
+
     /* ── Tap gesture (no significant movement) ── */
     if (dist < CONFIG.SWIPE_MIN_DISTANCE) {
       if (this.onTrailEnd) this.onTrailEnd();
@@ -125,7 +129,7 @@ export class SwipeHandler {
     }
 
     /* ── Swipe gesture ── */
-    const dir = this._classify(dx, dy);
+    const dir = (velocity >= minVelocity) ? this._classify(dx, dy) : null;
     if (dir && this.onSwipe) {
       this.onSwipe(dir, performance.now());
     } else {

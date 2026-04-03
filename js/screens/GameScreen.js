@@ -1071,10 +1071,13 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     }
   };
 
-  game.onComboMilestone = (streak) => {
+  game.onComboMilestone = (streak, bonusPoints) => {
     haptic('combo', save);
     if (typeof audio.comboMilestone === 'function') audio.comboMilestone(streak);
     if (typeof effects.comboMilestone === 'function') effects.comboMilestone(streak);
+    if (bonusPoints > 0) {
+      effects.scorePop(window.innerWidth / 2, window.innerHeight / 2 - 60, `+${bonusPoints}`, '#FFD700', true);
+    }
   };
 
   /* v19: Score milestone celebration — skip burst during rush */
@@ -1096,6 +1099,12 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
        haptic('wrong', app.save); 
        effects.advancedShake(200, 5); 
     }
+  };
+
+  /* Combo decay: update streak HUD as combo ticks down */
+  game.onComboDecay = (newStreak) => {
+    const streakEl = document.getElementById('hudStreak');
+    if (streakEl) streakEl.textContent = newStreak > 0 ? newStreak : '';
   };
 
   game.onEndlessMiss = (livesLeft) => {
@@ -1173,6 +1182,62 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       setTimeout(() => livesContainer.classList.remove('life-earned-pulse'), 800);
     }
     updateEndlessLives();
+  };
+
+  /* ═══ Anti-frustration callbacks (v22) ═══ */
+  game.onStreakProtected = (brokenStreak) => {
+    haptic('warn', save);
+    if (typeof audio.streakProtected === 'function') audio.streakProtected();
+    effects.scorePop(
+      window.innerWidth / 2,
+      window.innerHeight / 2 - 60,
+      t('streak_warning', { n: brokenStreak }),
+      '#FFA502',
+      true
+    );
+    effects.flash('#FFA50230', 250);
+  };
+
+  game.onShowCorrectAnswer = (correctDir, durationMs) => {
+    const el = $(`.corner-shape[data-dir="${correctDir}"]`);
+    if (el) {
+      el.classList.add('show-correct');
+      setTimeout(() => el.classList.remove('show-correct'), durationMs || 400);
+    }
+  };
+
+  game.onRushWarning = (seconds) => {
+    if (typeof audio.rushWarning === 'function') audio.rushWarning();
+    const gameEl = document.getElementById('game');
+    if (!gameEl) return;
+    const warn = document.createElement('div');
+    warn.className = 'rush-warning';
+    warn.textContent = t('rush_incoming', { n: seconds });
+    gameEl.appendChild(warn);
+    setTimeout(() => warn.remove(), 1200);
+  };
+
+  game.onShuffleExplain = () => {
+    const gameEl = document.getElementById('game');
+    if (!gameEl) return;
+    const tip = document.createElement('div');
+    tip.className = 'shuffle-explain';
+    tip.textContent = t('shuffle_explain');
+    gameEl.appendChild(tip);
+    setTimeout(() => tip.remove(), 2800);
+  };
+
+  game.onWissenLevelUp = (level) => {
+    haptic('combo', save);
+    if (typeof audio.wissenLevelUp === 'function') audio.wissenLevelUp(level);
+    const gameEl = document.getElementById('game');
+    if (!gameEl) return;
+    const el = document.createElement('div');
+    el.className = 'wissen-level-up';
+    el.textContent = t('wissen_level_up', { n: level });
+    gameEl.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
+    effects.flash('#a78bfa30', 300);
   };
 
   game.onCompetitionComplete = async (level, score) => {

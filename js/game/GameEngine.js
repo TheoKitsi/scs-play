@@ -91,6 +91,12 @@ export class GameEngine {
     this.bonusType = null;
     this.feverStreak = 0;
 
+    /* Combo decay */
+    clearTimeout(this._comboDecayTimeout);
+    this._comboDecayTimeout = null;
+    clearInterval(this._comboDecayInterval);
+    this._comboDecayInterval = null;
+
     /* Corner shuffle */
     this._nextShuffleAt = Infinity;
     this._shuffleCount = 0;
@@ -153,8 +159,20 @@ export class GameEngine {
     this.onSequenzReady = null;
     this.onSequenzResult = null;
     this.onSequenzRoundStart = null;
+    /* Anti-frustration callbacks (v22) */
+    this.onStreakProtected = null;
+    this.onShowCorrectAnswer = null;
+    this.onRushWarning = null;
+    /* Combo decay callback */
+    this.onComboDecay = null;
+    this.onShuffleExplain = null;
+    this.onWissenLevelUp = null;
     this._lastMilestoneIndex = -1;
     this._lang = 'de';
+    /* Anti-frustration state (v22) */
+    this._streakProtectionUsed = false;
+    this._firstShuffleDone = false;
+    this._wissenLevel = 0;
   }
 
   get contentType() {
@@ -227,6 +245,10 @@ export class GameEngine {
   }
 
   _getDuration() {
+    /* Wissen global timer (v22): fixed game duration */
+    if (this.mode === 'wissen' && CONFIG.WISSEN_GLOBAL_TIMER) {
+      return CONFIG.WISSEN_GAME_DURATION || 60;
+    }
     switch (this.playType) {
       case 'classic':     return CONFIG.DURATION_CLASSIC;
       case 'endless':     return CONFIG.DURATION_ENDLESS;
@@ -493,6 +515,7 @@ export class GameEngine {
     clearTimeout(this._spawnTimeout);
     clearTimeout(this._shuffleTimeout);
     clearTimeout(this._memoPreviewTimeout);
+    this._stopComboDecay();
     this._rushQueue.forEach(t => clearTimeout(t));
     this._rushQueue = [];
     this.inRush = false;
@@ -589,6 +612,13 @@ export class GameEngine {
     this._spawnTimeout = setTimeout(() => this._spawn(), d);
   }
 
+  /* Central spawn finalization: records time, starts combo decay, fires callback */
+  _emitSpawn() {
+    this.lastSpawnTime = performance.now();
+    if (this.onSpawn) this.onSpawn(this.currentShape);
+    this._startComboDecay();
+  }
+
   _spawn() {
     if (!this.running || this.paused) return;
     /* Grace period: don't auto-miss if the player hasn't had enough time to answer */
@@ -627,9 +657,7 @@ export class GameEngine {
     this.currentShape = { direction: dir, shape: info.shape, color: info.color,
                           colorblind: info.colorblind, bonus };
     this.bonusType = bonus;
-    this.lastSpawnTime = performance.now();
-
-    if (this.onSpawn) this.onSpawn(this.currentShape);
+    this._emitSpawn();
     this._scheduleSpawn();
   }
 
@@ -756,10 +784,9 @@ export class GameEngine {
       bonus
     };
     this.bonusType = bonus;
-    this.lastSpawnTime = performance.now();
 
     if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
-    if (this.onSpawn) this.onSpawn(this.currentShape);
+    this._emitSpawn();
     this._scheduleSpawn();
   }
 
@@ -842,10 +869,9 @@ export class GameEngine {
       bonus
     };
     this.bonusType = bonus;
-    this.lastSpawnTime = performance.now();
 
     if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
-    if (this.onSpawn) this.onSpawn(this.currentShape);
+    this._emitSpawn();
     this._scheduleSpawn();
   }
 
@@ -906,11 +932,15 @@ export class GameEngine {
       bonus
     };
     this.bonusType = bonus;
-    this.lastSpawnTime = performance.now();
 
     if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
-    if (this.onSpawn) this.onSpawn(this.currentShape);
-    this._scheduleSpawn();
+    this._emitSpawn();
+    /* Wissen global timer (v22): question stays until answered, no auto-miss timeout */
+    if (CONFIG.WISSEN_GLOBAL_TIMER) {
+      /* Don't schedule next spawn — wait for player to answer */
+    } else {
+      this._scheduleSpawn();
+    }
   }
 
   /* ═══ ALGEBRA spawn ═══ */
@@ -1057,10 +1087,9 @@ export class GameEngine {
       bonus
     };
     this.bonusType = bonus;
-    this.lastSpawnTime = performance.now();
 
     if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
-    if (this.onSpawn) this.onSpawn(this.currentShape);
+    this._emitSpawn();
     this._scheduleSpawn();
   }
 
@@ -1132,9 +1161,8 @@ export class GameEngine {
       bonus
     };
     this.bonusType = bonus;
-    this.lastSpawnTime = performance.now();
 
-    if (this.onSpawn) this.onSpawn(this.currentShape);
+    this._emitSpawn();
     this._scheduleSpawn();
   }
 
@@ -1177,8 +1205,8 @@ export class GameEngine {
       bonus
     };
     this.bonusType = bonus;
-    this.lastSpawnTime = performance.now();
-    if (this.onSpawn) this.onSpawn(this.currentShape);
+
+    this._emitSpawn();
     this._scheduleSpawn();
   }
 
@@ -1223,8 +1251,8 @@ export class GameEngine {
       bonus
     };
     this.bonusType = bonus;
-    this.lastSpawnTime = performance.now();
-    if (this.onSpawn) this.onSpawn(this.currentShape);
+
+    this._emitSpawn();
     this._scheduleSpawn();
   }
 
@@ -1263,9 +1291,9 @@ export class GameEngine {
         colorblind: this.cornerMap[correctDir].colorblind, bonus
       };
       this.bonusType = bonus;
-      this.lastSpawnTime = performance.now();
+
       if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
-      if (this.onSpawn) this.onSpawn(this.currentShape);
+      this._emitSpawn();
       this._scheduleSpawn();
       return;
     }
@@ -1303,9 +1331,9 @@ export class GameEngine {
         color: inkColor.hex, colorblind: inkColor.hex, bonus
       };
       this.bonusType = bonus;
-      this.lastSpawnTime = performance.now();
+
       if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
-      if (this.onSpawn) this.onSpawn(this.currentShape);
+      this._emitSpawn();
       this._scheduleSpawn();
       return;
     }
@@ -1366,9 +1394,9 @@ export class GameEngine {
       bonus
     };
     this.bonusType = bonus;
-    this.lastSpawnTime = performance.now();
+
     if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
-    if (this.onSpawn) this.onSpawn(this.currentShape);
+    this._emitSpawn();
     this._scheduleSpawn();
   }
 
@@ -1393,6 +1421,7 @@ export class GameEngine {
   handleSwipe(direction, timestamp) {
     if (!this.running || this.paused || !this.currentShape) return null;
     if (!direction) return null;  /* guard against null from dead-zone or missed hit-test */
+    this._stopComboDecay();
     const reaction = timestamp - this.lastSpawnTime;
     if (reaction < CONFIG.ANTI_CHEAT_MIN_REACTION) return null;
 
@@ -1411,11 +1440,23 @@ export class GameEngine {
       if (this.streak > this.bestStreak) this.bestStreak = this.streak;
 
       if (!this.practice) {
-        const tbWindow = (this.isBrainMode || this.isMemoMode || this.isReflexMode)
-          ? (CONFIG.TIME_BONUS_WINDOW_BRAIN || CONFIG.TIME_BONUS_WINDOW)
-          : CONFIG.TIME_BONUS_WINDOW;
-        const timeBonus = Math.max(0, Math.round(CONFIG.TIME_BONUS_MAX * (1 - reaction / tbWindow)));
-        let base = CONFIG.BASE_SCORE + timeBonus;
+        /* ── Wissen speed-based scoring (v22) ── */
+        const isWissenGlobal = this.mode === 'wissen' && CONFIG.WISSEN_GLOBAL_TIMER;
+        let base;
+        if (isWissenGlobal) {
+          const speedBonusTiers = CONFIG.WISSEN_SPEED_BONUS || [];
+          let speedMult = 1;
+          for (const tier of speedBonusTiers) {
+            if (reaction <= tier.ms) speedMult = tier.mult;
+          }
+          base = (CONFIG.WISSEN_BASE_POINTS || 100) * speedMult;
+        } else {
+          const tbWindow = (this.isBrainMode || this.isMemoMode || this.isReflexMode)
+            ? (CONFIG.TIME_BONUS_WINDOW_BRAIN || CONFIG.TIME_BONUS_WINDOW)
+            : CONFIG.TIME_BONUS_WINDOW;
+          const timeBonus = Math.max(0, Math.round(CONFIG.TIME_BONUS_MAX * (1 - reaction / tbWindow)));
+          base = CONFIG.BASE_SCORE + timeBonus;
+        }
         if (bonus === 'diamond')     base *= CONFIG.DIAMOND_MULT;
         else if (bonus === 'golden') base *= CONFIG.GOLDEN_MULT;
         if (this.feverActive) base *= CONFIG.FEVER_MULT;
@@ -1443,8 +1484,14 @@ export class GameEngine {
         if (reaction <= CONFIG.PERFECT_WINDOW_MS && this.onPerfect) this.onPerfect();
         if (this.streak % 10 === 0 && this.onStreak) this.onStreak(this.streak);
 
-        if ((this.streak === 20 || this.streak === 30 || this.streak === 40 || this.streak === 50 || this.streak === 75) && this.onComboMilestone) {
-          this.onComboMilestone(this.streak);
+        /* Variable combo milestone rewards */
+        if (this.streak === 20 || this.streak === 30 || this.streak === 40 || this.streak === 50 || this.streak === 75) {
+          const tierIdx = [20, 30, 40, 50, 75].indexOf(this.streak);
+          const baseBonuses = [50, 100, 200, 350, 500];
+          const variance = Math.floor(baseBonuses[tierIdx] * 0.3 * (this.rng() - 0.5));
+          const bonusPoints = baseBonuses[tierIdx] + variance;
+          this.score += bonusPoints;
+          if (this.onComboMilestone) this.onComboMilestone(this.streak, bonusPoints);
         }
 
         const _feverReq = (this.isBrainMode || this.isReflexMode) ? (CONFIG.FEVER_STREAK_BRAIN || 8) : CONFIG.FEVER_STREAK;
@@ -1472,7 +1519,35 @@ export class GameEngine {
         }
 
         /* ── Direct speed-up on correct ── */
-        this.spawnInterval = Math.max(this._spawnMin, this.spawnInterval - this._speedStep);
+        /* Gentle Start (v22): first N answers stay at base speed */
+        const gentleCount = CONFIG.GENTLE_START_COUNT || 5;
+        if (this.total > gentleCount) {
+          this.spawnInterval = Math.max(this._spawnMin, this.spawnInterval - this._speedStep);
+        }
+
+        /* ── Wissen time bonus + level system (v22) ── */
+        if (isWissenGlobal) {
+          /* Award bonus time for fast answers */
+          const wissenBonusThreshold = CONFIG.WISSEN_TIME_BONUS_THRESHOLD || 3000;
+          if (reaction <= wissenBonusThreshold && this._timerWallStart && this.timer > 0) {
+            const bonusSec = (CONFIG.WISSEN_TIME_BONUS_MS || 5000) / 1000;
+            this._timerTarget += bonusSec;
+            this.timer = Math.max(0, Math.ceil(
+              this._timerTarget - (Date.now() - this._timerWallStart - this._timerPausedAccum) / 1000
+            ));
+            if (this.onTimerBonus) this.onTimerBonus(bonusSec);
+          }
+          /* Level-up when score crosses thresholds */
+          const levelThresholds = CONFIG.WISSEN_LEVEL_THRESHOLDS || [];
+          let newLevel = 0;
+          for (let li = 0; li < levelThresholds.length; li++) {
+            if (this.score >= levelThresholds[li]) newLevel = li + 1;
+          }
+          if (newLevel > this._wissenLevel) {
+            this._wissenLevel = newLevel;
+            if (this.onWissenLevelUp) this.onWissenLevelUp(newLevel);
+          }
+        }
 
         /* ── Memo: check if it's time for a corner re-reveal ── */
         if (this.isMemoMode) {
@@ -1511,17 +1586,45 @@ export class GameEngine {
     } else {
       this.wrong++;
       const brokenStreak = this.streak;
-      this.streak = 0;
-      this.feverStreak = 0;
-      this._consecutiveMisses++;
-      if (!this.practice) {
-        this.multiplier = Math.max(1, this.multiplier - CONFIG.MISS_PENALTY);
-        if (this.onMultiplierChange) this.onMultiplierChange(this.multiplier);
+
+      /* ── Streak Protection (v22): first miss at streak >= threshold is a warning ── */
+      const protectionThreshold = CONFIG.STREAK_PROTECTION_THRESHOLD || 10;
+      const isProtected = brokenStreak >= protectionThreshold && !this._streakProtectionUsed;
+      if (isProtected) {
+        this._streakProtectionUsed = true;
+        /* Soft penalty: lose some multiplier but keep the streak */
+        this.streak = Math.max(0, brokenStreak - 3);
+        this.feverStreak = Math.max(0, this.feverStreak - 3);
+        this._consecutiveMisses = 0;
+        if (!this.practice) {
+          const penalty = CONFIG.STREAK_PROTECTION_PENALTY || 1;
+          this.multiplier = Math.max(1, this.multiplier - penalty);
+          if (this.onMultiplierChange) this.onMultiplierChange(this.multiplier);
+        }
+        if (this.onStreakProtected) this.onStreakProtected(brokenStreak);
+      } else {
+        this.streak = 0;
+        this.feverStreak = 0;
+        this._consecutiveMisses++;
+        this._streakProtectionUsed = false;
+      }
+
+      if (!this.practice && !isProtected) {
+        /* Rush No-Multiplier-Loss (v22): miss during rush keeps multiplier */
+        const rushNoLoss = CONFIG.RUSH_NO_MULTIPLIER_LOSS && this.inRush;
+        if (!rushNoLoss) {
+          this.multiplier = Math.max(1, this.multiplier - CONFIG.MISS_PENALTY);
+          if (this.onMultiplierChange) this.onMultiplierChange(this.multiplier);
+        }
 
         /* ── Wrong answer time penalty (brain modes: reduced/no penalty) ── */
-        const wrongPenalty = (this.isBrainMode || this.isReflexMode)
-          ? (CONFIG.WRONG_TIME_PENALTY_BRAIN ?? CONFIG.WRONG_TIME_PENALTY)
-          : CONFIG.WRONG_TIME_PENALTY;
+        /* Wissen mode (v22): use dedicated penalty */
+        const isWissenWrong = this.mode === 'wissen' && CONFIG.WISSEN_GLOBAL_TIMER;
+        const wrongPenalty = isWissenWrong
+          ? (CONFIG.WISSEN_WRONG_PENALTY_SEC || 3)
+          : (this.isBrainMode || this.isReflexMode)
+            ? (CONFIG.WRONG_TIME_PENALTY_BRAIN ?? CONFIG.WRONG_TIME_PENALTY)
+            : CONFIG.WRONG_TIME_PENALTY;
         if (wrongPenalty > 0 && this.playType !== 'endless' && this._timerWallStart && this.timer > 0) {
           this._timerTarget -= wrongPenalty;
           this.timer = Math.max(0, Math.ceil(
@@ -1558,31 +1661,51 @@ export class GameEngine {
       points: pointsEarned, reaction, bonus, prevStreak,
       streak: this.streak, multiplier: this.multiplier, score: this.score
     };
+
+    /* ── Show correct answer on miss (v22) ── */
+    if (!isCorrect && this.onShowCorrectAnswer) {
+      this.onShowCorrectAnswer(this.currentShape.direction, CONFIG.MISS_SHOW_CORRECT_MS || 400);
+    }
+
     this.currentShape = null;
     this.bonusType = null;
 
     clearTimeout(this._spawnTimeout);
     /* After an answer: spawn next item quickly.
+       On miss: add grace period so player can recover.
        Brain/Memo modes get a slightly longer pause so the player can read new corners.
+       Wissen global timer: spawn next question immediately (min display enforced in _spawnWissen).
        Normal modes: minimal delay for snappy feel. */
-    const postAnswerDelay = (this.isBrainMode || this.isMemoMode)
-      ? Math.max(150, Math.min(400, this.spawnInterval * 0.2))
-      : (this.practice ? CONFIG.PRACTICE_INTERVAL : Math.max(80, this.spawnInterval * 0.15));
+    let postAnswerDelay;
+    const isWissenGlobalTimer = this.mode === 'wissen' && CONFIG.WISSEN_GLOBAL_TIMER;
+    if (isWissenGlobalTimer) {
+      /* Wissen (v22): next question appears after brief feedback flash */
+      postAnswerDelay = isCorrect ? 200 : (CONFIG.MISS_GRACE_PERIOD_MS || 600);
+    } else if (!isCorrect) {
+      postAnswerDelay = CONFIG.MISS_GRACE_PERIOD_MS || 600;
+    } else if (this.isBrainMode || this.isMemoMode) {
+      postAnswerDelay = Math.max(150, Math.min(400, this.spawnInterval * 0.2));
+    } else {
+      postAnswerDelay = this.practice ? CONFIG.PRACTICE_INTERVAL : Math.max(80, this.spawnInterval * 0.15);
+    }
     this._scheduleSpawn(postAnswerDelay);
     if (this.onResult) this.onResult(result);
 
+    /* ── Gentle Start (v22): suppress rush/shuffle during opening seconds ── */
+    const gentleActive = this.elapsed < (CONFIG.GENTLE_START_NO_RUSH_SEC || 10);
+
     /* Corner shuffle check (shape modes only) */
-    if (isCorrect && !this.practice && this.correct >= this._nextShuffleAt) {
+    if (isCorrect && !this.practice && this.correct >= this._nextShuffleAt && !gentleActive) {
       this._triggerCornerShuffle();
     }
 
     const dur = this._getDuration();
     const hasTimer = dur > 0;
     if (!this.practice && hasTimer && this.timer > 5 && this.timer < dur &&
-        isCorrect && this.timer % CONFIG.RUSH_INTERVAL === 0 && this.streak >= 3) {
+        isCorrect && this.timer % CONFIG.RUSH_INTERVAL === 0 && this.streak >= 3 && !gentleActive) {
       this._triggerRush();
     }
-    if (this.playType === 'endless' && isCorrect && this.correct > 0 && this.correct % 20 === 0 && this.streak >= 3) {
+    if (this.playType === 'endless' && isCorrect && this.correct > 0 && this.correct % 20 === 0 && this.streak >= 3 && !gentleActive) {
       this._triggerRush();
     }
 
@@ -1593,8 +1716,42 @@ export class GameEngine {
     return result;
   }
 
+  /* ── Combo Decay: streak ticks down if player idles too long ── */
+  _startComboDecay() {
+    this._stopComboDecay();
+    if (this.practice || this.streak <= 0) return;
+    const threshold = (CONFIG.COMBO_DECAY_THRESHOLD || 2.0) * this.spawnInterval;
+    this._comboDecayTimeout = setTimeout(() => {
+      if (!this.running || this.paused || this.streak <= 0) return;
+      this._comboDecayInterval = setInterval(() => {
+        if (!this.running || this.paused || this.streak <= 0) {
+          this._stopComboDecay();
+          return;
+        }
+        const loss = CONFIG.COMBO_DECAY_AMOUNT || 1;
+        this.streak = Math.max(0, this.streak - loss);
+        this.feverStreak = Math.max(0, this.feverStreak - loss);
+        const newMult = Math.min(CONFIG.MULTIPLIER_MAX, 1 + Math.floor(this.streak / CONFIG.STREAK_PER_MULTIPLIER));
+        if (newMult !== this.multiplier) {
+          this.multiplier = newMult;
+          if (this.onMultiplierChange) this.onMultiplierChange(this.multiplier);
+        }
+        if (this.onComboDecay) this.onComboDecay(this.streak);
+        if (this.streak <= 0) this._stopComboDecay();
+      }, CONFIG.COMBO_DECAY_INTERVAL || 500);
+    }, threshold);
+  }
+
+  _stopComboDecay() {
+    clearTimeout(this._comboDecayTimeout);
+    this._comboDecayTimeout = null;
+    clearInterval(this._comboDecayInterval);
+    this._comboDecayInterval = null;
+  }
+
   autoMiss() {
     if (this.practice || !this.currentShape) return;
+    this._stopComboDecay();
     this.total++;
     this.wrong++;
     this.streak = 0;
@@ -1749,8 +1906,13 @@ export class GameEngine {
           if (this.onMultiplierChange) this.onMultiplierChange(this.multiplier);
         }
         if (this.streak % 5 === 0 && this.onStreak) this.onStreak(this.streak);
-        if ((this.streak === 5 || this.streak === 10 || this.streak === 15 || this.streak === 20)
-            && this.onComboMilestone) this.onComboMilestone(this.streak);
+        if (this.streak === 5 || this.streak === 10 || this.streak === 15 || this.streak === 20) {
+          const seqBonuses = [25, 50, 100, 200];
+          const sIdx = [5, 10, 15, 20].indexOf(this.streak);
+          const bonusPts = seqBonuses[sIdx] || 50;
+          this.score += bonusPts;
+          if (this.onComboMilestone) this.onComboMilestone(this.streak, bonusPts);
+        }
 
         /* ── Sequenz life recovery (mirrors handleSwipe endless logic) ── */
         if (this.streak % CONFIG.ENDLESS_LIFE_STREAK === 0) {
@@ -1853,6 +2015,12 @@ export class GameEngine {
     /* Fire warning callback */
     if (this.onCornerShuffleWarn) this.onCornerShuffleWarn();
 
+    /* First-shuffle explanation (v22): explain mechanic on first occurrence */
+    if (!this._firstShuffleDone) {
+      this._firstShuffleDone = true;
+      if (this.onShuffleExplain) this.onShuffleExplain();
+    }
+
     /* Pause spawning during shuffle animation */
     clearTimeout(this._spawnTimeout);
     this._shuffleTimeout = setTimeout(() => {
@@ -1903,6 +2071,12 @@ export class GameEngine {
   }
 
   _triggerRush() {
+    /* Rush Pre-Warning (v22): notify UI before rush starts */
+    const preWarnSec = CONFIG.RUSH_PRE_WARNING_SEC || 0;
+    if (preWarnSec > 0 && this.onRushWarning) {
+      this.onRushWarning(preWarnSec);
+    }
+
     if (this.onRush) this.onRush();
     clearTimeout(this._spawnTimeout);
     this._rushQueue.forEach(t => clearTimeout(t));
@@ -1964,6 +2138,7 @@ export class GameEngine {
     clearTimeout(this._feverTimeout);
     clearTimeout(this._shuffleTimeout);
     clearTimeout(this._memoPreviewTimeout);
+    this._stopComboDecay();
     this._rushQueue.forEach(t => clearTimeout(t));
     this._rushQueue = [];
     this._seqFlashTimeouts.forEach(t => clearTimeout(t));
@@ -2043,6 +2218,7 @@ export class GameEngine {
     clearTimeout(this._feverTimeout);
     clearTimeout(this._shuffleTimeout);
     clearTimeout(this._memoPreviewTimeout);
+    this._stopComboDecay();
     this._rushQueue.forEach(t => clearTimeout(t));
     this._rushQueue = [];
     this._seqFlashTimeouts.forEach(t => clearTimeout(t));
