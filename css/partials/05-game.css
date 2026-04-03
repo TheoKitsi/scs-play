@@ -231,8 +231,10 @@
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 8px 14px;
-  padding-bottom: calc(8px + max(env(safe-area-inset-bottom, 0px), 6px));
+  /* height:auto overrides the 42px set in 04-home.css — footer grows with safe area */
+  height: auto;
+  min-height: 54px;
+  padding: 8px 14px max(env(safe-area-inset-bottom, 10px), 10px);
   background: var(--bg, #030014);
   border-top: 1px solid rgba(255,255,255,0.08);
   border-radius: 0;
@@ -240,10 +242,10 @@
   box-shadow: none;
 }
 
-/* PWA fullscreen safe area — ensure footer icons stay above home indicator */
+/* PWA standalone — extra safe area for gesture nav (e.g. S25 Ultra ~22dp) */
 @media (display-mode: fullscreen), (display-mode: standalone) {
   .footer-nav {
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 8px), 20px);
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 10px), 20px);
   }
 }
 

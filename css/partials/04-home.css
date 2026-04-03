@@ -221,7 +221,8 @@
   -ms-overflow-style:none;
   overscroll-behavior:contain;
   padding:0 8px;
-  padding-bottom:calc(42px + 4px + env(safe-area-inset-bottom, 0px));
+  /* Reserve space for fixed footer (54px min + safe area) so last item scrolls clear */
+  padding-bottom:calc(64px + max(env(safe-area-inset-bottom, 0px), 0px));
   display:flex;
   flex-direction:column;
   gap:6px;
@@ -684,6 +685,8 @@
   justify-content:center;
   padding:8px 0;
   flex-shrink:0;
+  /* Pin SPIELEN to bottom of flex column — eliminates dead space on tall screens */
+  margin-top:auto;
 }
 .btn-play-fab{
   position:relative;
@@ -698,8 +701,9 @@
   background:linear-gradient(135deg, var(--primary, #7C3AED), var(--accent, #EC4899));
   cursor:pointer;
   box-shadow:
-    0 8px 28px rgba(124,58,237,0.55),
-    0 4px 10px rgba(0,0,0,0.3),
+    /* Reduced downward glow so it doesn't bleed into footer */
+    0 6px 20px rgba(124,58,237,0.45),
+    0 3px 8px rgba(0,0,0,0.3),
     inset 0 1px 1px rgba(255,255,255,0.25);
   transition:all 0.3s var(--ease-out-soft, ease);
   white-space:nowrap;
@@ -724,15 +728,16 @@
   display:flex;
   align-items:center;
   justify-content:space-around;
-  height:42px;
+  /* height auto — follows 05-game.css position:fixed version which controls actual rendering */
+  height:auto;
+  min-height:54px;
   flex-shrink:0;
   z-index:10;
   background:rgba(0,0,0,0.6);
   border-top:1px solid rgba(255,255,255,0.08);
   backdrop-filter:blur(16px);
   -webkit-backdrop-filter:blur(16px);
-  padding:0 8px;
-  padding-bottom:env(safe-area-inset-bottom, 4px);
+  padding:8px 8px max(env(safe-area-inset-bottom, 10px), 10px);
 }
 .footer-item{
   display:flex;flex-direction:column;
