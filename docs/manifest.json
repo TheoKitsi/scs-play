@@ -3,7 +3,7 @@
   "short_name": "SCS Play",
   "description": "14 game modes — reflexes, brain training, speed. Swipe, sort, score.",
   "start_url": "./index.html",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "portrait",
   "theme_color": "#0f0c29",
   "background_color": "#0f0c29",

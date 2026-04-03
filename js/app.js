@@ -321,8 +321,24 @@ function bindEvents() {
   window.addEventListener('resize', checkOrientation, { passive: true });
 }
 
+/* ═══════ Gesture-nav detection (fullscreen PWA) ═══════ */
+function initGestureNavInset() {
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  if (!isAndroid) return;
+  const mqFull = matchMedia('(display-mode: fullscreen)');
+  const apply = () => {
+    // In fullscreen mode env(safe-area-inset-bottom) returns 0 on most Android devices,
+    // so we set a CSS variable as fallback covering the gesture-nav pill area (~24dp + pad).
+    const offset = mqFull.matches ? '34px' : '0px';
+    document.documentElement.style.setProperty('--gesture-nav-inset', offset);
+  };
+  apply();
+  mqFull.addEventListener('change', apply);
+}
+
 /* ═══════ Init ═══════ */
 document.addEventListener('DOMContentLoaded', () => {
+  initGestureNavInset();
   initErrorBoundary();
   /* global-haptics-bound */
   document.addEventListener('click', (e) => {

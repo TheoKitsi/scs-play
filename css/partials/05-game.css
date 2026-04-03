@@ -223,30 +223,25 @@
 }
 
 /* ═══════════════════════════════════════════
-   FOOTER NAV
+   FOOTER NAV — Chrome 135+ edge-to-edge pattern
    ═══════════════════════════════════════════ */
 .footer-nav {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
+  left: 0; right: 0;
+  /* Chrome 135+ recommended: position with bottom, not padding.
+     Uses max() cascade: env() for devices that report safe-area,
+     var(--gesture-nav-inset) as JS fallback for fullscreen mode,
+     10px minimum for baseline spacing. */
+  bottom: max(env(safe-area-inset-bottom, 0px), var(--gesture-nav-inset, 0px));
   display: flex;
   justify-content: space-around;
   align-items: center;
-  /* height:auto overrides the 42px set in 04-home.css — footer grows with safe area */
   height: auto;
-  min-height: 54px;
-  padding: 8px 14px max(env(safe-area-inset-bottom, 10px), 10px);
+  min-height: 50px;
+  padding: 8px 14px 10px;
   background: var(--bg, #030014);
   border-top: 1px solid rgba(255,255,255,0.08);
-  border-radius: 0;
   z-index: 50;
-  box-shadow: none;
-}
-
-/* PWA standalone — extra safe area for gesture nav */
-@media (display-mode: standalone) {
-  .footer-nav {
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 10px), 20px);
-  }
 }
 
 .footer-item {

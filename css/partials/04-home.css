@@ -221,8 +221,8 @@
   -ms-overflow-style:none;
   overscroll-behavior:contain;
   padding:0 8px;
-  /* Reserve space for fixed footer (54px min + safe area) so last item scrolls clear */
-  padding-bottom:calc(64px + max(env(safe-area-inset-bottom, 0px), 0px));
+  /* Reserve space for fixed footer + gesture nav offset so last item scrolls clear */
+  padding-bottom:calc(60px + max(env(safe-area-inset-bottom, 0px), var(--gesture-nav-inset, 34px)));
   display:flex;
   flex-direction:column;
   gap:6px;
@@ -728,16 +728,15 @@
   display:flex;
   align-items:center;
   justify-content:space-around;
-  /* height auto — follows 05-game.css position:fixed version which controls actual rendering */
   height:auto;
-  min-height:54px;
+  min-height:50px;
   flex-shrink:0;
   z-index:10;
-  background:rgba(0,0,0,0.6);
+  background:var(--bg, #030014);
   border-top:1px solid rgba(255,255,255,0.08);
   backdrop-filter:blur(16px);
   -webkit-backdrop-filter:blur(16px);
-  padding:8px 8px max(env(safe-area-inset-bottom, 10px), 10px);
+  padding:8px 8px 10px;
 }
 .footer-item{
   display:flex;flex-direction:column;

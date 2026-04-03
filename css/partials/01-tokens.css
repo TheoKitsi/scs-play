@@ -78,6 +78,10 @@
   --safe-bottom:env(safe-area-inset-bottom,0px);
   --safe-left:env(safe-area-inset-left,0px);
   --safe-right:env(safe-area-inset-right,0px);
+  /* Chrome 135+ safe-area-max for edge-to-edge; 34px fallback covers Android gesture nav */
+  --safe-bottom-max:env(safe-area-max-inset-bottom, 34px);
+  /* JS sets this for fullscreen mode on Android where env() reports 0 */
+  --gesture-nav-inset:0px;
   color-scheme:dark;
 }
 html,body{
