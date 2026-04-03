@@ -65,6 +65,11 @@ async function screenshotAll(deviceName, deviceConfig) {
 
   // ─── 2) Enter Home Screen ───
   await click('#btnGuest');
+  // Dismiss any onboarding overlays that might block interactions
+  await page.evaluate(() => {
+    document.querySelectorAll('.onboarding-overlay').forEach(o => o.remove());
+  });
+  await page.waitForTimeout(400);
   await shot('02-home-top');
 
   // Scroll home content to see game modes
@@ -81,9 +86,13 @@ async function screenshotAll(deviceName, deviceConfig) {
   await shot('02-home-bottom');
 
   const goBack = async () => {
+    // Dismiss any modal/overlay that might block clicks
+    await page.evaluate(() => {
+      document.querySelectorAll('.onboarding-overlay, .modal-overlay, .overlay').forEach(o => o.remove());
+    });
     // Try btn-back-bottom, then use JS to show home directly
     const backBtn = page.locator('.btn-back-bottom:visible').first();
-    if (await backBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+    if (await backBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
       await backBtn.click();
       await page.waitForTimeout(600);
     } else {

@@ -243,8 +243,8 @@
 .ad-banner{
   width:100%;
   height:50px;min-height:50px;
-  background:linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0.04));
-  border-bottom:1px solid rgba(255,255,255,0.06);
+  background:transparent;
+  border-bottom:none;
   display:flex;align-items:center;justify-content:center;
   flex-shrink:0;position:relative;gap:6px;
   padding:0 8px;
@@ -685,8 +685,7 @@
   justify-content:center;
   padding:8px 0;
   flex-shrink:0;
-  /* Pin SPIELEN to bottom of flex column — eliminates dead space on tall screens */
-  margin-top:auto;
+  margin-top:12px;
 }
 .btn-play-fab{
   position:relative;
@@ -723,47 +722,7 @@
   width:24px;height:24px;fill:currentColor;
 }
 
-/* ═══ FOOTER NAV ═══ */
-.footer-nav{
-  display:flex;
-  align-items:center;
-  justify-content:space-around;
-  height:auto;
-  min-height:50px;
-  flex-shrink:0;
-  z-index:10;
-  background:var(--bg, #030014);
-  border-top:1px solid rgba(255,255,255,0.08);
-  backdrop-filter:blur(16px);
-  -webkit-backdrop-filter:blur(16px);
-  padding:8px 8px 10px;
-}
-.footer-item{
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  gap:2px;padding:4px 10px;
-  background:none;border:none;
-  color:var(--text-dim);
-  font-size:0.65rem;font-weight:700;
-  cursor:pointer;
-  transition:color .2s ease, transform .2s ease;
-  text-transform:uppercase;letter-spacing:0.3px;
-}
-.footer-item:hover{color:var(--text);transform:translateY(-1px);}
-.footer-item:active{transform:scale(0.9);}
-.footer-icon{
-  font-size:0;line-height:0;
-  display:flex;align-items:center;justify-content:center;
-}
-.footer-icon svg{
-  width:20px;height:20px;fill:currentColor;
-}
-.footer-label{
-  font-family:'Space Grotesk',sans-serif;
-  font-size:0.68rem;
-  line-height:1.1;
-  color:var(--text-dim);
-}
+/* Footer nav — see 05-game.css for authoritative fixed-position rules */
 
 
 /* ═══ HERO XP BAR (thin line below identity) ═══ */

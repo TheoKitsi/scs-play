@@ -15,8 +15,10 @@ export function shapeSVG(shape, color, size = 48, bonus = null) {
   const s = size, h = s / 2, r = h - 2;
   const glow = bonus === 'diamond' ? 'filter="url(#dGlow)"' :
                bonus === 'golden'  ? 'filter="url(#gGlow)"' : '';
-  const stroke = bonus === 'diamond' ? '#00D2FF' : bonus === 'golden' ? '#FFD700' : 'none';
-  const sw = bonus ? 3 : 0;
+  /* No stroke on bonus shapes — the glow filter is sufficient visual feedback.
+     A colored border confuses players in color-sorting modes (klassik/farben). */
+  const stroke = 'none';
+  const sw = 0;
 
   let defs = '';
   if (bonus === 'golden')  defs = '<defs><filter id="gGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
