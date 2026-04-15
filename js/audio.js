@@ -19,6 +19,8 @@ export class AudioManager {
 
     /* music variety state */
     this._musicMode = 'classic';
+    this._requestedMusicMode = 'classic';
+    this._musicContext = {};
     this._baseTempo = 120;
     this._melodyIndex = 0;
     this._chordIndex = 0;
@@ -42,10 +44,13 @@ export class AudioManager {
 
     /* Audio file music (preferred over procedural) */
     this._musicAudio = null;
-    this._musicFileAvailable = {};  /* cache: mode → boolean */
+    this._availableMusicTracks = new Set();
+    this._musicManifestLoaded = false;
+    this._musicManifestPromise = null;
     this._musicFilePlaying = false;
 
     this._initMusicData();
+    this._loadMusicManifest();
   }
 
   /* ─────────────────────────────────────────
@@ -952,38 +957,86 @@ export class AudioManager {
 
   /**
    * Set the music mode before calling startMusic().
-   * Adjusts base tempo and rhythmic feel.
+   * Resolves a track from play type plus concrete mode.
    * @param {'menu'|'blitz'|'classic'|'endless'|'competition'} mode
+   * @param {{ modeId?: string, practice?: boolean }} context
    */
-  setMusicMode(mode) {
-    this._musicMode = mode || 'classic';
-    switch (this._musicMode) {
-      case 'menu':        this._baseTempo = 72;  break;
-      case 'blitz':       this._baseTempo = 136; break;
-      case 'classic':     this._baseTempo = 115; break;
-      case 'endless':     this._baseTempo = 92;  break;
-      case 'competition': this._baseTempo = 140; break;
-      default:            this._baseTempo = 115;
+  _getBaseTempoForMode(mode) {
+    switch (mode) {
+      case 'menu':        return 72;
+      case 'blitz':       return 136;
+      case 'classic':     return 115;
+      case 'endless':     return 92;
+      case 'competition': return 140;
+      default:            return 115;
     }
+  }
+
+  _resolveMusicMode(requestedMode, context = {}) {
+    const playType = requestedMode || 'classic';
+    const modeId = context.modeId || '';
+    const flowModes = ['memo', 'sequenz'];
+    const focusModes = ['mathe', 'worte', 'hauptstaedte', 'algebra', 'wissen'];
+    const pressureModes = ['klassik', 'beginner', 'expert', 'ultra', 'stroop', 'fokus', 'chaos'];
+
+    if (playType === 'menu') return 'menu';
+    if (context.practice) return 'classic';
+    if (playType === 'competition') return 'competition';
+    if (flowModes.includes(modeId)) return 'endless';
+    if (focusModes.includes(modeId)) return playType === 'endless' ? 'endless' : 'classic';
+    if (pressureModes.includes(modeId)) return playType === 'endless' ? 'endless' : 'blitz';
+    if (['menu', 'blitz', 'classic', 'endless', 'competition'].includes(playType)) return playType;
+    return 'classic';
+  }
+
+  setMusicMode(mode, context = {}) {
+    const previousMode = this._musicMode;
+    this._requestedMusicMode = mode || 'classic';
+    this._musicContext = { ...context };
+    this._musicMode = this._resolveMusicMode(this._requestedMusicMode, this._musicContext);
+    this._baseTempo = this._getBaseTempoForMode(this._musicMode);
     this._modeData = this._modeConfig[this._musicMode] || this._modeConfig.classic;
     if (!this._feverMode) {
       this._musicTempo = this._baseTempo;
     }
-    /* Pre-check if audio file exists for this mode */
-    this._probeMusicFile(this._musicMode);
+    this._loadMusicManifest();
+    if (this._musicRunning && previousMode !== this._musicMode) {
+      this.stopMusic();
+      this.startMusic();
+    }
   }
 
   /**
-   * Probe whether an audio file exists for the given mode.
-   * Caches the result so we only HEAD-request once per mode.
+   * Load the optional music track manifest once.
+   * The manifest avoids blind file probes that create 404 noise.
    */
-  _probeMusicFile(mode) {
-    if (mode in this._musicFileAvailable) return;
-    this._musicFileAvailable[mode] = false; /* assume false until confirmed */
-    const url = `audio/music/${mode}.mp3`;
-    fetch(url, { method: 'HEAD' }).then(r => {
-      this._musicFileAvailable[mode] = r.ok;
-    }).catch(() => { /* no file, use synth */ });
+  _loadMusicManifest() {
+    if (this._musicManifestLoaded) return Promise.resolve(this._availableMusicTracks);
+    if (this._musicManifestPromise) return this._musicManifestPromise;
+
+    this._musicManifestPromise = fetch('audio/music/tracks.json', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : { tracks: [] }))
+      .then(data => {
+        const tracks = Array.isArray(data?.tracks) ? data.tracks : [];
+        this._availableMusicTracks = new Set(
+          tracks
+            .filter(track => typeof track === 'string' && track.trim())
+            .map(track => track.trim().replace(/\.mp3$/i, ''))
+        );
+        this._musicManifestLoaded = true;
+        return this._availableMusicTracks;
+      })
+      .catch(() => {
+        this._availableMusicTracks = new Set();
+        this._musicManifestLoaded = true;
+        return this._availableMusicTracks;
+      });
+
+    return this._musicManifestPromise;
+  }
+
+  _hasMusicFile(mode) {
+    return this._availableMusicTracks.has(mode);
   }
 
   /**
@@ -991,7 +1044,7 @@ export class AudioManager {
    */
   _startMusicFile() {
     const mode = this._musicMode;
-    if (!this._musicFileAvailable[mode]) return false;
+    if (!this._hasMusicFile(mode)) return false;
     const url = `audio/music/${mode}.mp3`;
     if (!this._musicAudio) {
       this._musicAudio = new Audio();
@@ -1004,7 +1057,7 @@ export class AudioManager {
       this._musicFilePlaying = true;
     }).catch(() => {
       this._musicFilePlaying = false;
-      this._musicFileAvailable[mode] = false;
+      this._availableMusicTracks.delete(mode);
     });
     return true;
   }
@@ -1172,7 +1225,7 @@ export class AudioManager {
     this._musicRunning = true;
 
     /* Try audio file first, fall back to procedural synth */
-    if (this._musicFileAvailable[this._musicMode] && this._startMusicFile()) {
+    if (this._hasMusicFile(this._musicMode) && this._startMusicFile()) {
       return; /* file-based playback started */
     }
 

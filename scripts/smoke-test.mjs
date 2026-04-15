@@ -47,6 +47,18 @@ async function run() {
     } catch { return false; }
   };
 
+  const hasActiveClass = async (sel, timeout = 3000) => {
+    try {
+      await page.waitForFunction((s) => {
+        const el = document.querySelector(s);
+        return Boolean(el && el.classList.contains('active'));
+      }, sel, { timeout });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const clickSel = async (sel, wait = 800) => {
     const ok = await page.evaluate((s) => {
       const el = document.querySelector(s);
@@ -62,7 +74,10 @@ async function run() {
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2000);
   assert(await visible('#btnGuest'), 'Guest button visible');
-  assert(await visible('#boot'), 'Boot screen active');
+  assert(
+    await hasActiveClass('#auth', 4000) || await hasActiveClass('#home', 4000) || await hasActiveClass('#boot', 4000),
+    'Entry screen active'
+  );
 
   // ─── 2) Guest Login → Home ───
   console.log('\n2. Guest Login → Home');
@@ -80,7 +95,13 @@ async function run() {
   // ─── 4) Start Game (default mode) ───
   console.log('\n4. Start Game');
   await clickSel('#btnPlay', 1500);
-  assert(await visible('#game', 5000), 'Game screen loaded');
+
+  if (await hasActiveClass('#tutorial', 1500)) {
+    assert(await visible('#btnTutorialSkip', 1500), 'Tutorial can be skipped');
+    await clickSel('#btnTutorialSkip', 1500);
+  }
+
+  assert(await hasActiveClass('#game', 5000), 'Game screen loaded');
 
   // Wait for countdown + game start
   await page.waitForTimeout(4500);
@@ -94,37 +115,47 @@ async function run() {
   // ─── 5) Pause and Resume ───
   console.log('\n5. Pause/Resume');
   await clickSel('#btnPause', 600);
-  assert(await visible('#pauseOverlay', 2000), 'Pause overlay visible');
-  await clickSel('#btnPauseResume', 1500);
+  assert(await hasActiveClass('#pauseOverlay', 2000), 'Pause overlay visible');
+  await clickSel('#btnResume', 1500);
 
-  // ─── 6) Pause and Quit → Results ───
-  console.log('\n6. Quit → Results');
+  // ─── 6) Pause and Quit → Home ───
+  console.log('\n6. Quit → Home');
   await clickSel('#btnPause', 600);
   await clickSel('#btnPauseQuit', 2000);
-  assert(await visible('#results', 5000), 'Results screen visible after quit');
+  assert(await hasActiveClass('#home', 5000), 'Home screen visible after quit');
 
-  // Check results has score displayed
+  // ─── 7) Force Game Over → Results ───
+  console.log('\n7. Results');
+  await clickSel('#btnPlay', 1500);
+  if (await hasActiveClass('#tutorial', 1000)) {
+    await clickSel('#btnTutorialSkip', 1500);
+  }
+  assert(await hasActiveClass('#game', 5000), 'Game screen reloaded');
+
+  await page.waitForTimeout(4500);
+  await page.evaluate(async () => {
+    const { default: app } = await import('/js/appState.js');
+    app.game._endGame();
+  });
+  assert(await hasActiveClass('#results', 5000), 'Results screen visible after game over');
+
+  if (await visible('#btnResContinueNo', 1200)) {
+    await clickSel('#btnResContinueNo', 1200);
+  }
+
   const resultsHasContent = await page.evaluate(() => {
     const r = document.querySelector('#results');
-    return r && r.textContent.length > 10;
+    return Boolean(r && r.classList.contains('active') && r.textContent.length > 10);
   });
   assert(resultsHasContent, 'Results screen has content');
 
-  // ─── 7) Back to Home from Results ───
-  console.log('\n7. Back to Home');
-  await clickSel('.btn-back-bottom', 1000);
-  // If no back button, try alternate
-  if (!await visible('#home', 2000)) {
-    await page.evaluate(() => {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.querySelector('#home')?.classList.add('active');
-    });
-    await page.waitForTimeout(500);
-  }
-  assert(await visible('#home', 3000), 'Home screen visible after results');
+  // ─── 8) Back to Home from Results ───
+  console.log('\n8. Back to Home');
+  await clickSel('#btnHome', 1000);
+  assert(await hasActiveClass('#home', 3000), 'Home screen visible after results');
 
-  // ─── 8) Achievements Screen ───
-  console.log('\n8. Achievements');
+  // ─── 9) Achievements Screen ───
+  console.log('\n9. Achievements');
   await clickSel('#btnAchievements', 1000);
   assert(await visible('#achievements', 3000), 'Achievements screen visible');
   // Check categories rendered
@@ -134,8 +165,8 @@ async function run() {
   assert(catCount > 0, `Achievement categories rendered (${catCount})`);
   await clickSel('.btn-back-bottom', 800);
 
-  // ─── 9) Settings Screen ───
-  console.log('\n9. Settings');
+  // ─── 10) Settings Screen ───
+  console.log('\n10. Settings');
   if (!await visible('#home', 1000)) {
     await page.evaluate(() => {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -147,8 +178,8 @@ async function run() {
   assert(await visible('#settings', 3000), 'Settings screen visible');
   await clickSel('.btn-back-bottom', 800);
 
-  // ─── 10) Store Screen ───
-  console.log('\n10. Store');
+  // ─── 11) Store Screen ───
+  console.log('\n11. Store');
   if (!await visible('#home', 1000)) {
     await page.evaluate(() => {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -160,8 +191,8 @@ async function run() {
   assert(await visible('#store', 3000), 'Store screen visible');
   await clickSel('.btn-back-bottom', 800);
 
-  // ─── 11) Wheel Screen ───
-  console.log('\n11. Wheel');
+  // ─── 12) Wheel Screen ───
+  console.log('\n12. Wheel');
   if (!await visible('#home', 1000)) {
     await page.evaluate(() => {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -171,8 +202,9 @@ async function run() {
   }
   const wheelClicked = await clickSel('#btnWheel', 1000);
   if (wheelClicked) {
-    assert(await visible('#wheel', 3000), 'Wheel screen visible');
-    await clickSel('.btn-back-bottom', 800);
+    assert(await visible('#wheelOverlay', 3000), 'Wheel overlay visible');
+    assert(await visible('#btnWheelSpin', 1500), 'Wheel spin button visible');
+    await clickSel('#btnWheelClose', 800);
   } else {
     console.log('  SKIP: Wheel button not found');
   }

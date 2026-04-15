@@ -14,6 +14,66 @@ import { generateAchievements, getProgress } from '../achievements/AchievementSy
 
 let _lastRetryKey = '';
 
+function ensureReplayHook() {
+  let el = $('#resNextHook');
+  if (el) return el;
+  const buttons = $('#resNormalBtns');
+  if (!buttons || !buttons.parentElement) return null;
+  el = document.createElement('div');
+  el.id = 'resNextHook';
+  el.className = 'results-next-hook';
+  buttons.parentElement.insertBefore(el, buttons);
+  return el;
+}
+
+function getRemainingToNextLevel(xp, level) {
+  const thresholds = CONFIG.LEVEL_THRESHOLDS;
+  const current = thresholds[level] || 0;
+  const next = thresholds[level + 1] || thresholds[thresholds.length - 1] || current;
+  if (next <= current) return 0;
+  return Math.max(0, next - xp);
+}
+
+function getReplayHook(save, stats, modeLabel) {
+  if (stats.playType === 'competition') {
+    const target = CONFIG.COMPETITION_SCORE_TARGETS[stats.competitionLevel] || 2000;
+    if (stats.score < target) {
+      return {
+        text: t('next_goal_competition_push', { n: target - stats.score }),
+        tone: 'competition',
+      };
+    }
+  }
+
+  const modeKey = stats.mode || app.selectedMode;
+  const modeXP = save.getModeXP(modeKey);
+  const modeLevel = save.getModeLevel(modeKey);
+  const remainingModeXP = getRemainingToNextLevel(modeXP, modeLevel);
+  if (remainingModeXP > 0 && remainingModeXP <= 220) {
+    return {
+      text: t('next_goal_mode_level', { mode: modeLabel, n: remainingModeXP, level: modeLevel + 1 }),
+      tone: 'level',
+    };
+  }
+
+  const sessionDiff = app.sessionBest - stats.score;
+  if (app.sessionBest > stats.score && sessionDiff <= Math.max(180, Math.round(app.sessionBest * 0.16))) {
+    return {
+      text: t('next_goal_session_best', { n: sessionDiff }),
+      tone: 'flow',
+    };
+  }
+
+  if (stats.isDaily || stats.accuracy >= 85 || stats.streak >= 12) {
+    return {
+      text: t('next_goal_keep_flow'),
+      tone: 'flow',
+    };
+  }
+
+  return null;
+}
+
 /* Determine if the last game was "good" (score above mode average) */
 export function wasLastGameGood() {
   const stats = app.lastResultStats;
@@ -38,7 +98,6 @@ export async function showResults(stats, canContinue = false) {
 
   if (!canContinue) {
     app.sessionGames++;
-    await showAdInterstitial(save, app.sessionGames);
 
     /* Engagement: track game end + mode/playType adoption */
     if (engagement) {
@@ -50,6 +109,9 @@ export async function showResults(stats, canContinue = false) {
   }
 
   showScreen('results', app);
+  if (!canContinue) {
+    void showAdInterstitial(save, app.sessionGames);
+  }
   if (engagement) engagement.markResultsShown();
   if (stats.score > app.sessionBest) app.sessionBest = stats.score;
 
@@ -280,9 +342,11 @@ export async function showResults(stats, canContinue = false) {
 
   const bodyFx = getBodyFx();
   const countupDuration = CONFIG.RESULTS_COUNTUP_MS || 1200;
+  const statsDelay = CONFIG.RESULTS_STATS_DELAY || 400;
+  const buttonsDelay = CONFIG.RESULTS_BUTTONS_DELAY || 800;
   const maxToasts = 3;
   const toastSlice = unlocked.slice(0, maxToasts);
-  const achBaseDelay = countupDuration + (CONFIG.RESULTS_STATS_DELAY || 400) + 600;
+  const achBaseDelay = countupDuration + statsDelay + 260;
   toastSlice.forEach((id, i) => {
     const achName = save.getAchievementName(id) || id;
     setTimeout(() => { bodyFx.achievementToast(`${t('achievement')} ${achName}`); audio.achievementUnlock(); haptic('diamond', app.save); }, achBaseDelay + i * 1500);
@@ -324,11 +388,25 @@ export async function showResults(stats, canContinue = false) {
     closePBEl.style.display = 'none';
   }
 
+  const replayHookEl = ensureReplayHook();
+  const replayHook = !canContinue ? getReplayHook(save, stats, modeLabel) : null;
+  if (replayHookEl) {
+    if (replayHook?.text) {
+      replayHookEl.textContent = replayHook.text;
+      replayHookEl.className = `results-next-hook is-${replayHook.tone || 'flow'}`;
+      replayHookEl.style.display = '';
+    } else {
+      replayHookEl.textContent = '';
+      replayHookEl.className = 'results-next-hook';
+      replayHookEl.style.display = 'none';
+    }
+  }
+
   /* Retry button glow pulse */
   const retryBtn = $('#btnOneMore');
   if (retryBtn) {
     retryBtn.classList.remove('retry-glow');
-    const countupDone = (CONFIG.RESULTS_COUNTUP_MS || 1200) + (CONFIG.RESULTS_STATS_DELAY || 400) + (CONFIG.RESULTS_BUTTONS_DELAY || 800) + 400;
+    const countupDone = countupDuration + statsDelay + buttonsDelay + 220;
     setTimeout(() => retryBtn.classList.add('retry-glow'), countupDone);
   }
 
@@ -360,13 +438,13 @@ export async function showResults(stats, canContinue = false) {
   }
 
   setTimeout(() => { if (phase2) phase2.classList.add('results-phase-visible'); },
-    countupDuration + (CONFIG.RESULTS_STATS_DELAY || 400));
+    countupDuration + statsDelay);
   setTimeout(() => { if (phase3) phase3.classList.add('results-phase-visible'); },
-    countupDuration + (CONFIG.RESULTS_STATS_DELAY || 400) + (CONFIG.RESULTS_BUTTONS_DELAY || 800));
+    countupDuration + statsDelay + buttonsDelay);
 
   /* ─── MicroFeedback trigger (delayed to not clash with animations) ─── */
   if (!canContinue && engagement) {
-    const feedbackDelay = countupDuration + 2500;
+    const feedbackDelay = countupDuration + 1800;
     setTimeout(() => {
       const ctx = { mode: stats.mode || app.selectedMode, score: stats.score, sessionGame: app.sessionGames };
       if (isNewPB)           maybeShowFeedback('pb', ctx);
@@ -378,7 +456,7 @@ export async function showResults(stats, canContinue = false) {
 
   /* Achievement progress teasers (show after phase 2 loads) */
   if (!canContinue) {
-    setTimeout(() => renderAchTeasers(save), countupDuration + (CONFIG.RESULTS_STATS_DELAY || 400) + 200);
+    setTimeout(() => renderAchTeasers(save), countupDuration + statsDelay + 120);
   }
 }
 

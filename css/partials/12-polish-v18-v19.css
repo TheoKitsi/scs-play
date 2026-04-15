@@ -187,6 +187,36 @@
   50%{box-shadow:0 0 12px 2px rgba(236,72,153,0.2)}
 }
 
+.results-next-hook{
+  margin:10px 0 12px;
+  padding:9px 14px;
+  border-radius:14px;
+  text-align:center;
+  font-family:'Space Grotesk',sans-serif;
+  font-size:0.78rem;
+  font-weight:700;
+  letter-spacing:0.01em;
+  color:var(--text-secondary,#E5E7EB);
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow:0 8px 18px rgba(0,0,0,0.18);
+}
+.results-next-hook.is-competition{
+  color:#FBBF24;
+  background:rgba(251,191,36,0.09);
+  border-color:rgba(251,191,36,0.24);
+}
+.results-next-hook.is-level{
+  color:#2DD4BF;
+  background:rgba(45,212,191,0.08);
+  border-color:rgba(45,212,191,0.22);
+}
+.results-next-hook.is-flow{
+  color:#C4B5FD;
+  background:rgba(196,181,253,0.08);
+  border-color:rgba(196,181,253,0.2);
+}
+
 /* ─── Results: Retry button glow ─── */
 #btnOneMore.retry-glow{
   animation:retryGlow 2s ease-in-out infinite;
@@ -195,6 +225,33 @@
 @keyframes retryGlow{
   0%,100%{box-shadow:0 8px 24px rgba(0,0,0,0.3)}
   50%{box-shadow:0 8px 32px rgba(124,58,237,0.5),0 0 20px rgba(124,58,237,0.3)}
+}
+
+/* ─── Game: Action climax for fast modes only (JS-gated) ─── */
+#game.action-climax .center-platform{
+  animation:actionClimaxBeat .72s ease-in-out infinite;
+  filter:saturate(1.08) brightness(1.03);
+}
+#game.action-climax .timer-bar-fill{
+  box-shadow:0 0 18px rgba(255,107,53,0.24);
+}
+#game.action-climax .hud-timer{
+  transform:scale(1.03);
+}
+#game.action-climax-peak .center-platform{
+  animation-duration:.42s;
+  box-shadow:0 0 38px rgba(255,107,53,0.24);
+}
+#game.action-climax-peak .hud-timer{
+  animation:actionTimerPulse .42s ease-in-out infinite;
+}
+@keyframes actionClimaxBeat{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.035)}
+}
+@keyframes actionTimerPulse{
+  0%,100%{transform:scale(1);text-shadow:0 0 0 rgba(255,107,53,0)}
+  50%{transform:scale(1.08);text-shadow:0 0 16px rgba(255,107,53,0.45)}
 }
 
 /* ─── Settings: Category Headers ─── */

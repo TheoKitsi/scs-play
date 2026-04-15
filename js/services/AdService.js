@@ -7,9 +7,15 @@ import { t }     from '../i18n.js';
 import { haptic } from '../helpers/haptics.js';
 import app from '../appState.js';
 
-const AD_INTERSTITIAL_DELAY = 3;
-const AD_SHOW_EVERY_N_GAMES = 2;
+const AD_INTERSTITIAL_DELAY = 2;
+const AD_FIRST_INTERSTITIAL_AT = 5;
+const AD_SHOW_EVERY_N_GAMES = 4;
 let adContextActive = false;
+
+function shouldShowInterstitial(sessionGames) {
+  if (sessionGames < AD_FIRST_INTERSTITIAL_AT) return false;
+  return ((sessionGames - AD_FIRST_INTERSTITIAL_AT) % AD_SHOW_EVERY_N_GAMES) === 0;
+}
 
 // Attempt to detect Capacitor/Cordova AdMob context
 export async function initAdService() {
@@ -50,7 +56,7 @@ export function updateGameAdBanner(save) {
 export function showAdInterstitial(save, sessionGames) {
   return new Promise((resolve) => {
     if (isAdFree(save)) { resolve(); return; }
-    if (sessionGames % AD_SHOW_EVERY_N_GAMES !== 0) { resolve(); return; }
+    if (!shouldShowInterstitial(sessionGames)) { resolve(); return; }
     
     // Real Ad SDK integration
     if (adContextActive && window.Capacitor) {

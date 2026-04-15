@@ -108,6 +108,8 @@ function defaults() {
     wheelSpinsToday: 0,
     wheelStreak: 0,
     lastWheelDate: null,
+    wheelBonusSpinUnlockedDate: null,
+    wheelBonusSpinUsedDate: null,
     /* v23: Daily streak freeze system */
     streakFreezes: 0,           // banked streak freezes (max 2)
     streakFreezesUsed: 0,       // total freezes used ever
@@ -574,6 +576,27 @@ export class SaveService {
   getLives()       { return this.data.lives || 0; }
   async useLive()  { if (this.data.lives > 0) { this.data.lives--; await this.save(); return true; } return false; }
   async addLives(n) { this.data.lives = Math.min((this.data.lives || 0) + n, CONFIG.LIVES_MAX); await this.save(); }
+  async grantXP(n) {
+    const xp = Math.max(0, Math.round(n || 0));
+    if (!xp) return { leveledUp: false, livesAwarded: 0 };
+
+    this.data.totalXP += xp;
+    const oldLevel = this.data.level;
+    this.data.level = this._calcLevel(this.data.totalXP);
+
+    let livesAwarded = 0;
+    if (this.data.level > oldLevel) {
+      for (let lvl = oldLevel + 1; lvl <= this.data.level; lvl++) {
+        if (lvl % 3 === 0) livesAwarded += CONFIG.LIVES_LEVEL_UP;
+      }
+      if (livesAwarded > 0) {
+        this.data.lives = Math.min((this.data.lives || 0) + livesAwarded, CONFIG.LIVES_MAX);
+      }
+    }
+
+    await this.save();
+    return { leveledUp: this.data.level > oldLevel, livesAwarded };
+  }
   hasPurchase(id)  { return !!this.data.purchases[id]; }
   async setPurchase(id) { this.data.purchases[id] = true; await this.save(); }
 

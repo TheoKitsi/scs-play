@@ -364,6 +364,19 @@ export function clearCenter() {
 
 /* ═══════ HUD updates — cached element refs ═══════ */
 let _hudCache = null;
+const TEXT_HEAVY_MODES = new Set(['mathe', 'worte', 'hauptstaedte', 'algebra', 'wissen']);
+
+function isTextHeavyMode(mode = app.selectedMode) {
+  return TEXT_HEAVY_MODES.has(mode);
+}
+
+function getUrgencyThresholds() {
+  if (isTextHeavyMode()) {
+    return { urgent: 6, critical: 3, danger: 3, audio: 5, tension: 0 };
+  }
+  return { urgent: 10, critical: 5, danger: 10, audio: 10, tension: 10 };
+}
+
 function _getHudEls() {
   if (!_hudCache) {
     _hudCache = {
@@ -385,18 +398,28 @@ function updateIntensity() {
   const { game } = app;
   const g = _getHudEls().game;
   if (!g) return;
+  const textHeavy = isTextHeavyMode();
   g.classList.remove('intensity-low','intensity-mid','intensity-high','intensity-max',
-                       'edge-glow-warm','edge-glow-hot','edge-glow-fire');
+                       'edge-glow-warm','edge-glow-hot','edge-glow-fire',
+                       'action-climax','action-climax-peak');
   if (game.feverActive) {
-    g.classList.add('intensity-max','edge-glow-fire');
+    if (textHeavy) g.classList.add('intensity-mid');
+    else g.classList.add('intensity-max','edge-glow-fire');
   } else if (game.streak >= 30) {
-    g.classList.add('intensity-high','edge-glow-fire');
+    if (textHeavy) g.classList.add('intensity-mid');
+    else g.classList.add('intensity-high','edge-glow-fire');
   } else if (game.streak >= 20) {
-    g.classList.add('intensity-high','edge-glow-hot');
+    if (textHeavy) g.classList.add('intensity-low');
+    else g.classList.add('intensity-high','edge-glow-hot');
   } else if (game.streak >= 10) {
     g.classList.add('intensity-mid','edge-glow-warm');
   } else if (game.streak >= 5) {
     g.classList.add('intensity-low');
+  }
+
+  if (!textHeavy && !game.practice && game.playType !== 'endless' && game.timer > 0) {
+    if (game.timer <= 8) g.classList.add('action-climax');
+    if (game.timer <= 3) g.classList.add('action-climax-peak');
   }
 }
 
@@ -411,8 +434,9 @@ function updateTimerBar() {
   const pct = Math.min(100, Math.max(0, (game.timer / app.gameDuration) * 100));
   fill.style.width = pct + '%';
   fill.classList.remove('urgent','critical');
-  if (game.timer <= 5) fill.classList.add('critical');
-  else if (game.timer <= 10) fill.classList.add('urgent');
+  const thresholds = getUrgencyThresholds();
+  if (game.timer <= thresholds.critical) fill.classList.add('critical');
+  else if (game.timer <= thresholds.urgent) fill.classList.add('urgent');
 }
 
 let _hudRafPending = false;
@@ -461,6 +485,7 @@ function _updateHUDInner() {
 
   const timerEl = hud.timer;
   if (timerEl) {
+    const thresholds = getUrgencyThresholds();
     if (game.playType === 'endless') {
       const min = Math.floor(game.elapsed / 60);
       const sec = game.elapsed % 60;
@@ -470,8 +495,8 @@ function _updateHUDInner() {
       timerEl.style.visibility = 'hidden';
     } else {
       timerEl.textContent = game.timer;
-      timerEl.classList.toggle('timer-urgent', game.timer <= 10);
-      timerEl.classList.toggle('timer-critical', game.timer <= 5);
+      timerEl.classList.toggle('timer-urgent', game.timer <= thresholds.urgent);
+      timerEl.classList.toggle('timer-critical', game.timer <= thresholds.critical);
     }
   }
 
@@ -772,7 +797,12 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
 export function beginGame(practice, daily, showResults, showHome, showContinuePrompt) {
   const { audio, game, save, effects, swipe } = app;
 
-  if (typeof audio.setMusicMode === 'function') audio.setMusicMode(practice ? 'classic' : app.selectedPlayType);
+  if (typeof audio.setMusicMode === 'function') {
+    audio.setMusicMode(practice ? 'classic' : app.selectedPlayType, {
+      modeId: app.selectedMode,
+      practice,
+    });
+  }
   audio.startMusic();
 
   const options = {
@@ -800,23 +830,30 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   /* ─── Wire game callbacks ─── */
   game.onTick = () => {
+    const thresholds = getUrgencyThresholds();
+    const textHeavy = isTextHeavyMode();
     updateHUD();
-    if (game.playType !== 'endless' && !game.practice && game.timer <= 10 && game.timer > 0) {
+    if (game.playType !== 'endless' && !game.practice && game.timer <= thresholds.audio && game.timer > 0) {
       audio.lastSeconds();
-      if (game.timer === 10 && typeof audio.startTension === 'function') audio.startTension();
+      if (!textHeavy && game.timer === thresholds.tension && typeof audio.startTension === 'function') audio.startTension();
     }
     if (effects && typeof effects.dangerZone === 'function') {
-      const inDanger = (!game.practice && game.playType !== 'endless' && game.timer > 0 && game.timer <= 10)
+      const inDanger = (!game.practice && game.playType !== 'endless' && game.timer > 0 && game.timer <= thresholds.danger)
         || (game.playType === 'endless' && game.endlessLives <= 1);
       effects.dangerZone(inDanger);
     }
     /* v19: reactive background intensity */
     if (typeof effects.setBackgroundIntensity === 'function') {
       let intensity = 0;
-      if (game.feverActive) intensity = 4;
-      else if (game.streak >= 30) intensity = 3;
-      else if (game.streak >= 15) intensity = 2;
-      else if (game.streak >= 5) intensity = 1;
+      if (textHeavy) {
+        if (game.feverActive) intensity = 2;
+        else if (game.streak >= 20) intensity = 1;
+      } else {
+        if (game.feverActive) intensity = 4;
+        else if (game.streak >= 30) intensity = 3;
+        else if (game.streak >= 15) intensity = 2;
+        else if (game.streak >= 5) intensity = 1;
+      }
       effects.setBackgroundIntensity(intensity);
     }
     checkPBProximity();
@@ -1291,7 +1328,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     if (typeof effects.gameOverFlash === 'function') {
       effects.gameOverFlash(t('game_over'));
     }
-    setTimeout(() => { g?.classList.remove('game-over-freeze'); showResults(stats); }, 1000);
+    setTimeout(() => { g?.classList.remove('game-over-freeze'); showResults(stats); }, CONFIG.GAME_OVER_TRANSITION_MS || 550);
   };
 
   /* ── Sequenz (Simon Says) callbacks ── */
