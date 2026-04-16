@@ -480,7 +480,11 @@ export function bindWheel() {
     if (spinning || hasBonusSpinUnlocked()) return;
     const { showRewardedAd } = await import('../services/AdService.js');
     const rewarded = await showRewardedAd(app.save);
-    if (!rewarded) return;
+    if (!rewarded) {
+      const fx = new EffectsManager(document.body);
+      fx.achievementToast(t('ad_failed') || 'Ad not available');
+      return;
+    }
 
     const today = todayKey();
     app.save.data.wheelBonusSpinUnlockedDate = today;
@@ -500,6 +504,6 @@ function isConsecutiveDay(prev, current) {
   const [cy, cm, cd] = current.split('-').map(Number);
   const prevDate = new Date(py, pm - 1, pd);
   const currDate = new Date(cy, cm - 1, cd);
-  const diff = (currDate - prevDate) / (1000 * 60 * 60 * 24);
+  const diff = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
   return diff === 1;
 }

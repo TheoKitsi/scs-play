@@ -222,7 +222,7 @@
   overscroll-behavior:contain;
   padding:0 8px;
   /* Reserve space for fixed footer + gesture nav offset so last item scrolls clear */
-  padding-bottom:calc(60px + max(env(safe-area-inset-bottom, 0px), var(--gesture-nav-inset, 34px)));
+  padding-bottom:calc(60px + var(--bottom-inset));
   display:flex;
   flex-direction:column;
   gap:6px;

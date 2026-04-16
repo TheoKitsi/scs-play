@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════
    SCS Play — Service Worker
    ═══════════════════════════════════════ */
-const CACHE = 'scs-v50';
+const CACHE = 'scs-v52';
 const ASSETS = [
   './',
   './index.html',
@@ -16,6 +16,7 @@ const ASSETS = [
   './css/partials/08-patches-v7-v9.css',
   './css/partials/09-extensions.css',
   './css/partials/10-micro-modes.css',
+  './css/partials/11-mode-mastery.css',
   './css/partials/12-polish-v18-v19.css',
   './manifest.json',
   './img/icon-192.svg',
@@ -41,6 +42,7 @@ const ASSETS = [
   './js/renderers/avatars.js',
   /* ─── Game ─── */
   './js/game/GameEngine.js',
+  './js/game/ModeMastery.js',
   /* ─── Services ─── */
   './js/services/AdService.js',
   './js/services/ThemeService.js',

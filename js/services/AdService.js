@@ -105,13 +105,18 @@ function _showMockInterstitial(resolve) {
         if (timerEl) timerEl.textContent = t('ad_interstitial_skip', { n: countdown });
       } else {
         clearInterval(timer);
+        timer = null;
         if (timerEl) timerEl.textContent = '';
         if (closeBtn) closeBtn.style.display = '';
       }
     }, 1000);
 
+    /* Safety: auto-close after max 10s to prevent stuck overlay */
+    const safetyTimeout = setTimeout(() => { close(); }, 10000);
+
     const close = () => {
-      clearInterval(timer);
+      if (timer) { clearInterval(timer); timer = null; }
+      clearTimeout(safetyTimeout);
       overlay.classList.remove('active');
       if (app && app.save) haptic('tap', app.save);
       resolve();
@@ -136,13 +141,18 @@ function _showMockRewarded(resolve) {
         if (timerEl) timerEl.textContent = t('ad_reward_loading') ? (t('ad_reward_loading') + ' ' + countdown) : ('Loading Video Ad... ' + countdown + 's');
       } else {
         clearInterval(timer);
+        timer = null;
         if (timerEl) timerEl.textContent = t('ad_reward_ready') || 'Reward granted! You can close now.';
         if (closeBtn) closeBtn.style.display = '';
       }
     }, 1000);
 
+    /* Safety: auto-close after max 15s to prevent stuck overlay */
+    const safetyTimeout = setTimeout(() => { close(); }, 15000);
+
     const close = () => {
-      clearInterval(timer);
+      if (timer) { clearInterval(timer); timer = null; }
+      clearTimeout(safetyTimeout);
       overlay.classList.remove('active');
       if (app && app.save) haptic('tap', app.save);
       resolve(true); // completed

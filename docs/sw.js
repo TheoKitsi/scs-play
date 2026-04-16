@@ -1,66 +1,15 @@
 /* ═══════════════════════════════════════
    SCS Play — Service Worker
    ═══════════════════════════════════════ */
-const CACHE = 'scs-v50';
+const CACHE = 'scs-v52';
 const ASSETS = [
   './',
   './index.html',
-  './css/style.css',
-  './css/partials/01-tokens.css',
-  './css/partials/02-base.css',
-  './css/partials/03-boot-auth.css',
-  './css/partials/04-home.css',
-  './css/partials/05-game.css',
-  './css/partials/06-overlays.css',
-  './css/partials/07-effects.css',
-  './css/partials/08-patches-v7-v9.css',
-  './css/partials/09-extensions.css',
-  './css/partials/10-micro-modes.css',
-  './css/partials/12-polish-v18-v19.css',
+  './css/style.bundle.css',
+  './js/app.bundle.js',
   './manifest.json',
   './img/icon-192.svg',
-  './img/icon-512.svg',
-  /* ─── Core JS ─── */
-  './js/app.js',
-  './js/appState.js',
-  './js/config.js',
-  './js/i18n.js',
-  './js/input.js',
-  './js/audio.js',
-  './js/effects.js',
-  './js/auth.js',
-  './js/save.js',
-  /* ─── Helpers ─── */
-  './js/helpers/dom.js',
-  './js/helpers/haptics.js',
-  './js/helpers/microFeedback.js',
-  './js/helpers/engagementTracker.js',
-  './js/helpers/onboardingHints.js',
-  /* ─── Renderers ─── */
-  './js/renderers/shapes.js',
-  './js/renderers/avatars.js',
-  /* ─── Game ─── */
-  './js/game/GameEngine.js',
-  /* ─── Services ─── */
-  './js/services/AdService.js',
-  './js/services/ThemeService.js',
-  './js/services/ShareService.js',
-  /* ─── Screens ─── */
-  './js/screens/BootScreen.js',
-  './js/screens/AuthScreen.js',
-  './js/screens/HomeScreen.js',
-  './js/screens/TutorialScreen.js',
-  './js/screens/GameScreen.js',
-  './js/screens/ResultsScreen.js',
-  './js/screens/LeaderboardScreen.js',
-  './js/screens/AchievementsScreen.js',
-  './js/screens/SettingsScreen.js',
-  './js/screens/StoreScreen.js',
-  './js/screens/AvatarScreen.js',
-  './js/screens/EngagementReportScreen.js',
-  './js/screens/WheelScreen.js',
-  /* ─── Achievements ─── */
-  './js/achievements/AchievementSystem.js'
+  './img/icon-512.svg'
 ];
 
 self.addEventListener('install', e => {

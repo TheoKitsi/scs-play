@@ -1179,8 +1179,10 @@ export class GameEngine {
     const correctDir = dirs[inkIdx]; /* corner showing this color swatch */
 
     /* Pick a WORD — different color name for incongruent, same for congruent */
+    /* During challenge rounds, force all-incongruent */
+    const inChallenge = typeof app !== 'undefined' && app.mastery && app.mastery.get('stroop', '_inChallenge');
     let wordIdx;
-    if (this.rng() < (CONFIG.STROOP_CONGRUENT_RATE || 0.2)) {
+    if (!inChallenge && this.rng() < (CONFIG.STROOP_CONGRUENT_RATE || 0.2)) {
       wordIdx = inkIdx; /* congruent: word matches ink */
     } else {
       do { wordIdx = Math.floor(this.rng() * colors.length); } while (wordIdx === inkIdx);

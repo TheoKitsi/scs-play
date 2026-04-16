@@ -82,6 +82,8 @@
   --safe-bottom-max:env(safe-area-max-inset-bottom, 34px);
   /* JS sets this for fullscreen mode on Android where env() reports 0 */
   --gesture-nav-inset:0px;
+  /* Unified bottom inset — covers safe-area AND Android gesture-nav */
+  --bottom-inset:max(env(safe-area-inset-bottom, 0px), var(--gesture-nav-inset, 0px));
   color-scheme:dark;
 }
 html,body{

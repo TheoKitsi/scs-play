@@ -424,7 +424,7 @@
 #avatarSelect {
   justify-content: flex-start;
   align-items: center;
-  padding-bottom: var(--safe-bottom, 0px); /* override base 20+safe → just safe */
+  padding-bottom: var(--bottom-inset); /* override base 20+safe → just bottom-inset */
 }
 #leaderboard .screen-content,
 #achievements .screen-content,

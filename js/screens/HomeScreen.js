@@ -106,7 +106,8 @@ export function updateXPBar() {
   const numbers = $('#xpNumbers');
   const percent = $('#xpPercent');
   
-  if (bar) bar.style.width = (prog.pct * 100) + '%';
+  const pct = isFinite(prog.pct) ? prog.pct : 0;
+  if (bar) bar.style.width = (pct * 100) + '%';
   if (levelNum) {
     const lvl = save.getLevel() + 1;
     levelNum.textContent = `${t('level')} ${lvl}`;
@@ -115,10 +116,12 @@ export function updateXPBar() {
     title.textContent = save.getLevelName();
   }
   if (numbers) {
-    numbers.textContent = `${prog.current.toLocaleString()} / ${prog.needed.toLocaleString()} XP`;
+    const cur = isFinite(prog.current) ? prog.current : 0;
+    const need = isFinite(prog.needed) ? prog.needed : 0;
+    numbers.textContent = `${cur.toLocaleString()} / ${need.toLocaleString()} XP`;
   }
   if (percent) {
-    percent.textContent = `${Math.round(prog.pct * 100)}%`;
+    percent.textContent = `${Math.round(pct * 100)}%`;
   }
 }
 
@@ -202,6 +205,15 @@ function buildSlide(mode) {
       <div class="hero-slide-badges">
         <span class="hero-slide-badge hero-slide-badge--pb">${pb > 0 ? `PB ${pb.toLocaleString()}` : (t('hero_first_record') || '--')}</span>
         ${lv > 0 ? `<span class="hero-slide-badge hero-slide-badge--level">Lv.${lv} ${lvName}</span>` : ''}
+        ${(() => {
+          if (app.mastery) {
+            const tierInfo = app.mastery.getMasteryTier(mode);
+            if (tierInfo.name && tierInfo.tier > 0) {
+              return `<span class="hero-slide-badge hero-slide-badge--mastery">${tierInfo.name}</span>`;
+            }
+          }
+          return '';
+        })()}
       </div>
       <div class="hero-slide-level-bar"><div class="hero-slide-level-fill" style="width:${lvPct}%"></div></div>
       <button class="hero-pin-btn ${isPinned ? 'pinned' : ''}" data-pin-mode="${mode}" aria-label="${isPinned ? 'Unpin' : 'Pin'}">

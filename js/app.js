@@ -13,6 +13,7 @@ import { GameEngine }       from './game/GameEngine.js';
 import { shareScore }       from './services/ShareService.js';
 import { initAdService, showRewardedAd } from './services/AdService.js';
 import { bindMicroFeedback } from './helpers/microFeedback.js';
+import { ModeMastery }      from './game/ModeMastery.js';
 import app                  from './appState.js';
 
 /* ─── Screens ─── */
@@ -46,6 +47,7 @@ app.audio = new AudioManager();
 app.auth  = new AuthService();
 app.save  = new SaveService(app.auth);
 app.game  = new GameEngine();
+app.mastery = new ModeMastery(app.save);
 
 
 /* ═══════ Offline / Online indicator ═══════ */
@@ -289,7 +291,10 @@ function bindEvents() {
   });
   $('#btnResContinueAd')?.addEventListener('click', async () => {
     const rewarded = await showRewardedAd(save);
-    if (!rewarded) return;
+    if (!rewarded) {
+      getBodyFx().achievementToast(t('ad_failed') || 'Ad not available');
+      return;
+    }
     await save.addLives(CONFIG.LIVES_REWARDED_AD);
     updateLivesDisplay();
     updateShopLives();
@@ -321,19 +326,28 @@ function bindEvents() {
   window.addEventListener('resize', checkOrientation, { passive: true });
 }
 
-/* ═══════ Gesture-nav detection (fullscreen PWA) ═══════ */
+/* ═══════ Gesture-nav detection (fullscreen / standalone PWA) ═══════ */
 function initGestureNavInset() {
   const isAndroid = /Android/i.test(navigator.userAgent);
-  if (!isAndroid) return;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (!isAndroid && !isIOS) return;
+
   const mqFull = matchMedia('(display-mode: fullscreen)');
+  const mqStandalone = matchMedia('(display-mode: standalone)');
+  const iosStandalone = navigator.standalone === true;
+
   const apply = () => {
-    // In fullscreen mode env(safe-area-inset-bottom) returns 0 on most Android devices,
-    // so we set a CSS variable as fallback covering the gesture-nav pill area (~24dp + pad).
-    const offset = mqFull.matches ? '34px' : '0px';
+    // In fullscreen / standalone mode env(safe-area-inset-bottom) can return 0
+    // on many Android devices, so we inject a CSS variable as fallback
+    // covering the gesture-nav pill area (~24dp + pad).
+    const immersive = mqFull.matches || mqStandalone.matches || iosStandalone;
+    const offset = immersive ? '34px' : '0px';
     document.documentElement.style.setProperty('--gesture-nav-inset', offset);
   };
   apply();
   mqFull.addEventListener('change', apply);
+  mqStandalone.addEventListener('change', apply);
 }
 
 /* ═══════ Init ═══════ */

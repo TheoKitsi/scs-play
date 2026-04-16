@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0f0c29">
   <meta name="color-scheme" content="dark">
@@ -31,7 +32,7 @@
   <link rel="icon" href="img/icon-192.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="img/icon-192.svg">
   <title>SCS Play</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.bundle.css">
 </head>
 <body>
 <!-- Skip to main content (a11y) -->
@@ -402,6 +403,10 @@
           <div class="daily-info">
             <span class="daily-title" data-i18n="wheel_title">GL&Uuml;CKSRAD</span>
             <span class="daily-reward wheel-reward" id="wheelReward" data-i18n="wheel_daily_spin">T&auml;glicher Gratis-Dreh!</span>
+            <div class="wheel-meta-row">
+              <span class="wheel-streak-pill" id="wheelStreakPill"></span>
+              <span class="wheel-subline" id="wheelSubline"></span>
+            </div>
           </div>
         </div>
         <div class="daily-right">
@@ -956,13 +961,26 @@
   <div class="wheel-panel">
     <button class="wheel-close" id="btnWheelClose" aria-label="Close">&times;</button>
     <h2 class="wheel-heading" data-i18n="wheel_title">GL&Uuml;CKSRAD</h2>
+    <p class="wheel-subtitle" id="wheelSubtitle" data-i18n="wheel_subtitle">T&auml;glich drehen, Serie halten, Bonus sichern.</p>
+    <div class="wheel-meta">
+      <span class="wheel-streak-badge" id="wheelOverlayStreak"></span>
+      <span class="wheel-bonus-note" id="wheelOverlayBonus"></span>
+    </div>
+    <div class="wheel-prize-strip" id="wheelPrizeStrip"></div>
     <div class="wheel-container">
       <canvas id="wheelCanvas" width="300" height="300"></canvas>
-      <div class="wheel-pointer"></div>
+      <div id="wheelPointer" class="wheel-pointer"></div>
     </div>
-    <div class="wheel-result" id="wheelResult"></div>
-    <button id="btnWheelSpin" class="btn-wheel-spin" data-i18n="wheel_spin">DREHEN!</button>
-    <button id="btnWheelAd" class="btn-wheel-ad" style="display:none" data-i18n="wheel_ad_spin">Werbung schauen f&uuml;r Extra-Dreh</button>
+    <div class="wheel-result-card" id="wheelResultCard">
+      <div class="wheel-result-title" id="wheelResultTitle"></div>
+      <div class="wheel-result" id="wheelResult"></div>
+      <div class="wheel-result-extra" id="wheelResultExtra"></div>
+    </div>
+    <div class="wheel-actions">
+      <button id="btnWheelSpin" class="btn-wheel-spin" data-i18n="wheel_spin">DREHEN!</button>
+      <button id="btnWheelAd" class="btn-wheel-ad" style="display:none" data-i18n="wheel_ad_spin">Werbung schauen f&uuml;r Extra-Dreh</button>
+    </div>
+    <div class="wheel-status-note" id="wheelStatusNote"></div>
   </div>
 </div>
 
@@ -973,6 +991,6 @@
 </div>
 
 <!-- Scripts -->
-<script type="module" src="js/app.js"></script>
+<script type="module" src="js/app.bundle.js"></script>
 </body>
 </html>

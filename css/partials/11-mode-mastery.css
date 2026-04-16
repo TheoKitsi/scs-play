@@ -1,0 +1,1950 @@
+/* ═══════════════════════════════════════════════
+   SCS Play — Mode Mastery CSS
+   Speed zones, ghost racer, mastery badges,
+   flawless counter, color combos, zen state
+   ═══════════════════════════════════════════════ */
+
+/* ── Speed Zone HUD indicator (during Klassik gameplay) ── */
+.speed-zone-indicator {
+  position: absolute;
+  top: env(safe-area-inset-top, 8px);
+  right: 12px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  z-index: 20;
+  font-family: var(--ff-mono, 'Space Grotesk', monospace);
+}
+.speed-zone-indicator.active {
+  opacity: 1;
+  transform: scale(1);
+}
+.speed-zone-indicator[data-zone="ultra"] {
+  background: rgba(255, 71, 87, 0.85);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(255, 71, 87, 0.5);
+  animation: zone-pulse 0.5s ease infinite alternate;
+}
+.speed-zone-indicator[data-zone="fast"] {
+  background: rgba(255, 165, 2, 0.85);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 165, 2, 0.4);
+}
+.speed-zone-indicator[data-zone="good"] {
+  background: rgba(46, 213, 115, 0.7);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(46, 213, 115, 0.3);
+}
+
+@keyframes zone-pulse {
+  from { box-shadow: 0 0 16px rgba(255, 71, 87, 0.5); }
+  to   { box-shadow: 0 0 28px rgba(255, 71, 87, 0.8); }
+}
+
+/* ── Speed Zone edge glow (screen border) ── */
+.game-area.speed-glow-ultra {
+  box-shadow: inset 0 0 40px rgba(255, 71, 87, 0.25);
+}
+.game-area.speed-glow-fast {
+  box-shadow: inset 0 0 30px rgba(255, 165, 2, 0.2);
+}
+.game-area.speed-glow-good {
+  box-shadow: inset 0 0 20px rgba(46, 213, 115, 0.12);
+}
+
+/* ── Ghost Racer bar ── */
+.ghost-racer {
+  position: absolute;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  max-width: 240px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 15;
+}
+.ghost-racer.visible {
+  opacity: 1;
+}
+.ghost-racer-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background 0.3s ease;
+  background: rgba(255, 255, 255, 0.3);
+}
+.ghost-racer-fill.ahead {
+  background: #2ED573;
+}
+.ghost-racer-fill.behind {
+  background: #FF4757;
+}
+.ghost-racer-label {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  font-family: var(--ff-mono, 'Space Grotesk', monospace);
+}
+
+/* ── Flawless Run counter (in-game HUD) ── */
+.flawless-counter {
+  position: absolute;
+  top: env(safe-area-inset-top, 8px);
+  left: 12px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 20;
+  font-family: var(--ff-mono, 'Space Grotesk', monospace);
+}
+.flawless-counter.active {
+  opacity: 1;
+  color: rgba(46, 213, 115, 0.8);
+}
+
+/* ── Color Combo pop (in-game) ── */
+.color-combo-pop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 1rem;
+  font-weight: 800;
+  color: #FFA502;
+  text-shadow: 0 0 12px rgba(255, 165, 2, 0.6);
+  pointer-events: none;
+  z-index: 30;
+  opacity: 0;
+  animation: combo-pop-in 0.6s ease forwards;
+  font-family: var(--ff-heading, 'Outfit', sans-serif);
+}
+@keyframes combo-pop-in {
+  0%   { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  30%  { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+  100% { transform: translate(-50%, -60%) scale(1); opacity: 0; }
+}
+
+/* ── Zen State overlay (subtle) ── */
+.zen-state-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(46, 213, 115, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  z-index: 5;
+}
+.zen-state-overlay.active {
+  opacity: 1;
+}
+
+/* ── Mastery Badge (carousel hero slide) ── */
+.hero-slide-badge--mastery {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2));
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  color: #FFD700;
+  font-size: 0.55rem;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+/* ── Results: Mastery Insights section ── */
+.results-mastery {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.results-mastery-title {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+}
+
+/* Speed zones breakdown */
+.mastery-speed-zones {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.mastery-zone-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  font-family: var(--ff-mono, 'Space Grotesk', monospace);
+}
+.mastery-zone-chip[data-zone="ultra"] {
+  background: rgba(255, 71, 87, 0.2);
+  color: #FF4757;
+}
+.mastery-zone-chip[data-zone="fast"] {
+  background: rgba(255, 165, 2, 0.2);
+  color: #FFA502;
+}
+.mastery-zone-chip[data-zone="good"] {
+  background: rgba(46, 213, 115, 0.15);
+  color: #2ED573;
+}
+.mastery-zone-count {
+  font-size: 0.7rem;
+}
+
+/* Flawless insight */
+.mastery-flawless {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+.mastery-flawless-value {
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: var(--ff-mono, 'Space Grotesk', monospace);
+}
+.mastery-flawless-new {
+  color: #2ED573;
+}
+
+/* Speed trend mini chart */
+.mastery-trend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+.mastery-trend-arrow {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.mastery-trend-arrow.improving {
+  color: #2ED573;
+}
+.mastery-trend-arrow.declining {
+  color: #FF4757;
+}
+.mastery-trend-sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 20px;
+}
+.mastery-trend-bar {
+  width: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: height 0.3s ease;
+}
+
+/* Ghost racer result */
+.mastery-ghost {
+  text-align: center;
+  margin-top: 6px;
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+.mastery-ghost-delta {
+  font-weight: 700;
+  font-family: var(--ff-mono, 'Space Grotesk', monospace);
+}
+.mastery-ghost-delta.ahead {
+  color: #2ED573;
+}
+.mastery-ghost-delta.behind {
+  color: #FF4757;
+}
+
+/* Color combo insight */
+.mastery-color-combo {
+  text-align: center;
+  margin-top: 6px;
+  font-size: 0.6rem;
+  color: rgba(255, 165, 2, 0.8);
+  font-weight: 600;
+}
+
+/* Zen state badge */
+.mastery-zen {
+  text-align: center;
+  margin-top: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #2ED573;
+  opacity: 0.8;
+}
+
+
+/* ═══════════════════════════════════════════════
+   FORMEN (Beginner) — Flow Meter, Shape Chain,
+   Jackpot Pop, Shape Grid (results)
+   ═══════════════════════════════════════════════ */
+
+/* ── Flow Meter (in-game HUD, bottom-left) ── */
+.flow-meter {
+  position: absolute;
+  bottom: 70px;
+  left: 12px;
+  width: 6px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.flow-meter.active {
+  opacity: 1;
+}
+.flow-meter-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(to top, #2ED573, #7BED9F);
+  border-radius: 4px;
+  transition: height 0.25s ease-out;
+}
+.flow-meter-label {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.45rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #2ED573;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.flow-meter.in-flow .flow-meter-label {
+  opacity: 1;
+}
+.flow-meter.in-flow .flow-meter-fill {
+  box-shadow: 0 0 12px rgba(46, 213, 115, 0.5);
+}
+
+/* ── Ghost Racer for Formen (reuse .ghost-racer styles) ── */
+
+/* ── Shape Chain Pop (in-game, center) ── */
+.shape-chain-pop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #FFA502;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+  z-index: 25;
+  white-space: nowrap;
+  animation: chain-pop 0.6s ease forwards;
+}
+@keyframes chain-pop {
+  0%   { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  30%  { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+  100% { transform: translate(-50%, -70%) scale(0.9); opacity: 0; }
+}
+
+/* ── Jackpot Pop ── */
+.jackpot-pop {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #FFD700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+  z-index: 26;
+  white-space: nowrap;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+  animation: jackpot-pop 0.8s ease forwards;
+}
+@keyframes jackpot-pop {
+  0%   { transform: translate(-50%, -50%) scale(0) rotate(-5deg); opacity: 0; }
+  25%  { transform: translate(-50%, -50%) scale(1.3) rotate(2deg); opacity: 1; }
+  60%  { transform: translate(-50%, -55%) scale(1.1) rotate(-1deg); opacity: 1; }
+  100% { transform: translate(-50%, -70%) scale(0.8) rotate(0deg); opacity: 0; }
+}
+
+/* ── Results: Shape Mastery Grid ── */
+.mastery-shape-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  max-width: 200px;
+  margin: 6px auto;
+}
+.mastery-shape-grid-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background 0.2s ease;
+}
+.mastery-shape-grid-cell.filled {
+  background: rgba(46, 213, 115, 0.2);
+  border-color: rgba(46, 213, 115, 0.4);
+  color: #2ED573;
+}
+.mastery-shape-grid-cell.filled-high {
+  background: rgba(255, 215, 0, 0.2);
+  border-color: rgba(255, 215, 0, 0.4);
+  color: #FFD700;
+}
+
+/* ── Results: Shape Chain ── */
+.mastery-shape-chain,
+.mastery-jackpot,
+.mastery-flow {
+  font-size: 0.55rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  padding: 2px 0;
+}
+
+.mastery-grid-progress {
+  font-size: 0.5rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 2px;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .speed-zone-indicator,
+  .ghost-racer-fill,
+  .color-combo-pop,
+  .zen-state-overlay,
+  .shape-chain-pop,
+  .jackpot-pop,
+  .flow-meter-fill,
+  .full-compass-pop,
+  .weak-spot-pulse,
+  .ultra-full-compass-pop {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════
+   EXPERT — Compass Ring HUD
+   ═══════════════════════════════════════ */
+
+.expert-compass-ring {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 30;
+}
+
+.compass-dir {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.4rem;
+  color: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  /* Position using angle: center at 36,36 radius 28 */
+  top: calc(50% - 28px * cos(var(--angle)));
+  left: calc(50% + 28px * sin(var(--angle)));
+}
+
+.compass-dir[data-stars="1"] { color: #CD7F32; }
+.compass-dir[data-stars="2"] { color: #C0C0C0; }
+.compass-dir[data-stars="3"] { color: #FFD700; }
+.compass-dir[data-stars="4"] { color: #FF6B6B; }
+.compass-dir[data-stars="5"] { color: #A855F7; text-shadow: 0 0 4px #A855F7; }
+
+.compass-star-count {
+  font-size: 0.45rem;
+  line-height: 1;
+}
+
+/* ── Full Compass Pop ── */
+
+.full-compass-pop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #FFD700;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 60;
+  animation: full-compass-pop 1.2s ease-out forwards;
+}
+
+@keyframes full-compass-pop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-10deg); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15) rotate(3deg); }
+  50%  { transform: translate(-50%, -50%) scale(1) rotate(0); }
+  100% { opacity: 0; transform: translate(-50%, -60%) scale(0.9); }
+}
+
+/* ── Weak Spot Pulse ── */
+
+.corner-shape.weak-spot-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 1.5px dashed rgba(255, 165, 0, 0.5);
+  animation: weak-pulse 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes weak-pulse {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.8; }
+}
+
+/* ═══════════════════════════════════════
+   EXPERT — Results Screen
+   ═══════════════════════════════════════ */
+
+.mastery-dir-heatmap {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  max-width: 180px;
+  margin: 8px auto;
+}
+
+.mastery-heatmap-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  min-height: 32px;
+}
+
+.mastery-heatmap-cell.hot  { background: rgba(46, 213, 115, 0.25); }
+.mastery-heatmap-cell.warm { background: rgba(255, 165, 2, 0.2); }
+.mastery-heatmap-cell.cool { background: rgba(255, 71, 87, 0.15); }
+.mastery-heatmap-cell.cold { background: rgba(255, 71, 87, 0.3); }
+
+.mastery-heatmap-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  opacity: 0.3;
+}
+
+.heatmap-arrow {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.heatmap-acc {
+  font-size: 0.45rem;
+  opacity: 0.7;
+  margin-top: 1px;
+}
+
+.mastery-compass-stars {
+  text-align: center;
+  font-size: 0.6rem;
+  color: #FFD700;
+  margin: 4px 0;
+}
+
+.mastery-full-compass {
+  text-align: center;
+  font-size: 0.55rem;
+  color: #2ED573;
+  margin: 4px 0;
+}
+
+.mastery-speed-tiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  margin: 6px 0;
+}
+
+.mastery-tier-badge {
+  font-size: 0.5rem;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════
+   ULTRA — 12-Direction Compass Grid HUD
+   ═══════════════════════════════════════ */
+
+.ultra-compass-grid {
+  position: absolute;
+  bottom: 70px;
+  left: 8px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(168, 85, 247, 0.12);
+  pointer-events: none;
+  z-index: 20;
+}
+
+.ultra-dir {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: calc(50% + cos(var(--angle)) * 30px - 7px);
+  top: calc(50% - sin(var(--angle)) * 30px - 7px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.35rem;
+  color: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  transition: color 0.3s, background 0.3s;
+}
+
+.ultra-dir[data-stars="1"] { color: #CD7F32; background: rgba(205, 127, 50, 0.15); }
+.ultra-dir[data-stars="2"] { color: #C0C0C0; background: rgba(192, 192, 192, 0.15); }
+.ultra-dir[data-stars="3"] { color: #FFD700; background: rgba(255, 215, 0, 0.15); }
+.ultra-dir[data-stars="4"] { color: #FF6B6B; background: rgba(255, 107, 107, 0.15); }
+.ultra-dir[data-stars="5"] { color: #A855F7; background: rgba(168, 85, 247, 0.25); }
+
+.ultra-star-count {
+  font-size: 0.3rem;
+  line-height: 1;
+}
+
+/* Full Compass XII celebration */
+.ultra-full-compass-pop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #A855F7;
+  text-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  animation: ultra-compass-pop 1.4s ease-out forwards;
+}
+
+@keyframes ultra-compass-pop {
+  0%   { transform: translate(-50%, -50%) scale(0) rotate(-10deg); opacity: 0; }
+  20%  { transform: translate(-50%, -50%) scale(1.2) rotate(5deg); opacity: 1; }
+  50%  { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.8) rotate(0deg); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════
+   ULTRA — Results Screen
+   ═══════════════════════════════════════ */
+
+.mastery-ultra-heatmap {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  max-width: 220px;
+  margin: 8px auto;
+}
+
+.mastery-ultra-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 1px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  min-height: 28px;
+}
+
+.mastery-ultra-cell.hot  { background: rgba(46, 213, 115, 0.25); }
+.mastery-ultra-cell.warm { background: rgba(255, 165, 2, 0.2); }
+.mastery-ultra-cell.cool { background: rgba(255, 71, 87, 0.15); }
+.mastery-ultra-cell.cold { background: rgba(255, 71, 87, 0.3); }
+
+.ultra-cell-arrow {
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.ultra-cell-acc {
+  font-size: 0.4rem;
+  opacity: 0.7;
+  margin-top: 1px;
+}
+
+.mastery-ultra-stars {
+  text-align: center;
+  font-size: 0.6rem;
+  color: #A855F7;
+  margin: 4px 0;
+}
+
+.mastery-ultra-full-compass {
+  text-align: center;
+  font-size: 0.55rem;
+  color: #A855F7;
+  margin: 4px 0;
+}
+
+.mastery-ultra-speed-tiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  margin: 6px 0;
+}
+
+.mastery-ultra-survivor {
+  text-align: center;
+  font-size: 0.55rem;
+  color: #A855F7;
+  font-weight: 600;
+  margin: 4px 0;
+}
+
+/* ═══════════════════════════════════════
+   MATHE — Operation Bar HUD
+   ═══════════════════════════════════════ */
+
+.mathe-op-bar {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+  z-index: 30;
+}
+
+.mathe-op-seg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 32px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: background 0.3s;
+}
+
+.mathe-op-seg.hot  { background: rgba(46, 213, 115, 0.25); }
+.mathe-op-seg.warm { background: rgba(255, 165, 2, 0.2); }
+.mathe-op-seg.cool { background: rgba(255, 71, 87, 0.15); }
+
+.mathe-op-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.2;
+}
+
+.mathe-op-count {
+  font-size: 0.45rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1;
+}
+
+/* ── Phase Up Pop ── */
+
+.mathe-phase-pop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #2ED573;
+  text-shadow: 0 0 10px rgba(46, 213, 115, 0.6), 0 2px 6px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 60;
+  white-space: nowrap;
+  animation: mathe-phase-pop 1.3s ease-out forwards;
+}
+
+@keyframes mathe-phase-pop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  50%  { transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -60%) scale(0.9); }
+}
+
+/* ═══════════════════════════════════════
+   MATHE — Results Screen
+   ═══════════════════════════════════════ */
+
+.mastery-math-ops {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.mastery-math-op-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+  padding: 6px 4px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mastery-math-op-card.hot  { background: rgba(46, 213, 115, 0.25); }
+.mastery-math-op-card.warm { background: rgba(255, 165, 2, 0.2); }
+.mastery-math-op-card.cool { background: rgba(255, 71, 87, 0.15); }
+.mastery-math-op-card.cold { background: rgba(255, 71, 87, 0.3); }
+
+.mastery-math-op-sym {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.mastery-math-op-pct {
+  font-size: 0.55rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.mastery-math-op-best {
+  font-size: 0.4rem;
+  opacity: 0.5;
+  margin-top: 1px;
+}
+
+/* ── Brain Age ── */
+
+.mastery-brain-age {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.mastery-brain-label {
+  font-size: 0.55rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.mastery-brain-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--age-color, #FFD700);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--age-color, #FFD700) 40%, transparent);
+}
+
+/* ── Phase Reached ── */
+
+.mastery-math-phase {
+  text-align: center;
+  font-size: 0.55rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 4px 0;
+}
+
+.mastery-math-phase strong {
+  color: #2ED573;
+  font-weight: 700;
+}
+
+/* ── Reduced motion: Mathe ── */
+@media (prefers-reduced-motion: reduce) {
+  .mathe-phase-pop {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════
+   ALGEBRA — Type Bar HUD
+   ═══════════════════════════════════════ */
+
+.algebra-type-bar {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 3px;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+  z-index: 30;
+}
+
+.algebra-type-seg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 28px;
+  padding: 2px 3px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: background 0.3s;
+}
+
+.algebra-type-seg.hot  { background: rgba(46, 213, 115, 0.25); }
+.algebra-type-seg.warm { background: rgba(255, 165, 2, 0.2); }
+.algebra-type-seg.cool { background: rgba(255, 71, 87, 0.15); }
+.algebra-type-seg.locked {
+  background: rgba(255, 255, 255, 0.03);
+  opacity: 0.4;
+}
+
+.algebra-type-label {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.2;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.algebra-type-pct {
+  font-size: 0.4rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1;
+}
+
+/* ── Unlock Toast ── */
+
+.algebra-unlock-pop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #059669;
+  text-shadow: 0 0 10px rgba(5, 150, 105, 0.6), 0 2px 6px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 60;
+  white-space: nowrap;
+  animation: algebra-unlock-pop 1.3s ease-out forwards;
+}
+
+@keyframes algebra-unlock-pop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  50%  { transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -60%) scale(0.9); }
+}
+
+/* ═══════════════════════════════════════
+   ALGEBRA — Results Screen
+   ═══════════════════════════════════════ */
+
+.mastery-algebra-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.mastery-algebra-type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 38px;
+  padding: 5px 3px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mastery-algebra-type-card.hot  { background: rgba(46, 213, 115, 0.25); }
+.mastery-algebra-type-card.warm { background: rgba(255, 165, 2, 0.2); }
+.mastery-algebra-type-card.cool { background: rgba(255, 71, 87, 0.15); }
+.mastery-algebra-type-card.cold { background: rgba(255, 71, 87, 0.3); }
+.mastery-algebra-type-card.locked {
+  background: rgba(255, 255, 255, 0.03);
+  opacity: 0.4;
+}
+
+.mastery-algebra-type-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.2;
+}
+
+.mastery-algebra-type-pct {
+  font-size: 0.5rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.mastery-algebra-type-best {
+  font-size: 0.35rem;
+  opacity: 0.5;
+  margin-top: 1px;
+}
+
+/* ── Algebra IQ ── */
+
+.mastery-algebra-iq {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.mastery-iq-label {
+  font-size: 0.55rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.mastery-iq-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--iq-color, #059669);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--iq-color, #059669) 40%, transparent);
+}
+
+/* ── Phase Reached ── */
+
+.mastery-algebra-phase {
+  text-align: center;
+  font-size: 0.55rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 4px 0;
+}
+
+.mastery-algebra-phase strong {
+  color: #059669;
+  font-weight: 700;
+}
+
+/* ── Reduced motion: Algebra ── */
+@media (prefers-reduced-motion: reduce) {
+  .algebra-unlock-pop {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════
+   WORTE — Collection Counter HUD
+   ═══════════════════════════════════════ */
+
+.worte-collection-hud {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+  z-index: 30;
+}
+
+.worte-coll-count {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #FFD700;
+}
+
+.worte-coll-label {
+  font-size: 0.4rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── New Word Pop ── */
+
+.worte-new-word-pop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2ED573;
+  text-shadow: 0 0 8px rgba(46, 213, 115, 0.5), 0 2px 4px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 60;
+  white-space: nowrap;
+  animation: worte-new-pop 1.2s ease-out forwards;
+}
+
+@keyframes worte-new-pop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  40%  { transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -60%) scale(0.9); }
+}
+
+/* ═══════════════════════════════════════
+   WORTE — Results Screen
+   ═══════════════════════════════════════ */
+
+.mastery-word-collection {
+  margin: 8px 0;
+}
+
+.mastery-word-coll-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 0 auto;
+  max-width: 200px;
+}
+
+.mastery-word-coll-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FFD700, #2ED573);
+  border-radius: 3px;
+  transition: width 0.5s;
+}
+
+.mastery-word-coll-text {
+  text-align: center;
+  font-size: 0.5rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 3px;
+}
+
+.mastery-word-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.mastery-word-cat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+  padding: 5px 4px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mastery-word-cat-card.hot  { background: rgba(46, 213, 115, 0.25); }
+.mastery-word-cat-card.warm { background: rgba(255, 165, 2, 0.2); }
+.mastery-word-cat-card.cool { background: rgba(255, 71, 87, 0.15); }
+.mastery-word-cat-card.cold { background: rgba(255, 71, 87, 0.3); }
+
+.mastery-word-cat-emoji {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.mastery-word-cat-name {
+  font-size: 0.45rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.mastery-word-cat-pct {
+  font-size: 0.5rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* ── Reduced motion: Worte ── */
+@media (prefers-reduced-motion: reduce) {
+  .worte-new-word-pop {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   HAUPTSTAEDTE HUD — Country collection
+   ═══════════════════════════════════════════════ */
+.hauptstaedte-hud {
+  position: fixed;
+  top: 52px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  z-index: 50;
+  pointer-events: none;
+}
+.haupt-count {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #FFD700;
+  line-height: 1;
+}
+.haupt-label {
+  font-size: 0.4rem;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.haupt-new-country-pop {
+  position: fixed;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #2ED573;
+  text-shadow: 0 0 6px rgba(46,213,115,0.5);
+  z-index: 100;
+  pointer-events: none;
+  animation: haupt-new-pop 1.2s ease-out forwards;
+}
+@keyframes haupt-new-pop {
+  0% { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.8); }
+  20% { opacity: 1; transform: translateX(-50%) translateY(-8px) scale(1.1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-30px) scale(0.9); }
+}
+
+/* Hauptstaedte Results */
+.mastery-region-cards {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 4px 0;
+}
+.mastery-region-card {
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+  text-align: center;
+  min-width: 48px;
+}
+.mastery-region-card.hot { background: rgba(46,213,115,0.15); }
+.mastery-region-card.warm { background: rgba(255,165,2,0.15); }
+.mastery-region-card.cool { background: rgba(255,99,72,0.1); }
+.mastery-region-name {
+  font-size: 0.42rem;
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+}
+.mastery-region-pct {
+  font-size: 0.5rem;
+  font-weight: 700;
+  margin-top: 1px;
+}
+.mastery-country-collection {
+  margin: 4px 0;
+}
+.mastery-country-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.mastery-country-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2ED573, #FFD700);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+.mastery-country-text {
+  font-size: 0.45rem;
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  margin-top: 2px;
+}
+.mastery-country-streak {
+  font-size: 0.5rem;
+  text-align: center;
+  color: rgba(255,255,255,0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .haupt-new-country-pop { animation: none !important; }
+}
+
+/* ═══════════════════════════════════════════════
+   WISSEN HUD — Topic accuracy
+   ═══════════════════════════════════════════════ */
+.wissen-hud {
+  position: fixed;
+  top: 52px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 50;
+  pointer-events: none;
+}
+.wissen-iq-live {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: #FFD700;
+}
+
+/* Wissen Results */
+.mastery-topic-cards {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 4px 0;
+}
+.mastery-topic-card {
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+  text-align: center;
+  min-width: 48px;
+}
+.mastery-topic-card.hot { background: rgba(46,213,115,0.15); }
+.mastery-topic-card.warm { background: rgba(255,165,2,0.15); }
+.mastery-topic-card.cool { background: rgba(255,99,72,0.1); }
+.mastery-topic-name {
+  font-size: 0.42rem;
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+}
+.mastery-topic-pct {
+  font-size: 0.5rem;
+  font-weight: 700;
+  margin-top: 1px;
+}
+.mastery-wissen-iq {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.mastery-wissen-iq-label {
+  font-size: 0.5rem;
+  color: rgba(255,255,255,0.5);
+}
+.mastery-wissen-iq-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--iq-color, #FFD700);
+}
+
+/* ═══════════════════════════════════════════════
+   MEMO HUD — Memory span
+   ═══════════════════════════════════════════════ */
+.memo-hud {
+  position: fixed;
+  top: 52px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  z-index: 50;
+  pointer-events: none;
+}
+.memo-span-label {
+  font-size: 0.4rem;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.memo-span-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #2ED573;
+  line-height: 1;
+}
+
+/* Memo Results */
+.mastery-memory-span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.mastery-span-label {
+  font-size: 0.5rem;
+  color: rgba(255,255,255,0.5);
+}
+.mastery-span-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #2ED573;
+}
+.mastery-span-sub {
+  font-size: 0.4rem;
+  color: rgba(255,255,255,0.3);
+}
+.mastery-perfect-recalls {
+  font-size: 0.5rem;
+  text-align: center;
+  color: rgba(255,255,255,0.6);
+}
+
+/* ═══════════════════════════════════════════════
+   SEQUENZ HUD — Record display
+   ═══════════════════════════════════════════════ */
+.sequenz-hud {
+  position: fixed;
+  top: 52px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  z-index: 50;
+  pointer-events: none;
+}
+.seq-rec-label {
+  font-size: 0.4rem;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.seq-rec-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #FFD700;
+  line-height: 1;
+}
+.sequenz-record-pop {
+  position: fixed;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #FFD700;
+  text-shadow: 0 0 8px rgba(255,215,0,0.6);
+  z-index: 100;
+  pointer-events: none;
+  animation: seq-record-pop 1.5s ease-out forwards;
+}
+@keyframes seq-record-pop {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.7); }
+  20% { opacity: 1; transform: translateX(-50%) scale(1.2); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-30px) scale(0.9); }
+}
+
+/* Sequenz Results */
+.mastery-seq-record {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  margin: 6px 0;
+}
+.mastery-seq-label {
+  font-size: 0.5rem;
+  color: rgba(255,255,255,0.5);
+}
+.mastery-seq-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #FFD700;
+}
+.mastery-seq-target {
+  font-size: 0.5rem;
+  color: rgba(255,255,255,0.3);
+}
+.mastery-seq-rounds {
+  font-size: 0.5rem;
+  text-align: center;
+  color: rgba(255,255,255,0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sequenz-record-pop { animation: none !important; }
+}
+
+/* ═══════════════════════════════════════════════
+   STROOP HUD — Interference display
+   ═══════════════════════════════════════════════ */
+.stroop-hud {
+  position: fixed;
+  top: 52px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  z-index: 50;
+  pointer-events: none;
+}
+.stroop-int-label {
+  font-size: 0.35rem;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.stroop-int-val {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #FFA502;
+  line-height: 1;
+}
+
+/* Stroop Results */
+.mastery-interference {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.mastery-int-label {
+  font-size: 0.5rem;
+  color: rgba(255,255,255,0.5);
+}
+.mastery-int-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--int-color, #FFA502);
+}
+.mastery-int-best {
+  font-size: 0.42rem;
+  color: rgba(255,255,255,0.4);
+}
+
+/* ═══════════════════════════════════════════════
+   NEW INSIGHT CARDS — Plans 4-14 gap-fill
+   ═══════════════════════════════════════════════ */
+
+/* ── Elite Stat (Ultra P4) ── */
+.mastery-elite-stat {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.55rem;
+}
+.mastery-elite-label { opacity: 0.6; }
+.mastery-elite-value { font-weight: 800; color: #FFD700; font-size: 0.7rem; }
+.mastery-elite-streak { opacity: 0.5; font-size: 0.45rem; }
+
+/* ── Math Facts (Mathe P5) ── */
+.mastery-math-facts {
+  display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+}
+.mastery-mf-title {
+  width: 100%; font-size: 0.45rem; opacity: 0.5; text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.mastery-mf-chip {
+  background: rgba(255,255,255,0.06); border-radius: 6px;
+  padding: 2px 6px; font-size: 0.48rem; font-family: var(--ff-mono, monospace);
+}
+.mastery-mf-chip small { opacity: 0.5; margin-left: 4px; }
+
+/* ── Community Speed (Mathe P5) ── */
+.mastery-community-speed {
+  display: flex; align-items: center; gap: 8px; font-size: 0.55rem;
+}
+.mastery-community-speed strong { color: #FFD700; }
+.mastery-community-speed small { opacity: 0.5; }
+
+/* ── Time Attack (Algebra P6) ── */
+.mastery-time-attack {
+  display: flex; align-items: center; gap: 8px; font-size: 0.55rem;
+}
+.mastery-ta-label { font-weight: 700; }
+.mastery-ta-avg { opacity: 0.5; }
+
+/* ── Word of the Day (Worte P7) ── */
+.mastery-wotd {
+  display: flex; align-items: center; gap: 8px; font-size: 0.55rem;
+}
+.mastery-wotd-label { opacity: 0.5; font-size: 0.42rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.mastery-wotd-word { font-weight: 800; color: #FFD700; font-size: 0.7rem; }
+.mastery-wotd-known { font-size: 0.4rem; color: #4ECDC4; }
+
+/* ── Bilingual (Worte P7) ── */
+.mastery-bilingual {
+  display: flex; gap: 12px; font-size: 0.55rem;
+}
+.mastery-bilingual span { font-weight: 600; }
+
+/* ── World Map (Hauptstaedte P8) ── */
+.mastery-world-map { text-align: center; }
+.mastery-wm-title { font-size: 0.45rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.06em; display: block; }
+.mastery-wm-count { font-size: 0.65rem; font-weight: 800; color: #FFD700; }
+.mastery-wm-grid {
+  display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; margin-top: 4px;
+}
+.mastery-wm-dot {
+  font-size: 0.35rem; color: rgba(255,255,255,0.15); line-height: 1;
+}
+.mastery-wm-dot.known { color: #FFD700; }
+
+/* ── Explorer Title (Hauptstaedte P8) ── */
+.mastery-explorer-title {
+  text-align: center; font-size: 0.6rem; font-weight: 700; color: #FFD700;
+}
+
+/* ── Mastery Tier insight (Hauptstaedte P8) ── */
+.mastery-tier-insight {
+  display: flex; align-items: center; gap: 8px; font-size: 0.55rem;
+}
+.mastery-tier-name { font-weight: 800; color: #FFD700; }
+.mastery-tier-insight small { opacity: 0.5; }
+
+/* ── Expert Badges (Wissen P9) ── */
+.mastery-expert-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.mastery-eb-title {
+  width: 100%; font-size: 0.42rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.mastery-eb-chip {
+  background: rgba(255,255,255,0.06); border-radius: 6px;
+  padding: 2px 6px; font-size: 0.45rem; opacity: 0.5;
+}
+.mastery-eb-chip.earned { opacity: 1; color: #FFD700; border: 1px solid rgba(255,215,0,0.3); }
+
+/* ── Topic Streak (Wissen P9) ── */
+.mastery-topic-streak { font-size: 0.55rem; }
+
+/* ── Daily Streak (shared P10-13) ── */
+.mastery-daily-streak {
+  display: flex; align-items: center; gap: 8px; font-size: 0.55rem;
+}
+.mastery-daily-streak small { opacity: 0.5; }
+
+/* ── Preview Milestone (Memo P10) ── */
+.mastery-preview-ms {
+  display: flex; align-items: center; gap: 8px; font-size: 0.55rem;
+}
+.mastery-preview-ms small { opacity: 0.5; }
+
+/* ── Brain Scan (Memo P10) ── */
+.mastery-brain-scan { text-align: center; }
+.mastery-bs-title { font-size: 0.42rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.06em; display: block; }
+.mastery-bs-svg { width: 100%; max-height: 40px; margin: 4px 0; }
+.mastery-brain-scan small { font-size: 0.45rem; opacity: 0.6; }
+
+/* ── Speed per Length (Sequenz P11) ── */
+.mastery-speed-len { display: flex; flex-wrap: wrap; gap: 4px; }
+.mastery-sl-title {
+  width: 100%; font-size: 0.42rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.mastery-sl-chip {
+  background: rgba(255,255,255,0.06); border-radius: 6px;
+  padding: 2px 6px; font-size: 0.45rem; font-family: var(--ff-mono, monospace);
+}
+
+/* ── Pattern Replay (Sequenz P11) ── */
+.mastery-pattern-replay { text-align: center; }
+.mastery-pr-title { font-size: 0.42rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.06em; display: block; }
+.mastery-pr-dots { display: flex; gap: 3px; justify-content: center; margin-top: 4px; flex-wrap: wrap; }
+.mastery-pr-dot {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+}
+
+/* ── Brain Control (Stroop P12) ── */
+.mastery-brain-ctrl {
+  display: flex; align-items: center; gap: 8px; font-size: 0.55rem;
+}
+.mastery-bc-label { opacity: 0.5; }
+.mastery-bc-level { font-weight: 800; color: #FFD700; }
+
+/* ── Challenge Rounds (Stroop P12) ── */
+.mastery-challenge-rounds { font-size: 0.55rem; }
+
+/* ── Interference Chart (Stroop P12) ── */
+.mastery-interference-chart { text-align: center; }
+.mastery-ic-title { font-size: 0.42rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.06em; display: block; }
+.mastery-ic-svg { width: 100%; max-height: 40px; margin: 4px 0; }
+
+/* ── Distraction Level (Fokus P13) ── */
+.mastery-dist-level {
+  display: flex; align-items: center; gap: 8px; font-size: 0.55rem;
+}
+.mastery-dl-label { font-weight: 800; color: #FFA502; }
+
+/* ── Tunnel Vision (Fokus P13) ── */
+.mastery-tunnel-vision {
+  display: flex; align-items: center; gap: 8px; font-size: 0.55rem;
+}
+.mastery-tunnel-vision small { opacity: 0.5; }
+
+/* ── Chaos Rank (Chaos P14) ── */
+.mastery-chaos-rank {
+  display: flex; align-items: center; gap: 8px; font-size: 0.55rem;
+}
+.mastery-cr-label { font-weight: 800; color: #FFD700; font-size: 0.7rem; }
+.mastery-chaos-rank small { opacity: 0.5; }
+
+/* ── Adaptation Speed (Chaos P14) ── */
+.mastery-adaptation {
+  display: flex; align-items: center; gap: 8px; font-size: 0.55rem;
+}
+.mastery-adaptation small { opacity: 0.5; }
+
+/* ── GameScreen HUD: Wissen difficulty reveal ── */
+.wissen-diff-reveal {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.75); color: #fff;
+  padding: 4px 12px; border-radius: 8px;
+  font-size: 0.55rem; font-weight: 700;
+  pointer-events: none; z-index: 30;
+  animation: popIn 0.3s ease;
+}
+
+/* ── GameScreen HUD: Wissen topic streak pop ── */
+.wissen-topic-streak {
+  position: absolute; top: 60%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: #FFD700; font-weight: 800;
+  font-size: 0.7rem; pointer-events: none; z-index: 30;
+  animation: popIn 0.3s ease;
+}
+
+/* ── GameScreen HUD: Stroop challenge round ── */
+.stroop-challenge-round {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255,71,87,0.9); color: #fff;
+  padding: 6px 18px; border-radius: 12px;
+  font-size: 0.8rem; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  pointer-events: none; z-index: 30;
+  animation: popIn 0.3s ease;
+}
+
+/* ── GameScreen HUD: Fokus distraction level ── */
+.fokus-dist-level {
+  position: absolute; top: env(safe-area-inset-top, 8px); left: 12px;
+  background: rgba(0,0,0,0.5); color: #FFA502;
+  padding: 2px 8px; border-radius: 6px;
+  font-size: 0.48rem; font-weight: 700;
+  pointer-events: none; z-index: 20;
+}
+
+/* ── GameScreen HUD: Hauptstaedte tier label ── */
+.haupt-tier-label {
+  font-size: 0.42rem; color: #FFD700; font-weight: 700;
+  margin-top: 2px;
+}
+
+/* shared pop-in keyframe (may already exist) */
+@keyframes popIn {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.mastery-stroop-split, .mastery-fokus-split {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  font-size: 0.45rem;
+  color: rgba(255,255,255,0.6);
+  margin: 4px 0;
+}
+
+/* ═══════════════════════════════════════════════
+   FOKUS HUD — Distraction cost
+   ═══════════════════════════════════════════════ */
+.fokus-hud {
+  position: fixed;
+  top: 52px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  z-index: 50;
+  pointer-events: none;
+}
+.fokus-cost-label {
+  font-size: 0.35rem;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.fokus-cost-val {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #FF6348;
+  line-height: 1;
+}
+
+/* Fokus Results */
+.mastery-focus-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.mastery-foc-label {
+  font-size: 0.5rem;
+  color: rgba(255,255,255,0.5);
+}
+.mastery-foc-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--foc-color, #2ED573);
+}
+.mastery-foc-best {
+  font-size: 0.42rem;
+  color: rgba(255,255,255,0.4);
+}
+.mastery-distraction-cost {
+  font-size: 0.5rem;
+  text-align: center;
+  color: rgba(255,255,255,0.6);
+}
+
+/* ═══════════════════════════════════════════════
+   CHAOS HUD — Rule + switch display
+   ═══════════════════════════════════════════════ */
+.chaos-hud {
+  position: fixed;
+  top: 52px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  z-index: 50;
+  pointer-events: none;
+}
+.chaos-rule-label {
+  font-size: 0.35rem;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.chaos-rule-val {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #FF4757;
+  line-height: 1;
+}
+.chaos-switch-count {
+  font-size: 0.35rem;
+  color: rgba(255,255,255,0.4);
+}
+
+/* Chaos Results */
+.mastery-rule-cards {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 4px 0;
+}
+.mastery-rule-card {
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+  text-align: center;
+  min-width: 44px;
+}
+.mastery-rule-card.hot { background: rgba(46,213,115,0.15); }
+.mastery-rule-card.warm { background: rgba(255,165,2,0.15); }
+.mastery-rule-card.cool { background: rgba(255,99,72,0.1); }
+.mastery-rule-name {
+  font-size: 0.42rem;
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+}
+.mastery-rule-pct {
+  font-size: 0.5rem;
+  font-weight: 700;
+  margin-top: 1px;
+}
+.mastery-flex-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.mastery-flex-label {
+  font-size: 0.5rem;
+  color: rgba(255,255,255,0.5);
+}
+.mastery-flex-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--flex-color, #FFD700);
+}
+.mastery-flex-best {
+  font-size: 0.42rem;
+  color: rgba(255,255,255,0.4);
+}
+.mastery-switches {
+  font-size: 0.5rem;
+  text-align: center;
+  color: rgba(255,255,255,0.6);
+}

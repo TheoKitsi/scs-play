@@ -113,7 +113,9 @@ function defaults() {
     /* v23: Daily streak freeze system */
     streakFreezes: 0,           // banked streak freezes (max 2)
     streakFreezesUsed: 0,       // total freezes used ever
-    lastStreakFreezeEarned: null // date when last freeze was earned
+    lastStreakFreezeEarned: null, // date when last freeze was earned
+    /* v50: Mode Mastery — per-mode engagement tracking */
+    modeMastery: {}
   };
 }
 
@@ -157,6 +159,8 @@ export class SaveService {
         /* v12: daily XP tracking */
         if (this.data.dailyXPDate == null) this.data.dailyXPDate = null;
         if (this.data.dailyXPEarned == null) this.data.dailyXPEarned = 0;
+        /* v50: Mode Mastery migration */
+        if (!this.data.modeMastery) this.data.modeMastery = {};
         /* v12: recalc level with new thresholds */
         this.data.level = this._calcLevel(this.data.totalXP);
       }

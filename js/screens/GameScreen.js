@@ -13,6 +13,20 @@ import { EffectsManager }   from '../effects.js';
 import { updateGameAdBanner, isAdFree } from '../services/AdService.js';
 import app                   from '../appState.js';
 import { getBodyFx } from './HomeScreen.js';
+import { trackKlassikAnswer, startKlassikGhostRacer, endKlassikGame, getGhostDelta, getSpeedZone } from '../game/ModeMastery.js';
+import { trackFormenAnswer, startFormenGame, endFormenGame, getFormenGhostDelta } from '../game/ModeMastery.js';
+import { trackExpertAnswer, startExpertGame, endExpertGame, getExpertGhostDelta, getWeakestDirection } from '../game/ModeMastery.js';
+import { trackUltraAnswer, startUltraGame, endUltraGame, getUltraGhostDelta, getWeakestUltraDirection } from '../game/ModeMastery.js';
+import { trackMatheAnswer, startMatheGame, endMatheGame, getMatheGhostDelta } from '../game/ModeMastery.js';
+import { trackAlgebraAnswer, startAlgebraGame, endAlgebraGame, getAlgebraGhostDelta } from '../game/ModeMastery.js';
+import { trackWorteAnswer, startWorteGame, endWorteGame, getWorteGhostDelta } from '../game/ModeMastery.js';
+import { trackHauptstaedteAnswer, startHauptstaedteGame, endHauptstaedteGame, getHauptstaedteGhostDelta } from '../game/ModeMastery.js';
+import { trackWissenAnswer, startWissenGame, endWissenGame, getWissenGhostDelta } from '../game/ModeMastery.js';
+import { trackMemoAnswer, startMemoGame, endMemoGame, getMemoGhostDelta } from '../game/ModeMastery.js';
+import { trackSequenzResult, startSequenzGame, endSequenzGame } from '../game/ModeMastery.js';
+import { trackStroopAnswer, startStroopGame, endStroopGame, getStroopGhostDelta } from '../game/ModeMastery.js';
+import { trackFokusAnswer, startFokusGame, endFokusGame, getFokusGhostDelta } from '../game/ModeMastery.js';
+import { trackChaosAnswer, startChaosGame, endChaosGame, getChaosGhostDelta } from '../game/ModeMastery.js';
 
 /* ═══════ SVG Cache — avoid regenerating & parsing identical SVGs ═══════ */
 const _svgCache = new Map();
@@ -648,6 +662,1047 @@ export function doCountdown(cb) {
 }
 
 /* ═══════ Cleanup intensity classes ═══════ */
+/* ═══════ Klassik Mode Mastery — In-Game HUD Helpers ═══════ */
+let _speedZoneTimeout = null;
+let _colorComboId = 0;
+
+function ensureKlassikHUD() {
+  const gameEl = $('#game');
+  if (!gameEl) return;
+
+  if (!$('#speedZoneIndicator')) {
+    const el = document.createElement('div');
+    el.id = 'speedZoneIndicator';
+    el.className = 'speed-zone-indicator';
+    gameEl.appendChild(el);
+  }
+  if (!$('#ghostRacer')) {
+    const el = document.createElement('div');
+    el.id = 'ghostRacer';
+    el.className = 'ghost-racer';
+    el.innerHTML = '<div class="ghost-racer-fill" id="ghostRacerFill"></div><span class="ghost-racer-label" id="ghostRacerLabel"></span>';
+    gameEl.appendChild(el);
+  }
+  if (!$('#flawlessCounter')) {
+    const el = document.createElement('div');
+    el.id = 'flawlessCounter';
+    el.className = 'flawless-counter';
+    gameEl.appendChild(el);
+  }
+  if (!$('#zenOverlay')) {
+    const el = document.createElement('div');
+    el.id = 'zenOverlay';
+    el.className = 'zen-state-overlay';
+    gameEl.appendChild(el);
+  }
+}
+
+function updateSpeedZoneIndicator(zone, reaction) {
+  ensureKlassikHUD();
+  const el = $('#speedZoneIndicator');
+  if (!el) return;
+
+  clearTimeout(_speedZoneTimeout);
+  if (!zone) {
+    el.classList.remove('active');
+    return;
+  }
+
+  const zones = CONFIG.KLASSIK_SPEED_ZONES || [];
+  const zoneInfo = zones.find(z => z.id === zone);
+  if (!zoneInfo) return;
+
+  const lang = getLanguage();
+  el.textContent = `${zoneInfo[`label_${lang}`] || zoneInfo.label_en} ${reaction}ms`;
+  el.dataset.zone = zone;
+  el.classList.add('active');
+
+  _speedZoneTimeout = setTimeout(() => el.classList.remove('active'), 1200);
+}
+
+function updateSpeedGlow(zone) {
+  const gameArea = $('#game');
+  if (!gameArea) return;
+  gameArea.classList.remove('speed-glow-ultra', 'speed-glow-fast', 'speed-glow-good');
+  if (zone === 'ultra') gameArea.classList.add('speed-glow-ultra');
+  else if (zone === 'fast') gameArea.classList.add('speed-glow-fast');
+  else if (zone === 'good') gameArea.classList.add('speed-glow-good');
+}
+
+function updateGhostRacer(game) {
+  ensureKlassikHUD();
+  const container = $('#ghostRacer');
+  const fill = $('#ghostRacerFill');
+  const label = $('#ghostRacerLabel');
+  if (!container || !fill || !label || !app.mastery) return;
+
+  const delta = getGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta == null) {
+    container.classList.remove('visible');
+    return;
+  }
+
+  container.classList.add('visible');
+  const isAhead = delta >= 0;
+  fill.className = 'ghost-racer-fill ' + (isAhead ? 'ahead' : 'behind');
+  /* Width: scale delta to 0-100% (max meaningful delta ~2000pts) */
+  const pct = Math.min(100, Math.abs(delta) / 20);
+  fill.style.width = (50 + (isAhead ? pct / 2 : -pct / 2)) + '%';
+
+  const lang = getLanguage();
+  const sign = isAhead ? '+' : '';
+  label.textContent = `${sign}${delta} ${lang === 'de' ? 'vs PB' : 'vs PB'}`;
+  label.style.color = isAhead ? '#2ED573' : '#FF4757';
+}
+
+function updateFlawlessCounter(mastery) {
+  ensureKlassikHUD();
+  const el = $('#flawlessCounter');
+  if (!el) return;
+  const current = mastery.get('klassik', 'currentFlawless');
+  const best = mastery.get('klassik', 'bestFlawless');
+  if (current > 0) {
+    const lang = getLanguage();
+    el.textContent = `${lang === 'de' ? 'Fehlerfrei' : 'Flawless'}: ${current}${best > 0 ? ` / ${best}` : ''}`;
+    el.classList.add('active');
+  } else {
+    el.classList.remove('active');
+  }
+}
+
+function showColorComboPop(combo) {
+  const gameEl = $('#game');
+  if (!gameEl) return;
+  const id = ++_colorComboId;
+  const el = document.createElement('div');
+  el.className = 'color-combo-pop';
+  const lang = getLanguage();
+  el.textContent = `${lang === 'de' ? 'FARB-LAUF' : 'COLOR RUN'} x${combo}!`;
+  gameEl.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 700);
+}
+
+function updateZenState(streak) {
+  const el = $('#zenOverlay');
+  if (!el) return;
+  const threshold = CONFIG.KLASSIK_ZEN_STREAK || 50;
+  el.classList.toggle('active', streak >= threshold);
+}
+
+function cleanupKlassikHUD() {
+  ['speedZoneIndicator', 'ghostRacer', 'flawlessCounter', 'zenOverlay'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+  document.querySelectorAll('.color-combo-pop').forEach(el => el.remove());
+  const gameEl = $('#game');
+  if (gameEl) gameEl.classList.remove('speed-glow-ultra', 'speed-glow-fast', 'speed-glow-good');
+  clearTimeout(_speedZoneTimeout);
+}
+
+/* ═══════ Formen (Beginner) Mode Mastery — In-Game HUD Helpers ═══════ */
+
+function ensureFormenHUD() {
+  const gameEl = $('#game');
+  if (!gameEl) return;
+
+  if (!$('#flowMeter')) {
+    const el = document.createElement('div');
+    el.id = 'flowMeter';
+    el.className = 'flow-meter';
+    el.innerHTML = '<div class="flow-meter-fill" id="flowMeterFill"></div><span class="flow-meter-label" id="flowMeterLabel">FLOW</span>';
+    gameEl.appendChild(el);
+  }
+  if (!$('#formenGhostRacer')) {
+    const el = document.createElement('div');
+    el.id = 'formenGhostRacer';
+    el.className = 'ghost-racer';
+    el.innerHTML = '<div class="ghost-racer-fill" id="formenGhostFill"></div><span class="ghost-racer-label" id="formenGhostLabel"></span>';
+    gameEl.appendChild(el);
+  }
+}
+
+function updateFlowMeter(flowStreak) {
+  ensureFormenHUD();
+  const container = $('#flowMeter');
+  const fill = $('#flowMeterFill');
+  if (!container || !fill) return;
+
+  const minStreak = CONFIG.BEGINNER_FLOW_MIN_STREAK || 3;
+  const maxStreak = CONFIG.BEGINNER_FLOW_MAX || 20;
+
+  if (flowStreak >= minStreak) {
+    container.classList.add('active', 'in-flow');
+    const pct = Math.min(100, ((flowStreak - minStreak + 1) / (maxStreak - minStreak + 1)) * 100);
+    fill.style.height = pct + '%';
+  } else if (flowStreak > 0) {
+    container.classList.add('active');
+    container.classList.remove('in-flow');
+    const pct = (flowStreak / minStreak) * 30; // partial fill before activation
+    fill.style.height = pct + '%';
+  } else {
+    container.classList.remove('active', 'in-flow');
+    fill.style.height = '0%';
+  }
+}
+
+function updateFormenGhostRacer(game) {
+  ensureFormenHUD();
+  const container = $('#formenGhostRacer');
+  const fill = $('#formenGhostFill');
+  const label = $('#formenGhostLabel');
+  if (!container || !fill || !label || !app.mastery) return;
+
+  const delta = getFormenGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta == null) {
+    container.classList.remove('visible');
+    return;
+  }
+
+  container.classList.add('visible');
+  const isAhead = delta >= 0;
+  fill.className = 'ghost-racer-fill ' + (isAhead ? 'ahead' : 'behind');
+  const pct = Math.min(100, Math.abs(delta) / 20);
+  fill.style.width = (50 + (isAhead ? pct / 2 : -pct / 2)) + '%';
+
+  const lang = getLanguage();
+  const sign = isAhead ? '+' : '';
+  label.textContent = `${sign}${delta} vs PB`;
+  label.style.color = isAhead ? '#2ED573' : '#FF4757';
+}
+
+function showShapeChainPop(chain, shapeName) {
+  const gameEl = $('#game');
+  if (!gameEl) return;
+  const el = document.createElement('div');
+  el.className = 'shape-chain-pop';
+  const lang = getLanguage();
+  const nameMap = { circle: lang === 'de' ? 'Kreis' : 'Circle', square: lang === 'de' ? 'Quadrat' : 'Square', triangle: lang === 'de' ? 'Dreieck' : 'Triangle', star: lang === 'de' ? 'Stern' : 'Star' };
+  el.textContent = `${nameMap[shapeName] || shapeName} x${chain}!`;
+  gameEl.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 700);
+}
+
+function showJackpotPop() {
+  const gameEl = $('#game');
+  if (!gameEl) return;
+  const el = document.createElement('div');
+  el.className = 'jackpot-pop';
+  el.textContent = 'JACKPOT!';
+  gameEl.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 900);
+}
+
+function cleanupFormenHUD() {
+  ['flowMeter', 'formenGhostRacer'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+  document.querySelectorAll('.shape-chain-pop, .jackpot-pop').forEach(el => el.remove());
+}
+
+/* ═══════ Expert HUD helpers ═══════ */
+
+const COMPASS_DIR_ANGLES = {
+  up: 0, ur: 45, right: 90, dr: 135,
+  down: 180, dl: 225, left: 270, ul: 315
+};
+
+function ensureExpertHUD() {
+  const gameEl = $('#game');
+  if (!gameEl) return;
+
+  /* Compass ring */
+  if (!$('#expertCompassRing')) {
+    const ring = document.createElement('div');
+    ring.id = 'expertCompassRing';
+    ring.className = 'expert-compass-ring';
+    ring.innerHTML = Object.entries(COMPASS_DIR_ANGLES).map(([dir, angle]) =>
+      `<div class="compass-dir" data-dir="${dir}" style="--angle:${angle}deg">
+        <span class="compass-star-count">0</span>
+      </div>`
+    ).join('');
+    gameEl.appendChild(ring);
+  }
+
+  /* Ghost racer */
+  if (!$('#expertGhostRacer')) {
+    const ghost = document.createElement('div');
+    ghost.id = 'expertGhostRacer';
+    ghost.className = 'ghost-racer';
+    ghost.innerHTML = '<div class="ghost-racer-fill"></div><span class="ghost-racer-delta"></span>';
+    gameEl.appendChild(ghost);
+  }
+}
+
+function updateCompassRing(mastery) {
+  const ring = $('#expertCompassRing');
+  if (!ring) return;
+  const dirs = ['ul','ur','dl','dr','up','down','left','right'];
+  for (const dir of dirs) {
+    const el = ring.querySelector(`[data-dir="${dir}"]`);
+    if (!el) continue;
+    const stars = mastery.mapGet('expert', 'dirStars', dir, 0);
+    const countEl = el.querySelector('.compass-star-count');
+    if (countEl) countEl.textContent = stars > 0 ? '\u2605'.repeat(Math.min(stars, 5)) : '\u00B7';
+    el.dataset.stars = stars;
+  }
+}
+
+function updateExpertGhostRacer(game) {
+  const el = $('#expertGhostRacer');
+  if (!el || !app.mastery) return;
+  const delta = getExpertGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta === null) { el.style.opacity = '0'; return; }
+  el.style.opacity = '1';
+  const fill = el.querySelector('.ghost-racer-fill');
+  const deltaEl = el.querySelector('.ghost-racer-delta');
+  const pct = Math.min(100, Math.max(0, 50 + delta * 2));
+  if (fill) fill.style.width = pct + '%';
+  if (deltaEl) {
+    deltaEl.textContent = (delta >= 0 ? '+' : '') + delta;
+    deltaEl.className = 'ghost-racer-delta ' + (delta >= 0 ? 'ahead' : 'behind');
+  }
+}
+
+function showFullCompassPop() {
+  const gameEl = $('#game');
+  if (!gameEl) return;
+  const pop = document.createElement('div');
+  pop.className = 'full-compass-pop';
+  pop.textContent = 'FULL COMPASS!';
+  gameEl.appendChild(pop);
+  setTimeout(() => pop.remove(), 1200);
+}
+
+function updateWeakSpotIndicator(mastery, game) {
+  const weakDir = getWeakestDirection(mastery);
+  if (!weakDir) return;
+  /* Highlight the weak corner with a subtle pulse */
+  const corner = document.querySelector(`.corner-shape[data-dir="${weakDir}"]`);
+  if (corner && !corner.classList.contains('weak-spot-pulse')) {
+    /* Remove from all others first */
+    document.querySelectorAll('.corner-shape.weak-spot-pulse').forEach(el =>
+      el.classList.remove('weak-spot-pulse')
+    );
+    corner.classList.add('weak-spot-pulse');
+  }
+}
+
+function cleanupExpertHUD() {
+  ['expertCompassRing', 'expertGhostRacer'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+  document.querySelectorAll('.full-compass-pop').forEach(el => el.remove());
+  document.querySelectorAll('.corner-shape.weak-spot-pulse').forEach(el =>
+    el.classList.remove('weak-spot-pulse')
+  );
+}
+
+/* ═══════ Ultra HUD Helpers (12-Direction) ═══════ */
+
+const ULTRA_DIR_ANGLES = {
+  up: 0, nnw: 330, ul: 300, left: 270, wsw: 240, dl: 210,
+  down: 180, sse: 150, dr: 120, right: 90, ene: 60, ur: 30
+};
+
+function ensureUltraHUD() {
+  const gameEl = $('#game');
+  if (!gameEl) return;
+
+  /* 12-point compass grid */
+  if (!$('#ultraCompassGrid')) {
+    const grid = document.createElement('div');
+    grid.id = 'ultraCompassGrid';
+    grid.className = 'ultra-compass-grid';
+    grid.innerHTML = Object.entries(ULTRA_DIR_ANGLES).map(([dir, angle]) =>
+      `<div class="ultra-dir" data-dir="${dir}" style="--angle:${angle}deg">
+        <span class="ultra-star-count">0</span>
+      </div>`
+    ).join('');
+    gameEl.appendChild(grid);
+  }
+
+  /* Ghost racer */
+  if (!$('#ultraGhostRacer')) {
+    const ghost = document.createElement('div');
+    ghost.id = 'ultraGhostRacer';
+    ghost.className = 'ghost-racer';
+    ghost.innerHTML = '<div class="ghost-racer-fill"></div><span class="ghost-racer-delta"></span>';
+    gameEl.appendChild(ghost);
+  }
+}
+
+function updateUltraGrid(mastery) {
+  const grid = $('#ultraCompassGrid');
+  if (!grid) return;
+  const dirs = Object.keys(ULTRA_DIR_ANGLES);
+  for (const dir of dirs) {
+    const el = grid.querySelector(`[data-dir="${dir}"]`);
+    if (!el) continue;
+    const stars = mastery.mapGet('ultra', 'dirStars', dir, 0);
+    const countEl = el.querySelector('.ultra-star-count');
+    if (countEl) countEl.textContent = stars > 0 ? '\u2605'.repeat(Math.min(stars, 5)) : '\u00B7';
+    el.dataset.stars = stars;
+  }
+}
+
+function updateUltraGhostRacer(game) {
+  const el = $('#ultraGhostRacer');
+  if (!el || !app.mastery) return;
+  const delta = getUltraGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta === null) { el.style.opacity = '0'; return; }
+  el.style.opacity = '1';
+  const fill = el.querySelector('.ghost-racer-fill');
+  const deltaEl = el.querySelector('.ghost-racer-delta');
+  const pct = Math.min(100, Math.max(0, 50 + delta * 2));
+  if (fill) fill.style.width = pct + '%';
+  if (deltaEl) {
+    deltaEl.textContent = (delta >= 0 ? '+' : '') + delta;
+    deltaEl.className = 'ghost-racer-delta ' + (delta >= 0 ? 'ahead' : 'behind');
+  }
+}
+
+function showUltraFullCompassPop() {
+  const gameEl = $('#game');
+  if (!gameEl) return;
+  const pop = document.createElement('div');
+  pop.className = 'ultra-full-compass-pop';
+  pop.textContent = 'FULL COMPASS XII!';
+  gameEl.appendChild(pop);
+  setTimeout(() => pop.remove(), 1400);
+}
+
+function updateUltraWeakSpot(mastery, game) {
+  const weakDir = getWeakestUltraDirection(mastery);
+  if (!weakDir) return;
+  const corner = document.querySelector(`.corner-shape[data-dir="${weakDir}"]`);
+  if (corner && !corner.classList.contains('weak-spot-pulse')) {
+    document.querySelectorAll('.corner-shape.weak-spot-pulse').forEach(el =>
+      el.classList.remove('weak-spot-pulse')
+    );
+    corner.classList.add('weak-spot-pulse');
+  }
+}
+
+function cleanupUltraHUD() {
+  ['ultraCompassGrid', 'ultraGhostRacer'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+  document.querySelectorAll('.ultra-full-compass-pop').forEach(el => el.remove());
+  document.querySelectorAll('.corner-shape.weak-spot-pulse').forEach(el =>
+    el.classList.remove('weak-spot-pulse')
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   MATHE HUD helpers — Operation bar + phase pop
+   ═══════════════════════════════════════════════ */
+
+const MATHE_OPS = ['+', '\u2212', '\u00D7', '\u00F7'];
+const MATHE_OP_LABELS = { '+': '+', '\u2212': '\u2212', '\u00D7': '\u00D7', '\u00F7': '\u00F7' };
+
+function ensureMatheHUD() {
+  if ($('#matheOpBar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'matheOpBar';
+  bar.className = 'mathe-op-bar';
+  for (const op of MATHE_OPS) {
+    const seg = document.createElement('div');
+    seg.className = 'mathe-op-seg';
+    seg.dataset.op = op;
+    seg.innerHTML = `<span class="mathe-op-label">${MATHE_OP_LABELS[op]}</span><span class="mathe-op-count">0</span>`;
+    bar.appendChild(seg);
+  }
+  $('#game')?.appendChild(bar);
+
+  /* Ghost racer for Mathe */
+  const ghost = document.createElement('div');
+  ghost.id = 'matheGhostRacer';
+  ghost.className = 'mastery-ghost-racer';
+  ghost.textContent = '\u{1F47B}';
+  ghost.style.display = 'none';
+  $('#game')?.appendChild(ghost);
+}
+
+function updateMatheOpBar(mastery) {
+  const bar = $('#matheOpBar');
+  if (!bar) return;
+  for (const op of MATHE_OPS) {
+    const seg = bar.querySelector(`.mathe-op-seg[data-op="${op}"]`);
+    if (!seg) continue;
+    const correct = mastery.mapGet('mathe', 'opCorrect', op, 0);
+    const total = mastery.mapGet('mathe', 'opTotal', op, 0);
+    const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+    seg.querySelector('.mathe-op-count').textContent = `${pct}%`;
+    seg.classList.toggle('hot', pct >= 80);
+    seg.classList.toggle('warm', pct >= 50 && pct < 80);
+    seg.classList.toggle('cool', pct > 0 && pct < 50);
+  }
+}
+
+function updateMatheGhostRacer(game) {
+  const ghost = $('#matheGhostRacer');
+  if (!ghost || !app.mastery) return;
+  const delta = getMatheGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta === null) { ghost.style.display = 'none'; return; }
+  ghost.style.display = '';
+  ghost.textContent = delta >= 0 ? `+${delta}` : `${delta}`;
+  ghost.className = `mastery-ghost-racer ${delta >= 0 ? 'ghost-ahead' : 'ghost-behind'}`;
+}
+
+function showMathePhaseUp(phase) {
+  const phaseNames = ['+/\u2212 Easy', '+/\u2212 Medium', '+/\u2212/\u00D7', 'All Ops', 'Advanced', 'Expert', 'Master'];
+  const label = phaseNames[phase] || `Phase ${phase}`;
+  const pop = document.createElement('div');
+  pop.className = 'mathe-phase-pop';
+  pop.textContent = `PHASE UP: ${label}`;
+  $('#game')?.appendChild(pop);
+  pop.addEventListener('animationend', () => pop.remove());
+}
+
+function cleanupMatheHUD() {
+  ['matheOpBar', 'matheGhostRacer'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+  document.querySelectorAll('.mathe-phase-pop').forEach(el => el.remove());
+  app._lastMathePhase = 0;
+}
+
+/* ═══════════════════════════════════════════════
+   ALGEBRA HUD helpers — Type bar + unlock toast
+   ═══════════════════════════════════════════════ */
+
+const ALG_TYPE_LABELS_SHORT = {
+  linear_add: 'ax+b', linear_sub: 'ax\u2212b', two_step: 'a(x+b)',
+  square: 'x\u00B2', sqrt: '\u221A', power: 'a\u207F', fraction_add: '\u00BD+\u00BD'
+};
+
+function ensureAlgebraHUD() {
+  if ($('#algebraTypeBar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'algebraTypeBar';
+  bar.className = 'algebra-type-bar';
+  const types = ['linear_add', 'linear_sub', 'two_step', 'square', 'sqrt', 'power', 'fraction_add'];
+  for (const t of types) {
+    const seg = document.createElement('div');
+    seg.className = 'algebra-type-seg';
+    seg.dataset.type = t;
+    seg.innerHTML = `<span class="algebra-type-label">${ALG_TYPE_LABELS_SHORT[t]}</span><span class="algebra-type-pct">-</span>`;
+    bar.appendChild(seg);
+  }
+  $('#game')?.appendChild(bar);
+
+  const ghost = document.createElement('div');
+  ghost.id = 'algebraGhostRacer';
+  ghost.className = 'mastery-ghost-racer';
+  ghost.style.display = 'none';
+  $('#game')?.appendChild(ghost);
+}
+
+function updateAlgebraTypeBar(mastery) {
+  const bar = $('#algebraTypeBar');
+  if (!bar) return;
+  const types = ['linear_add', 'linear_sub', 'two_step', 'square', 'sqrt', 'power', 'fraction_add'];
+  for (const t of types) {
+    const seg = bar.querySelector(`.algebra-type-seg[data-type="${t}"]`);
+    if (!seg) continue;
+    const correct = mastery.mapGet('algebra', 'typeCorrect', t, 0);
+    const total = mastery.mapGet('algebra', 'typeTotal', t, 0);
+    const unlocked = mastery.getArray('algebra', 'unlockedTypes').includes(t);
+    if (!unlocked && total === 0) {
+      seg.classList.add('locked');
+      seg.querySelector('.algebra-type-pct').textContent = '?';
+    } else {
+      seg.classList.remove('locked');
+      const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+      seg.querySelector('.algebra-type-pct').textContent = `${pct}%`;
+      seg.classList.toggle('hot', pct >= 80);
+      seg.classList.toggle('warm', pct >= 50 && pct < 80);
+      seg.classList.toggle('cool', pct > 0 && pct < 50);
+    }
+  }
+}
+
+function updateAlgebraGhostRacer(game) {
+  const ghost = $('#algebraGhostRacer');
+  if (!ghost || !app.mastery) return;
+  const delta = getAlgebraGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta === null) { ghost.style.display = 'none'; return; }
+  ghost.style.display = '';
+  ghost.textContent = delta >= 0 ? `+${delta}` : `${delta}`;
+  ghost.className = `mastery-ghost-racer ${delta >= 0 ? 'ghost-ahead' : 'ghost-behind'}`;
+}
+
+function showAlgebraUnlock(eqType, phase) {
+  const label = ALG_TYPE_LABELS_SHORT[eqType] || eqType;
+  const pop = document.createElement('div');
+  pop.className = 'algebra-unlock-pop';
+  pop.textContent = `UNLOCKED: ${label}`;
+  $('#game')?.appendChild(pop);
+  pop.addEventListener('animationend', () => pop.remove());
+}
+
+function cleanupAlgebraHUD() {
+  ['algebraTypeBar', 'algebraGhostRacer'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+  document.querySelectorAll('.algebra-unlock-pop').forEach(el => el.remove());
+  app._lastAlgPhase = 0;
+}
+
+/* ═══════════════════════════════════════════════
+   WORTE HUD helpers — Collection counter + new word pop
+   ═══════════════════════════════════════════════ */
+
+function ensureWorteHUD() {
+  if ($('#worteCollectionHUD')) return;
+  const el = document.createElement('div');
+  el.id = 'worteCollectionHUD';
+  el.className = 'worte-collection-hud';
+  el.innerHTML = `<span class="worte-coll-count">0</span><span class="worte-coll-label">collected</span>`;
+  $('#game')?.appendChild(el);
+
+  const ghost = document.createElement('div');
+  ghost.id = 'worteGhostRacer';
+  ghost.className = 'mastery-ghost-racer';
+  ghost.style.display = 'none';
+  $('#game')?.appendChild(ghost);
+}
+
+function updateWorteCollection(mastery) {
+  const el = $('#worteCollectionHUD');
+  if (!el) return;
+  const count = mastery.getArray('worte', 'wordCollection').length;
+  const countEl = el.querySelector('.worte-coll-count');
+  if (countEl) countEl.textContent = count;
+}
+
+function updateWorteGhostRacer(game) {
+  const ghost = $('#worteGhostRacer');
+  if (!ghost || !app.mastery) return;
+  const delta = getWorteGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta === null) { ghost.style.display = 'none'; return; }
+  ghost.style.display = '';
+  ghost.textContent = delta >= 0 ? `+${delta}` : `${delta}`;
+  ghost.className = `mastery-ghost-racer ${delta >= 0 ? 'ghost-ahead' : 'ghost-behind'}`;
+}
+
+function showWorteNewWord(word) {
+  const pop = document.createElement('div');
+  pop.className = 'worte-new-word-pop';
+  pop.textContent = `NEW: ${word}`;
+  $('#game')?.appendChild(pop);
+  pop.addEventListener('animationend', () => pop.remove());
+}
+
+function cleanupWorteHUD() {
+  ['worteCollectionHUD', 'worteGhostRacer'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+  document.querySelectorAll('.worte-new-word-pop').forEach(el => el.remove());
+}
+
+/* ═══════════════════════════════════════════════
+   HAUPTSTAEDTE HUD helpers — Country collection + new country pop
+   ═══════════════════════════════════════════════ */
+
+function ensureHauptstaedteHUD() {
+  if ($('#hauptstaedteHUD')) return;
+  const el = document.createElement('div');
+  el.id = 'hauptstaedteHUD';
+  el.className = 'hauptstaedte-hud';
+  /* Add tier display (Plan 8 feature 4) */
+  const tierInfo = app.mastery ? app.mastery.getMasteryTier('hauptstaedte') : null;
+  const tierLabel = tierInfo?.name || '';
+  el.innerHTML = `<span class="haupt-count">0</span><span class="haupt-label">countries</span>${tierLabel ? `<span class="haupt-tier">${tierLabel}</span>` : ''}`;
+  $('#game')?.appendChild(el);
+
+  const ghost = document.createElement('div');
+  ghost.id = 'hauptstaedteGhostRacer';
+  ghost.className = 'mastery-ghost-racer';
+  ghost.style.display = 'none';
+  $('#game')?.appendChild(ghost);
+}
+
+function updateHauptstaedteCountry(mastery) {
+  const el = $('#hauptstaedteHUD');
+  if (!el) return;
+  const count = (mastery.getArray('hauptstaedte', 'countryCollection') || []).length;
+  const countEl = el.querySelector('.haupt-count');
+  if (countEl) countEl.textContent = count;
+}
+
+function updateHauptstaedteGhostRacer(game) {
+  const ghost = $('#hauptstaedteGhostRacer');
+  if (!ghost || !app.mastery) return;
+  const delta = getHauptstaedteGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta === null) { ghost.style.display = 'none'; return; }
+  ghost.style.display = '';
+  ghost.textContent = delta >= 0 ? `+${delta}` : `${delta}`;
+  ghost.className = `mastery-ghost-racer ${delta >= 0 ? 'ghost-ahead' : 'ghost-behind'}`;
+}
+
+function showHauptstaedteNewCountry(country) {
+  const pop = document.createElement('div');
+  pop.className = 'haupt-new-country-pop';
+  pop.textContent = `NEW: ${country}`;
+  $('#game')?.appendChild(pop);
+  pop.addEventListener('animationend', () => pop.remove());
+}
+
+function cleanupHauptstaedteHUD() {
+  ['hauptstaedteHUD', 'hauptstaedteGhostRacer', 'hauptTier'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+  document.querySelectorAll('.haupt-new-country-pop').forEach(el => el.remove());
+}
+
+/* ═══════════════════════════════════════════════
+   WISSEN HUD helpers — Topic bar + ghost racer
+   ═══════════════════════════════════════════════ */
+
+function ensureWissenHUD() {
+  if ($('#wissenHUD')) return;
+  const el = document.createElement('div');
+  el.id = 'wissenHUD';
+  el.className = 'wissen-hud';
+  el.innerHTML = `<span class="wissen-iq-live">IQ --</span>`;
+  $('#game')?.appendChild(el);
+
+  const ghost = document.createElement('div');
+  ghost.id = 'wissenGhostRacer';
+  ghost.className = 'mastery-ghost-racer';
+  ghost.style.display = 'none';
+  $('#game')?.appendChild(ghost);
+}
+
+function updateWissenTopicBar(mastery) {
+  const el = $('#wissenHUD');
+  if (!el) return;
+  const correct = mastery.get('wissen', '_sessionCorrect', 0);
+  const wrong = mastery.get('wissen', '_sessionWrong', 0);
+  const total = correct + wrong;
+  const acc = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const iqEl = el.querySelector('.wissen-iq-live');
+  if (iqEl) iqEl.textContent = `${acc}% acc`;
+}
+
+function updateWissenGhostRacer(game) {
+  const ghost = $('#wissenGhostRacer');
+  if (!ghost || !app.mastery) return;
+  const delta = getWissenGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta === null) { ghost.style.display = 'none'; return; }
+  ghost.style.display = '';
+  ghost.textContent = delta >= 0 ? `+${delta}` : `${delta}`;
+  ghost.className = `mastery-ghost-racer ${delta >= 0 ? 'ghost-ahead' : 'ghost-behind'}`;
+}
+
+function cleanupWissenHUD() {
+  ['wissenHUD', 'wissenGhostRacer', 'wissenDiffReveal', 'wissenTopicStreak'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+}
+
+/* Difficulty Reveal (Plan 9 feature 3) — show question difficulty after answer */
+function showWissenDifficultyReveal(tier) {
+  let el = $('#wissenDiffReveal');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'wissenDiffReveal';
+    el.className = 'wissen-diff-reveal';
+    $('#game')?.appendChild(el);
+  }
+  const labels = ['Easy', 'Medium', 'Hard', 'Expert', 'Master'];
+  const pcts = [85, 62, 38, 23, 8];
+  const label = labels[tier] || labels[0];
+  const pct = pcts[tier] || pcts[0];
+  el.textContent = `${label} — ${pct}%`;
+  el.dataset.tier = tier;
+  el.classList.add('wissen-diff-show');
+  setTimeout(() => el.classList.remove('wissen-diff-show'), 1500);
+}
+
+/* Topic Streak popup (Plan 9 feature 4) */
+function showWissenTopicStreakPop(streak) {
+  let el = $('#wissenTopicStreak');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'wissenTopicStreak';
+    el.className = 'wissen-topic-streak';
+    $('#game')?.appendChild(el);
+  }
+  el.textContent = `${streak}x Topic!`;
+  el.classList.add('pop-in');
+  setTimeout(() => el.classList.remove('pop-in'), 1200);
+}
+
+/* Challenge Round visual (Plan 12 feature 4) */
+function showStroopChallengeRound() {
+  let el = $('#stroopChallenge');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'stroopChallenge';
+    el.className = 'stroop-challenge-round';
+    $('#game')?.appendChild(el);
+  }
+  el.textContent = 'CHALLENGE!';
+  el.classList.add('challenge-active');
+  const duration = CONFIG.STROOP_CHALLENGE_DURATION || 5000;
+  setTimeout(() => {
+    el.classList.remove('challenge-active');
+    if (app.mastery) app.mastery.set('stroop', '_inChallenge', false);
+  }, duration);
+}
+
+/* Distraction Intensity display (Plan 13 feature 2) */
+function updateFokusDistractionLevel(levelObj) {
+  let el = $('#fokusDistLevel');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'fokusDistLevel';
+    el.className = 'fokus-dist-level';
+    $('#game')?.appendChild(el);
+  }
+  const lang = app.state?.lang || 'en';
+  const label = levelObj[`label_${lang}`] || levelObj.label_en || `Level ${levelObj.level}`;
+  el.textContent = `${label}`;
+  el.dataset.level = levelObj.level;
+}
+
+/* ═══════════════════════════════════════════════
+   MEMO HUD helpers — Memory span display
+   ═══════════════════════════════════════════════ */
+
+function ensureMemoHUD() {
+  if ($('#memoHUD')) return;
+  const el = document.createElement('div');
+  el.id = 'memoHUD';
+  el.className = 'memo-hud';
+  el.innerHTML = `<span class="memo-span-label">Span</span><span class="memo-span-val">0</span>`;
+  $('#game')?.appendChild(el);
+
+  const ghost = document.createElement('div');
+  ghost.id = 'memoGhostRacer';
+  ghost.className = 'mastery-ghost-racer';
+  ghost.style.display = 'none';
+  $('#game')?.appendChild(ghost);
+}
+
+function updateMemoSpan(mastery) {
+  const el = $('#memoHUD');
+  if (!el) return;
+  const span = mastery.get('memo', '_correctSinceReveal', 0);
+  const valEl = el.querySelector('.memo-span-val');
+  if (valEl) valEl.textContent = span;
+}
+
+function updateMemoGhostRacer(game) {
+  const ghost = $('#memoGhostRacer');
+  if (!ghost || !app.mastery) return;
+  const delta = getMemoGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta === null) { ghost.style.display = 'none'; return; }
+  ghost.style.display = '';
+  ghost.textContent = delta >= 0 ? `+${delta}` : `${delta}`;
+  ghost.className = `mastery-ghost-racer ${delta >= 0 ? 'ghost-ahead' : 'ghost-behind'}`;
+}
+
+function cleanupMemoHUD() {
+  ['memoHUD', 'memoGhostRacer'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   SEQUENZ HUD helpers — Record display
+   ═══════════════════════════════════════════════ */
+
+function ensureSequenzHUD() {
+  if ($('#sequenzHUD')) return;
+  const el = document.createElement('div');
+  el.id = 'sequenzHUD';
+  el.className = 'sequenz-hud';
+  el.innerHTML = `<span class="seq-rec-label">Record</span><span class="seq-rec-val">0</span>`;
+  $('#game')?.appendChild(el);
+}
+
+function updateSequenzRecord(mastery) {
+  const el = $('#sequenzHUD');
+  if (!el) return;
+  const best = mastery.get('sequenz', 'bestSeqLength', 0);
+  const curr = mastery.get('sequenz', '_sessionBestLen', 0);
+  const valEl = el.querySelector('.seq-rec-val');
+  if (valEl) valEl.textContent = Math.max(best, curr);
+}
+
+function showSequenzNewRecord(seqLen) {
+  const pop = document.createElement('div');
+  pop.className = 'sequenz-record-pop';
+  pop.textContent = `NEW RECORD: ${seqLen}`;
+  $('#game')?.appendChild(pop);
+  pop.addEventListener('animationend', () => pop.remove());
+}
+
+function cleanupSequenzHUD() {
+  const el = $('#sequenzHUD');
+  if (el) el.remove();
+  document.querySelectorAll('.sequenz-record-pop').forEach(el => el.remove());
+}
+
+/* ═══════════════════════════════════════════════
+   STROOP HUD helpers — Interference display
+   ═══════════════════════════════════════════════ */
+
+function ensureStroopHUD() {
+  if ($('#stroopHUD')) return;
+  const el = document.createElement('div');
+  el.id = 'stroopHUD';
+  el.className = 'stroop-hud';
+  el.innerHTML = `<span class="stroop-int-label">Interference</span><span class="stroop-int-val">--</span>`;
+  $('#game')?.appendChild(el);
+
+  const ghost = document.createElement('div');
+  ghost.id = 'stroopGhostRacer';
+  ghost.className = 'mastery-ghost-racer';
+  ghost.style.display = 'none';
+  $('#game')?.appendChild(ghost);
+}
+
+function updateStroopInterference(mastery) {
+  const el = $('#stroopHUD');
+  if (!el) return;
+  const congC = mastery.get('stroop', '_congCorrect', 0);
+  const congT = mastery.get('stroop', '_congTotal', 0);
+  const incC = mastery.get('stroop', '_incongCorrect', 0);
+  const incT = mastery.get('stroop', '_incongTotal', 0);
+  const congAcc = congT > 0 ? congC / congT : 1;
+  const incAcc = incT > 0 ? incC / incT : 1;
+  const interference = Math.round(Math.max(0, (congAcc - incAcc) * 100));
+  const valEl = el.querySelector('.stroop-int-val');
+  if (valEl) valEl.textContent = `${interference}%`;
+}
+
+function updateStroopGhostRacer(game) {
+  const ghost = $('#stroopGhostRacer');
+  if (!ghost || !app.mastery) return;
+  const delta = getStroopGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta === null) { ghost.style.display = 'none'; return; }
+  ghost.style.display = '';
+  ghost.textContent = delta >= 0 ? `+${delta}` : `${delta}`;
+  ghost.className = `mastery-ghost-racer ${delta >= 0 ? 'ghost-ahead' : 'ghost-behind'}`;
+}
+
+function cleanupStroopHUD() {
+  ['stroopHUD', 'stroopGhostRacer', 'stroopChallenge'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   FOKUS HUD helpers — Focus split display
+   ═══════════════════════════════════════════════ */
+
+function ensureFokusHUD() {
+  if ($('#fokusHUD')) return;
+  const el = document.createElement('div');
+  el.id = 'fokusHUD';
+  el.className = 'fokus-hud';
+  el.innerHTML = `<span class="fokus-cost-label">Distraction</span><span class="fokus-cost-val">--</span>`;
+  $('#game')?.appendChild(el);
+
+  const ghost = document.createElement('div');
+  ghost.id = 'fokusGhostRacer';
+  ghost.className = 'mastery-ghost-racer';
+  ghost.style.display = 'none';
+  $('#game')?.appendChild(ghost);
+}
+
+function updateFokusSplit(mastery) {
+  const el = $('#fokusHUD');
+  if (!el) return;
+  const congC = mastery.get('fokus', '_congCorrect', 0);
+  const congT = mastery.get('fokus', '_congTotal', 0);
+  const incC = mastery.get('fokus', '_incongCorrect', 0);
+  const incT = mastery.get('fokus', '_incongTotal', 0);
+  const congAcc = congT > 0 ? congC / congT : 1;
+  const incAcc = incT > 0 ? incC / incT : 1;
+  const cost = Math.round(Math.max(0, (congAcc - incAcc) * 100));
+  const valEl = el.querySelector('.fokus-cost-val');
+  if (valEl) valEl.textContent = `${cost}%`;
+}
+
+function updateFokusGhostRacer(game) {
+  const ghost = $('#fokusGhostRacer');
+  if (!ghost || !app.mastery) return;
+  const delta = getFokusGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta === null) { ghost.style.display = 'none'; return; }
+  ghost.style.display = '';
+  ghost.textContent = delta >= 0 ? `+${delta}` : `${delta}`;
+  ghost.className = `mastery-ghost-racer ${delta >= 0 ? 'ghost-ahead' : 'ghost-behind'}`;
+}
+
+function cleanupFokusHUD() {
+  ['fokusHUD', 'fokusGhostRacer', 'fokusDistLevel'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   CHAOS HUD helpers — Rule display + switch counter
+   ═══════════════════════════════════════════════ */
+
+function ensureChaosHUD() {
+  if ($('#chaosHUD')) return;
+  const el = document.createElement('div');
+  el.id = 'chaosHUD';
+  el.className = 'chaos-hud';
+  el.innerHTML = `<span class="chaos-rule-label">Rule</span><span class="chaos-rule-val">--</span><span class="chaos-switch-count">0 switches</span>`;
+  $('#game')?.appendChild(el);
+
+  const ghost = document.createElement('div');
+  ghost.id = 'chaosGhostRacer';
+  ghost.className = 'mastery-ghost-racer';
+  ghost.style.display = 'none';
+  $('#game')?.appendChild(ghost);
+}
+
+function updateChaosRuleDisplay(mastery, game) {
+  const el = $('#chaosHUD');
+  if (!el) return;
+  const rule = game.currentShape?.chaosRule || 'color';
+  const ruleEl = el.querySelector('.chaos-rule-val');
+  if (ruleEl) ruleEl.textContent = rule.toUpperCase();
+  const switchEl = el.querySelector('.chaos-switch-count');
+  if (switchEl) switchEl.textContent = `${mastery.get('chaos', '_switchCount', 0)} switches`;
+}
+
+function updateChaosGhostRacer(game) {
+  const ghost = $('#chaosGhostRacer');
+  if (!ghost || !app.mastery) return;
+  const delta = getChaosGhostDelta(app.mastery, game.score, game.elapsed);
+  if (delta === null) { ghost.style.display = 'none'; return; }
+  ghost.style.display = '';
+  ghost.textContent = delta >= 0 ? `+${delta}` : `${delta}`;
+  ghost.className = `mastery-ghost-racer ${delta >= 0 ? 'ghost-ahead' : 'ghost-behind'}`;
+}
+
+function cleanupChaosHUD() {
+  ['chaosHUD', 'chaosGhostRacer'].forEach(id => {
+    const el = $(`#${id}`);
+    if (el) el.remove();
+  });
+}
+
 export function cleanupGameClasses() {
   const g = $('#game');
   g?.classList.remove('intensity-low','intensity-mid','intensity-high','intensity-max','edge-glow-warm','edge-glow-hot','edge-glow-fire');
@@ -811,6 +1866,63 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     lang: getLanguage()
   };
   const corners = game.start(app.selectedMode, practice ? 'blitz' : app.selectedPlayType, options);
+
+  /* ── Klassik Mode Mastery: init ghost racer ── */
+  if (app.selectedMode === 'klassik' && app.mastery) {
+    startKlassikGhostRacer(app.mastery);
+  }
+  /* ── Formen Mode Mastery: init flow/chain tracking ── */
+  if (app.selectedMode === 'beginner' && app.mastery) {
+    startFormenGame(app.mastery);
+  }
+  /* ── Expert Mode Mastery: init compass tracking ── */
+  if (app.selectedMode === 'expert' && app.mastery) {
+    startExpertGame(app.mastery);
+  }
+  /* ── Ultra Mode Mastery: init 12-dir compass tracking ── */
+  if (app.selectedMode === 'ultra' && app.mastery) {
+    startUltraGame(app.mastery);
+  }
+  /* ── Mathe Mode Mastery: init op tracking ── */
+  if (app.selectedMode === 'mathe' && app.mastery) {
+    startMatheGame(app.mastery);
+  }
+  /* ── Algebra Mode Mastery: init type tracking ── */
+  if (app.selectedMode === 'algebra' && app.mastery) {
+    startAlgebraGame(app.mastery);
+  }
+  /* ── Worte Mode Mastery: init word collection tracking ── */
+  if (app.selectedMode === 'worte' && app.mastery) {
+    startWorteGame(app.mastery);
+  }
+  /* ── Hauptstaedte Mode Mastery: init region tracking ── */
+  if (app.selectedMode === 'hauptstaedte' && app.mastery) {
+    startHauptstaedteGame(app.mastery);
+  }
+  /* ── Wissen Mode Mastery: init topic tracking ── */
+  if (app.selectedMode === 'wissen' && app.mastery) {
+    startWissenGame(app.mastery);
+  }
+  /* ── Memo Mode Mastery: init memory span tracking ── */
+  if (app.selectedMode === 'memo' && app.mastery) {
+    startMemoGame(app.mastery);
+  }
+  /* ── Sequenz Mode Mastery: init round tracking ── */
+  if (app.selectedMode === 'sequenz' && app.mastery) {
+    startSequenzGame(app.mastery);
+  }
+  /* ── Stroop Mode Mastery: init interference tracking ── */
+  if (app.selectedMode === 'stroop' && app.mastery) {
+    startStroopGame(app.mastery);
+  }
+  /* ── Fokus Mode Mastery: init focus tracking ── */
+  if (app.selectedMode === 'fokus' && app.mastery) {
+    startFokusGame(app.mastery);
+  }
+  /* ── Chaos Mode Mastery: init flexibility tracking ── */
+  if (app.selectedMode === 'chaos' && app.mastery) {
+    startChaosGame(app.mastery);
+  }
 
   if (!practice && game.playType !== 'endless') {
     app.gameDuration = game.timer;
@@ -1048,6 +2160,235 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
         }
       }
       effects.resetMultiplierBg();
+    }
+
+    /* ── Klassik Mode Mastery: track answer + update HUD elements ── */
+    if (game.mode === 'klassik' && app.mastery && !game.practice) {
+      trackKlassikAnswer(app.mastery, result, game);
+
+      /* Speed zone indicator */
+      if (result.correct) {
+        const zone = getSpeedZone(result.reaction);
+        updateSpeedZoneIndicator(zone, result.reaction);
+        updateSpeedGlow(zone);
+        updateGhostRacer(game);
+        updateFlawlessCounter(app.mastery);
+
+        /* Color combo pop */
+        const colorCombo = app.mastery.get('klassik', '_colorCombo');
+        if (colorCombo >= (CONFIG.KLASSIK_COLOR_COMBO_MIN || 3)) {
+          showColorComboPop(colorCombo);
+        }
+
+        /* Zen state overlay */
+        updateZenState(game.streak);
+      } else {
+        updateSpeedZoneIndicator(null);
+        updateSpeedGlow(null);
+        updateFlawlessCounter(app.mastery);
+        updateZenState(0);
+      }
+    }
+
+    /* ── Formen Mode Mastery: track answer + update HUD elements ── */
+    if (game.mode === 'beginner' && app.mastery && !game.practice) {
+      trackFormenAnswer(app.mastery, result, game);
+
+      if (result.correct) {
+        /* Flow meter */
+        const flowStreak = app.mastery.get('beginner', '_flowStreak');
+        updateFlowMeter(flowStreak);
+
+        /* Ghost racer */
+        updateFormenGhostRacer(game);
+
+        /* Shape chain pop */
+        const shapeChain = app.mastery.get('beginner', '_shapeChain');
+        if (shapeChain >= (CONFIG.BEGINNER_SHAPE_COMBO_MIN || 3)) {
+          const cornerInfo = game.cornerMap?.[result.expected];
+          showShapeChainPop(shapeChain, cornerInfo?.shape);
+        }
+
+        /* Jackpot pop for ultra-fast answers */
+        if (result.reaction < 300) {
+          showJackpotPop();
+        }
+      } else {
+        updateFlowMeter(0);
+      }
+    }
+
+    /* ── Expert Mode Mastery: track answer + update HUD elements ── */
+    if (game.mode === 'expert' && app.mastery && !game.practice) {
+      const expertResult = trackExpertAnswer(app.mastery, result, game);
+
+      if (result.correct) {
+        ensureExpertHUD();
+        updateCompassRing(app.mastery);
+        updateExpertGhostRacer(game);
+
+        /* Full Compass! celebration */
+        if (expertResult.fullCompass) {
+          showFullCompassPop();
+        }
+
+        /* Weak spot indicator */
+        updateWeakSpotIndicator(app.mastery, game);
+      } else {
+        updateCompassRing(app.mastery);
+      }
+    }
+
+    /* ── Ultra Mode Mastery: track answer + update HUD elements ── */
+    if (game.mode === 'ultra' && app.mastery && !game.practice) {
+      const ultraResult = trackUltraAnswer(app.mastery, result, game);
+
+      if (result.correct) {
+        ensureUltraHUD();
+        updateUltraGrid(app.mastery);
+        updateUltraGhostRacer(game);
+
+        /* Full Compass! celebration (12 dirs) */
+        if (ultraResult.fullCompass) {
+          showUltraFullCompassPop();
+        }
+
+        /* Weak spot indicator */
+        updateUltraWeakSpot(app.mastery, game);
+      } else {
+        updateUltraGrid(app.mastery);
+      }
+    }
+
+    /* ── Mathe Mode Mastery: track answer ── */
+    if (game.mode === 'mathe' && app.mastery && !game.practice) {
+      const maResult = trackMatheAnswer(app.mastery, result, game);
+
+      if (result.correct) {
+        ensureMatheHUD();
+        updateMatheOpBar(app.mastery);
+        updateMatheGhostRacer(game);
+
+        /* Phase advance notification */
+        if (maResult.phase > (app._lastMathePhase || 0)) {
+          showMathePhaseUp(maResult.phase);
+          app._lastMathePhase = maResult.phase;
+        }
+      } else {
+        updateMatheOpBar(app.mastery);
+      }
+    }
+
+    /* ── Algebra Mode Mastery: track answer ── */
+    if (game.mode === 'algebra' && app.mastery && !game.practice) {
+      const algResult = trackAlgebraAnswer(app.mastery, result, game);
+
+      if (result.correct) {
+        ensureAlgebraHUD();
+        updateAlgebraTypeBar(app.mastery);
+        updateAlgebraGhostRacer(game);
+
+        /* Phase advance / unlock toast */
+        if (algResult.phase > (app._lastAlgPhase || 0)) {
+          showAlgebraUnlock(algResult.eqType, algResult.phase);
+          app._lastAlgPhase = algResult.phase;
+        }
+      } else {
+        updateAlgebraTypeBar(app.mastery);
+      }
+    }
+
+    /* ── Worte Mode Mastery: track answer ── */
+    if (game.mode === 'worte' && app.mastery && !game.practice) {
+      const wResult = trackWorteAnswer(app.mastery, result, game);
+
+      if (result.correct) {
+        ensureWorteHUD();
+        updateWorteCollection(app.mastery);
+        updateWorteGhostRacer(game);
+        if (wResult.isNew) {
+          showWorteNewWord(game.currentShape?.display || '');
+        }
+      }
+    }
+
+    /* ── Hauptstaedte Mode Mastery: track answer ── */
+    if (game.mode === 'hauptstaedte' && app.mastery && !game.practice) {
+      const hResult = trackHauptstaedteAnswer(app.mastery, result, game);
+      if (result.correct) {
+        ensureHauptstaedteHUD();
+        updateHauptstaedteCountry(app.mastery);
+        updateHauptstaedteGhostRacer(game);
+        if (hResult.isNew) showHauptstaedteNewCountry(game.currentShape?.display || '');
+      }
+    }
+
+    /* ── Wissen Mode Mastery: track answer ── */
+    if (game.mode === 'wissen' && app.mastery && !game.practice) {
+      const wRes = trackWissenAnswer(app.mastery, result, game);
+      if (result.correct) {
+        ensureWissenHUD();
+        updateWissenTopicBar(app.mastery);
+        updateWissenGhostRacer(game);
+        /* Difficulty Reveal (Plan 9 feature 3) */
+        if (wRes.tier !== undefined) showWissenDifficultyReveal(wRes.tier);
+        /* Topic Streak popup (Plan 9 feature 4) */
+        if (wRes.topicStreak >= 3) showWissenTopicStreakPop(wRes.topicStreak);
+      } else {
+        updateWissenTopicBar(app.mastery);
+      }
+    }
+
+    /* ── Memo Mode Mastery: track answer ── */
+    if (game.mode === 'memo' && app.mastery && !game.practice) {
+      const meResult = trackMemoAnswer(app.mastery, result, game);
+      if (result.correct) {
+        ensureMemoHUD();
+        updateMemoSpan(app.mastery);
+        updateMemoGhostRacer(game);
+      } else {
+        updateMemoSpan(app.mastery);
+      }
+    }
+
+    /* ── Stroop Mode Mastery: track answer ── */
+    if (game.mode === 'stroop' && app.mastery && !game.practice) {
+      const sRes = trackStroopAnswer(app.mastery, result, game);
+      if (result.correct) {
+        ensureStroopHUD();
+        updateStroopInterference(app.mastery);
+        updateStroopGhostRacer(game);
+        /* Challenge Round trigger (Plan 12 feature 4) */
+        if (sRes.challengeTriggered) showStroopChallengeRound();
+      } else {
+        updateStroopInterference(app.mastery);
+      }
+    }
+
+    /* ── Fokus Mode Mastery: track answer ── */
+    if (game.mode === 'fokus' && app.mastery && !game.practice) {
+      const fRes = trackFokusAnswer(app.mastery, result, game);
+      if (result.correct) {
+        ensureFokusHUD();
+        updateFokusSplit(app.mastery);
+        updateFokusGhostRacer(game);
+        /* Distraction Intensity display (Plan 13 feature 2) */
+        if (fRes.distractionLevel) updateFokusDistractionLevel(fRes.distractionLevel);
+      } else {
+        updateFokusSplit(app.mastery);
+      }
+    }
+
+    /* ── Chaos Mode Mastery: track answer ── */
+    if (game.mode === 'chaos' && app.mastery && !game.practice) {
+      const chResult = trackChaosAnswer(app.mastery, result, game);
+      if (result.correct) {
+        ensureChaosHUD();
+        updateChaosRuleDisplay(app.mastery, game);
+        updateChaosGhostRacer(game);
+      } else {
+        updateChaosRuleDisplay(app.mastery, game);
+      }
     }
 
     effects.trailComplete(result.correct);
@@ -1323,6 +2664,92 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     if (typeof effects.dangerZone === 'function') effects.dangerZone(false);
     effects.cleanup();
     cleanupGameClasses();
+    cleanupKlassikHUD();
+    cleanupFormenHUD();
+    cleanupExpertHUD();
+    cleanupUltraHUD();
+    cleanupMatheHUD();
+    cleanupAlgebraHUD();
+    cleanupWorteHUD();
+    cleanupHauptstaedteHUD();
+    cleanupWissenHUD();
+    cleanupMemoHUD();
+    cleanupSequenzHUD();
+    cleanupStroopHUD();
+    cleanupFokusHUD();
+    cleanupChaosHUD();
+
+    /* ── Klassik Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'klassik' && app.mastery) {
+      endKlassikGame(app.mastery, stats, stats.score > (app.save.getPB('klassik') || 0));
+      app.mastery.persist();
+    }
+    /* ── Formen Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'beginner' && app.mastery) {
+      endFormenGame(app.mastery, stats, stats.score > (app.save.getPB('beginner') || 0));
+      app.mastery.persist();
+    }
+    /* ── Expert Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'expert' && app.mastery) {
+      endExpertGame(app.mastery, stats, stats.score > (app.save.getPB('expert') || 0));
+      app.mastery.persist();
+    }
+    /* ── Ultra Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'ultra' && app.mastery) {
+      endUltraGame(app.mastery, stats, stats.score > (app.save.getPB('ultra') || 0));
+      app.mastery.persist();
+    }
+    /* ── Mathe Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'mathe' && app.mastery) {
+      endMatheGame(app.mastery, stats, stats.score > (app.save.getPB('mathe') || 0));
+      app.mastery.persist();
+    }
+    /* ── Algebra Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'algebra' && app.mastery) {
+      endAlgebraGame(app.mastery, stats, stats.score > (app.save.getPB('algebra') || 0));
+      app.mastery.persist();
+    }
+    /* ── Worte Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'worte' && app.mastery) {
+      endWorteGame(app.mastery, stats, stats.score > (app.save.getPB('worte') || 0));
+      app.mastery.persist();
+    }
+    /* ── Hauptstaedte Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'hauptstaedte' && app.mastery) {
+      endHauptstaedteGame(app.mastery, stats, stats.score > (app.save.getPB('hauptstaedte') || 0));
+      app.mastery.persist();
+    }
+    /* ── Wissen Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'wissen' && app.mastery) {
+      endWissenGame(app.mastery, stats, stats.score > (app.save.getPB('wissen') || 0));
+      app.mastery.persist();
+    }
+    /* ── Memo Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'memo' && app.mastery) {
+      endMemoGame(app.mastery, stats, stats.score > (app.save.getPB('memo') || 0));
+      app.mastery.persist();
+    }
+    /* ── Sequenz Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'sequenz' && app.mastery) {
+      endSequenzGame(app.mastery, stats, stats.score > (app.save.getPB('sequenz') || 0));
+      app.mastery.persist();
+    }
+    /* ── Stroop Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'stroop' && app.mastery) {
+      endStroopGame(app.mastery, stats, stats.score > (app.save.getPB('stroop') || 0));
+      app.mastery.persist();
+    }
+    /* ── Fokus Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'fokus' && app.mastery) {
+      endFokusGame(app.mastery, stats, stats.score > (app.save.getPB('fokus') || 0));
+      app.mastery.persist();
+    }
+    /* ── Chaos Mode Mastery: persist end-of-game data ── */
+    if (game.mode === 'chaos' && app.mastery) {
+      endChaosGame(app.mastery, stats, stats.score > (app.save.getPB('chaos') || 0));
+      app.mastery.persist();
+    }
+
     const g = $('#game');
     g?.classList.add('game-over-freeze');
     if (typeof effects.gameOverFlash === 'function') {
@@ -1411,6 +2838,17 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       haptic('wrong', save);
       if (result.expected) showNearMiss(result.expected);
     }
+
+    /* ── Sequenz Mode Mastery: track round result ── */
+    if (game.mode === 'sequenz' && app.mastery && !game.practice) {
+      const seqMResult = trackSequenzResult(app.mastery, result, game);
+      if (seqMResult) {
+        ensureSequenzHUD();
+        updateSequenzRecord(app.mastery);
+        if (seqMResult.isRecord) showSequenzNewRecord(seqMResult.seqLen);
+      }
+    }
+
     updateHUD();
   };
 

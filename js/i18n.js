@@ -151,6 +151,7 @@ const S = {
     ad_reward_watch:'Werbung schauen für Belohnung',
     ad_reward_loading:'Lade Video-Werbung…',
     ad_reward_ready:'Belohnung erhalten! Du kannst jetzt schließen.', 
+    ad_failed:'Werbung nicht verfügbar',
     /* Avatar */
     avatar_title:'Avatar',
     avatar_icon:'Symbol wählen',
@@ -581,6 +582,7 @@ const S = {
     ad_reward_watch:'Watch ad for reward',
     ad_reward_loading:'Loading Video Ad…',
     ad_reward_ready:'Reward granted! You can close now.',
+    ad_failed:'Ad not available',
     /* Avatar */
     avatar_title:'Avatar',
     avatar_icon:'Choose Icon',

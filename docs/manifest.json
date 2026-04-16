@@ -4,6 +4,7 @@
   "description": "14 game modes — reflexes, brain training, speed. Swipe, sort, score.",
   "start_url": "./index.html",
   "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
   "orientation": "portrait",
   "theme_color": "#0f0c29",
   "background_color": "#0f0c29",

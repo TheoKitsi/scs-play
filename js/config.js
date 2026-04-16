@@ -967,4 +967,345 @@ export const CONFIG = {
     { q_de:'Wie heißt die Währung der Schweiz?', q_en:'What is the currency of Switzerland?',
       a:[{de:'Franken',en:'Franc',ok:1},{de:'Euro',en:'Euro'},{de:'Krone',en:'Krone'},{de:'Mark',en:'Mark'}], cat:'geo', tier:3 },
   ],
+
+  /* ═══════════════════════════════════════════════
+     MODE MASTERY — per-mode engagement definitions
+     ═══════════════════════════════════════════════ */
+  MODE_MASTERY_DEFS: {
+    klassik: {
+      tiers: [
+        { threshold: 0,    name: 'Rookie' },
+        { threshold: 50,   name: 'Quick' },
+        { threshold: 150,  name: 'Lightning' },
+        { threshold: 400,  name: 'Blitz' },
+        { threshold: 1000, name: 'Zen Master' },
+      ],
+      scoreCalc(mastery, mode) {
+        const z200 = mastery.get(mode, 'zone200');
+        const z300 = mastery.get(mode, 'zone300');
+        const bestFlawless = mastery.get(mode, 'bestFlawless');
+        const zenCount = mastery.get(mode, 'zenReached');
+        const totalGames = mastery.get(mode, 'totalGames');
+        return (z200 * 5) + (z300 * 2) + (bestFlawless * 3) + (zenCount * 50) + totalGames;
+      }
+    },
+    beginner: {
+      tiers: [
+        { threshold: 0,    name: 'Novice' },
+        { threshold: 40,   name: 'Spotter' },
+        { threshold: 120,  name: 'Sorter' },
+        { threshold: 300,  name: 'Flow Master' },
+        { threshold: 800,  name: 'Shape Whisperer' },
+      ],
+      scoreCalc(mastery, mode) {
+        const gridFill = Object.keys(mastery.mapGetAll(mode, 'shapeGrid')).length;
+        const bestChain = mastery.get(mode, 'bestShapeChain');
+        const jackpots = mastery.get(mode, 'jackpotCount');
+        const flowHits = mastery.get(mode, 'flowHits');
+        const totalGames = mastery.get(mode, 'totalGames');
+        return (gridFill * 4) + (bestChain * 3) + (jackpots * 20) + Math.floor(flowHits / 5) + totalGames;
+      }
+    },
+    expert: {
+      tiers: [
+        { threshold: 0,     name: 'Navigator' },
+        { threshold: 60,    name: 'Pathfinder' },
+        { threshold: 180,   name: 'Compass' },
+        { threshold: 500,   name: 'Cartographer' },
+        { threshold: 1200,  name: 'Compass Master' },
+      ],
+      scoreCalc(mastery, mode) {
+        const dirStars = Object.values(mastery.mapGetAll(mode, 'dirStars')).reduce((a, b) => a + b, 0);
+        const fullCompass = mastery.get(mode, 'fullCompassCount');
+        const totalGames = mastery.get(mode, 'totalGames');
+        const dirCoverage = Object.keys(mastery.mapGetAll(mode, 'dirCorrect')).length;
+        return (dirStars * 8) + (fullCompass * 25) + (dirCoverage * 5) + totalGames;
+      }
+    },
+    ultra: {
+      tiers: [
+        { threshold: 0,     name: 'Initiate' },
+        { threshold: 80,    name: 'Ultra Rank I' },
+        { threshold: 250,   name: 'Ultra Rank II' },
+        { threshold: 700,   name: 'Ultra Rank III' },
+        { threshold: 1800,  name: 'Ultra Rank IV' },
+        { threshold: 4000,  name: 'Ultra Rank V' },
+      ],
+      scoreCalc(mastery, mode) {
+        const dirStars = Object.values(mastery.mapGetAll(mode, 'dirStars')).reduce((a, b) => a + b, 0);
+        const fullCompass = mastery.get(mode, 'fullCompassCount');
+        const totalGames = mastery.get(mode, 'totalGames');
+        const dirCoverage = Object.keys(mastery.mapGetAll(mode, 'dirCorrect')).length;
+        const bestSurvivorSec = Math.floor(mastery.get(mode, 'bestSurvivorTime') / 1000);
+        return (dirStars * 6) + (fullCompass * 30) + (dirCoverage * 8) + (bestSurvivorSec * 2) + totalGames;
+      }
+    },
+    mathe: {
+      tiers: [
+        { threshold: 0,     name: 'Beginner' },
+        { threshold: 50,    name: 'Calculator' },
+        { threshold: 150,   name: 'Arithmetician' },
+        { threshold: 400,   name: 'Mathlete' },
+        { threshold: 1000,  name: 'Brain' },
+      ],
+      scoreCalc(mastery, mode) {
+        let opMaster = 0;
+        for (const op of ['+', '\u2212', '\u00D7', '\u00F7']) {
+          const c = mastery.mapGet(mode, 'opCorrect', op, 0);
+          opMaster += Math.min(c, 100);
+        }
+        const bestPhase = mastery.get(mode, 'bestPhase', 0);
+        const totalCorrect = mastery.get(mode, 'totalCorrect', 0);
+        const totalGames = mastery.get(mode, 'totalGames', 0);
+        return (opMaster) + (bestPhase * 15) + Math.floor(totalCorrect / 3) + totalGames;
+      }
+    },
+    algebra: {
+      tiers: [
+        { threshold: 0,     name: 'Student' },
+        { threshold: 60,    name: 'Solver' },
+        { threshold: 200,   name: 'Algebraist' },
+        { threshold: 600,   name: 'Equation Master' },
+        { threshold: 1500,  name: 'Genius' },
+      ],
+      scoreCalc(mastery, mode) {
+        const ALGEBRA_TYPES = ['linear_add', 'linear_sub', 'two_step', 'square', 'sqrt', 'power', 'fraction_add'];
+        let typeMaster = 0;
+        for (const t of ALGEBRA_TYPES) {
+          const c = mastery.mapGet(mode, 'typeCorrect', t, 0);
+          typeMaster += Math.min(c, 50);
+        }
+        const bestPhase = mastery.get(mode, 'bestPhase', 0);
+        const totalCorrect = mastery.get(mode, 'totalCorrect', 0);
+        const totalGames = mastery.get(mode, 'totalGames', 0);
+        const iq = mastery.get(mode, 'algebraIQ', 0);
+        return typeMaster + (bestPhase * 20) + Math.floor(totalCorrect / 2) + Math.floor(iq / 5) + totalGames;
+      }
+    },
+    worte: {
+      tiers: [
+        { threshold: 0,     name: 'Novice' },
+        { threshold: 40,    name: 'Collector' },
+        { threshold: 120,   name: 'Librarian' },
+        { threshold: 350,   name: 'Wordsmith' },
+        { threshold: 900,   name: 'Lexicon' },
+      ],
+      scoreCalc(mastery, mode) {
+        const collected = (mastery.getArray(mode, 'wordCollection') || []).length;
+        let catStars = 0;
+        for (const cat of ['tier', 'essen', 'sport', 'farbe', 'animal', 'food', 'color']) {
+          catStars += Math.min(mastery.mapGet(mode, 'catCorrect', cat, 0), 100);
+        }
+        const totalGames = mastery.get(mode, 'totalGames', 0);
+        return collected + Math.floor(catStars / 2) + totalGames;
+      }
+    },
+    hauptstaedte: {
+      tiers: [
+        { threshold: 0,     name: 'Tourist' },
+        { threshold: 50,    name: 'Traveller' },
+        { threshold: 150,   name: 'Explorer' },
+        { threshold: 400,   name: 'Geographer' },
+        { threshold: 1000,  name: 'Geo-Master' },
+      ],
+      scoreCalc(mastery, mode) {
+        const countries = (mastery.getArray(mode, 'countryCollection') || []).length;
+        const regions = ['europe','americas','asia','oceania','africa'];
+        let regionStars = 0;
+        for (const r of regions) regionStars += Math.min(mastery.mapGet(mode, 'regionCorrect', r, 0), 80);
+        const bestStreak = mastery.get(mode, 'bestCountryStreak', 0);
+        const totalGames = mastery.get(mode, 'totalGames', 0);
+        return (countries * 2) + Math.floor(regionStars / 2) + (bestStreak * 3) + totalGames;
+      }
+    },
+    wissen: {
+      tiers: [
+        { threshold: 0,     name: 'Curious' },
+        { threshold: 50,    name: 'Scholar' },
+        { threshold: 150,   name: 'Specialist' },
+        { threshold: 400,   name: 'Professor' },
+        { threshold: 1000,  name: 'Genius' },
+      ],
+      scoreCalc(mastery, mode) {
+        const cats = ['geo','sci','hist','sport','nature','cult'];
+        let catScore = 0;
+        for (const c of cats) catScore += Math.min(mastery.mapGet(mode, 'catCorrect', c, 0), 80);
+        const wissenIQ = mastery.get(mode, 'wissenIQ', 0);
+        const totalGames = mastery.get(mode, 'totalGames', 0);
+        return catScore + Math.floor(wissenIQ / 3) + totalGames;
+      }
+    },
+    memo: {
+      tiers: [
+        { threshold: 0,     name: 'Beginner' },
+        { threshold: 40,    name: 'Retainer' },
+        { threshold: 120,   name: 'Memoriser' },
+        { threshold: 300,   name: 'Savant' },
+        { threshold: 800,   name: 'Eidetic' },
+      ],
+      scoreCalc(mastery, mode) {
+        const bestSpan = mastery.get(mode, 'bestMemorySpan', 0);
+        const perfectRecalls = mastery.get(mode, 'perfectRecalls', 0);
+        const totalCorrect = mastery.get(mode, 'totalCorrect', 0);
+        const totalGames = mastery.get(mode, 'totalGames', 0);
+        return (bestSpan * 10) + (perfectRecalls * 5) + Math.floor(totalCorrect / 3) + totalGames;
+      }
+    },
+    sequenz: {
+      tiers: [
+        { threshold: 0,     name: 'Listener' },
+        { threshold: 40,    name: 'Repeater' },
+        { threshold: 120,   name: 'Sequencer' },
+        { threshold: 300,   name: 'Pattern Master' },
+        { threshold: 800,   name: 'Simon King' },
+      ],
+      scoreCalc(mastery, mode) {
+        const bestLen = mastery.get(mode, 'bestSeqLength', 0);
+        const totalRounds = mastery.get(mode, 'totalRounds', 0);
+        const perfectRounds = mastery.get(mode, 'perfectRounds', 0);
+        const totalGames = mastery.get(mode, 'totalGames', 0);
+        return (bestLen * 15) + (totalRounds * 2) + (perfectRounds * 8) + totalGames;
+      }
+    },
+    stroop: {
+      tiers: [
+        { threshold: 0,     name: 'Susceptible' },
+        { threshold: 50,    name: 'Resistant' },
+        { threshold: 150,   name: 'Controller' },
+        { threshold: 400,   name: 'Neural Master' },
+        { threshold: 1000,  name: 'Immune' },
+      ],
+      scoreCalc(mastery, mode) {
+        const congCorrect = mastery.get(mode, 'congruentCorrect', 0);
+        const incongCorrect = mastery.get(mode, 'incongruentCorrect', 0);
+        const bestInterference = mastery.get(mode, 'bestInterference', 100);
+        const totalGames = mastery.get(mode, 'totalGames', 0);
+        return Math.min(congCorrect, 200) + (incongCorrect * 2) + Math.max(0, Math.floor((100 - bestInterference) * 3)) + totalGames;
+      }
+    },
+    fokus: {
+      tiers: [
+        { threshold: 0,     name: 'Distracted' },
+        { threshold: 50,    name: 'Attentive' },
+        { threshold: 150,   name: 'Focused' },
+        { threshold: 400,   name: 'Laser' },
+        { threshold: 1000,  name: 'Tunnel Vision' },
+      ],
+      scoreCalc(mastery, mode) {
+        const congCorrect = mastery.get(mode, 'congruentCorrect', 0);
+        const incongCorrect = mastery.get(mode, 'incongruentCorrect', 0);
+        const bestFocusScore = mastery.get(mode, 'bestFocusScore', 0);
+        const totalGames = mastery.get(mode, 'totalGames', 0);
+        return Math.min(congCorrect, 200) + (incongCorrect * 2) + Math.floor(bestFocusScore / 2) + totalGames;
+      }
+    },
+    chaos: {
+      tiers: [
+        { threshold: 0,     name: 'Confused' },
+        { threshold: 60,    name: 'Adapter' },
+        { threshold: 180,   name: 'Flexible' },
+        { threshold: 500,   name: 'Agile Mind' },
+        { threshold: 1200,  name: 'Chaos Master' },
+      ],
+      scoreCalc(mastery, mode) {
+        const rules = ['color','shape','size','math','stroop'];
+        let ruleMastery = 0;
+        for (const r of rules) ruleMastery += Math.min(mastery.mapGet(mode, 'ruleCorrect', r, 0), 60);
+        const bestFlexScore = mastery.get(mode, 'bestFlexScore', 0);
+        const switchesSurvived = mastery.get(mode, 'totalSwitchesSurvived', 0);
+        const totalGames = mastery.get(mode, 'totalGames', 0);
+        return ruleMastery + Math.floor(bestFlexScore / 2) + (switchesSurvived * 3) + totalGames;
+      }
+    }
+  },
+
+  /* ── Klassik Speed Zone thresholds (ms) ── */
+  KLASSIK_SPEED_ZONES: [
+    { max: 200, id: 'ultra', label_de: 'ULTRA', label_en: 'ULTRA', color: '#FF4757' },
+    { max: 300, id: 'fast',  label_de: 'BLITZ', label_en: 'BLITZ', color: '#FFA502' },
+    { max: 500, id: 'good',  label_de: 'SCHNELL', label_en: 'FAST', color: '#2ED573' },
+  ],
+
+  /* ── Klassik Color Combo minimum for bonus ── */
+  KLASSIK_COLOR_COMBO_MIN: 3,
+  KLASSIK_COLOR_COMBO_BONUS: 50,
+
+  /* ── Klassik Zen State streak threshold ── */
+  KLASSIK_ZEN_STREAK: 50,
+
+  /* ── Beginner/Formen: Flow Meter ── */
+  BEGINNER_FLOW_THRESHOLD: 500,         // ms — answers faster than this count as "in flow"
+  BEGINNER_FLOW_MIN_STREAK: 3,          // consecutive flow answers to activate meter
+  BEGINNER_FLOW_MAX: 20,                // flow streak cap for visual fill
+
+  /* ── Beginner/Formen: Shape Combo ── */
+  BEGINNER_SHAPE_COMBO_MIN: 3,          // same-shape streak to trigger pop
+
+  /* ── Beginner/Formen: Dual Match Jackpot ── */
+  BEGINNER_DUAL_MATCH_MULT: 2,          // score multiplier for dual match
+
+  /* ── Expert: Compass Mastery ── */
+  EXPERT_SPEED_TIERS: [
+    { max: 300, id: 'gold',   label: 'Gold',   color: '#FFD700' },
+    { max: 500, id: 'silver', label: 'Silver', color: '#C0C0C0' },
+    { max: 800, id: 'bronze', label: 'Bronze', color: '#CD7F32' },
+  ],
+  EXPERT_STAR_THRESHOLDS: [3, 8, 15, 30, 60],   // correct answers per dir for 1-5 stars
+  EXPERT_FULL_COMPASS_WINDOW: 8,                 // unique dirs in last N answers = Full Compass!
+  EXPERT_WEAK_SPOT_BONUS: 1.5,                   // score mult for weakest direction
+
+  /* ── Ultra: 12-Direction Mastery ── */
+  ULTRA_SPEED_TIERS: [
+    { max: 350, id: 'gold',   label: 'Gold',   color: '#FFD700' },
+    { max: 550, id: 'silver', label: 'Silver', color: '#C0C0C0' },
+    { max: 900, id: 'bronze', label: 'Bronze', color: '#CD7F32' },
+  ],
+  ULTRA_STAR_THRESHOLDS: [3, 8, 15, 30, 60],    // correct answers per dir for 1-5 stars
+  ULTRA_FULL_COMPASS_WINDOW: 12,                 // unique dirs in last N answers = Full Compass!
+  ULTRA_WEAK_SPOT_BONUS: 1.5,                    // score mult for weakest direction
+
+  /* ── Chaos Rank tiers (Plan 14 feature 5) ── */
+  CHAOS_RANK: [
+    { threshold: 0,    id: 'bronze',   label_de: 'Bronze',  label_en: 'Bronze'  },
+    { threshold: 150,  id: 'silver',   label_de: 'Silber',  label_en: 'Silver'  },
+    { threshold: 400,  id: 'gold',     label_de: 'Gold',    label_en: 'Gold'    },
+    { threshold: 800,  id: 'platinum', label_de: 'Platin',  label_en: 'Platinum'},
+    { threshold: 1500, id: 'master',   label_de: 'Chaos Master', label_en: 'Chaos Master' },
+  ],
+
+  /* ── Stroop Brain Control Levels (Plan 12 feature 3) ── */
+  STROOP_BRAIN_LEVELS: [
+    { maxInterference: 100, level: 1, label_de: 'Anfänger',        label_en: 'Beginner'       },
+    { maxInterference: 40,  level: 2, label_de: 'Wachsam',         label_en: 'Vigilant'       },
+    { maxInterference: 25,  level: 3, label_de: 'Kontrolliert',    label_en: 'Controlled'     },
+    { maxInterference: 15,  level: 4, label_de: 'Diszipliniert',   label_en: 'Disciplined'    },
+    { maxInterference: 8,   level: 5, label_de: 'Neural Adept',    label_en: 'Neural Adept'   },
+    { maxInterference: 3,   level: 6, label_de: 'Neural Meister',  label_en: 'Neural Master'  },
+    { maxInterference: 0,   level: 7, label_de: 'Immun',           label_en: 'Immune'         },
+  ],
+
+  /* ── Stroop Challenge Round (Plan 12 feature 4) ── */
+  STROOP_CHALLENGE_EVERY: 15,          // trigger challenge after N consecutive correct
+  STROOP_CHALLENGE_DURATION: 5000,     // ms — all-incongruent burst duration
+  STROOP_CONGRUENT_RATE: 0.2,         // base congruent trial rate
+
+  /* ── Wissen Expert Badge threshold (Plan 9 feature 5) ── */
+  WISSEN_EXPERT_BADGE_THRESHOLD: 10,   // correct per topic to earn Specialist badge
+
+  /* ── Fokus Distraction Intensity Levels (Plan 13 feature 2) ── */
+  FOKUS_DISTRACTION_LEVELS: [
+    { threshold: 0,  level: 1, label_de: 'Einfache Flanker',   label_en: 'Simple Flankers'   },
+    { threshold: 10, level: 2, label_de: 'Doppelte Flanker',   label_en: 'Double Flankers'   },
+    { threshold: 20, level: 3, label_de: 'Dreifache Flanker',  label_en: 'Triple Flankers'   },
+    { threshold: 35, level: 4, label_de: 'Extreme Ablenkung',  label_en: 'Extreme Distraction' },
+  ],
+
+  /* ── Fokus Tunnel Vision achievement thresholds (Plan 13 feature 3) ── */
+  FOKUS_TUNNEL_THRESHOLDS: [5, 10, 20, 50],
+
+  /* ── Community percentile simulation tables (Plans 4, 5) ── */
+  COMMUNITY_PERCENTILES: {
+    ultra_streak: [5, 8, 12, 18, 25, 35, 50, 70, 100],
+    mathe_rt:     [2000, 1500, 1200, 1000, 800, 600, 500, 400, 300],
+  },
 };

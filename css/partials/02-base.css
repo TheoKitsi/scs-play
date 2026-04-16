@@ -54,7 +54,8 @@ body{
   transition:opacity .4s cubic-bezier(.4,0,.2,1), visibility .4s, transform .4s cubic-bezier(.4,0,.2,1);
   z-index:1;overflow-y:auto;overflow-x:hidden;
   scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent;  /* v18: Firefox */
-  padding:var(--safe-top) calc(var(--gutter) + var(--safe-left)) calc(var(--safe-bottom) + 20px) calc(var(--gutter) + var(--safe-right));
+  overscroll-behavior:none;
+  padding:var(--safe-top) calc(var(--gutter) + var(--safe-left)) calc(var(--bottom-inset) + 20px) calc(var(--gutter) + var(--safe-right));
 }
 .screen.active{
   opacity:1;visibility:visible;z-index:10;
