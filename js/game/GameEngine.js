@@ -225,6 +225,13 @@ export class GameEngine {
     return Math.max(1, Math.round((this._spawnStart - this._spawnMin) / CONFIG.SPEED_CORRECT_DIVISOR));
   }
 
+  get _minAnswerWindow() {
+    if (this.isMemoMode) return CONFIG.MIN_ANSWER_WINDOW_MEMO || CONFIG.MIN_ANSWER_WINDOW || 1200;
+    if (this.isBrainMode) return CONFIG.MIN_ANSWER_WINDOW_BRAIN || CONFIG.MIN_ANSWER_WINDOW || 1200;
+    if (this.isReflexMode) return CONFIG.MIN_ANSWER_WINDOW_REFLEX || CONFIG.MIN_ANSWER_WINDOW || 1200;
+    return CONFIG.MIN_ANSWER_WINDOW || 1200;
+  }
+
   get shapes() {
     if (this.mode === 'ultra')    return CONFIG.SHAPES_ULTRA;
     if (this.mode === 'expert')   return CONFIG.SHAPES_EXPERT;
@@ -607,7 +614,7 @@ export class GameEngine {
     let d = delay != null ? delay : (this.practice ? CONFIG.PRACTICE_INTERVAL : this.spawnInterval);
     if (this._isFirstSpawn && delay == null) {
       this._isFirstSpawn = false;
-      d += (this.isBrainMode || this.isMemoMode) ? 800 : 500;
+      d += (this.isBrainMode || this.isMemoMode || this.isReflexMode) ? 800 : 500;
     }
     this._spawnTimeout = setTimeout(() => this._spawn(), d);
   }
@@ -624,9 +631,10 @@ export class GameEngine {
     /* Grace period: don't auto-miss if the player hasn't had enough time to answer */
     if (this.currentShape && !this.practice && !this.inRush) {
       const elapsed = performance.now() - this.lastSpawnTime;
-      if (elapsed < (CONFIG.MIN_ANSWER_WINDOW || 1200)) {
+      const minAnswerWindow = this._minAnswerWindow;
+      if (elapsed < minAnswerWindow) {
         /* Delay this spawn instead of penalizing the player */
-        const remaining = (CONFIG.MIN_ANSWER_WINDOW || 1200) - elapsed;
+        const remaining = minAnswerWindow - elapsed;
         this._scheduleSpawn(remaining + 50);
         return;
       }
@@ -665,9 +673,6 @@ export class GameEngine {
     const phases = CONFIG.MATH_PHASES;
     let phase = phases[0];
     for (const p of phases) { if (this.correct >= p.threshold) phase = p; }
-    /* Time-based fallback: advance at least 1 phase per 20 elapsed seconds */
-    const timeIdx = Math.min(phases.length - 1, Math.floor(this.elapsed / 20));
-    if (phases.indexOf(phases[timeIdx]) > phases.indexOf(phase)) phase = phases[timeIdx];
     return phase;
   }
 
@@ -795,8 +800,6 @@ export class GameEngine {
     const tiers = CONFIG.CAPITALS_TIERS;
     let tier = tiers[0];
     for (const t of tiers) { if (this.correct >= t.threshold) tier = t; }
-    const timeIdx = Math.min(tiers.length - 1, Math.floor(this.elapsed / 20));
-    if (tiers.indexOf(tiers[timeIdx]) > tiers.indexOf(tier)) tier = tiers[timeIdx];
     return tiers.indexOf(tier);
   }
 
@@ -880,8 +883,6 @@ export class GameEngine {
     const tiers = CONFIG.WISSEN_TIERS;
     let tier = tiers[0];
     for (const t of tiers) { if (this.correct >= t.threshold) tier = t; }
-    const timeIdx = Math.min(tiers.length - 1, Math.floor(this.elapsed / 20));
-    if (tiers.indexOf(tiers[timeIdx]) > tiers.indexOf(tier)) tier = tiers[timeIdx];
     return tiers.indexOf(tier);
   }
 
@@ -948,8 +949,6 @@ export class GameEngine {
     const phases = CONFIG.ALGEBRA_PHASES;
     let phase = phases[0];
     for (const p of phases) { if (this.correct >= p.threshold) phase = p; }
-    const timeIdx = Math.min(phases.length - 1, Math.floor(this.elapsed / 20));
-    if (phases.indexOf(phases[timeIdx]) > phases.indexOf(phase)) phase = phases[timeIdx];
     return phase;
   }
 
@@ -1685,7 +1684,7 @@ export class GameEngine {
       postAnswerDelay = isCorrect ? 200 : (CONFIG.MISS_GRACE_PERIOD_MS || 600);
     } else if (!isCorrect) {
       postAnswerDelay = CONFIG.MISS_GRACE_PERIOD_MS || 600;
-    } else if (this.isBrainMode || this.isMemoMode) {
+    } else if (this.isBrainMode || this.isMemoMode || this.isReflexMode) {
       postAnswerDelay = Math.max(150, Math.min(400, this.spawnInterval * 0.2));
     } else {
       postAnswerDelay = this.practice ? CONFIG.PRACTICE_INTERVAL : Math.max(80, this.spawnInterval * 0.15);
@@ -2088,7 +2087,7 @@ export class GameEngine {
     this._rushIndex = 0;
     const totalShapes = CONFIG.RUSH_COUNT;
     const warningDelay = CONFIG.RUSH_WARNING_MS || 400;
-    const rushDelay = (this.isBrainMode || this.isMemoMode)
+    const rushDelay = (this.isBrainMode || this.isMemoMode || this.isReflexMode)
       ? (CONFIG.RUSH_DELAY_BRAIN || CONFIG.RUSH_DELAY)
       : CONFIG.RUSH_DELAY;
 
@@ -2122,7 +2121,7 @@ export class GameEngine {
     const avgReact = w.filter(r => r.correct).reduce((s, r) => s + r.reaction, 0) /
                      Math.max(1, w.filter(r => r.correct).length);
     const minI = this._spawnMin, maxI = this._spawnMax, step = this._spawnStep;
-    const reactionThreshold = (this.isBrainMode || this.isMemoMode)
+    const reactionThreshold = (this.isBrainMode || this.isMemoMode || this.isReflexMode)
       ? CONFIG.DIFFICULTY_GOOD_REACTION_BRAIN
       : CONFIG.DIFFICULTY_GOOD_REACTION;
     if (acc >= CONFIG.DIFFICULTY_GOOD_ACCURACY && avgReact <= reactionThreshold) {

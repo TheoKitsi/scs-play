@@ -21,4 +21,9 @@ Supported mode names:
 The AudioManager reads `tracks.json` first and only tries file playback for
 listed modes. Unlisted or missing tracks fall back to the procedural synth.
 
+Generated tracks should be arranged, not tiny phrase loops. The in-repo
+generator targets 64 bars per track, which gives roughly 110-213 seconds
+depending on tempo. Keep endings close to the intro energy so native loop
+playback does not feel abrupt.
+
 **Format:** MP3, 128-192kbps, loopable recommended.

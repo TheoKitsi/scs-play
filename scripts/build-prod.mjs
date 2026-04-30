@@ -96,4 +96,24 @@ const cssSize = statSync(resolve(out, 'css/style.bundle.css')).size;
 
 console.log(`✓ JS  bundled: ${(jsSize / 1024).toFixed(1)} KB (minified)`);
 console.log(`✓ CSS bundled: ${(cssSize / 1024).toFixed(1)} KB (minified)`);
+
+/* ── 6. Bundle Budget Gate ──
+   Hard caps so a regression in JS/CSS size fails the build
+   instead of silently shipping bloat. Override via env vars
+   SCS_JS_BUDGET_KB / SCS_CSS_BUDGET_KB if a controlled raise
+   is needed. */
+const jsBudgetKB  = Number(process.env.SCS_JS_BUDGET_KB)  || 480;
+const cssBudgetKB = Number(process.env.SCS_CSS_BUDGET_KB) || 240;
+const jsKB  = jsSize  / 1024;
+const cssKB = cssSize / 1024;
+const overruns = [];
+if (jsKB  > jsBudgetKB)  overruns.push(`JS  ${jsKB.toFixed(1)} KB > budget ${jsBudgetKB} KB`);
+if (cssKB > cssBudgetKB) overruns.push(`CSS ${cssKB.toFixed(1)} KB > budget ${cssBudgetKB} KB`);
+if (overruns.length) {
+  console.error('\n✗ Bundle budget exceeded:');
+  for (const line of overruns) console.error('  - ' + line);
+  console.error('  Either trim code or raise the budget via SCS_JS_BUDGET_KB / SCS_CSS_BUDGET_KB.');
+  process.exit(1);
+}
+
 console.log('✓ Production build complete → docs/');

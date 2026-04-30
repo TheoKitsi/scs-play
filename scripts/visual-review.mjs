@@ -33,6 +33,7 @@ async function screenshotAll(deviceName, deviceConfig) {
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext(deviceConfig);
+  await context.addInitScript(() => localStorage.setItem('scsQa', '1'));
   const page = await context.newPage();
 
   const shot = async (name) => {
@@ -55,7 +56,20 @@ async function screenshotAll(deviceName, deviceConfig) {
   const goHome = async () => {
     await page.goto(BASE, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2500); // boot animation
-    await click('#btnGuest'); // "Play Now" / "Jetzt Spielen"
+    const alreadyHome = await page.evaluate(() =>
+      document.querySelector('#home')?.classList.contains('active')
+    );
+    if (!alreadyHome) {
+      const guestBtn = page.locator('#btnGuest');
+      if (await guestBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
+        await guestBtn.click();
+      }
+    }
+    await page.waitForFunction(() =>
+      document.querySelector('#home')?.classList.contains('active'),
+      null,
+      { timeout: 5000 }
+    );
   };
 
   // ─── 1) Boot / Auth Screen ───
@@ -74,13 +88,13 @@ async function screenshotAll(deviceName, deviceConfig) {
 
   // Scroll home content to see game modes
   await page.evaluate(() => {
-    const home = document.querySelector('#home');
+    const home = document.querySelector('#homeBottomSheet');
     if (home) home.scrollTop = 200;
   });
   await shot('02-home-mid');
 
   await page.evaluate(() => {
-    const home = document.querySelector('#home');
+    const home = document.querySelector('#homeBottomSheet');
     if (home) home.scrollTop = home.scrollHeight;
   });
   await shot('02-home-bottom');
@@ -194,10 +208,9 @@ async function screenshotAll(deviceName, deviceConfig) {
 
   // ─── 8) Start a game (Colors/Blitz) ───
   {
-    // Ensure home is active first
+    await goHome();
     await page.evaluate(() => {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.querySelector('#home')?.classList.add('active');
+      document.querySelectorAll('.onboarding-overlay').forEach(o => o.remove());
     });
     await page.waitForTimeout(400);
 
@@ -207,7 +220,22 @@ async function screenshotAll(deviceName, deviceConfig) {
       return false;
     });
     if (played) {
-      await page.waitForTimeout(1500);
+      await page.waitForTimeout(900);
+      const tutorialActive = await page.evaluate(() =>
+        document.querySelector('#tutorial')?.classList.contains('active')
+      );
+      if (tutorialActive) {
+        await page.evaluate(() => {
+          const btn = document.querySelector('#btnTutorialSkip');
+          if (btn) btn.click();
+        });
+        await page.waitForTimeout(900);
+      }
+      await page.waitForFunction(() =>
+        document.querySelector('#game')?.classList.contains('active'),
+        null,
+        { timeout: 5000 }
+      );
       await shot('08-game-countdown');
       await page.waitForTimeout(4000);
       await shot('08-game-active');
@@ -222,16 +250,35 @@ async function screenshotAll(deviceName, deviceConfig) {
         await page.waitForTimeout(500);
         await shot('09-pause-overlay');
 
-        // ─── 10) Quit game → Results ───
-        const quit = await page.evaluate(() => {
-          const btn = document.querySelector('#btnPauseQuit');
+        // ─── 10) Force game over → Results ───
+        await page.evaluate(() => {
+          const btn = document.querySelector('#btnResume');
           if (btn) { btn.click(); return true; }
           return false;
         });
-        if (quit) {
-          await page.waitForTimeout(1500);
-          await shot('10-results');
-        }
+        await page.waitForTimeout(600);
+        await page.evaluate(() => {
+          if (!globalThis.__SCS_QA__) throw new Error('SCS QA hook unavailable');
+          globalThis.__SCS_QA__.setContinued(true);
+          globalThis.__SCS_QA__.forceGameOver();
+        });
+        await page.waitForFunction(() =>
+          document.querySelector('#results')?.classList.contains('active'),
+          null,
+          { timeout: 5000 }
+        );
+        await page.waitForFunction(() =>
+          document.querySelector('#resPhase2')?.classList.contains('results-phase-visible'),
+          null,
+          { timeout: 5000 }
+        ).catch(() => console.log('    WARN: results stats phase not visible'));
+        await page.waitForFunction(() =>
+          document.querySelector('#resPhase3')?.classList.contains('results-phase-visible'),
+          null,
+          { timeout: 5000 }
+        ).catch(() => console.log('    WARN: results buttons phase not visible'));
+        await page.waitForTimeout(400);
+        await shot('10-results');
       }
     }
   }

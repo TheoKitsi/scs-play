@@ -12,6 +12,8 @@ import { getBodyFx, updateXPBar } from './HomeScreen.js';
 import { maybeShowFeedback } from '../helpers/microFeedback.js';
 import { generateAchievements, getProgress } from '../achievements/AchievementSystem.js';
 import { getKlassikInsights, getFormenInsights, getExpertInsights, getUltraInsights, getMatheInsights, getAlgebraInsights, getWorteInsights, getHauptstaedteInsights, getWissenInsights, getMemoInsights, getSequenzInsights, getStroopInsights, getFokusInsights, getChaosInsights } from '../game/ModeMastery.js';
+import { recordGameResult as recordQuestProgress, autoClaim as autoClaimQuests } from '../services/DailyQuestService.js';
+import { recordGamePoint as recordPassGamePoint, addBonusPoints as addPassBonusPoints } from '../services/SeasonPass.js';
 
 let _lastRetryKey = '';
 
@@ -25,6 +27,48 @@ function ensureReplayHook() {
   el.className = 'results-next-hook';
   buttons.parentElement.insertBefore(el, buttons);
   return el;
+}
+
+/**
+ * Ensure a Near-Miss pill exists in the results panel.
+ * Sits just above the action buttons in #resPhase3 so it
+ * lands inside the player's eye-line when the buttons reveal.
+ */
+function ensureNearMissPill() {
+  let el = $('#resNearMiss');
+  if (el) return el;
+  const buttons = $('#resNormalBtns');
+  if (!buttons || !buttons.parentElement) return null;
+  el = document.createElement('div');
+  el.id = 'resNearMiss';
+  el.className = 'results-near-miss';
+  el.setAttribute('role', 'status');
+  el.style.display = 'none';
+  buttons.parentElement.insertBefore(el, buttons);
+  return el;
+}
+
+/**
+ * Compute near-miss state. Returns null when not close enough,
+ * otherwise { gap, target, kind } where kind ∈ {pb, session}.
+ */
+function computeNearMiss(score, sessionBest, allTimePB) {
+  if (!score || score <= 0) return null;
+  const candidates = [];
+  if (allTimePB > score) {
+    const gap = allTimePB - score;
+    const threshold = Math.max(50, Math.round(allTimePB * 0.10));
+    if (gap <= threshold) candidates.push({ gap, target: allTimePB, kind: 'pb' });
+  }
+  if (sessionBest > score) {
+    const gap = sessionBest - score;
+    const threshold = Math.max(50, Math.round(sessionBest * 0.10));
+    if (gap <= threshold) candidates.push({ gap, target: sessionBest, kind: 'session' });
+  }
+  if (!candidates.length) return null;
+  /* Prefer the smaller gap so the player sees the most achievable target. */
+  candidates.sort((a, b) => a.gap - b.gap);
+  return candidates[0];
 }
 
 function getRemainingToNextLevel(xp, level) {
@@ -131,6 +175,29 @@ export async function showResults(stats, canContinue = false) {
     unlocked = save.checkAchievements(stats, app.sessionGames);
     if (unlocked.length) await save.save();
 
+    /* v60 Welle 4: Daily quest progress + Season Pass points */
+    try {
+      const completed = recordQuestProgress(save, stats);
+      recordPassGamePoint(save);
+      if (completed && completed.length) {
+        const claim = autoClaimQuests(save);
+        if (claim.xp)   { save.data.totalXP = (save.data.totalXP || 0) + claim.xp; }
+        if (claim.fire) { save.data.fire    = (save.data.fire    || 0) + claim.fire; }
+        addPassBonusPoints(save, completed.length);
+        const fx = getBodyFx();
+        const lang = getLanguage();
+        completed.forEach((q, i) => {
+          setTimeout(() => {
+            try {
+              const label = (typeof t === 'function') ? t('quest_complete_toast', { n: q.target, xp: q.rewardXP, fire: q.rewardFire }) : 'Quest!';
+              fx.achievementToast(label);
+            } catch {}
+          }, 1800 + i * 700);
+        });
+      }
+      await save.save();
+    } catch (e) { console.warn('quest/pass hook failed', e); }
+
     if (stats.isDaily) {
       const reward = await save.claimDailyReward();
       if (reward) {
@@ -192,6 +259,10 @@ export async function showResults(stats, canContinue = false) {
   const phase3 = $('#resPhase3');
   if (phase2) { phase2.classList.add('results-phase-hidden'); phase2.classList.remove('results-phase-visible'); }
   if (phase3) { phase3.classList.add('results-phase-hidden'); phase3.classList.remove('results-phase-visible'); }
+
+  /* Reset transient state from previous results pass */
+  const prevOneMore = $('#btnOneMore');
+  if (prevOneMore) prevOneMore.classList.remove('cta-pulse');
 
   const scoreEl = $('#resScore');
   if (scoreEl) scoreEl.classList.remove('score-complete');
@@ -403,6 +474,33 @@ export async function showResults(stats, canContinue = false) {
     }
   }
 
+  /* ── Near-Miss pill — strong dopamine "one more game" hook ──
+     Only when not in continue prompt and not a new PB (the new PB
+     celebration owns the spotlight in that case). */
+  const nearMissEl = ensureNearMissPill();
+  if (nearMissEl) {
+    if (!canContinue && !isNewPB) {
+      const allTimePB = save.getPB(stats.mode || app.selectedMode) || 0;
+      const nm = computeNearMiss(stats.score, app.sessionBest, allTimePB);
+      if (nm) {
+        const labelKey = nm.kind === 'pb' ? 'near_miss_pb' : 'near_miss_session';
+        const fallback = nm.kind === 'pb'
+          ? `Nur noch <span class="nm-num">${nm.gap}</span> bis zum neuen Rekord!`
+          : `Nur noch <span class="nm-num">${nm.gap}</span> bis zum Tagesbest!`;
+        let label = t(labelKey, { n: nm.gap });
+        if (!label || label === labelKey) label = fallback;
+        nearMissEl.innerHTML = `<span class="nm-spark" aria-hidden="true">⚡</span><span>${label}</span>`;
+        nearMissEl.style.display = '';
+      } else {
+        nearMissEl.style.display = 'none';
+        nearMissEl.innerHTML = '';
+      }
+    } else {
+      nearMissEl.style.display = 'none';
+      nearMissEl.innerHTML = '';
+    }
+  }
+
   /* Retry button glow pulse */
   const retryBtn = $('#btnOneMore');
   if (retryBtn) {
@@ -442,6 +540,20 @@ export async function showResults(stats, canContinue = false) {
     countupDuration + statsDelay);
   setTimeout(() => { if (phase3) phase3.classList.add('results-phase-visible'); },
     countupDuration + statsDelay + buttonsDelay);
+
+  /* Auto-pulse the Replay CTA once buttons are visible.
+     Compositor-safe (transform only); css gates it for low-perf
+     and reduced-motion in 12-polish-v18-v19.css. */
+  const ctaPulseDelay = countupDuration + statsDelay + buttonsDelay + 600;
+  setTimeout(() => {
+    const btn = $('#btnOneMore');
+    if (!btn) return;
+    /* Only pulse when the normal buttons row is actually shown
+       (not during a continue prompt). */
+    const normalBtns = $('#resNormalBtns');
+    if (!normalBtns || normalBtns.style.display === 'none') return;
+    btn.classList.add('cta-pulse');
+  }, ctaPulseDelay);
 
   /* ─── MicroFeedback trigger (delayed to not clash with animations) ─── */
   if (!canContinue && engagement) {

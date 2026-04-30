@@ -1,0 +1,58 @@
+/* ═══════════════════════════════════════════
+   00-perf-tokens — performance & motion tokens
+   Imported FIRST so all later partials can refer
+   to them. Centralises blur/shadow/motion budget
+   so we keep low-end Android (Galaxy A13 class)
+   above the perception threshold.
+   ═══════════════════════════════════════════ */
+:root{
+  /* ── Blur budget ────────────────────────────
+     Hard caps to avoid full-screen GPU blits.
+     `--blur-soft` = decorative glass (chips, pills)
+     `--blur-strong` = elevated surfaces (sheets, modals)
+     ──────────────────────────────────────────── */
+  --blur-soft: 8px;
+  --blur-strong: 14px;
+
+  /* ── Glow / shadow budget ──────────────────
+     drop-shadow blur radii were measured to
+     dominate paint cost on mid-range Android.
+     Cap radii at 16px and let layered halos
+     compose via a single box-shadow.
+     ──────────────────────────────────────────── */
+  --shadow-glow-sm: 0 0 12px rgba(124,58,237,0.35);
+  --shadow-glow-md: 0 0 16px rgba(124,58,237,0.45);
+  --shadow-glow-lg: 0 6px 16px rgba(0,0,0,0.45), 0 0 16px rgba(124,58,237,0.35);
+  --shadow-card: 0 6px 16px rgba(0,0,0,0.35);
+
+  /* ── Motion durations ──────────────────────
+     `snap` = micro feedback (≤120ms)
+     `swift` = state changes (≈220ms)
+     `calm` = reveal animations (≈420ms)
+     ──────────────────────────────────────────── */
+  --motion-duration-snap: 120ms;
+  --motion-duration-swift: 220ms;
+  --motion-duration-calm: 420ms;
+  --motion-ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Low-perf device opt-outs ──────────────
+   `body[data-perf-mode="low"]` is set by
+   js/helpers/perfMode.js when deviceMemory ≤ 4
+   or hardwareConcurrency ≤ 4. We disable the
+   heaviest decorative effects globally without
+   touching gameplay-critical visuals.
+   ────────────────────────────────────────── */
+body[data-perf-mode="low"] *,
+body[data-perf-mode="low"] *::before,
+body[data-perf-mode="low"] *::after{
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body[data-perf-mode="low"] .ambient-bg-orbs,
+body[data-perf-mode="low"] .hero-particles,
+body[data-perf-mode="low"] .auth-bg,
+body[data-perf-mode="low"] .boot-bg{
+  display: none !important;
+}

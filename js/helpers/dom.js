@@ -69,6 +69,7 @@ export function showScreen(id, app) {
     setTimeout(() => el.classList.remove('screen-enter'), 350);
   }
   app.currentScreen = id;
+  window.dispatchEvent(new CustomEvent('scs:screenchange', { detail: { id, prevScreen } }));
   /* Stop home-screen timers when navigating away */
   if (prevScreen === 'home' && id !== 'home' && typeof app._stopDailyCountdown === 'function') {
     app._stopDailyCountdown();

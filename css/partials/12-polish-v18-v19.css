@@ -515,6 +515,35 @@
   .results-continue-btns .btn-sm{font-size:.7rem;padding:6px 6px}
 }
 
+.results-mode-level{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:2px 6px;
+  min-height:1.25em;
+  line-height:1.25;
+  margin:4px 0 0;
+}
+.mode-level-name{margin-left:0}
+.xp-bar-mode{margin-top:3px}
+
+@media(max-height:670px){
+  .results-mode-level{font-size:.72rem;line-height:1.2;margin-top:2px}
+  .xp-bar-mode{margin-top:2px}
+  .results-mode-level,
+  .xp-bar-mode,
+  .results-xp,
+  .xp-next,
+  #results #resNextLevel,
+  .res-ach-teasers{display:none!important}
+}
+
+@media(max-height:560px){
+  .results-mode-level{font-size:.66rem;line-height:1.15;margin-top:1px}
+  .xp-bar-mode{margin-top:1px}
+}
+
 /* Ensure results panel can always scroll on very short devices */
 .results-panel {
   max-height: calc(100vh - var(--safe-top,0px) - var(--safe-bottom,0px) - 16px);
@@ -758,3 +787,275 @@
   80%{transform:translate(-50%,-50%) scale(1.02) rotate(0);opacity:0.9}
   100%{transform:translate(-50%,-50%) scale(0.95);opacity:0}
 }
+
+/* ═══════════════════════════════════════════════════
+   v22 — Neon Arcade Polish + Near-Miss Pill
+   Compositor-safe: only transform/opacity animated.
+   Respects prefers-reduced-motion (global rule in
+   style.css already short-circuits durations).
+   ═══════════════════════════════════════════════════ */
+
+/* ─── Animated sweep on the primary play CTA ─── */
+.btn-play-fab{
+  overflow:hidden;
+  isolation:isolate;
+}
+.btn-play-fab::before{
+  content:'';
+  position:absolute;
+  inset:-40%;
+  background:conic-gradient(from 0deg,
+    transparent 0deg,
+    rgba(255,255,255,0.18) 30deg,
+    transparent 60deg,
+    transparent 360deg);
+  z-index:-1;
+  pointer-events:none;
+  animation:btnPlaySweep 4s linear infinite;
+  will-change:transform;
+}
+@keyframes btnPlaySweep{
+  to{transform:rotate(360deg);}
+}
+body[data-perf-mode="low"] .btn-play-fab::before,
+body[data-reduced-motion] .btn-play-fab::before{
+  display:none;
+}
+
+/* Subtle attention pulse on Play CTA every 6s when idle */
+.btn-play-fab:not(:active):not(:hover){
+  animation:btnPlayBreath 5.5s ease-in-out infinite;
+}
+@keyframes btnPlayBreath{
+  0%,100%{box-shadow:0 6px 20px rgba(124,58,237,0.45),0 3px 8px rgba(0,0,0,0.3),inset 0 1px 1px rgba(255,255,255,0.25);}
+  50%{box-shadow:0 10px 28px rgba(236,72,153,0.55),0 4px 10px rgba(0,0,0,0.32),inset 0 1px 1px rgba(255,255,255,0.32);}
+}
+
+/* ─── Mode-card selected halo upgrade ─── */
+.mode-card.selected{
+  box-shadow: var(--shadow-glow-md, 0 0 16px rgba(124,58,237,0.45)),
+              0 4px 12px rgba(0,0,0,0.3),
+              inset 0 1px 1px rgba(255,255,255,0.12) !important;
+}
+.mode-card.selected::before{
+  content:'';
+  position:absolute;
+  inset:-2px;
+  border-radius:inherit;
+  background:linear-gradient(135deg,
+    rgba(124,58,237,0.0),
+    rgba(157,78,221,0.18),
+    rgba(236,72,153,0.18),
+    rgba(124,58,237,0.0));
+  z-index:-1;
+  opacity:0.7;
+  pointer-events:none;
+}
+
+/* ─── Tap-target safety net for play-type buttons ─── */
+.play-type-selector--primary .play-type-btn{
+  min-height:48px;
+}
+
+/* ─── Near-Miss pill (Results) ─── */
+.results-near-miss{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin:8px auto 4px;
+  padding:8px 14px;
+  border-radius:999px;
+  background:linear-gradient(135deg,
+    rgba(236,72,153,0.18),
+    rgba(124,58,237,0.18));
+  border:1px solid rgba(236,72,153,0.45);
+  color:var(--text);
+  font-family:'Space Grotesk', sans-serif;
+  font-size:0.78rem;font-weight:800;
+  letter-spacing:0.4px;
+  text-transform:uppercase;
+  box-shadow:0 6px 16px rgba(236,72,153,0.25), inset 0 1px 1px rgba(255,255,255,0.08);
+  animation:nearMissEnter 480ms var(--motion-ease-bounce, cubic-bezier(0.34,1.56,0.64,1)) both;
+  will-change:transform, opacity;
+}
+.results-near-miss .nm-spark{
+  font-size:1rem;line-height:1;
+  filter:drop-shadow(0 0 6px rgba(236,72,153,0.7));
+}
+.results-near-miss .nm-num{
+  color:var(--accent-glow, #F472B6);
+  text-shadow:0 0 10px rgba(244,114,182,0.5);
+}
+@keyframes nearMissEnter{
+  0%{transform:translateY(8px) scale(0.9);opacity:0;}
+  60%{transform:translateY(-2px) scale(1.04);opacity:1;}
+  100%{transform:translateY(0) scale(1);opacity:1;}
+}
+body[data-reduced-motion] .results-near-miss{animation:none;}
+
+/* ─── Replay CTA auto-focus pulse ─── */
+#btnOneMore.cta-pulse{
+  animation:ctaPulse 1.6s ease-in-out infinite;
+  will-change:transform, box-shadow;
+}
+@keyframes ctaPulse{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.04);}
+}
+body[data-perf-mode="low"] #btnOneMore.cta-pulse,
+body[data-reduced-motion] #btnOneMore.cta-pulse{
+  animation:none;
+}
+
+/* ═══════════════════════════════════════════════════
+   v60 Welle 4 — Daily Quests Panel + Season Pass Card
+   Above-the-fold engagement loops.
+   Compositor-safe (only transform/opacity animated),
+   reduced-motion + low-perf friendly.
+   ═══════════════════════════════════════════════════ */
+
+.daily-quests-panel{
+  margin:14px 16px 8px;
+  padding:12px 14px;
+  border-radius:16px;
+  background:linear-gradient(135deg,
+    rgba(124,58,237,0.10),
+    rgba(15,23,42,0.55));
+  border:1px solid rgba(124,58,237,0.28);
+  box-shadow:var(--shadow-glow-sm, 0 0 12px rgba(124,58,237,0.15)),
+             0 4px 14px rgba(0,0,0,0.3);
+  backdrop-filter:blur(var(--blur-strong, 14px));
+  -webkit-backdrop-filter:blur(var(--blur-strong, 14px));
+}
+body[data-perf-mode="low"] .daily-quests-panel{
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+.dq-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;
+}
+.dq-head-title{
+  font-family:'Space Grotesk', sans-serif;
+  font-size:0.78rem;font-weight:800;
+  letter-spacing:0.6px;text-transform:uppercase;
+  color:var(--text);
+  background:linear-gradient(90deg, #C4B5FD, #F472B6);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.dq-head-count{
+  font-size:0.72rem;font-weight:700;
+  color:var(--text-muted, #94A3B8);
+  font-variant-numeric:tabular-nums;
+}
+.dq-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.dq-item{
+  display:grid;
+  grid-template-columns:1fr auto;
+  grid-template-areas:"text count" "bar bar";
+  column-gap:10px;row-gap:6px;
+  padding:8px 10px;
+  border-radius:12px;
+  background:rgba(15,23,42,0.5);
+  border:1px solid rgba(255,255,255,0.05);
+  min-height:48px;
+  transition:border-color 0.25s ease, background 0.25s ease;
+}
+.dq-item.dq-done{
+  border-color:rgba(16,185,129,0.55);
+  background:linear-gradient(135deg, rgba(16,185,129,0.18), rgba(15,23,42,0.5));
+}
+.dq-text{grid-area:text;display:flex;flex-direction:column;gap:2px;min-width:0}
+.dq-label{
+  font-size:0.82rem;font-weight:700;
+  color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.dq-reward{
+  font-size:0.7rem;font-weight:600;
+  color:var(--text-muted, #94A3B8);
+  letter-spacing:0.3px;
+}
+.dq-count{
+  grid-area:count;align-self:center;
+  font-size:0.78rem;font-weight:800;
+  color:var(--text);
+  font-variant-numeric:tabular-nums;
+  min-width:42px;text-align:right;
+}
+.dq-progress{
+  grid-area:bar;
+  position:relative;height:6px;border-radius:6px;
+  background:rgba(255,255,255,0.08);
+  overflow:hidden;
+}
+.dq-progress-fill{
+  position:absolute;inset:0;
+  background:linear-gradient(90deg, #7C3AED, #EC4899);
+  transform-origin:left center;
+  transform:scaleX(0);
+  transition:transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  will-change:transform;
+}
+.dq-done .dq-progress-fill{
+  background:linear-gradient(90deg, #10B981, #34D399);
+}
+
+/* Season Pass card */
+.season-pass-card{
+  margin:0 16px 12px;
+  padding:10px 14px;
+  border-radius:16px;
+  background:linear-gradient(135deg,
+    rgba(236,72,153,0.10),
+    rgba(15,23,42,0.55));
+  border:1px solid rgba(236,72,153,0.28);
+  box-shadow:var(--shadow-glow-sm, 0 0 12px rgba(236,72,153,0.15)),
+             0 4px 14px rgba(0,0,0,0.3);
+  backdrop-filter:blur(var(--blur-strong, 14px));
+  -webkit-backdrop-filter:blur(var(--blur-strong, 14px));
+}
+body[data-perf-mode="low"] .season-pass-card{
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+.sp-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:6px;
+}
+.sp-title{
+  font-family:'Space Grotesk', sans-serif;
+  font-size:0.78rem;font-weight:800;
+  letter-spacing:0.6px;text-transform:uppercase;
+  background:linear-gradient(90deg, #F472B6, #C4B5FD);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.sp-meta{
+  font-size:0.7rem;font-weight:700;
+  color:var(--text-muted, #94A3B8);
+  letter-spacing:0.3px;
+}
+.sp-bar{
+  height:8px;border-radius:8px;
+  background:rgba(255,255,255,0.08);
+  overflow:hidden;
+}
+.sp-bar-fill{
+  height:100%;width:100%;
+  background:linear-gradient(90deg, #EC4899, #7C3AED 60%, #06B6D4);
+  transform-origin:left center;
+  transform:scaleX(0);
+  transition:transform 0.6s cubic-bezier(0.34,1.56,0.64,1);
+  will-change:transform;
+  box-shadow:0 0 8px rgba(236,72,153,0.4);
+}
+.sp-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:6px;
+  font-size:0.74rem;font-weight:700;
+  color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.sp-foot .sp-next{color:var(--text-muted, #94A3B8);font-weight:600}

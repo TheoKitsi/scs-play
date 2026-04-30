@@ -12,6 +12,8 @@ import { applyTheme }       from '../services/ThemeService.js';
 import { EffectsManager }   from '../effects.js';
 import { checkOnboardingHints } from '../helpers/onboardingHints.js';
 import { updateWheelCard } from './WheelScreen.js';
+import { getOrSeedQuests, countCompleted as questsCompleted } from '../services/DailyQuestService.js';
+import { getProgress as getPassProgress, PASS_STAGES } from '../services/SeasonPass.js';
 import app                   from '../appState.js';
 
 /* ═══════ Hero Carousel State ═══════ */
@@ -274,7 +276,10 @@ function positionSlides() {
   // Update selected mode
   const currentMode = CONFIG.MODE_ORDER[carouselIdx];
   if (currentMode && app.save.isModeUnlocked(currentMode)) {
-    app.selectedMode = currentMode;
+    if (app.selectedMode !== currentMode) {
+      app.selectedMode = currentMode;
+      app.save.setSetting('gameMode', currentMode);
+    }
   }
 }
 
@@ -427,6 +432,7 @@ function updateQuickShortcuts() {
       const name = t(`mode_${m}`) || m.toUpperCase();
       return `<button class="qs-slot filled${isActive}" data-mode="${m}" data-slot="${i}">
         <span class="qs-slot-icon">${getModeSVG(m)}</span>
+        <span class="qs-slot-name">${name}</span>
       </button>`;
     }
     return `<button class="qs-slot empty" data-slot="${i}"><span class="qs-slot-plus">+</span></button>`;
@@ -510,23 +516,15 @@ export function updatePlayTypeSelector() {
 
 /* ═══════ Daily login check ═══════ */
 export async function checkDailyLogin() {
-  const { save, audio } = app;
+  const { save } = app;
   try {
     const result = await save.claimDailyLogin();
     if (!result) return;
-    const bodyFx = getBodyFx();
-    bodyFx.achievementToast(t('daily_login_title'));
-    setTimeout(() => {
-      bodyFx.achievementToast(t('daily_login_lives', { n: (result && result.livesAwarded) ? result.livesAwarded : 1 }));
-    }, 1500);
-    if (result.streakBonus > 0) {
-      setTimeout(() => {
-        bodyFx.achievementToast(t('daily_login_streak_bonus', { n: result.streakBonus || 0 }));
-      }, 3000);
-    }
-    if (result.streak && result.streak >= 2) {
-      setTimeout(() => bodyFx.dailyStreakBadge(result.streak), 4500);
-    }
+    const livesEl = $('#homeLivesCount');
+    if (livesEl) livesEl.textContent = save.getLives();
+    const fireEl = $('#homeFireCount');
+    if (fireEl) fireEl.textContent = save.getFireBalance();
+    updateHeroStats();
   } catch { /* ignore */ }
 }
 
@@ -535,6 +533,66 @@ export function getBodyFx() {
   if (!app.bodyFx) app.bodyFx = new EffectsManager(document.body);
   app.bodyFx.setReduced(app.save.getSetting('reducedMotion'));
   return app.bodyFx;
+}
+
+/* ═══════ v60 Welle 4: Daily Quests panel ═══════ */
+function renderDailyQuestsPanel() {
+  const root = $('#dailyQuestsPanel');
+  if (!root) return;
+  const { save } = app;
+  const quests = getOrSeedQuests(save);
+  const list = $('#dqList');
+  const head = $('#dqHeadCount');
+  if (head) head.textContent = `${questsCompleted(save)}/${quests.length}`;
+  if (!list) return;
+  list.innerHTML = quests.map(q => {
+    const done = q.progress >= q.target;
+    const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
+    const labelKey = `quest_label_${q.type}`;
+    const labelTxt = (typeof t === 'function')
+      ? t(labelKey, { n: q.target })
+      : `${q.type} ${q.target}`;
+    return `<li class="dq-item${done ? ' dq-done' : ''}" data-id="${q.id}">
+      <div class="dq-text">
+        <span class="dq-label">${labelTxt}</span>
+        <span class="dq-reward">+${q.rewardXP} XP · +${q.rewardFire} 🔥</span>
+      </div>
+      <div class="dq-progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
+        <div class="dq-progress-fill" style="transform:scaleX(${pct/100})"></div>
+      </div>
+      <span class="dq-count">${Math.min(q.progress, q.target)}/${q.target}</span>
+    </li>`;
+  }).join('');
+}
+
+/* ═══════ v60 Welle 4: Season Pass card ═══════ */
+function renderSeasonPassCard() {
+  const root = $('#seasonPassCard');
+  if (!root) return;
+  const { save } = app;
+  const p = getPassProgress(save);
+  if (!p) return;
+  const pct = Math.min(1, p.points / p.nextAt);
+  const fill = $('#spBarFill');
+  if (fill) fill.style.transform = `scaleX(${pct})`;
+  const meta = $('#spMeta');
+  if (meta) {
+    meta.textContent = (typeof t === 'function')
+      ? t('sp_meta', { d: p.daysLeft })
+      : `${p.daysLeft}d`;
+  }
+  const stage = $('#spStage');
+  if (stage) {
+    stage.textContent = (typeof t === 'function')
+      ? t('sp_stage', { s: p.stage, total: p.totalStages })
+      : `Stage ${p.stage}/${p.totalStages}`;
+  }
+  const next = $('#spNext');
+  if (next) {
+    next.textContent = (typeof t === 'function')
+      ? t('sp_next', { n: Math.max(0, p.nextAt - p.points) })
+      : `${Math.max(0, p.nextAt - p.points)} pts`;
+  }
 }
 
 /* ═══════ Show home ═══════ */
@@ -599,6 +657,9 @@ export function showHome() {
   updateAvatarDisplay();
   checkDailyLogin();
   updateWheelCard();
+  /* v60 Welle 4: Quests panel + Season Pass bar */
+  try { renderDailyQuestsPanel(); } catch (e) { console.warn('quests render failed', e); }
+  try { renderSeasonPassCard();    } catch (e) { console.warn('pass render failed',   e); }
 
   /* Weekend XP bonus badge */
   const weekendBadge = $('#weekendBadge');

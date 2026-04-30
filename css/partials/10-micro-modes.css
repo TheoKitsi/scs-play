@@ -251,16 +251,20 @@
   position:absolute;top:0;left:0;right:0;
   height:3px;background:rgba(255,255,255,0.06);
   z-index:12;pointer-events:none;
+  overflow:hidden;
 }
 .timer-bar-fill{
   height:100%;
+  width:100%;
+  transform-origin:left center;
   background:var(--accent);
   border-radius:0 2px 2px 0;
-  transition:width 1s linear;
+  transition:transform 1s linear, background 0.3s ease;
+  will-change:transform;
 }
 .timer-bar-fill.urgent{
   background:var(--warning);
-  transition:width 1s linear;
+  transition:transform 1s linear, background 0.3s ease;
 }
 .timer-bar-fill.critical{
   background:var(--danger,#EF4444);

@@ -60,6 +60,9 @@ export const CONFIG = {
 
   /* ─── Answer window (ms) — minimum time before auto-miss triggers ─── */
   MIN_ANSWER_WINDOW: 1200,
+  MIN_ANSWER_WINDOW_REFLEX: 1500,
+  MIN_ANSWER_WINDOW_BRAIN: 1800,
+  MIN_ANSWER_WINDOW_MEMO: 2200,
 
   /* ─── Anti-cheat ─── */
   ANTI_CHEAT_MIN_REACTION: 50,
@@ -80,9 +83,9 @@ export const CONFIG = {
   PRACTICE_INTERVAL: 1400,
 
   /* ─── Swipe detection ─── */
-  SWIPE_MIN_DISTANCE: 30,
+  SWIPE_MIN_DISTANCE: 24,
   SWIPE_MAX_TIME: 800,
-  SWIPE_MIN_VELOCITY: 0.3,   // px/ms — reject slow drags (v22)
+  SWIPE_MIN_VELOCITY: 0.18,  // px/ms — reject only clearly accidental drags
 
   /* ─── Colours (12 for Ultra, first 4 for Beginner, first 8 for Expert) ─── */
   COLORS: {
@@ -342,8 +345,8 @@ export const CONFIG = {
 
   /* Memo mode — hidden corners (Verdeckte Ecken) */
   MEMO_PREVIEW_MS: 3000,          // Corner preview duration at game start (ms)
-  MEMO_PREVIEW_MIN_MS: 1200,      // Minimum preview after shrinking
-  MEMO_PREVIEW_SHRINK: 200,       // ms reduction per reveal cycle
+  MEMO_PREVIEW_MIN_MS: 1800,      // Minimum preview after shrinking
+  MEMO_PREVIEW_SHRINK: 120,       // ms reduction per reveal cycle
   MEMO_REVEAL_EVERY: 8,           // Re-reveal corners every N correct answers
   MEMO_SHUFFLE_AFTER: 3,          // Shuffle corner positions every N reveals
 
@@ -372,12 +375,12 @@ export const CONFIG = {
   SEQUENZ_PAUSE_MS: 300,
   SEQUENZ_MAX_LENGTH: 20,
   SEQUENZ_SPEED_UP_EVERY: 3,
-  SEQUENZ_FLASH_MIN: 250,
+  SEQUENZ_FLASH_MIN: 320,
   SEQUENZ_READY_DELAY: 400,
   SEQUENZ_INPUT_TIMEOUT_MS: 3000,  /* Max idle time per tap during "go" phase */
-  SEQUENZ_INPUT_TIMEOUT_MIN: 2000, /* Minimum input timeout after difficulty plateau */
-  SEQUENZ_INPUT_TIMEOUT_STEP: 100, /* ms decrease per round after plateau */
-  SEQUENZ_SPEED_STEP: 50,          /* ms decrease per speed-up event */
+  SEQUENZ_INPUT_TIMEOUT_MIN: 2600, /* Minimum input timeout after difficulty plateau */
+  SEQUENZ_INPUT_TIMEOUT_STEP: 60,  /* ms decrease per round after plateau */
+  SEQUENZ_SPEED_STEP: 35,          /* ms decrease per speed-up event */
 
   /* Word mode */
   WORD_SHUFFLE_INTERVAL: 12,  /* Re-shuffle category→corner mapping every N spawns */
@@ -408,9 +411,6 @@ export const CONFIG = {
     { name_de:'ROSA',   name_en:'PINK',   hex:'#EC4899' },
     { name_de:'TÜRKIS', name_en:'CYAN',   hex:'#06B6D4' },
   ],
-  /* Congruent rate: 35% trials show matching word+ink for baseline */
-  STROOP_CONGRUENT_RATE: 0.35,
-
   /* ═══ FOKUS MODE (Flanker Task) ═══ */
   FOKUS_ARROWS: ['←','→','↑','↓'],
   FOKUS_ARROWS_8: ['←','→','↑','↓','↗','↘','↙','↖'],

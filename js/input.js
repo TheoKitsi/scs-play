@@ -159,8 +159,8 @@ export class SwipeHandler {
     const angle = Math.atan2(-dy, dx) * (180 / Math.PI);
 
     if (this.mode === 'ultra') {
-      /* 12 directions — 30° sectors; reject swipes within 3° of boundaries */
-      const DEAD = 3;
+      /* 12 directions — 30° sectors; keep a tiny boundary guard */
+      const DEAD = 2;
       const norm = ((angle % 30) + 30) % 30;
       if (norm < DEAD || norm > (30 - DEAD)) return null;
       if (angle >= -15    && angle < 15)     return 'right';
@@ -179,8 +179,8 @@ export class SwipeHandler {
     }
 
     if (this.mode === 'expert') {
-      /* 8 directions — 45° sectors; reduced dead zone for reliable input */
-      const DEAD = 2;
+      /* 8 directions — 45° sectors; minimal dead zone for reliable input */
+      const DEAD = 1;
       const norm = ((angle % 45) + 45) % 45;
       if (norm < DEAD || norm > (45 - DEAD)) return null;
       if (angle >= -22.5  && angle <  22.5)  return 'right';
@@ -194,8 +194,8 @@ export class SwipeHandler {
       return 'right';
     }
 
-    /* Beginner / Klassik / Mathe / Worte / Memo — 4 quadrants; near-zero dead zone for reliable input */
-    const DEAD = 1;
+    /* Beginner / Klassik / Mathe / Worte / Memo — 4 quadrants; no boundary rejection */
+    const DEAD = 0;
     const absAngle = Math.abs(angle);
     if (absAngle < DEAD || absAngle > (180 - DEAD) || Math.abs(absAngle - 90) < DEAD) return null;
     if (angle >= 0   && angle < 90)   return 'ur';

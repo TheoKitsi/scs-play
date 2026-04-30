@@ -5,6 +5,13 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+function scaleSynth(synth, multiplier) {
+  return {
+    ...synth,
+    amp: (synth.amp ?? 0.08) * multiplier,
+  };
+}
+
 
 function loadMp3Encoder() {
   try {
@@ -54,7 +61,7 @@ const TRACKS = [
   {
     name: 'menu',
     bpm: 72,
-    bars: 16,
+    bars: 64,
     seed: 11,
     masterGain: 0.78,
     pad: { wave: 'sine', amp: 0.09, attack: 0.16, release: 0.22, panSpread: 0.5, detune: 0.0025 },
@@ -97,7 +104,7 @@ const TRACKS = [
   {
     name: 'classic',
     bpm: 115,
-    bars: 16,
+    bars: 64,
     seed: 23,
     masterGain: 0.82,
     pad: { wave: 'triangle', amp: 0.075, attack: 0.06, release: 0.12, panSpread: 0.45, detune: 0.002 },
@@ -140,7 +147,7 @@ const TRACKS = [
   {
     name: 'endless',
     bpm: 92,
-    bars: 16,
+    bars: 64,
     seed: 37,
     masterGain: 0.72,
     pad: { wave: 'sine', amp: 0.095, attack: 0.22, release: 0.28, panSpread: 0.58, detune: 0.0035 },
@@ -183,7 +190,7 @@ const TRACKS = [
   {
     name: 'blitz',
     bpm: 136,
-    bars: 16,
+    bars: 64,
     seed: 53,
     masterGain: 0.84,
     pad: { wave: 'softsaw', amp: 0.05, attack: 0.02, release: 0.09, panSpread: 0.36, detune: 0.0016 },
@@ -226,7 +233,7 @@ const TRACKS = [
   {
     name: 'competition',
     bpm: 140,
-    bars: 16,
+    bars: 64,
     seed: 71,
     masterGain: 0.86,
     pad: { wave: 'softsaw', amp: 0.055, attack: 0.018, release: 0.08, panSpread: 0.34, detune: 0.0014 },
@@ -469,6 +476,24 @@ async function writeMp3(filePath, buffer) {
   await fs.writeFile(filePath, Buffer.concat(chunks));
 }
 
+function scaleDrums(drums, multiplier) {
+  return {
+    kick: (drums.kick ?? 0) * multiplier,
+    snare: (drums.snare ?? 0) * multiplier,
+    hat: (drums.hat ?? 0) * multiplier,
+  };
+}
+
+function arrangementForBar(bar, totalBars) {
+  const progress = bar / Math.max(1, totalBars - 1);
+  if (progress < 0.125) return { pad: 1.05, bass: 0.45, lead: 0.22, arp: 0.35, drums: 0.18 };
+  if (progress < 0.25) return { pad: 1.0, bass: 0.7, lead: 0.55, arp: 0.65, drums: 0.55 };
+  if (progress < 0.5) return { pad: 0.95, bass: 1.0, lead: 1.0, arp: 1.0, drums: 1.0 };
+  if (progress < 0.625) return { pad: 1.12, bass: 0.62, lead: 0.34, arp: 0.42, drums: 0.28 };
+  if (progress < 0.875) return { pad: 1.0, bass: 1.06, lead: 1.08, arp: 1.12, drums: 1.08 };
+  return { pad: 1.05, bass: 0.48, lead: 0.28, arp: 0.38, drums: 0.22 };
+}
+
 function renderTrack(track) {
   const beatSec = 60 / track.bpm;
   const totalSeconds = track.bars * BEATS_PER_BAR * beatSec;
@@ -478,27 +503,34 @@ function renderTrack(track) {
   for (let bar = 0; bar < track.bars; bar++) {
     const part = track.progression[bar % track.progression.length];
     const barStart = bar * BEATS_PER_BAR * beatSec;
-    addChord(buffer, part.chord, barStart, beatSec * 3.8, track.pad);
+    const section = arrangementForBar(bar, track.bars);
+    const pad = scaleSynth(track.pad, section.pad);
+    const bass = scaleSynth(track.bass, section.bass);
+    const lead = scaleSynth(track.lead, section.lead);
+    const arp = scaleSynth(track.arp, section.arp);
+    const drums = scaleDrums(track.drums, section.drums);
+
+    addChord(buffer, part.chord, barStart, beatSec * 3.8, pad);
 
     part.bass.forEach((note, step) => {
       if (!note) return;
-      addNote(buffer, noteToFreq(note), barStart + step * beatSec * 0.5, beatSec * 0.42, track.bass, track.bass.pan ?? 0);
+      addNote(buffer, noteToFreq(note), barStart + step * beatSec * 0.5, beatSec * 0.42, bass, bass.pan ?? 0);
     });
 
     part.lead.forEach((note, step) => {
       if (!note) return;
       const pan = step % 2 === 0 ? -0.12 : 0.12;
-      addNote(buffer, noteToFreq(note), barStart + step * beatSec * 0.5, beatSec * 0.38, track.lead, pan);
+      addNote(buffer, noteToFreq(note), barStart + step * beatSec * 0.5, beatSec * 0.38, lead, pan);
     });
 
     part.arp.forEach((note, step) => {
       if (!note) return;
-      const spread = track.arp.panSpread ?? 0.3;
+      const spread = arp.panSpread ?? 0.3;
       const pan = step % 2 === 0 ? -spread : spread;
-      addNote(buffer, noteToFreq(note), barStart + step * beatSec * 0.25, beatSec * 0.2, track.arp, pan);
+      addNote(buffer, noteToFreq(note), barStart + step * beatSec * 0.25, beatSec * 0.2, arp, pan);
     });
 
-    addDrums(buffer, barStart, beatSec, part.drums || {}, track.drums, random);
+    addDrums(buffer, barStart, beatSec, part.drums || {}, drums, random);
   }
 
   addDelay(buffer, track.delay);

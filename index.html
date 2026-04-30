@@ -229,6 +229,35 @@
       <!-- Swipeable mode slides — JS renders one .hero-slide per mode -->
       <div class="hero-slider" id="heroSlider" role="group" aria-label="Spielmodus wählen"></div>
 
+      <div class="home-play-command" id="homePlayCommand">
+        <div class="play-type-selector play-type-selector--primary">
+          <button class="play-type-btn selected" data-play="blitz">
+            <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg></span>
+            <span class="play-type-name" data-i18n="play_blitz">BLITZ</span>
+          </button>
+          <button class="play-type-btn" data-play="classic">
+            <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-clock"></use></svg></span>
+            <span class="play-type-name" data-i18n="play_classic">MARATHON</span>
+          </button>
+          <button class="play-type-btn" data-play="endless">
+            <span class="play-type-icon play-type-icon--text">&#x221E;</span>
+            <span class="play-type-name" data-i18n="play_endless">ENDLOS</span>
+          </button>
+          <button class="play-type-btn" data-play="competition">
+            <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-trophy"></use></svg></span>
+            <span class="play-type-name" data-i18n="play_competition">WETTKAMPF</span>
+            <span class="play-type-comp-badge" id="compBadge"></span>
+          </button>
+        </div>
+
+        <div class="play-fab-wrap play-fab-wrap--primary">
+          <button id="btnPlay" class="btn-play-fab">
+            <svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg>
+            <span data-i18n="play">SPIELEN</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Prev / Next nav arrows -->
       <button class="hero-nav-arrow hero-nav-prev" id="heroNavPrev" aria-label="Vorheriger Modus">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -334,27 +363,6 @@
         </button>
       </div>
 
-      <!-- Play type pills -->
-      <div class="play-type-selector">
-        <button class="play-type-btn selected" data-play="blitz">
-          <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg></span>
-          <span class="play-type-name" data-i18n="play_blitz">BLITZ</span>
-        </button>
-        <button class="play-type-btn" data-play="classic">
-          <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-clock"></use></svg></span>
-          <span class="play-type-name" data-i18n="play_classic">MARATHON</span>
-        </button>
-        <button class="play-type-btn" data-play="endless">
-          <span class="play-type-icon play-type-icon--text">&#x221E;</span>
-          <span class="play-type-name" data-i18n="play_endless">ENDLOS</span>
-        </button>
-        <button class="play-type-btn" data-play="competition">
-          <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-trophy"></use></svg></span>
-          <span class="play-type-name" data-i18n="play_competition">WETTKAMPF</span>
-          <span class="play-type-comp-badge" id="compBadge"></span>
-        </button>
-      </div>
-
       <!-- Stats Spotlight (5 cells: 3+2 grid) -->
       <div class="hero-stats-zone" id="heroStatsZone">
         <div class="hst-item hst-item--gold">
@@ -371,6 +379,26 @@
           <svg class="hst-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg>
           <span class="hst-value hst-value--games" id="hstGames">&#x2014;</span>
           <span class="hst-label" data-i18n="hst_games">Spiele gesamt</span>
+        </div>
+      </div>
+
+      <!-- v60 Welle 4: Daily Quests + Season Pass (Free) -->
+      <div class="daily-quests-panel" id="dailyQuestsPanel" aria-live="polite">
+        <div class="dq-head">
+          <span class="dq-head-title" data-i18n="dq_title">TÄGLICHE QUESTS</span>
+          <span class="dq-head-count" id="dqHeadCount"></span>
+        </div>
+        <ul class="dq-list" id="dqList"></ul>
+      </div>
+      <div class="season-pass-card" id="seasonPassCard">
+        <div class="sp-head">
+          <span class="sp-title" data-i18n="sp_title">SEASON PASS</span>
+          <span class="sp-meta" id="spMeta"></span>
+        </div>
+        <div class="sp-bar"><div class="sp-bar-fill" id="spBarFill"></div></div>
+        <div class="sp-foot">
+          <span class="sp-stage" id="spStage"></span>
+          <span class="sp-next"  id="spNext"></span>
         </div>
       </div>
 
@@ -427,13 +455,6 @@
         <button id="btnDismissInstall" class="pwa-install-dismiss" aria-label="Schlie&szlig;en">&times;</button>
       </div>
 
-      <!-- PLAY BUTTON (in-flow) -->
-      <div class="play-fab-wrap">
-        <button id="btnPlay" class="btn-play-fab">
-          <svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg>
-          <span data-i18n="play">SPIELEN</span>
-        </button>
-      </div>
     </div>
 
     <!-- ═══ FOOTER NAV ═══ -->

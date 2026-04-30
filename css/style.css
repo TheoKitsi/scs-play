@@ -3,6 +3,7 @@
    Split into logical partials for fast dev.
    ═══════════════════════════════════════════ */
 
+@import url('partials/00-perf-tokens.css');
 @import url('partials/01-tokens.css');
 @import url('partials/02-base.css');
 @import url('partials/03-boot-auth.css');
@@ -15,3 +16,28 @@
 @import url('partials/10-micro-modes.css');
 @import url('partials/11-mode-mastery.css');
 @import url('partials/12-polish-v18-v19.css');
+
+/* ═══════════════════════════════════════════
+   Global accessibility safety-net.
+   Respects OS-level reduced-motion preference
+   AND the body[data-reduced-motion] flag set
+   by js/helpers/perfMode.js. Keeps a 0.01ms
+   transition so JS handlers that listen for
+   `transitionend` still fire.
+   ═══════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+body[data-reduced-motion] *,
+body[data-reduced-motion] *::before,
+body[data-reduced-motion] *::after{
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+

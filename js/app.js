@@ -6,6 +6,7 @@ import { haptic } from './helpers/haptics.js';
 import { CONFIG, DEBUG }    from './config.js';
 import { t }                from './i18n.js';
 import { $, $$, showScreen } from './helpers/dom.js';
+import { initPerfMode }     from './helpers/perfMode.js';
 import { AudioManager }     from './audio.js';
 import { AuthService }      from './auth.js';
 import { SaveService }      from './save.js';
@@ -42,12 +43,28 @@ import { showEngagementReport }
 import { bindWheel, updateWheelCard }
                             from './screens/WheelScreen.js';
 
+/* ═══════ Perf-mode + a11y baseline (must run before screens render) ═══════ */
+initPerfMode();
+
 /* ═══════ Instantiate core services ═══════ */
 app.audio = new AudioManager();
 app.auth  = new AuthService();
 app.save  = new SaveService(app.auth);
 app.game  = new GameEngine();
 app.mastery = new ModeMastery(app.save);
+
+try {
+  if (globalThis.localStorage?.getItem('scsQa') === '1') {
+    globalThis.__SCS_QA__ = {
+      forceGameOver() {
+        app.game?._endGame();
+      },
+      setContinued(value = true) {
+        if (app.game) app.game.continued = value;
+      },
+    };
+  }
+} catch { /* ignore QA hook setup failures */ }
 
 
 /* ═══════ Offline / Online indicator ═══════ */
@@ -65,7 +82,6 @@ function initOfflineIndicator() {
 
   window.addEventListener('offline', () => showToast(false));
   window.addEventListener('online',  () => showToast(true));
-  if (!navigator.onLine) setTimeout(() => showToast(false), 1500);
 }
 
 /* ═══════ Visibility API — auto-pause ═══════ */

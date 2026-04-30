@@ -442,11 +442,11 @@ function updateTimerBar() {
   const fill = _getHudEls().timerFill;
   if (!fill) return;
   if (game.practice || game.playType === 'endless' || app.gameDuration <= 0) {
-    fill.style.width = '0%';
+    fill.style.transform = 'scaleX(0)';
     return;
   }
-  const pct = Math.min(100, Math.max(0, (game.timer / app.gameDuration) * 100));
-  fill.style.width = pct + '%';
+  const ratio = Math.min(1, Math.max(0, game.timer / app.gameDuration));
+  fill.style.transform = `scaleX(${ratio})`;
   fill.classList.remove('urgent','critical');
   const thresholds = getUrgencyThresholds();
   if (game.timer <= thresholds.critical) fill.classList.add('critical');
@@ -1932,7 +1932,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   const timerBarFill = $('#timerBarFill');
   if (timerBarFill) {
-    timerBarFill.style.width = (app.gameDuration > 0 ? '100%' : '0%');
+    timerBarFill.style.transform = (app.gameDuration > 0 ? 'scaleX(1)' : 'scaleX(0)');
     timerBarFill.classList.remove('urgent','critical');
   }
 

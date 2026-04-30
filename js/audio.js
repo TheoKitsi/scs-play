@@ -48,6 +48,9 @@ export class AudioManager {
     this._musicManifestLoaded = false;
     this._musicManifestPromise = null;
     this._musicFilePlaying = false;
+    this._musicFileMode = null;
+    this._musicFileVolume = 0.4;
+    this._musicFadeTimer = null;
 
     this._initMusicData();
     this._loadMusicManifest();
@@ -1039,24 +1042,48 @@ export class AudioManager {
     return this._availableMusicTracks.has(mode);
   }
 
+  _fadeMusicFileTo(targetVolume, durationMs = 450) {
+    if (!this._musicAudio) return;
+    clearInterval(this._musicFadeTimer);
+    const startVolume = this._musicAudio.volume;
+    const target = Math.max(0, Math.min(1, targetVolume));
+    const startedAt = performance.now();
+    this._musicFadeTimer = setInterval(() => {
+      const progress = Math.min(1, (performance.now() - startedAt) / durationMs);
+      this._musicAudio.volume = startVolume + (target - startVolume) * progress;
+      if (progress >= 1) {
+        clearInterval(this._musicFadeTimer);
+        this._musicFadeTimer = null;
+      }
+    }, 50);
+  }
+
   /**
    * Start music from an audio file. Returns true if file playback started.
    */
   _startMusicFile() {
     const mode = this._musicMode;
     if (!this._hasMusicFile(mode)) return false;
+    if (this._musicFilePlaying && this._musicFileMode === mode && this._musicAudio && !this._musicAudio.paused) {
+      return true;
+    }
     const url = `audio/music/${mode}.mp3`;
     if (!this._musicAudio) {
       this._musicAudio = new Audio();
       this._musicAudio.loop = true;
-      this._musicAudio.volume = 0.4;
     }
+    clearInterval(this._musicFadeTimer);
+    this._musicFadeTimer = null;
     this._musicAudio.src = url;
     this._musicAudio.currentTime = 0;
+    this._musicAudio.volume = 0;
     this._musicAudio.play().then(() => {
       this._musicFilePlaying = true;
+      this._musicFileMode = mode;
+      this._fadeMusicFileTo(this._musicFileVolume, 450);
     }).catch(() => {
       this._musicFilePlaying = false;
+      this._musicFileMode = null;
       this._availableMusicTracks.delete(mode);
     });
     return true;
@@ -1066,11 +1093,14 @@ export class AudioManager {
    * Stop file-based music playback.
    */
   _stopMusicFile() {
+    clearInterval(this._musicFadeTimer);
+    this._musicFadeTimer = null;
     if (this._musicAudio) {
       this._musicAudio.pause();
       this._musicAudio.currentTime = 0;
     }
     this._musicFilePlaying = false;
+    this._musicFileMode = null;
   }
 
   /* ═══════════════════════════════════════
@@ -1715,6 +1745,7 @@ export class AudioManager {
 
   setMusicVolume(v) {
     if (this._musicGain) this._musicGain.gain.value = v;
-    if (this._musicAudio) this._musicAudio.volume = Math.min(1, v * 2);
+    this._musicFileVolume = Math.min(1, v * 2);
+    if (this._musicAudio) this._musicAudio.volume = this._musicFileVolume;
   }
 }

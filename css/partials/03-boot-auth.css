@@ -3,7 +3,7 @@
 /* ═══════════════════════════════════════════
    BOOT SCREEN — Premium entrance
    ═══════════════════════════════════════════ */
-#boot{background:var(--bg);z-index:100; backdrop-filter: blur(20px);}
+#boot{background:var(--bg);z-index:100; backdrop-filter: var(--blur-strong, blur(14px));}
 #boot.fade-out{opacity:0;transition:opacity .9s var(--ease-smooth); pointer-events: none;}
 .boot-bg{position:absolute;inset:0;overflow:hidden; pointer-events:none;}
 .boot-orb{

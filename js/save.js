@@ -115,7 +115,10 @@ function defaults() {
     streakFreezesUsed: 0,       // total freezes used ever
     lastStreakFreezeEarned: null, // date when last freeze was earned
     /* v50: Mode Mastery — per-mode engagement tracking */
-    modeMastery: {}
+    modeMastery: {},
+    /* v60 Welle 4: Daily Quests + Season Pass (Free) */
+    dailyQuests: null,   /* { date:'YYYY-MM-DD', quests:[{id,type,target,progress,claimed,...}] } */
+    seasonPass:  null    /* { startDate:'YYYY-MM-DD', points, dailyGameCount:{}, claimedStages:[] } */
   };
 }
 

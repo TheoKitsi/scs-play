@@ -9,13 +9,19 @@ import app from '../appState.js';
 
 const HINTS = [
   { id: 'hint_carousel',  target: '.hero-slider',        i18n: 'hint_carousel' },
-  { id: 'hint_playflow',  target: '.play-fab-wrap',       i18n: 'hint_playflow' },
+  { id: 'hint_playflow',  target: '#homePlayCommand',     i18n: 'hint_playflow' },
   { id: 'hint_pin',       target: '.hero-pin-btn',        i18n: 'hint_pin' },
   { id: 'hint_shortcuts', target: '#quickShortcuts',      i18n: 'hint_shortcuts' },
 ];
 
 let _overlay = null;
 let _queue = [];
+let _activeHint = null;
+let _showTimer = null;
+
+function isHomeActive() {
+  return document.querySelector('#home')?.classList.contains('active');
+}
 
 function getShown() {
   return app.save?.data?.hintsShown || {};
@@ -54,20 +60,28 @@ function dismissCurrent() {
   const hintId = _overlay.dataset.hintId;
   if (hintId) markShown(hintId);
   _overlay.classList.remove('active');
+  _activeHint = null;
   // Show next hint in queue after short delay
   setTimeout(() => {
-    if (_queue.length > 0) {
+    if (isHomeActive() && _queue.length > 0) {
       showHint(_queue.shift());
     }
   }, 400);
 }
 
-function showHint(hint) {
-  const overlay = createOverlay();
-  const targetEl = $(hint.target);
-  overlay.dataset.hintId = hint.id;
+export function clearOnboardingHints() {
+  clearTimeout(_showTimer);
+  _showTimer = null;
+  _queue = [];
+  _activeHint = null;
+  if (_overlay) {
+    _overlay.classList.remove('active');
+    _overlay.removeAttribute('data-hint-id');
+  }
+}
 
-  // Position spotlight over target
+function positionSpotlight(overlay, hint) {
+  const targetEl = $(hint.target);
   const spotlight = overlay.querySelector('.onboarding-spotlight');
   if (targetEl) {
     const rect = targetEl.getBoundingClientRect();
@@ -81,6 +95,15 @@ function showHint(hint) {
   } else {
     spotlight.style.display = 'none';
   }
+}
+
+function showHint(hint) {
+  if (!isHomeActive()) return;
+  const overlay = createOverlay();
+  overlay.dataset.hintId = hint.id;
+  _activeHint = hint;
+
+  positionSpotlight(overlay, hint);
 
   // Set text
   overlay.querySelector('.onboarding-text').textContent = t(hint.i18n);
@@ -92,7 +115,9 @@ function showHint(hint) {
 /** Check and show pending onboarding hints for the home screen */
 export function checkOnboardingHints() {
   if (!app.save?.data) return;
+  if (!isHomeActive()) return;
   const shown = getShown();
+  clearTimeout(_showTimer);
   _queue = [];
   for (const hint of HINTS) {
     if (!shown[hint.id]) {
@@ -101,8 +126,23 @@ export function checkOnboardingHints() {
   }
   if (_queue.length > 0) {
     // Delay slightly so the home screen has rendered
-    setTimeout(() => {
-      if (_queue.length > 0) showHint(_queue.shift());
+    _showTimer = setTimeout(() => {
+      _showTimer = null;
+      if (isHomeActive() && _queue.length > 0) showHint(_queue.shift());
     }, 800);
   }
 }
+
+window.addEventListener('resize', () => {
+  if (_overlay?.classList.contains('active') && _activeHint) {
+    if (!isHomeActive()) {
+      clearOnboardingHints();
+      return;
+    }
+    positionSpotlight(_overlay, _activeHint);
+  }
+}, { passive: true });
+
+window.addEventListener('scs:screenchange', (event) => {
+  if (event.detail?.id !== 'home') clearOnboardingHints();
+});

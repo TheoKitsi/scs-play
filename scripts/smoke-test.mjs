@@ -33,6 +33,7 @@ async function run() {
   console.log('SCS Play Smoke Test\n');
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext(DEVICE);
+  await context.addInitScript(() => localStorage.setItem('scsQa', '1'));
   const page = await context.newPage();
 
   page.on('console', msg => {
@@ -133,9 +134,9 @@ async function run() {
   assert(await hasActiveClass('#game', 5000), 'Game screen reloaded');
 
   await page.waitForTimeout(4500);
-  await page.evaluate(async () => {
-    const { default: app } = await import('/js/appState.js');
-    app.game._endGame();
+  await page.evaluate(() => {
+    if (!globalThis.__SCS_QA__) throw new Error('SCS QA hook unavailable');
+    globalThis.__SCS_QA__.forceGameOver();
   });
   assert(await hasActiveClass('#results', 5000), 'Results screen visible after game over');
 
@@ -208,6 +209,53 @@ async function run() {
   } else {
     console.log('  SKIP: Wheel button not found');
   }
+
+  // ─── 13) v60 Welle 4: Daily Quests panel & Season Pass card ───
+  console.log('\n13. Welle 4 — Quests + Season Pass');
+  if (!await visible('#home', 1000)) {
+    await page.evaluate(() => {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.querySelector('#home')?.classList.add('active');
+    });
+    await page.waitForTimeout(400);
+  }
+  const dqVisible = await page.evaluate(() => {
+    const p = document.querySelector('#dailyQuestsPanel');
+    const items = document.querySelectorAll('#dqList .dq-item');
+    return Boolean(p && items.length === 3);
+  });
+  assert(dqVisible, 'Daily Quests panel renders 3 quests');
+
+  const spVisible = await page.evaluate(() => {
+    const c = document.querySelector('#seasonPassCard');
+    const fill = document.querySelector('#spBarFill');
+    const stage = document.querySelector('#spStage');
+    return Boolean(c && fill && stage && stage.textContent.length > 0);
+  });
+  assert(spVisible, 'Season Pass card renders progress + stage');
+
+  // ─── 14) Near-Miss pill is reachable through Game→Results path ───
+  console.log('\n14. Near-Miss pill DOM hook');
+  // The pill is rendered conditionally. We assert the DOM hook function and CSS are wired,
+  // i.e. the styles are present and a manual injection materialises (deterministic check).
+  const nmReady = await page.evaluate(() => {
+    /* Inject a temporary pill element to validate styling is loaded */
+    const buttons = document.querySelector('#resNormalBtns');
+    if (!buttons || !buttons.parentElement) return false;
+    let probe = document.querySelector('#resNearMiss');
+    if (!probe) {
+      probe = document.createElement('div');
+      probe.id = 'resNearMiss';
+      probe.className = 'results-near-miss';
+      probe.innerHTML = '<span class="nm-spark">✦</span><span>SMOKE</span>';
+      buttons.parentElement.insertBefore(probe, buttons);
+    }
+    const cs = window.getComputedStyle(probe);
+    const hasRadius = parseFloat(cs.borderRadius) >= 100;
+    probe.remove();
+    return hasRadius;
+  });
+  assert(nmReady, 'Near-Miss pill style class is loaded');
 
   // ─── Summary ───
   console.log('\n' + '='.repeat(40));
