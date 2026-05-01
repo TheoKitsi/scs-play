@@ -231,6 +231,9 @@
   position:relative;
   z-index:2;
   background:linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.15) 20px);
+  /* Soft fade at top edge so scrolled content gracefully fades behind the hero */
+  -webkit-mask-image:linear-gradient(180deg, transparent 0, #000 14px, #000 100%);
+          mask-image:linear-gradient(180deg, transparent 0, #000 14px, #000 100%);
 }
 .home-bottom-sheet::-webkit-scrollbar{display:none}
 .sheet-handle{

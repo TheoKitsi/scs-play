@@ -118,8 +118,8 @@ function renderCategories(lang, earned, saveData, animate) {
     const catName   = cat.name[lang] || cat.name.en;
     const catDesc   = cat.desc[lang] || cat.desc.en;
     const chainKeys = _getUniqueChains(filtered);
-    const delay = animate ? itemIdx * 0.06 : 0;
-    const animStyle = animate ? `animation:popIn .4s forwards;opacity:0;animation-delay:${delay}s` : '';
+    // v25: stagger handled by CSS .screen.active .ach-category (listItemIn) — no inline override
+    const animStyle = '';
 
     html += `
     <div class="ach-category ${isCollapsed ? 'collapsed' : 'expanded'}" data-cat="${cat.id}" style="${animStyle}">

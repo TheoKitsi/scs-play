@@ -57,7 +57,7 @@ function renderLeaderboard() {
     const relDate = relativeDate(s.date);
 
     return `
-      <div class="score-row ${i < 3 ? 'top-' + (i + 1) : ''} own-score" style="opacity:0; animation: popIn 0.4s var(--ease-out-soft) forwards; animation-delay: ${0.08 * i}s;">
+      <div class="score-row ${i < 3 ? 'top-' + (i + 1) : ''} own-score">
         ${medal}
         <div class="score-avatar">${avatarHTML(avatar)}</div>
         <div class="score-info">

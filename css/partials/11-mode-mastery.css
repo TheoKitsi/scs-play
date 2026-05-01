@@ -1757,7 +1757,7 @@
   padding: 4px 12px; border-radius: 8px;
   font-size: 0.55rem; font-weight: 700;
   pointer-events: none; z-index: 30;
-  animation: popIn 0.3s ease;
+  animation: masteryPopIn 0.3s ease;
 }
 
 /* ── GameScreen HUD: Wissen topic streak pop ── */
@@ -1766,7 +1766,7 @@
   transform: translate(-50%, -50%);
   color: #FFD700; font-weight: 800;
   font-size: 0.7rem; pointer-events: none; z-index: 30;
-  animation: popIn 0.3s ease;
+  animation: masteryPopIn 0.3s ease;
 }
 
 /* ── GameScreen HUD: Stroop challenge round ── */
@@ -1778,7 +1778,7 @@
   font-size: 0.8rem; font-weight: 900;
   text-transform: uppercase; letter-spacing: 0.1em;
   pointer-events: none; z-index: 30;
-  animation: popIn 0.3s ease;
+  animation: masteryPopIn 0.3s ease;
 }
 
 /* ── GameScreen HUD: Fokus distraction level ── */
@@ -1796,8 +1796,8 @@
   margin-top: 2px;
 }
 
-/* shared pop-in keyframe (may already exist) */
-@keyframes popIn {
+/* shared pop-in keyframe (renamed to avoid collision with global popIn used by store/leaderboard/achievements) */
+@keyframes masteryPopIn {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }

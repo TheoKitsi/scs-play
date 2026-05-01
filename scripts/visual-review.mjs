@@ -37,7 +37,8 @@ async function screenshotAll(deviceName, deviceConfig) {
   const page = await context.newPage();
 
   const shot = async (name) => {
-    await page.waitForTimeout(600);
+    // Wait for staggered list-item animations (.ach-category etc.) to settle
+    await page.waitForTimeout(1200);
     await page.screenshot({ path: `${dir}/${name}.png`, fullPage: false });
     console.log(`  [${deviceName}] ${name}`);
   };

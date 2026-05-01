@@ -45,9 +45,8 @@ function renderStoreItems() {
   list.innerHTML = IAP_ITEMS.map((item, i) => {
     const isVip = item.id.startsWith('vip_');
     const owned = (item.id === 'adfree' || isVip) && save.hasPurchase(item.id);
-    const delay = (i * 0.08).toPrecision(2);
     return `
-      <div class="store-item ${owned ? 'owned' : ''} ${isVip || item.id === 'adfree' ? 'premium-glow-item' : ''}" data-iap="${item.id}" style="animation: popIn 0.4s forwards; opacity: 0; animation-delay: ${delay}s;">
+      <div class="store-item ${owned ? 'owned' : ''} ${isVip || item.id === 'adfree' ? 'premium-glow-item' : ''}" data-iap="${item.id}">
         <div class="store-item-info">
           <span class="store-item-name">${t('iap_' + item.id)}</span>
           <span class="store-item-desc">${t('iap_' + item.id + '_desc')}</span>
@@ -86,7 +85,6 @@ function renderUnlockItems(type) {
     const isActive = item.id === activeId;
     const canAfford = fireBalance >= cost;
     const previewClass = `${prefix}-preview-${item.id}`;
-    const delay = (i * 0.08).toPrecision(2);
 
     let btnHTML = '';
     if (isActive) {
@@ -98,7 +96,7 @@ function renderUnlockItems(type) {
     }
 
     return `
-      <div class="unlock-item ${isActive ? 'active-item' : ''} ${!isOwned && !isDefault ? 'locked-item' : ''} ${isActive ? 'premium-glow-item' : ''}" style="animation: popIn 0.4s forwards; opacity: 0; animation-delay: ${delay}s;">
+      <div class="unlock-item ${isActive ? 'active-item' : ''} ${!isOwned && !isDefault ? 'locked-item' : ''} ${isActive ? 'premium-glow-item' : ''}">
         <div class="unlock-preview ${previewClass}${type === 'trails' ? ' trail-anim' : ''}"></div>
         <div class="unlock-info">
           <span class="unlock-name">${t(prefix + '_' + item.id)}</span>
