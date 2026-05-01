@@ -43,7 +43,7 @@ function renderLeaderboard() {
       </div>`;
     const playBtn = list.querySelector('#btnLbPlayNow');
     if (playBtn) playBtn.addEventListener('click', () => {
-      import('./HomeScreen.js').then(m => m.showHome ? m.showHome() : null).catch(() => {});
+      window.dispatchEvent(new Event('scs:show-home'));
     });
     return;
   }

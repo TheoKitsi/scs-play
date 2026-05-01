@@ -6,6 +6,7 @@
    ═══════════════════════════════════════ */
 import { CONFIG } from './config.js';
 import { getLanguage } from './i18n.js';
+import { isModeUnlocked as isModeUnlockedByData } from './helpers/modeUnlockHelper.js';
 import {
   ensureAchStats, updateAchStats, checkAllAchievements,
   migrateOldAchievements, getAchById
@@ -558,21 +559,7 @@ export class SaveService {
 
   /* ─── Mode unlock check (v6: competition-gate for Ultra) ─── */
   isModeUnlocked(mode) {
-    if (mode === 'klassik')  return true;
-    if (mode === 'beginner') return true;
-    if (mode === 'mathe')    return this.data.level >= (CONFIG.UNLOCK_MATHE || 0);
-    if (mode === 'worte')    return this.data.level >= (CONFIG.UNLOCK_WORTE || 0);
-    if (mode === 'memo')     return this.data.level >= (CONFIG.UNLOCK_MEMO || 0);
-    if (mode === 'sequenz')  return this.data.level >= (CONFIG.UNLOCK_SEQUENZ || 0);
-    if (mode === 'expert')   return this.data.level >= CONFIG.UNLOCK_EXPERT;
-    if (mode === 'ultra')    return this.data.level >= CONFIG.UNLOCK_ULTRA || this.data.ultraUnlockedViaCompetition;
-    if (mode === 'stroop')   return this.data.level >= (CONFIG.UNLOCK_STROOP || 0);
-    if (mode === 'fokus')    return this.data.level >= (CONFIG.UNLOCK_FOKUS || 0);
-    if (mode === 'chaos')    return this.data.level >= (CONFIG.UNLOCK_CHAOS || 0);
-    if (mode === 'hauptstaedte') return this.data.level >= (CONFIG.UNLOCK_HAUPTSTAEDTE || 0);
-    if (mode === 'algebra')  return this.data.level >= (CONFIG.UNLOCK_ALGEBRA || 0);
-    if (mode === 'wissen')   return this.data.level >= (CONFIG.UNLOCK_WISSEN || 0);
-    return false;
+    return isModeUnlockedByData(this.data, mode);
   }
 
   isCompetitionUnlocked() {

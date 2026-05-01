@@ -1,52 +1,84 @@
-# SCS Play — APK Build Guide
+# SCS Play Build Guide
 
-## Prerequisites
-- **Node.js** 18+ and **npm**
-- **Java 17** (JDK)
-- **Android Studio** with SDK 34+ installed
-- Set `ANDROID_HOME` environment variable
+## Requirements
 
-## Quick Build
+- Node.js 20 for CI parity. Node 18+ also works for most local tasks.
+- npm.
+- Java 17 and Android Studio for Android builds.
+- Android SDK with target SDK 35 installed.
+
+## Web Build
 
 ```bash
-# 1. Install dependencies
-npm install
+npm ci
+npm run build:prod
+```
 
-# 2. Build web assets + sync to Android
-npm run build
+`build:prod` bundles `js/app.js` and `css/style.css` into `docs/js/app.bundle.js` and `docs/css/style.bundle.css`. It also copies root assets, images, audio metadata, legal pages, and store listing docs into `docs/`.
+
+The build script enforces default budgets:
+
+- JavaScript bundle: 480 KB max.
+- CSS bundle: 240 KB max.
+
+## Full Local Gate
+
+```bash
+npm run verify
+```
+
+This runs:
+
+1. Static WCAG token/theme contrast audit.
+2. Production web build.
+3. Playwright DOM contrast audit against rendered screens.
+4. Playwright smoke test for the core game flow.
+
+The Playwright scripts start a local static server for `docs/` automatically. To target an external deployment instead, pass `SCS_BASE`:
+
+```powershell
+$env:SCS_BASE="https://example.com/scs-play/"
+npm run smoke-test
+```
+
+## Android Build
+
+```powershell
+npm ci
 npm run cap:sync
-
-# 3. Build debug APK
 cd android
-./gradlew assembleDebug
-# APK: android/app/build/outputs/apk/debug/app-debug.apk
-
-# 4. Build release APK (unsigned)
-./gradlew assembleRelease
-# APK: android/app/build/outputs/apk/release/app-release-unsigned.apk
+.\gradlew.bat assembleDebug
 ```
 
-## Sign Release APK
+Debug APK:
 
-```bash
-# Generate keystore (once)
-keytool -genkey -v -keystore scs-play.keystore -alias scs-play -keyalg RSA -keysize 2048 -validity 10000
-
-# Sign
-jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore scs-play.keystore android/app/build/outputs/apk/release/app-release-unsigned.apk scs-play
-
-# Align
-zipalign -v 4 android/app/build/outputs/apk/release/app-release-unsigned.apk scs-play-release.apk
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Open in Android Studio
+Release APK/AAB signing must use a private keystore that is never committed.
+
+```powershell
+cd android
+.\gradlew.bat assembleRelease
+```
+
+Unsigned release APK:
+
+```text
+android/app/build/outputs/apk/release/app-release-unsigned.apk
+```
+
+## Android Studio
 
 ```bash
 npm run cap:open
 ```
 
-## App Details
-- **Package**: `com.scs.play`
-- **Min SDK**: 22 (Android 5.1)
-- **Target SDK**: 35
-- **App Name**: SCS Play
+## Release Checklist
+
+1. `npm run verify` passes locally.
+2. No secrets or signing files are staged.
+3. Generated `docs/` diffs are expected and come from `npm run build:prod`.
+4. Android version metadata is intentionally updated when releasing native builds.
+5. GitHub Actions is green on the pushed branch before collaborator access or store submission.

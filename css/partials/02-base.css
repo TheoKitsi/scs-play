@@ -139,13 +139,13 @@ body{
   transition: transform 0.4s var(--ease-bounce), opacity 0.2s ease;
 }
 .btn:disabled, .btn.disabled {
-  opacity: 0.5;
+  opacity: 0.72;
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
-  background: rgba(255, 255, 255, 0.02) !important;
-  border-color: rgba(255, 255, 255, 0.05) !important;
-  color: var(--text-muted) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: var(--text-on-surface-dim) !important;
 }
 .btn:disabled::after, .btn.disabled::after, .btn:disabled::before, .btn.disabled::before {
   display: none !important;

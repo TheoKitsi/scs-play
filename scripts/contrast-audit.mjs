@@ -59,12 +59,12 @@ const DARK = {
   card:          compositeRgba('#1E293B', 0.7, '#030014'),   // rgba(30,41,59,0.7)
   surfaceElev:   compositeRgba('#141E34', 0.85, '#030014'),  // rgba(20,30,52,0.85)
   text:          '#F8FAFC',
-  textDim:       '#94A3B8',
-  textMuted:     '#8896A8',     // updated from #718496
+  textDim:       '#B6C3D5',
+  textMuted:     '#AAB6C8',
   textOnSurface: '#F8FAFC',
   textOnSurfDim: '#B0BEC5',
   iconOnSurface: '#CBD5E1',
-  iconOnSurfVar: '#94A3B8',
+  iconOnSurfVar: '#AAB6C8',
   primary:       '#7C3AED',
   primaryGlow:   '#9D4EDD',
   accent:        '#EC4899',
@@ -144,6 +144,8 @@ const checks = [
   // Game screen (dark bg #12122a)
   { label: 'Dark: --text on game-bg (#12122a)',  fg: DARK.text,         bg: '#12122a',       min: 4.5, type: 'text' },
   { label: 'Dark: --text-dim on game-bg',        fg: DARK.textDim,      bg: '#12122a',       min: 4.5, type: 'text' },
+  { label: 'Dark: auth placeholder on auth input', fg: compositeRgba(DARK.text, 0.68, compositeRgba('#0F172A', 0.4, DARK.bg)), bg: compositeRgba('#0F172A', 0.4, DARK.bg), min: 4.5, type: 'text' },
+  { label: 'Dark: disabled button text on disabled bg', fg: DARK.textOnSurfDim, bg: compositeRgba('#ffffff', 0.06, DARK.bg), min: 4.5, type: 'text' },
 
   // ══════════════════════════════════════
   //   LIGHT MODE
@@ -193,6 +195,29 @@ const checks = [
   { label: 'Light: --text on store-card',        fg: LIGHT.text,        bg: compositeRgba('#ffffff', 0.85, '#f0f0f5'), min: 4.5, type: 'text' },
   { label: 'Light: --text-dim on store-card',    fg: LIGHT.textDim,     bg: compositeRgba('#ffffff', 0.85, '#f0f0f5'), min: 4.5, type: 'text' },
 ];
+
+const THEMES = [
+  { id: 'neon', bg: '#000811', surface: '#0a1428', card: '#0d1a33', primary: '#00FF87', accent: '#FF00FF', success: '#00FF87', warning: '#FFFF00', info: '#00FFFF' },
+  { id: 'ocean', bg: '#020E1A', surface: '#0A1929', card: '#0D2137', primary: '#0099FF', accent: '#00CED1', success: '#00E5A0', warning: '#FFB74D', info: '#00BCD4' },
+  { id: 'sunset', bg: '#1A0A0A', surface: '#2A1515', card: '#331A1A', primary: '#FF6B35', accent: '#FF1493', success: '#FFD700', warning: '#FF8C00', info: '#FF69B4' },
+  { id: 'forest', bg: '#0A1A0A', surface: '#152415', card: '#1A2E1A', primary: '#4CAF50', accent: '#8D6E63', success: '#76FF03', warning: '#FFAB00', info: '#00BFA5' },
+  { id: 'cosmic', bg: '#0A0514', surface: '#1A0F28', card: '#200F33', primary: '#9C27B0', accent: '#E040FB', success: '#69F0AE', warning: '#FFD740', info: '#7C4DFF' },
+  { id: 'retro', bg: '#0A0D00', surface: '#1A1F0A', card: '#1F260D', primary: '#00E676', accent: '#FF6E40', success: '#00E676', warning: '#FFAB00', info: '#40C4FF' },
+  { id: 'crystal', bg: '#050A10', surface: '#0E1822', card: '#12202E', primary: '#80DEEA', accent: '#CE93D8', success: '#A5D6A7', warning: '#FFE082', info: '#80CBC4' },
+];
+
+for (const theme of THEMES) {
+  checks.push(
+    { label: `Theme ${theme.id}: --text on --surface`, fg: DARK.text, bg: theme.surface, min: 4.5, type: 'text' },
+    { label: `Theme ${theme.id}: --text-dim on --surface`, fg: DARK.textDim, bg: theme.surface, min: 4.5, type: 'text' },
+    { label: `Theme ${theme.id}: --text-muted on --card`, fg: DARK.textMuted, bg: theme.card, min: 4.5, type: 'text' },
+    { label: `Theme ${theme.id}: --primary on --bg`, fg: theme.primary, bg: theme.bg, min: 3, type: 'ui' },
+    { label: `Theme ${theme.id}: --accent on --bg`, fg: theme.accent, bg: theme.bg, min: 3, type: 'ui' },
+    { label: `Theme ${theme.id}: --success on --bg`, fg: theme.success, bg: theme.bg, min: 3, type: 'ui' },
+    { label: `Theme ${theme.id}: --warning on --bg`, fg: theme.warning, bg: theme.bg, min: 3, type: 'ui' },
+    { label: `Theme ${theme.id}: --info on --bg`, fg: theme.info, bg: theme.bg, min: 3, type: 'ui' },
+  );
+}
 
 // ─── Run ───
 let failCount = 0;

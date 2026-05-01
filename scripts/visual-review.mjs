@@ -6,6 +6,7 @@
  */
 import { chromium } from 'playwright';
 import { mkdirSync } from 'fs';
+import { startStaticServer } from './lib/static-server.mjs';
 
 const DEVICES = {
   'galaxy-s25': {
@@ -24,10 +25,10 @@ const DEVICES = {
   },
 };
 
-const BASE = 'http://localhost:3000';
+const EXTERNAL_BASE = process.env.SCS_BASE || '';
 const OUT = 'screenshots';
 
-async function screenshotAll(deviceName, deviceConfig) {
+async function screenshotAll(deviceName, deviceConfig, baseUrl) {
   const dir = `${OUT}/${deviceName}`;
   mkdirSync(dir, { recursive: true });
 
@@ -55,7 +56,7 @@ async function screenshotAll(deviceName, deviceConfig) {
   };
 
   const goHome = async () => {
-    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.goto(baseUrl, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2500); // boot animation
     const alreadyHome = await page.evaluate(() =>
       document.querySelector('#home')?.classList.contains('active')
@@ -74,7 +75,7 @@ async function screenshotAll(deviceName, deviceConfig) {
   };
 
   // ─── 1) Boot / Auth Screen ───
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(baseUrl, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
   await shot('01-boot-auth');
 
@@ -299,10 +300,14 @@ async function screenshotAll(deviceName, deviceConfig) {
 
 async function main() {
   console.log('SCS Play Visual Review — Starting...\n');
+  const staticServer = EXTERNAL_BASE ? null : await startStaticServer({ root: 'docs' });
+  const baseUrl = EXTERNAL_BASE || staticServer.baseUrl;
+  console.log(`Target: ${baseUrl}`);
   for (const [name, config] of Object.entries(DEVICES)) {
     console.log(`\nDevice: ${name} (${config.viewport.width}x${config.viewport.height})`);
-    await screenshotAll(name, config);
+    await screenshotAll(name, config, baseUrl);
   }
+  if (staticServer) await staticServer.close();
   console.log('\nDone! Screenshots saved to:', OUT);
 }
 

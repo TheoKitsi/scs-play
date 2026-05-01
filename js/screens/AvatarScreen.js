@@ -4,9 +4,9 @@
    ═══════════════════════════════════════ */
 import { CONFIG }           from '../config.js';
 import { $, $$, setHTML, showScreen, safeSrc } from '../helpers/dom.js';
+import { updateAvatarDisplay } from '../helpers/avatarDisplayHelper.js';
 import { avatarSVG }        from '../renderers/avatars.js';
 import app                   from '../appState.js';
-import { updateAvatarDisplay } from './HomeScreen.js';
 
 function renderAvatarPreview(icon, colorIndex, photo) {
   if (photo) {

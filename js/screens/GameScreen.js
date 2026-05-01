@@ -12,21 +12,22 @@ import { SwipeHandler }     from '../input.js';
 import { EffectsManager }   from '../effects.js';
 import { updateGameAdBanner, isAdFree } from '../services/AdService.js';
 import app                   from '../appState.js';
-import { getBodyFx } from './HomeScreen.js';
-import { trackKlassikAnswer, startKlassikGhostRacer, endKlassikGame, getGhostDelta, getSpeedZone } from '../game/ModeMastery.js';
-import { trackFormenAnswer, startFormenGame, endFormenGame, getFormenGhostDelta } from '../game/ModeMastery.js';
-import { trackExpertAnswer, startExpertGame, endExpertGame, getExpertGhostDelta, getWeakestDirection } from '../game/ModeMastery.js';
-import { trackUltraAnswer, startUltraGame, endUltraGame, getUltraGhostDelta, getWeakestUltraDirection } from '../game/ModeMastery.js';
-import { trackMatheAnswer, startMatheGame, endMatheGame, getMatheGhostDelta } from '../game/ModeMastery.js';
-import { trackAlgebraAnswer, startAlgebraGame, endAlgebraGame, getAlgebraGhostDelta } from '../game/ModeMastery.js';
-import { trackWorteAnswer, startWorteGame, endWorteGame, getWorteGhostDelta } from '../game/ModeMastery.js';
-import { trackHauptstaedteAnswer, startHauptstaedteGame, endHauptstaedteGame, getHauptstaedteGhostDelta } from '../game/ModeMastery.js';
-import { trackWissenAnswer, startWissenGame, endWissenGame, getWissenGhostDelta } from '../game/ModeMastery.js';
-import { trackMemoAnswer, startMemoGame, endMemoGame, getMemoGhostDelta } from '../game/ModeMastery.js';
-import { trackSequenzResult, startSequenzGame, endSequenzGame } from '../game/ModeMastery.js';
-import { trackStroopAnswer, startStroopGame, endStroopGame, getStroopGhostDelta } from '../game/ModeMastery.js';
-import { trackFokusAnswer, startFokusGame, endFokusGame, getFokusGhostDelta } from '../game/ModeMastery.js';
-import { trackChaosAnswer, startChaosGame, endChaosGame, getChaosGhostDelta } from '../game/ModeMastery.js';
+import { getBodyFx }        from '../services/EffectsService.js';
+import { startModeMastery, finishModeMastery } from './gameHud/modeMasteryLifecycle.js';
+import { trackKlassikAnswer, getGhostDelta, getSpeedZone } from '../game/ModeMastery.js';
+import { trackFormenAnswer, getFormenGhostDelta } from '../game/ModeMastery.js';
+import { trackExpertAnswer, getExpertGhostDelta, getWeakestDirection } from '../game/ModeMastery.js';
+import { trackUltraAnswer, getUltraGhostDelta, getWeakestUltraDirection } from '../game/ModeMastery.js';
+import { trackMatheAnswer, getMatheGhostDelta } from '../game/ModeMastery.js';
+import { trackAlgebraAnswer, getAlgebraGhostDelta } from '../game/ModeMastery.js';
+import { trackWorteAnswer, getWorteGhostDelta } from '../game/ModeMastery.js';
+import { trackHauptstaedteAnswer, getHauptstaedteGhostDelta } from '../game/ModeMastery.js';
+import { trackWissenAnswer, getWissenGhostDelta } from '../game/ModeMastery.js';
+import { trackMemoAnswer, getMemoGhostDelta } from '../game/ModeMastery.js';
+import { trackSequenzResult } from '../game/ModeMastery.js';
+import { trackStroopAnswer, getStroopGhostDelta } from '../game/ModeMastery.js';
+import { trackFokusAnswer, getFokusGhostDelta } from '../game/ModeMastery.js';
+import { trackChaosAnswer, getChaosGhostDelta } from '../game/ModeMastery.js';
 
 /* ═══════ SVG Cache — avoid regenerating & parsing identical SVGs ═══════ */
 const _svgCache = new Map();
@@ -1710,6 +1711,202 @@ function cleanupChaosHUD() {
   });
 }
 
+function cleanupModeHuds() {
+  [
+    cleanupKlassikHUD, cleanupFormenHUD, cleanupExpertHUD, cleanupUltraHUD,
+    cleanupMatheHUD, cleanupAlgebraHUD, cleanupWorteHUD, cleanupHauptstaedteHUD,
+    cleanupWissenHUD, cleanupMemoHUD, cleanupSequenzHUD, cleanupStroopHUD,
+    cleanupFokusHUD, cleanupChaosHUD,
+  ].forEach(cleanup => cleanup());
+}
+
+function updateModeMasteryAfterAnswer(game, result) {
+  if (!app.mastery || game.practice) return;
+
+  if (game.mode === 'klassik') {
+    trackKlassikAnswer(app.mastery, result, game);
+    if (result.correct) {
+      const zone = getSpeedZone(result.reaction);
+      updateSpeedZoneIndicator(zone, result.reaction);
+      updateSpeedGlow(zone);
+      updateGhostRacer(game);
+      updateFlawlessCounter(app.mastery);
+      const colorCombo = app.mastery.get('klassik', '_colorCombo');
+      if (colorCombo >= (CONFIG.KLASSIK_COLOR_COMBO_MIN || 3)) showColorComboPop(colorCombo);
+      updateZenState(game.streak);
+    } else {
+      updateSpeedZoneIndicator(null);
+      updateSpeedGlow(null);
+      updateFlawlessCounter(app.mastery);
+      updateZenState(0);
+    }
+    return;
+  }
+
+  if (game.mode === 'beginner') {
+    trackFormenAnswer(app.mastery, result, game);
+    if (result.correct) {
+      const flowStreak = app.mastery.get('beginner', '_flowStreak');
+      updateFlowMeter(flowStreak);
+      updateFormenGhostRacer(game);
+      const shapeChain = app.mastery.get('beginner', '_shapeChain');
+      if (shapeChain >= (CONFIG.BEGINNER_SHAPE_COMBO_MIN || 3)) {
+        const cornerInfo = game.cornerMap?.[result.expected];
+        showShapeChainPop(shapeChain, cornerInfo?.shape);
+      }
+      if (result.reaction < 300) showJackpotPop();
+    } else {
+      updateFlowMeter(0);
+    }
+    return;
+  }
+
+  if (game.mode === 'expert') {
+    const expertResult = trackExpertAnswer(app.mastery, result, game);
+    if (result.correct) {
+      ensureExpertHUD();
+      updateCompassRing(app.mastery);
+      updateExpertGhostRacer(game);
+      if (expertResult.fullCompass) showFullCompassPop();
+      updateWeakSpotIndicator(app.mastery, game);
+    } else {
+      updateCompassRing(app.mastery);
+    }
+    return;
+  }
+
+  if (game.mode === 'ultra') {
+    const ultraResult = trackUltraAnswer(app.mastery, result, game);
+    if (result.correct) {
+      ensureUltraHUD();
+      updateUltraGrid(app.mastery);
+      updateUltraGhostRacer(game);
+      if (ultraResult.fullCompass) showUltraFullCompassPop();
+      updateUltraWeakSpot(app.mastery, game);
+    } else {
+      updateUltraGrid(app.mastery);
+    }
+    return;
+  }
+
+  if (game.mode === 'mathe') {
+    const matheResult = trackMatheAnswer(app.mastery, result, game);
+    if (result.correct) {
+      ensureMatheHUD();
+      updateMatheOpBar(app.mastery);
+      updateMatheGhostRacer(game);
+      if (matheResult.phase > (app._lastMathePhase || 0)) {
+        showMathePhaseUp(matheResult.phase);
+        app._lastMathePhase = matheResult.phase;
+      }
+    } else {
+      updateMatheOpBar(app.mastery);
+    }
+    return;
+  }
+
+  if (game.mode === 'algebra') {
+    const algebraResult = trackAlgebraAnswer(app.mastery, result, game);
+    if (result.correct) {
+      ensureAlgebraHUD();
+      updateAlgebraTypeBar(app.mastery);
+      updateAlgebraGhostRacer(game);
+      if (algebraResult.phase > (app._lastAlgPhase || 0)) {
+        showAlgebraUnlock(algebraResult.eqType, algebraResult.phase);
+        app._lastAlgPhase = algebraResult.phase;
+      }
+    } else {
+      updateAlgebraTypeBar(app.mastery);
+    }
+    return;
+  }
+
+  if (game.mode === 'worte') {
+    const worteResult = trackWorteAnswer(app.mastery, result, game);
+    if (result.correct) {
+      ensureWorteHUD();
+      updateWorteCollection(app.mastery);
+      updateWorteGhostRacer(game);
+      if (worteResult.isNew) showWorteNewWord(game.currentShape?.display || '');
+    }
+    return;
+  }
+
+  if (game.mode === 'hauptstaedte') {
+    const hauptResult = trackHauptstaedteAnswer(app.mastery, result, game);
+    if (result.correct) {
+      ensureHauptstaedteHUD();
+      updateHauptstaedteCountry(app.mastery);
+      updateHauptstaedteGhostRacer(game);
+      if (hauptResult.isNew) showHauptstaedteNewCountry(game.currentShape?.display || '');
+    }
+    return;
+  }
+
+  if (game.mode === 'wissen') {
+    const wissenResult = trackWissenAnswer(app.mastery, result, game);
+    if (result.correct) {
+      ensureWissenHUD();
+      updateWissenTopicBar(app.mastery);
+      updateWissenGhostRacer(game);
+      if (wissenResult.tier !== undefined) showWissenDifficultyReveal(wissenResult.tier);
+      if (wissenResult.topicStreak >= 3) showWissenTopicStreakPop(wissenResult.topicStreak);
+    } else {
+      updateWissenTopicBar(app.mastery);
+    }
+    return;
+  }
+
+  if (game.mode === 'memo') {
+    trackMemoAnswer(app.mastery, result, game);
+    if (result.correct) {
+      ensureMemoHUD();
+      updateMemoSpan(app.mastery);
+      updateMemoGhostRacer(game);
+    } else {
+      updateMemoSpan(app.mastery);
+    }
+    return;
+  }
+
+  if (game.mode === 'stroop') {
+    const stroopResult = trackStroopAnswer(app.mastery, result, game);
+    if (result.correct) {
+      ensureStroopHUD();
+      updateStroopInterference(app.mastery);
+      updateStroopGhostRacer(game);
+      if (stroopResult.challengeTriggered) showStroopChallengeRound();
+    } else {
+      updateStroopInterference(app.mastery);
+    }
+    return;
+  }
+
+  if (game.mode === 'fokus') {
+    const fokusResult = trackFokusAnswer(app.mastery, result, game);
+    if (result.correct) {
+      ensureFokusHUD();
+      updateFokusSplit(app.mastery);
+      updateFokusGhostRacer(game);
+      if (fokusResult.distractionLevel) updateFokusDistractionLevel(fokusResult.distractionLevel);
+    } else {
+      updateFokusSplit(app.mastery);
+    }
+    return;
+  }
+
+  if (game.mode === 'chaos') {
+    trackChaosAnswer(app.mastery, result, game);
+    if (result.correct) {
+      ensureChaosHUD();
+      updateChaosRuleDisplay(app.mastery, game);
+      updateChaosGhostRacer(game);
+    } else {
+      updateChaosRuleDisplay(app.mastery, game);
+    }
+  }
+}
+
 export function cleanupGameClasses() {
   const g = $('#game');
   g?.classList.remove('intensity-low','intensity-mid','intensity-high','intensity-max','edge-glow-warm','edge-glow-hot','edge-glow-fire');
@@ -1874,62 +2071,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   };
   const corners = game.start(app.selectedMode, practice ? 'blitz' : app.selectedPlayType, options);
 
-  /* ── Klassik Mode Mastery: init ghost racer ── */
-  if (app.selectedMode === 'klassik' && app.mastery) {
-    startKlassikGhostRacer(app.mastery);
-  }
-  /* ── Formen Mode Mastery: init flow/chain tracking ── */
-  if (app.selectedMode === 'beginner' && app.mastery) {
-    startFormenGame(app.mastery);
-  }
-  /* ── Expert Mode Mastery: init compass tracking ── */
-  if (app.selectedMode === 'expert' && app.mastery) {
-    startExpertGame(app.mastery);
-  }
-  /* ── Ultra Mode Mastery: init 12-dir compass tracking ── */
-  if (app.selectedMode === 'ultra' && app.mastery) {
-    startUltraGame(app.mastery);
-  }
-  /* ── Mathe Mode Mastery: init op tracking ── */
-  if (app.selectedMode === 'mathe' && app.mastery) {
-    startMatheGame(app.mastery);
-  }
-  /* ── Algebra Mode Mastery: init type tracking ── */
-  if (app.selectedMode === 'algebra' && app.mastery) {
-    startAlgebraGame(app.mastery);
-  }
-  /* ── Worte Mode Mastery: init word collection tracking ── */
-  if (app.selectedMode === 'worte' && app.mastery) {
-    startWorteGame(app.mastery);
-  }
-  /* ── Hauptstaedte Mode Mastery: init region tracking ── */
-  if (app.selectedMode === 'hauptstaedte' && app.mastery) {
-    startHauptstaedteGame(app.mastery);
-  }
-  /* ── Wissen Mode Mastery: init topic tracking ── */
-  if (app.selectedMode === 'wissen' && app.mastery) {
-    startWissenGame(app.mastery);
-  }
-  /* ── Memo Mode Mastery: init memory span tracking ── */
-  if (app.selectedMode === 'memo' && app.mastery) {
-    startMemoGame(app.mastery);
-  }
-  /* ── Sequenz Mode Mastery: init round tracking ── */
-  if (app.selectedMode === 'sequenz' && app.mastery) {
-    startSequenzGame(app.mastery);
-  }
-  /* ── Stroop Mode Mastery: init interference tracking ── */
-  if (app.selectedMode === 'stroop' && app.mastery) {
-    startStroopGame(app.mastery);
-  }
-  /* ── Fokus Mode Mastery: init focus tracking ── */
-  if (app.selectedMode === 'fokus' && app.mastery) {
-    startFokusGame(app.mastery);
-  }
-  /* ── Chaos Mode Mastery: init flexibility tracking ── */
-  if (app.selectedMode === 'chaos' && app.mastery) {
-    startChaosGame(app.mastery);
-  }
+  startModeMastery(app.selectedMode, app.mastery);
 
   if (!practice && game.playType !== 'endless') {
     app.gameDuration = game.timer;
@@ -2171,234 +2313,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       effects.resetMultiplierBg();
     }
 
-    /* ── Klassik Mode Mastery: track answer + update HUD elements ── */
-    if (game.mode === 'klassik' && app.mastery && !game.practice) {
-      trackKlassikAnswer(app.mastery, result, game);
-
-      /* Speed zone indicator */
-      if (result.correct) {
-        const zone = getSpeedZone(result.reaction);
-        updateSpeedZoneIndicator(zone, result.reaction);
-        updateSpeedGlow(zone);
-        updateGhostRacer(game);
-        updateFlawlessCounter(app.mastery);
-
-        /* Color combo pop */
-        const colorCombo = app.mastery.get('klassik', '_colorCombo');
-        if (colorCombo >= (CONFIG.KLASSIK_COLOR_COMBO_MIN || 3)) {
-          showColorComboPop(colorCombo);
-        }
-
-        /* Zen state overlay */
-        updateZenState(game.streak);
-      } else {
-        updateSpeedZoneIndicator(null);
-        updateSpeedGlow(null);
-        updateFlawlessCounter(app.mastery);
-        updateZenState(0);
-      }
-    }
-
-    /* ── Formen Mode Mastery: track answer + update HUD elements ── */
-    if (game.mode === 'beginner' && app.mastery && !game.practice) {
-      trackFormenAnswer(app.mastery, result, game);
-
-      if (result.correct) {
-        /* Flow meter */
-        const flowStreak = app.mastery.get('beginner', '_flowStreak');
-        updateFlowMeter(flowStreak);
-
-        /* Ghost racer */
-        updateFormenGhostRacer(game);
-
-        /* Shape chain pop */
-        const shapeChain = app.mastery.get('beginner', '_shapeChain');
-        if (shapeChain >= (CONFIG.BEGINNER_SHAPE_COMBO_MIN || 3)) {
-          const cornerInfo = game.cornerMap?.[result.expected];
-          showShapeChainPop(shapeChain, cornerInfo?.shape);
-        }
-
-        /* Jackpot pop for ultra-fast answers */
-        if (result.reaction < 300) {
-          showJackpotPop();
-        }
-      } else {
-        updateFlowMeter(0);
-      }
-    }
-
-    /* ── Expert Mode Mastery: track answer + update HUD elements ── */
-    if (game.mode === 'expert' && app.mastery && !game.practice) {
-      const expertResult = trackExpertAnswer(app.mastery, result, game);
-
-      if (result.correct) {
-        ensureExpertHUD();
-        updateCompassRing(app.mastery);
-        updateExpertGhostRacer(game);
-
-        /* Full Compass! celebration */
-        if (expertResult.fullCompass) {
-          showFullCompassPop();
-        }
-
-        /* Weak spot indicator */
-        updateWeakSpotIndicator(app.mastery, game);
-      } else {
-        updateCompassRing(app.mastery);
-      }
-    }
-
-    /* ── Ultra Mode Mastery: track answer + update HUD elements ── */
-    if (game.mode === 'ultra' && app.mastery && !game.practice) {
-      const ultraResult = trackUltraAnswer(app.mastery, result, game);
-
-      if (result.correct) {
-        ensureUltraHUD();
-        updateUltraGrid(app.mastery);
-        updateUltraGhostRacer(game);
-
-        /* Full Compass! celebration (12 dirs) */
-        if (ultraResult.fullCompass) {
-          showUltraFullCompassPop();
-        }
-
-        /* Weak spot indicator */
-        updateUltraWeakSpot(app.mastery, game);
-      } else {
-        updateUltraGrid(app.mastery);
-      }
-    }
-
-    /* ── Mathe Mode Mastery: track answer ── */
-    if (game.mode === 'mathe' && app.mastery && !game.practice) {
-      const maResult = trackMatheAnswer(app.mastery, result, game);
-
-      if (result.correct) {
-        ensureMatheHUD();
-        updateMatheOpBar(app.mastery);
-        updateMatheGhostRacer(game);
-
-        /* Phase advance notification */
-        if (maResult.phase > (app._lastMathePhase || 0)) {
-          showMathePhaseUp(maResult.phase);
-          app._lastMathePhase = maResult.phase;
-        }
-      } else {
-        updateMatheOpBar(app.mastery);
-      }
-    }
-
-    /* ── Algebra Mode Mastery: track answer ── */
-    if (game.mode === 'algebra' && app.mastery && !game.practice) {
-      const algResult = trackAlgebraAnswer(app.mastery, result, game);
-
-      if (result.correct) {
-        ensureAlgebraHUD();
-        updateAlgebraTypeBar(app.mastery);
-        updateAlgebraGhostRacer(game);
-
-        /* Phase advance / unlock toast */
-        if (algResult.phase > (app._lastAlgPhase || 0)) {
-          showAlgebraUnlock(algResult.eqType, algResult.phase);
-          app._lastAlgPhase = algResult.phase;
-        }
-      } else {
-        updateAlgebraTypeBar(app.mastery);
-      }
-    }
-
-    /* ── Worte Mode Mastery: track answer ── */
-    if (game.mode === 'worte' && app.mastery && !game.practice) {
-      const wResult = trackWorteAnswer(app.mastery, result, game);
-
-      if (result.correct) {
-        ensureWorteHUD();
-        updateWorteCollection(app.mastery);
-        updateWorteGhostRacer(game);
-        if (wResult.isNew) {
-          showWorteNewWord(game.currentShape?.display || '');
-        }
-      }
-    }
-
-    /* ── Hauptstaedte Mode Mastery: track answer ── */
-    if (game.mode === 'hauptstaedte' && app.mastery && !game.practice) {
-      const hResult = trackHauptstaedteAnswer(app.mastery, result, game);
-      if (result.correct) {
-        ensureHauptstaedteHUD();
-        updateHauptstaedteCountry(app.mastery);
-        updateHauptstaedteGhostRacer(game);
-        if (hResult.isNew) showHauptstaedteNewCountry(game.currentShape?.display || '');
-      }
-    }
-
-    /* ── Wissen Mode Mastery: track answer ── */
-    if (game.mode === 'wissen' && app.mastery && !game.practice) {
-      const wRes = trackWissenAnswer(app.mastery, result, game);
-      if (result.correct) {
-        ensureWissenHUD();
-        updateWissenTopicBar(app.mastery);
-        updateWissenGhostRacer(game);
-        /* Difficulty Reveal (Plan 9 feature 3) */
-        if (wRes.tier !== undefined) showWissenDifficultyReveal(wRes.tier);
-        /* Topic Streak popup (Plan 9 feature 4) */
-        if (wRes.topicStreak >= 3) showWissenTopicStreakPop(wRes.topicStreak);
-      } else {
-        updateWissenTopicBar(app.mastery);
-      }
-    }
-
-    /* ── Memo Mode Mastery: track answer ── */
-    if (game.mode === 'memo' && app.mastery && !game.practice) {
-      const meResult = trackMemoAnswer(app.mastery, result, game);
-      if (result.correct) {
-        ensureMemoHUD();
-        updateMemoSpan(app.mastery);
-        updateMemoGhostRacer(game);
-      } else {
-        updateMemoSpan(app.mastery);
-      }
-    }
-
-    /* ── Stroop Mode Mastery: track answer ── */
-    if (game.mode === 'stroop' && app.mastery && !game.practice) {
-      const sRes = trackStroopAnswer(app.mastery, result, game);
-      if (result.correct) {
-        ensureStroopHUD();
-        updateStroopInterference(app.mastery);
-        updateStroopGhostRacer(game);
-        /* Challenge Round trigger (Plan 12 feature 4) */
-        if (sRes.challengeTriggered) showStroopChallengeRound();
-      } else {
-        updateStroopInterference(app.mastery);
-      }
-    }
-
-    /* ── Fokus Mode Mastery: track answer ── */
-    if (game.mode === 'fokus' && app.mastery && !game.practice) {
-      const fRes = trackFokusAnswer(app.mastery, result, game);
-      if (result.correct) {
-        ensureFokusHUD();
-        updateFokusSplit(app.mastery);
-        updateFokusGhostRacer(game);
-        /* Distraction Intensity display (Plan 13 feature 2) */
-        if (fRes.distractionLevel) updateFokusDistractionLevel(fRes.distractionLevel);
-      } else {
-        updateFokusSplit(app.mastery);
-      }
-    }
-
-    /* ── Chaos Mode Mastery: track answer ── */
-    if (game.mode === 'chaos' && app.mastery && !game.practice) {
-      const chResult = trackChaosAnswer(app.mastery, result, game);
-      if (result.correct) {
-        ensureChaosHUD();
-        updateChaosRuleDisplay(app.mastery, game);
-        updateChaosGhostRacer(game);
-      } else {
-        updateChaosRuleDisplay(app.mastery, game);
-      }
-    }
+    updateModeMasteryAfterAnswer(game, result);
 
     effects.trailComplete(result.correct);
     updateHUD();
@@ -2673,91 +2588,8 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     if (typeof effects.dangerZone === 'function') effects.dangerZone(false);
     effects.cleanup();
     cleanupGameClasses();
-    cleanupKlassikHUD();
-    cleanupFormenHUD();
-    cleanupExpertHUD();
-    cleanupUltraHUD();
-    cleanupMatheHUD();
-    cleanupAlgebraHUD();
-    cleanupWorteHUD();
-    cleanupHauptstaedteHUD();
-    cleanupWissenHUD();
-    cleanupMemoHUD();
-    cleanupSequenzHUD();
-    cleanupStroopHUD();
-    cleanupFokusHUD();
-    cleanupChaosHUD();
-
-    /* ── Klassik Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'klassik' && app.mastery) {
-      endKlassikGame(app.mastery, stats, stats.score > (app.save.getPB('klassik') || 0));
-      app.mastery.persist();
-    }
-    /* ── Formen Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'beginner' && app.mastery) {
-      endFormenGame(app.mastery, stats, stats.score > (app.save.getPB('beginner') || 0));
-      app.mastery.persist();
-    }
-    /* ── Expert Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'expert' && app.mastery) {
-      endExpertGame(app.mastery, stats, stats.score > (app.save.getPB('expert') || 0));
-      app.mastery.persist();
-    }
-    /* ── Ultra Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'ultra' && app.mastery) {
-      endUltraGame(app.mastery, stats, stats.score > (app.save.getPB('ultra') || 0));
-      app.mastery.persist();
-    }
-    /* ── Mathe Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'mathe' && app.mastery) {
-      endMatheGame(app.mastery, stats, stats.score > (app.save.getPB('mathe') || 0));
-      app.mastery.persist();
-    }
-    /* ── Algebra Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'algebra' && app.mastery) {
-      endAlgebraGame(app.mastery, stats, stats.score > (app.save.getPB('algebra') || 0));
-      app.mastery.persist();
-    }
-    /* ── Worte Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'worte' && app.mastery) {
-      endWorteGame(app.mastery, stats, stats.score > (app.save.getPB('worte') || 0));
-      app.mastery.persist();
-    }
-    /* ── Hauptstaedte Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'hauptstaedte' && app.mastery) {
-      endHauptstaedteGame(app.mastery, stats, stats.score > (app.save.getPB('hauptstaedte') || 0));
-      app.mastery.persist();
-    }
-    /* ── Wissen Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'wissen' && app.mastery) {
-      endWissenGame(app.mastery, stats, stats.score > (app.save.getPB('wissen') || 0));
-      app.mastery.persist();
-    }
-    /* ── Memo Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'memo' && app.mastery) {
-      endMemoGame(app.mastery, stats, stats.score > (app.save.getPB('memo') || 0));
-      app.mastery.persist();
-    }
-    /* ── Sequenz Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'sequenz' && app.mastery) {
-      endSequenzGame(app.mastery, stats, stats.score > (app.save.getPB('sequenz') || 0));
-      app.mastery.persist();
-    }
-    /* ── Stroop Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'stroop' && app.mastery) {
-      endStroopGame(app.mastery, stats, stats.score > (app.save.getPB('stroop') || 0));
-      app.mastery.persist();
-    }
-    /* ── Fokus Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'fokus' && app.mastery) {
-      endFokusGame(app.mastery, stats, stats.score > (app.save.getPB('fokus') || 0));
-      app.mastery.persist();
-    }
-    /* ── Chaos Mode Mastery: persist end-of-game data ── */
-    if (game.mode === 'chaos' && app.mastery) {
-      endChaosGame(app.mastery, stats, stats.score > (app.save.getPB('chaos') || 0));
-      app.mastery.persist();
-    }
+    cleanupModeHuds();
+    finishModeMastery(game.mode, app.mastery, stats, app.save);
 
     const g = $('#game');
     g?.classList.add('game-over-freeze');

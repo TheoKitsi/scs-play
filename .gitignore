@@ -1,10 +1,25 @@
 # Dependencies
 node_modules/
 
+# Local configuration / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+google-services.json
+
 # Build output (CI builds fresh for deployment)
 docs/
 www/
 android/app/src/main/assets/public/
+android/app/build/
+android/.gradle/
+*.apk
+*.aab
 
 # IDE
 .idea/

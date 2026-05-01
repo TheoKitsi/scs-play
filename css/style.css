@@ -41,3 +41,36 @@ body[data-reduced-motion] *::after{
   transition-duration: 0.01ms !important;
 }
 
+@media (prefers-contrast: more){
+  :root{
+    --text-dim:#D5E1F0;
+    --text-muted:#CAD5E4;
+    --text-on-surface-dim:#D5E1F0;
+    --icon-on-surface-variant:#D5E1F0;
+    --glass-border:rgba(255,255,255,0.24);
+    --outline:rgba(255,255,255,0.32);
+    --outline-subtle:rgba(255,255,255,0.2);
+    --focus-ring:0 0 0 4px rgba(255,255,255,0.72),0 0 0 7px rgba(157,78,221,0.7);
+  }
+  .btn:disabled,
+  .btn.disabled{
+    opacity:.86;
+    background:rgba(255,255,255,0.1)!important;
+    border-color:rgba(255,255,255,0.28)!important;
+  }
+  .auth-input::placeholder{color:rgba(248,250,252,0.82)}
+  .ad-banner-placeholder,
+  .pause-ad-placeholder,
+  .game-ad-banner-placeholder,
+  .ad-interstitial-placeholder{opacity:.82!important}
+  .corner-shape{border-width:3px!important}
+}
+
+@media (forced-colors: active){
+  :focus-visible{outline:3px solid CanvasText;outline-offset:3px}
+  .btn,
+  .btn-icon-circle,
+  .play-type-btn,
+  .mode-card{border:1px solid ButtonText}
+}
+

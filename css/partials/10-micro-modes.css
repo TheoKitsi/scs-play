@@ -780,7 +780,7 @@
   margin-top: 6px;
 }
 .mode-level-label {
-  color: var(--mode-accent, var(--primary-glow));
+  color: #D8B4FE;
   font-weight: 800;
 }
 .mode-level-name {

@@ -1,70 +1,86 @@
-# SCS Play — Simple Color Sort
+# SCS Play
 
-Ein blitzschnelles Reaktions-Sortierspiel als Progressive Web App (PWA).
+SCS Play is a mobile-first reaction and brain-training game built as a Progressive Web App with a Capacitor Android wrapper. Players sort shapes, colors, words, math prompts, memory sequences, and rule-switching challenges by swiping toward the correct direction.
 
-## 🎮 Spielprinzip
+## What Matters
 
-- **4 Ecken** haben je eine einzigartige **Form + Farbe** (zufällig pro Runde)
-- In der **Mitte** erscheint eine Form
-- **Wische diagonal** zur passenden Ecke!
-- Du hast **60 Sekunden** — sei schnell!
-- **Streak-System**: 5er-Serien erhöhen den Multiplikator (bis x5)
-- **Rush-Phasen** alle 15 Sekunden: 3 Formen in schneller Folge
-- **Adaptiver Schwierigkeitsgrad**: Das Spiel passt sich deiner Leistung an
+- Vanilla JavaScript ES modules, no frontend framework.
+- Source lives in `js/`, `css/`, `audio/`, `img/`, and root app files.
+- Production output is generated into `docs/` by `npm run build:prod`.
+- Do not manually edit generated files in `docs/`.
+- Guest mode works without backend setup; Firebase auth/cloud sync is optional.
+- CI requires static contrast audit, production build, DOM contrast audit, and smoke test.
 
-## 🚀 Starten
+## Quick Start
 
-### Lokaler Server (Entwicklung)
 ```bash
-cd "SCS Play"
-python -m http.server 8080
-# oder: npx serve .
-# oder: npx http-server -p 8080
-```
-Dann öffne `http://localhost:8080` auf dem Smartphone-Browser.
-
-### Auf einem Webserver
-Kopiere den gesamten `SCS Play`-Ordner auf einen Webserver mit HTTPS.
-Die App funktioniert als PWA und kann zum Homescreen hinzugefügt werden.
-
-## 📱 Features
-
-- **Vollbild-Modus** auf Smartphone-Browsern
-- **Touch-only** — optimiert für Wisch-Gesten
-- **PWA** — installierbar, offline-fähig
-- **Gastmodus** — Spielstände lokal auf dem Gerät
-- **Cloud-Auth** — Google, Apple, E-Mail (via Firebase)
-- **Farbenblind-Modus** — alternative Farbpalette
-- **Weniger Animationen** — Barrierefreiheit
-- **Vibration / Haptics**
-- **Sound-Effekte** (Web Audio API, keine externen Dateien)
-- **Deutsch / Englisch**
-
-## 🔐 Firebase einrichten (optional)
-
-Der Gastmodus funktioniert sofort ohne Firebase. Für Cloud-Auth (Google/Apple/E-Mail):
-
-1. Erstelle ein Projekt auf [Firebase Console](https://console.firebase.google.com/)
-2. Aktiviere **Authentication** → Sign-in Providers:
-   - E-Mail/Passwort
-   - Google
-   - Apple
-3. Erstelle eine **Firestore Database** (Produktionsmodus)
-4. Kopiere die Firebase-Config in `js/auth.js`:
-
-```javascript
-const FIREBASE_CONFIG = {
-  apiKey:            'AIza...',
-  authDomain:        'dein-projekt.firebaseapp.com',
-  projectId:         'dein-projekt',
-  storageBucket:     'dein-projekt.appspot.com',
-  messagingSenderId: '123456789',
-  appId:             '1:123456789:web:abc123'
-};
+npm ci
+npm run verify
 ```
 
-5. Firestore Security Rules:
+For day-to-day browser testing, build the production bundle and run any static server against `docs/`:
+
+```bash
+npm run build:prod
+npx serve docs
 ```
+
+The automated smoke and visual scripts start their own local static server unless `SCS_BASE` is set:
+
+```bash
+npm run smoke-test
+npm run visual-review
+```
+
+## Scripts
+
+| Command | Purpose |
+| --- | --- |
+| `npm run build:prod` | Bundle JS/CSS into `docs/` with size budgets. |
+| `npm run build` | Build the web assets for Capacitor development sync. |
+| `npm run contrast-audit` | Static WCAG token/theme contrast audit. |
+| `npm run contrast-audit:dom` | Playwright scan of rendered app screens for text/background contrast. |
+| `npm run smoke-test` | Critical boot -> guest -> home -> game -> results flow. |
+| `npm run visual-review` | Capture mobile screenshots for manual review. |
+| `npm run verify` | Full local gate: contrast, build, DOM contrast, smoke. |
+| `npm run cap:sync` | Build production web assets and sync Android. |
+| `npm run cap:run` | Build and run through Capacitor Android. |
+
+## Project Map
+
+```text
+SCS Play/
+  index.html                  App shell and screen markup
+  css/style.css               CSS partial entrypoint
+  css/partials/               Design tokens, screens, overlays, polish
+  js/app.js                   App orchestrator and global event wiring
+  js/appState.js              Shared singleton state
+  js/game/                    Game engine and mode mastery core
+  js/screens/                 Screen-specific rendering and bindings
+  js/helpers/                 DOM, haptics, onboarding, display helpers
+  js/services/                Ads, quests, season pass, effects, sharing
+  scripts/                    Build, QA, contrast, screenshot tooling
+  android/                    Capacitor Android project
+  docs/                       Generated production web output
+```
+
+## Quality Bar
+
+Before opening a PR or handing the repo to another developer, run:
+
+```bash
+npm run verify
+```
+
+The contrast gates enforce WCAG AA expectations across tokens, themes, common states, and rendered screens. If a screen introduces new text over a new surface, update both CSS and the relevant audit coverage instead of weakening the checks.
+
+## Firebase
+
+The game runs in guest mode out of the box. To enable cloud auth/sync, configure Firebase in `js/auth.js` and keep all project secrets out of git. Android signing files, `google-services.json`, keystores, and `.env` files are ignored by default.
+
+Firestore rule baseline:
+
+```js
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -75,47 +91,9 @@ service cloud.firestore {
 }
 ```
 
-## 📁 Projektstruktur
+## More Docs
 
-```
-SCS Play/
-├── index.html          # Haupt-HTML (alle Screens)
-├── manifest.json       # PWA-Manifest
-├── sw.js               # Service Worker (Caching)
-├── css/
-│   └── style.css       # Komplettes Styling
-├── js/
-│   ├── app.js          # Haupt-Orchestrator
-│   ├── config.js       # Spiel-Konstanten
-│   ├── i18n.js         # Lokalisierung (DE/EN)
-│   ├── game.js         # Spiel-Engine
-│   ├── input.js        # Touch/Swipe-Erkennung
-│   ├── audio.js        # Sound (Web Audio API)
-│   ├── effects.js      # Visuelle Effekte
-│   ├── auth.js         # Authentifizierung
-│   └── save.js         # Speicher-System
-└── img/
-    ├── icon-192.svg    # PWA-Icon
-    └── icon-512.svg    # PWA-Icon
-```
-
-## 🏗 Technologie
-
-- **Vanilla JavaScript** (ES Modules) — kein Framework, kein Build-Step
-- **CSS Animations** — GPU-beschleunigt
-- **SVG Shapes** — scharfe Formen auf jedem Display
-- **Web Audio API** — synthetisierte Sounds
-- **Vibration API** — haptisches Feedback
-- **Fullscreen API** — echtes Vollbild
-- **Firebase Auth + Firestore** — optional für Cloud-Sync
-- **Service Worker** — Offline-Fähigkeit
-
-## 📊 Punkte-System
-
-| Komponente | Wert |
-|---|---|
-| Basis pro Wisch | 100 Punkte |
-| Zeitbonus | bis +50 (je schneller, desto mehr) |
-| Multiplikator | x1 bis x5 (alle 5er-Streak +1) |
-| Miss-Strafe | Streak −3 |
-| Endbonus | Beste Serie × 10 + Genauigkeit% × 20 |
+- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [BUILD.md](BUILD.md)
+- [SECURITY.md](SECURITY.md)

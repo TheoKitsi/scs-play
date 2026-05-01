@@ -8,8 +8,8 @@ import { $, $$, showScreen } from '../helpers/dom.js';
 import { haptic }           from '../helpers/haptics.js';
 import { applyTheme }       from '../services/ThemeService.js';
 import app                   from '../appState.js';
-import { getBodyFx }        from './HomeScreen.js';
-import { updateLivesDisplay } from './ResultsScreen.js';
+import { getBodyFx }        from '../services/EffectsService.js';
+import { updateLivesDisplay } from '../helpers/livesDisplayHelper.js';
 
 const IAP_ITEMS = [
   { id: 'adfree',       price: '4,99 \u20AC', lives: 0 },

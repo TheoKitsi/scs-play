@@ -5,8 +5,9 @@
  * Run: node scripts/smoke-test.mjs
  */
 import { chromium } from 'playwright';
+import { startStaticServer } from './lib/static-server.mjs';
 
-const BASE = 'http://localhost:3000';
+const EXTERNAL_BASE = process.env.SCS_BASE || '';
 const DEVICE = {
   viewport: { width: 412, height: 915 },
   deviceScaleFactor: 2,
@@ -31,6 +32,9 @@ function assert(condition, label) {
 
 async function run() {
   console.log('SCS Play Smoke Test\n');
+  const staticServer = EXTERNAL_BASE ? null : await startStaticServer({ root: 'docs' });
+  const BASE = EXTERNAL_BASE || staticServer.baseUrl;
+  console.log(`Target: ${BASE}`);
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext(DEVICE);
   await context.addInitScript(() => localStorage.setItem('scsQa', '1'));
@@ -268,6 +272,7 @@ async function run() {
 
   await context.close();
   await browser.close();
+  if (staticServer) await staticServer.close();
   process.exit(failed > 0 ? 1 : 0);
 }
 

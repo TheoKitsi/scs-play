@@ -8,7 +8,9 @@ import { $, setText, showScreen } from '../helpers/dom.js';
 import { haptic }           from '../helpers/haptics.js';
 import { showAdInterstitial, isAdFree } from '../services/AdService.js';
 import app                   from '../appState.js';
-import { getBodyFx, updateXPBar } from './HomeScreen.js';
+import { updateXPBar }      from '../helpers/xpBarHelper.js';
+import { updateLivesDisplay } from '../helpers/livesDisplayHelper.js';
+import { getBodyFx }        from '../services/EffectsService.js';
 import { maybeShowFeedback } from '../helpers/microFeedback.js';
 import { generateAchievements, getProgress } from '../achievements/AchievementSystem.js';
 import { getKlassikInsights, getFormenInsights, getExpertInsights, getUltraInsights, getMatheInsights, getAlgebraInsights, getWorteInsights, getHauptstaedteInsights, getWissenInsights, getMemoInsights, getSequenzInsights, getStroopInsights, getFokusInsights, getChaosInsights } from '../game/ModeMastery.js';
@@ -127,14 +129,6 @@ export function wasLastGameGood() {
   if (scores.length < 2) return stats.accuracy >= 60;
   const avg = scores.reduce((s, sc) => s + sc.score, 0) / scores.length;
   return stats.score >= avg;
-}
-
-export function updateLivesDisplay() {
-  const val = app.save.getLives();
-  const hud = $('#homeLivesCount');
-  const shop = $('#shopLivesCount');
-  if (hud) hud.textContent = val;
-  if (shop) shop.textContent = val;
 }
 
 export async function showResults(stats, canContinue = false) {

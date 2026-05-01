@@ -5,13 +5,14 @@
    ═══════════════════════════════════════ */
 import { CONFIG }           from '../config.js';
 import { t, getLanguage }    from '../i18n.js';
-import { $, $$, setText, setHTML, safeSrc, showScreen } from '../helpers/dom.js';
-import { avatarSVG }        from '../renderers/avatars.js';
+import { $, $$, setText, setHTML, showScreen } from '../helpers/dom.js';
+import { getUnlockLevel }   from '../helpers/modeUnlockHelper.js';
+import { updateAvatarDisplay } from '../helpers/avatarDisplayHelper.js';
 import { updateAdBanner, isAdFree } from '../services/AdService.js';
 import { applyTheme }       from '../services/ThemeService.js';
-import { EffectsManager }   from '../effects.js';
+import { getBodyFx }        from '../services/EffectsService.js';
+import { updateXPBar }      from '../helpers/xpBarHelper.js';
 import { checkOnboardingHints } from '../helpers/onboardingHints.js';
-import { updateWheelCard } from './WheelScreen.js';
 import { getOrSeedQuests, countCompleted as questsCompleted } from '../services/DailyQuestService.js';
 import { getProgress as getPassProgress, PASS_STAGES } from '../services/SeasonPass.js';
 import app                   from '../appState.js';
@@ -96,47 +97,6 @@ function getGreeting() {
   if (h < 12) return t('greeting_morning') || 'Guten Morgen';
   if (h < 18) return t('greeting_afternoon') || 'Guten Tag';
   return t('greeting_evening') || 'Guten Abend';
-}
-
-/* ═══════ XP bar ═══════ */
-export function updateXPBar() {
-  const { save } = app;
-  const prog = save.getXPProgress();
-  const bar = $('#xpBarFill');
-  const levelNum = $('#xpLevelNum');
-  const title = $('#xpTitle');
-  const numbers = $('#xpNumbers');
-  const percent = $('#xpPercent');
-  
-  const pct = isFinite(prog.pct) ? prog.pct : 0;
-  if (bar) bar.style.width = (pct * 100) + '%';
-  if (levelNum) {
-    const lvl = save.getLevel() + 1;
-    levelNum.textContent = `${t('level')} ${lvl}`;
-  }
-  if (title) {
-    title.textContent = save.getLevelName();
-  }
-  if (numbers) {
-    const cur = isFinite(prog.current) ? prog.current : 0;
-    const need = isFinite(prog.needed) ? prog.needed : 0;
-    numbers.textContent = `${cur.toLocaleString()} / ${need.toLocaleString()} XP`;
-  }
-  if (percent) {
-    percent.textContent = `${Math.round(pct * 100)}%`;
-  }
-}
-
-/* ═══════ Avatar display ═══════ */
-export function updateAvatarDisplay() {
-  const { save } = app;
-  const avatar = save.getAvatar();
-  if (avatar.photo) {
-    setHTML('#homeAvatar', `<img src="${safeSrc(avatar.photo)}" alt="Avatar" style="width:24px;height:24px;border-radius:50%;object-fit:cover">`);
-  } else {
-    const color = CONFIG.COLORS.normal[avatar.colorIndex] || CONFIG.COLORS.normal[0];
-    setHTML('#homeAvatar', avatarSVG(avatar.icon, color, 24));
-  }
 }
 
 /* ═══════ Hero card ═══════ */
@@ -454,27 +414,6 @@ function updateQuickShortcuts() {
   });
 }
 
-/* ═══════ Mode unlock level helper ═══════ */
-function getUnlockLevel(mode) {
-  const map = {
-    klassik: CONFIG.UNLOCK_KLASSIK,
-    beginner: 0,
-    expert: CONFIG.UNLOCK_EXPERT,
-    ultra: CONFIG.UNLOCK_ULTRA,
-    mathe: CONFIG.UNLOCK_MATHE,
-    worte: CONFIG.UNLOCK_WORTE,
-    memo: CONFIG.UNLOCK_MEMO,
-    sequenz: CONFIG.UNLOCK_SEQUENZ,
-    stroop: CONFIG.UNLOCK_STROOP,
-    fokus: CONFIG.UNLOCK_FOKUS,
-    chaos: CONFIG.UNLOCK_CHAOS,
-    hauptstaedte: CONFIG.UNLOCK_HAUPTSTAEDTE,
-    algebra: CONFIG.UNLOCK_ALGEBRA,
-    wissen: CONFIG.UNLOCK_WISSEN,
-  };
-  return (map[mode] ?? 0) + 1;
-}
-
 /* ═══════ Mode selector ═══════ */
 export function updateModeSelector() {
   /* Sync carousel index to current selectedMode */
@@ -533,13 +472,6 @@ export async function checkDailyLogin() {
     if (fireEl) fireEl.textContent = save.getFireBalance();
     updateHeroStats();
   } catch { /* ignore */ }
-}
-
-/** Get or create the shared body-level EffectsManager */
-export function getBodyFx() {
-  if (!app.bodyFx) app.bodyFx = new EffectsManager(document.body);
-  app.bodyFx.setReduced(app.save.getSetting('reducedMotion'));
-  return app.bodyFx;
 }
 
 /* ═══════ v60 Welle 4: Daily Quests panel ═══════ */
@@ -663,7 +595,7 @@ export function showHome() {
 
   updateAvatarDisplay();
   checkDailyLogin();
-  updateWheelCard();
+  window.dispatchEvent(new Event('scs:update-wheel-card'));
   /* v60 Welle 4: Quests panel + Season Pass bar */
   try { renderDailyQuestsPanel(); } catch (e) { console.warn('quests render failed', e); }
   try { renderSeasonPassCard();    } catch (e) { console.warn('pass render failed',   e); }

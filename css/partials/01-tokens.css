@@ -18,7 +18,7 @@
   --accent:#EC4899;--accent-glow:#F472B6;
   --bg:#030014;--bg-hue:250;
   --surface:rgba(15, 23, 42, 0.6);--card:rgba(30, 41, 59, 0.7);
-  --text:#F8FAFC;--text-dim:#94A3B8;--text-muted:#8896A8;
+  --text:#F8FAFC;--text-dim:#B6C3D5;--text-muted:#AAB6C8;
   
   --success:#10B981;--warning:#F59E0B;--error:#EF4444;--danger:#EF4444;
   --info:#0EA5E9;
@@ -57,7 +57,7 @@
   --text-on-surface:#F8FAFC;         /* primary text on dark surface — ≥7:1 */
   --text-on-surface-dim:#B0BEC5;     /* secondary text — ≥4.5:1 on dark bg */
   --icon-on-surface:#CBD5E1;         /* icon fill on dark cards — ≥3:1 */
-  --icon-on-surface-variant:#94A3B8; /* muted icon fill — ≥3:1 */
+  --icon-on-surface-variant:#AAB6C8; /* muted icon fill — ≥3:1 */
 
   /* ── Primary text on light surfaces (used in light theme) ── */
   --primary-text:#7C3AED;
