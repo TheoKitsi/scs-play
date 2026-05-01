@@ -30,6 +30,7 @@ import { trackChaosAnswer, startChaosGame, endChaosGame, getChaosGhostDelta } fr
 
 /* ═══════ SVG Cache — avoid regenerating & parsing identical SVGs ═══════ */
 const _svgCache = new Map();
+const SPEED_REACTIVE_MUSIC_MODES = new Set(['klassik', 'beginner', 'expert', 'ultra', 'stroop', 'fokus', 'chaos']);
 
 function getCachedSVGNode(shape, color, size, bonus) {
   const key = `${shape}|${color}|${size}|${bonus || ''}`;
@@ -41,6 +42,12 @@ function getCachedSVGNode(shape, color, size, bonus) {
     _svgCache.set(key, node);
   }
   return node.cloneNode(true);
+}
+
+function syncGameplayMusicIntensity(game, result) {
+  if (!SPEED_REACTIVE_MUSIC_MODES.has(game.mode)) return;
+  if (typeof app.audio?.setPerformanceIntensity !== 'function') return;
+  app.audio.setPerformanceIntensity(result.correct ? game.streak : 0);
 }
 
 /* ═══════ Platform color cache — avoid recomputing gradient strings ═══════ */
@@ -2078,6 +2085,8 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     const isRush = game.inRush;
     const isFever = game.feverActive;
 
+    syncGameplayMusicIntensity(game, result);
+
     if (result.correct) {
       audio.correct(result.streak);
 
@@ -2860,7 +2869,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       return;
     }
     const result = game.handleSwipe(dir, ts);
-    if (!result) effects.trailEnd();
+    effects.trailEnd();
   };
 
   /* ── Tap-to-corner: tap a corner shape to answer ── */
@@ -2894,7 +2903,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     }
     haptic('hover', save);
     const result = game.handleSwipe(dir, ts);
-    if (!result) effects.trailEnd();
+    effects.trailEnd();
   };
 
   /* ── Center tap: no-op (memo peek removed) ── */

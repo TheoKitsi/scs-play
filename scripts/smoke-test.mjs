@@ -210,8 +210,8 @@ async function run() {
     console.log('  SKIP: Wheel button not found');
   }
 
-  // ─── 13) v60 Welle 4: Daily Quests panel & Season Pass card ───
-  console.log('\n13. Welle 4 — Quests + Season Pass');
+  // ─── 13) Streamlined Home: essentials only ───
+  console.log('\n13. Streamlined Home');
   if (!await visible('#home', 1000)) {
     await page.evaluate(() => {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -219,20 +219,18 @@ async function run() {
     });
     await page.waitForTimeout(400);
   }
-  const dqVisible = await page.evaluate(() => {
-    const p = document.querySelector('#dailyQuestsPanel');
-    const items = document.querySelectorAll('#dqList .dq-item');
-    return Boolean(p && items.length === 3);
+  const homeState = await page.evaluate(() => {
+    const visiblePlayTypes = [...document.querySelectorAll('.play-type-btn')]
+      .filter(btn => !btn.hidden && getComputedStyle(btn).display !== 'none').length;
+    return {
+      essentials: Boolean(document.querySelector('#quickShortcuts') && document.querySelector('#dailyCard') && document.querySelector('#wheelCard')),
+      overloadRemoved: !document.querySelector('#dailyQuestsPanel') && !document.querySelector('#seasonPassCard') && !document.querySelector('#heroStatsZone'),
+      visiblePlayTypes,
+    };
   });
-  assert(dqVisible, 'Daily Quests panel renders 3 quests');
-
-  const spVisible = await page.evaluate(() => {
-    const c = document.querySelector('#seasonPassCard');
-    const fill = document.querySelector('#spBarFill');
-    const stage = document.querySelector('#spStage');
-    return Boolean(c && fill && stage && stage.textContent.length > 0);
-  });
-  assert(spVisible, 'Season Pass card renders progress + stage');
+  assert(homeState.essentials, 'Home keeps shortcuts, daily challenge, and wheel');
+  assert(homeState.overloadRemoved, 'Quest, pass, and stats overload removed');
+  assert(homeState.visiblePlayTypes <= 3, `Visible play types reduced (${homeState.visiblePlayTypes})`);
 
   // ─── 14) Near-Miss pill is reachable through Game→Results path ───
   console.log('\n14. Near-Miss pill DOM hook');

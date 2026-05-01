@@ -9,14 +9,14 @@ import { EffectsManager } from '../effects.js';
 import app from '../appState.js';
 
 const PRIZES = [
-  { type: 'life', amount: 1, weight: 25, color: '#EF4444', label: () => t('wheel_prize_life', { n: 1 }) },
-  { type: 'life', amount: 2, weight: 8, color: '#F87171', label: () => t('wheel_prize_life', { n: 2 }) },
-  { type: 'fire', amount: 3, weight: 28, color: '#FFA502', label: () => t('wheel_prize_fire', { n: 3 }) },
-  { type: 'fire', amount: 10, weight: 12, color: '#FBBF24', label: () => t('wheel_prize_fire', { n: 10 }) },
-  { type: 'xp', amount: 30, weight: 18, color: '#7C3AED', label: () => t('wheel_prize_xp', { n: 30 }) },
-  { type: 'xp', amount: 150, weight: 4, color: '#9D4EDD', label: () => t('wheel_prize_xp', { n: 150 }) },
-  { type: 'jackpot', amount: 0, weight: 2, color: '#FFD700', label: () => t('wheel_prize_jackpot') },
-  { type: 'fire', amount: 5, weight: 3, color: '#EC4899', label: () => t('wheel_prize_fire', { n: 5 }) },
+  { type: 'life', amount: 1, weight: 25, color: '#EF4444', icon: '+1', label: () => t('wheel_prize_life', { n: 1 }) },
+  { type: 'life', amount: 2, weight: 8, color: '#F87171', icon: '+2', label: () => t('wheel_prize_life', { n: 2 }) },
+  { type: 'fire', amount: 3, weight: 28, color: '#FFA502', icon: '+3', label: () => t('wheel_prize_fire', { n: 3 }) },
+  { type: 'fire', amount: 10, weight: 12, color: '#FBBF24', icon: '+10', label: () => t('wheel_prize_fire', { n: 10 }) },
+  { type: 'xp', amount: 30, weight: 18, color: '#7C3AED', icon: 'XP', label: () => t('wheel_prize_xp', { n: 30 }) },
+  { type: 'xp', amount: 150, weight: 4, color: '#9D4EDD', icon: 'XP+', label: () => t('wheel_prize_xp', { n: 150 }) },
+  { type: 'jackpot', amount: 0, weight: 2, color: '#FFD700', icon: 'MAX', label: () => t('wheel_prize_jackpot') },
+  { type: 'fire', amount: 5, weight: 3, color: '#EC4899', icon: '+5', label: () => t('wheel_prize_fire', { n: 5 }) },
 ];
 
 const SEGMENTS = PRIZES.slice(0, 8);
@@ -137,9 +137,9 @@ function drawWheel(canvas, angle) {
     const start = i * SEG_ANGLE;
     const end = start + SEG_ANGLE;
     const prize = SEGMENTS[i];
-    const grad = ctx.createRadialGradient(0, 0, r * 0.15, 0, 0, r);
-    grad.addColorStop(0, prize.color + '40');
-    grad.addColorStop(0.5, prize.color + 'CC');
+    const grad = ctx.createRadialGradient(0, 0, r * 0.08, 0, 0, r);
+    grad.addColorStop(0, '#FFFFFF24');
+    grad.addColorStop(0.45, prize.color + 'DD');
     grad.addColorStop(1, prize.color);
     ctx.beginPath();
     ctx.moveTo(0, 0);
@@ -147,21 +147,35 @@ function drawWheel(canvas, angle) {
     ctx.closePath();
     ctx.fillStyle = grad;
     ctx.fill();
-    ctx.strokeStyle = i % 2 === 0 ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = i % 2 === 0 ? 'rgba(255,255,255,0.26)' : 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 2;
     ctx.stroke();
 
     ctx.save();
     ctx.rotate(start + SEG_ANGLE / 2);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 11px "Space Grotesk", sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 19px "Space Grotesk", sans-serif';
     ctx.shadowColor = 'rgba(0,0,0,0.6)';
     ctx.shadowBlur = 4;
-    ctx.fillText(prize.label(), r * 0.62, 0);
+    ctx.fillText(prize.icon, r * 0.48, -5);
+    ctx.font = '800 9px "Space Grotesk", sans-serif';
+    ctx.fillText(prize.label(), r * 0.64, 13);
     ctx.restore();
   }
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < SEG_COUNT; i++) {
+    ctx.rotate(SEG_ANGLE);
+    ctx.beginPath();
+    ctx.moveTo(0, -r - 2);
+    ctx.lineTo(0, -r + 12);
+    ctx.stroke();
+  }
+  ctx.restore();
 
   ctx.beginPath();
   ctx.arc(0, 0, r + 2, 0, 2 * Math.PI);
@@ -172,17 +186,18 @@ function drawWheel(canvas, angle) {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  const centerGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 22);
-  centerGrad.addColorStop(0, '#2a2a2a');
-  centerGrad.addColorStop(1, '#1a1a1a');
+  const centerGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 28);
+  centerGrad.addColorStop(0, '#FFFFFF');
+  centerGrad.addColorStop(0.18, '#FFE49A');
+  centerGrad.addColorStop(1, '#33210A');
   ctx.beginPath();
-  ctx.arc(0, 0, 20, 0, 2 * Math.PI);
+  ctx.arc(0, 0, 26, 0, 2 * Math.PI);
   ctx.fillStyle = centerGrad;
   ctx.fill();
   ctx.strokeStyle = '#FFD700';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 4;
   ctx.shadowColor = 'rgba(255,215,0,0.4)';
-  ctx.shadowBlur = 8;
+  ctx.shadowBlur = 12;
   ctx.stroke();
 
   ctx.restore();

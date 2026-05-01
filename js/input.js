@@ -6,7 +6,7 @@
 import { CONFIG } from './config.js';
 
 /* ─── Corner hit-test padding (px) for fat-finger tolerance ─── */
-const TAP_HIT_PADDING = 12;
+const TAP_HIT_PADDING = 22;
 
 export class SwipeHandler {
   constructor(el, mode = 'beginner') {
@@ -129,7 +129,8 @@ export class SwipeHandler {
     }
 
     /* ── Swipe gesture ── */
-    const dir = (velocity >= minVelocity) ? this._classify(dx, dy) : null;
+    const cornerHit = this.onCornerTap ? this._hitTestCorner(p.clientX, p.clientY) : null;
+    const dir = cornerHit || ((velocity >= minVelocity) ? this._classify(dx, dy) : null);
     if (dir && this.onSwipe) {
       this.onSwipe(dir, performance.now());
     } else {

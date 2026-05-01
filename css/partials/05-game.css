@@ -636,13 +636,13 @@
 /* ─── Corner Shapes ─── */
 .corner-shape{
   position:absolute;z-index:5;
-  width:76px;height:76px;
+  width:92px;height:92px;
   display:flex;align-items:center;justify-content:center;
   border-radius:24px;
-  border:1px solid rgba(255,255,255,0.1);
-  background: rgba(15,20,40,0.65);
+  border:1px solid transparent;
+  background: transparent;
   transition:transform .3s ease, box-shadow .3s ease;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.08);
+  box-shadow:none;
   will-change: transform, opacity;
   contain: layout style;
 }
@@ -650,8 +650,9 @@
   display: none; /* Removed inner stroke gradient to flatten */
 }
 .corner-shape svg{
-  width:var(--icon-size-lg);height:var(--icon-size-lg);
+  width:58px;height:58px;
   transition: transform .3s ease;
+  filter:drop-shadow(0 8px 18px rgba(0,0,0,0.42));
 }
 /* Correct / Wrong feedback pulse on corner shapes */
 .corner-shape.corner-correct{
@@ -813,8 +814,8 @@ svg.ui-icon, svg.action-icon, svg.quick-icon, svg.mode-icon, svg.play-type-icon,
   .hud{padding:calc(var(--safe-top) + 8px) 12px 8px}
   .hud-top{margin-bottom:8px}
   .hud-scores .hud-score-group{min-width:55px}
-  .corner-shape{width:60px;height:60px}
-  .corner-shape svg{width:22px;height:22px}
+  .corner-shape{width:72px;height:72px;--half:36px}
+  .corner-shape svg{width:44px;height:44px}
   .center-platform{width:115px;height:115px}
   .center-shape svg { width: 65px; height: 65px; }
   .btn-guest-hero{padding: 16px 24px; font-size: 1.1rem;}
@@ -828,7 +829,8 @@ svg.ui-icon, svg.action-icon, svg.quick-icon, svg.mode-icon, svg.play-type-icon,
   .hud-fever{font-size:.65rem}
   .hud-timer{font-size:1.4rem;min-width:40px}
   .hud-scores{padding:6px 8px}
-  .corner-shape{width:52px;height:52px}
+  .corner-shape{width:64px;height:64px;--half:32px}
+  .corner-shape svg{width:38px;height:38px}
   .center-platform{width:105px;height:105px}
   .center-shape svg{width:60px;height:60px}
   .mode-chip{padding:2px 1px}
@@ -846,7 +848,7 @@ svg.ui-icon, svg.action-icon, svg.quick-icon, svg.mode-icon, svg.play-type-icon,
 }
 
 /* ─── Corner helper: half-size for centering ─── */
-.corner-shape{ --half: 38px; }
+.corner-shape{ --half: 46px; }
 
 /* ─── 4 Corners (Klassik/Beginner/Brain modes) — unchanged ─── */
 .corner-shape[data-dir="ur"]{top:28%;right:8%}
@@ -871,10 +873,10 @@ body.mode-ultra .ultra-only{display:flex}
    ═══════════════════════════════════════ */
 body.mode-expert .corner-shape{
   /* Slightly smaller for 8-direction breathing room */
-  width: 66px; height: 66px; --half: 33px;
+  width: 76px; height: 76px; --half: 38px;
   border-radius: 22px;
 }
-body.mode-expert .corner-shape svg{ width: 30px; height: 30px; }
+body.mode-expert .corner-shape svg{ width: 42px; height: 42px; }
 body.mode-expert .corner-shape,
 body.mode-ultra .corner-shape{
   /* Reset any right/bottom anchoring so left/top takes over */
@@ -903,10 +905,10 @@ body.mode-expert:not(.ad-free) .corner-shape[data-dir="ul"]   { top:calc(36% - v
    Smaller shapes (56px) for breathing room
    ═══════════════════════════════════════ */
 body.mode-ultra .corner-shape{
-  width:56px; height:56px; --half:28px;
+  width:64px; height:64px; --half:32px;
   border-radius:18px;
 }
-body.mode-ultra .corner-shape svg{ width:22px; height:22px; }
+body.mode-ultra .corner-shape svg{ width:34px; height:34px; }
 body.mode-ultra .corner-shape[data-dir="up"]   { top:calc(27% - var(--half)); left:calc(50% - var(--half)); }
 body.mode-ultra .corner-shape[data-dir="ene"]  { top:calc(30% - var(--half)); left:calc(68% - var(--half)); }
 body.mode-ultra .corner-shape[data-dir="ur"]   { top:calc(40% - var(--half)); left:calc(82% - var(--half)); }

@@ -655,7 +655,7 @@
    ═══════════════════════════════════════════ */
 .wheel-overlay{
   position:fixed;inset:0;z-index:90000;
-  background:rgba(3,0,20,0.92);
+  background:radial-gradient(circle at 50% 20%,rgba(255,165,2,0.16),transparent 34%),rgba(3,0,20,0.92);
   display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;
   transition:opacity 0.35s ease;
@@ -664,11 +664,11 @@
 .wheel-overlay.active{opacity:1;pointer-events:auto}
 .wheel-panel{
   position:relative;
-  width:calc(100% - 32px);max-width:392px;
-  background:linear-gradient(180deg,rgba(15,23,42,0.97),rgba(10,15,30,0.97));
-  border:1px solid rgba(255,165,2,0.24);
-  border-radius:var(--radius-xl);
-  padding:24px 20px 18px;
+  width:calc(100% - 28px);max-width:430px;
+  background:linear-gradient(180deg,rgba(18,22,36,0.98),rgba(7,12,24,0.98));
+  border:1px solid rgba(255,209,102,0.3);
+  border-radius:18px;
+  padding:24px 18px 18px;
   text-align:center;
   box-shadow:0 16px 64px rgba(0,0,0,0.6),0 0 32px rgba(255,165,2,0.15);
   overflow:hidden;
@@ -682,8 +682,8 @@
 .wheel-close:hover{opacity:1}
 .wheel-heading{
   font-family:'Space Grotesk',sans-serif;
-  font-size:1.3rem;font-weight:900;
-  letter-spacing:2px;color:var(--color-fire);
+  font-size:1.4rem;font-weight:900;
+  letter-spacing:1px;color:#FFD166;
   margin:0 0 8px;
 }
 .wheel-subtitle{
@@ -754,7 +754,7 @@
 }
 .wheel-container{
   position:relative;
-  width:300px;height:300px;
+  width:min(330px, 82vw);height:min(330px, 82vw);
   margin:0 auto 18px;
 }
 .wheel-container canvas{display:block;width:100%;height:100%}
@@ -774,12 +774,12 @@
   100%{transform:rotate(360deg)}
 }
 .wheel-pointer{
-  position:absolute;top:-10px;left:50%;
+  position:absolute;top:-14px;left:50%;
   transform:translateX(-50%);
   width:0;height:0;
-  border-left:14px solid transparent;
-  border-right:14px solid transparent;
-  border-top:24px solid #FFD700;
+  border-left:17px solid transparent;
+  border-right:17px solid transparent;
+  border-top:30px solid #FFD700;
   filter:drop-shadow(0 2px 8px rgba(255,215,0,0.5));
   z-index:2;
   transition:filter .2s;
@@ -795,10 +795,10 @@
 }
 .wheel-result-card{
   --wheel-win-color: rgba(255,165,2,0.5);
-  min-height:88px;
+  min-height:82px;
   padding:14px 14px 12px;
   margin-bottom:14px;
-  border-radius:18px;
+  border-radius:12px;
   border:1px solid rgba(255,255,255,0.06);
   background:rgba(255,255,255,0.035);
   opacity:.72;
@@ -843,7 +843,7 @@
 }
 .btn-wheel-spin{
   display:block;width:100%;padding:13px 18px;
-  border:none;border-radius:var(--radius-sm);
+  border:none;border-radius:10px;
   font-family:'Space Grotesk',sans-serif;
   font-size:1rem;font-weight:900;
   letter-spacing:1.5px;text-transform:uppercase;

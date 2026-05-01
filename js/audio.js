@@ -471,14 +471,27 @@ export class AudioManager {
       setTimeout(() => this._play(f, 'sawtooth', 0.12, 0.08), i * 40);
     });
     this._musicTempo = 180;
+    if (this._musicAudio) this._musicAudio.playbackRate = 1.18;
   }
 
   /** Fever mode ended — gentle descending resolve. */
   feverEnd() {
     this._feverMode = false;
     this._musicTempo = this._baseTempo;
+    if (this._musicAudio) this._musicAudio.playbackRate = 1;
     this._play(400, 'sine', 0.3, 0.08);
     this._play(300, 'sine', 0.4, 0.06);
+  }
+
+  setPerformanceIntensity(streak = 0) {
+    if (this._feverMode) return;
+    const cleanStreak = Math.max(0, Math.min(40, Number(streak) || 0));
+    const tempoLift = Math.floor(cleanStreak / 4) * 5;
+    const targetTempo = Math.min(this._baseTempo + 48, this._baseTempo + tempoLift);
+    this._musicTempo = targetTempo;
+    if (this._musicAudio) {
+      this._musicAudio.playbackRate = Math.min(1.22, 1 + (targetTempo - this._baseTempo) / 220);
+    }
   }
 
   /** Corner shuffle warning — swirling descending whoosh. */
@@ -1001,6 +1014,7 @@ export class AudioManager {
     this._modeData = this._modeConfig[this._musicMode] || this._modeConfig.classic;
     if (!this._feverMode) {
       this._musicTempo = this._baseTempo;
+      if (this._musicAudio) this._musicAudio.playbackRate = 1;
     }
     this._loadMusicManifest();
     if (this._musicRunning && previousMode !== this._musicMode) {
@@ -1076,6 +1090,7 @@ export class AudioManager {
     this._musicFadeTimer = null;
     this._musicAudio.src = url;
     this._musicAudio.currentTime = 0;
+    this._musicAudio.playbackRate = 1;
     this._musicAudio.volume = 0;
     this._musicAudio.play().then(() => {
       this._musicFilePlaying = true;
@@ -1714,6 +1729,7 @@ export class AudioManager {
     }
     this._feverMode = false;
     this._musicTempo = this._baseTempo;
+    if (this._musicAudio) this._musicAudio.playbackRate = 1;
     this._currentPhrase = null;
     this._phrasePos = 0;
 

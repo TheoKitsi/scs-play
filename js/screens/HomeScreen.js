@@ -491,15 +491,22 @@ export function updatePlayTypeSelector() {
   const { save } = app;
   const isSequenz = app.selectedMode === 'sequenz';
   const isBrainReflex = ['mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra','wissen'].includes(app.selectedMode);
+  const competitionUnlocked = save.isCompetitionUnlocked();
   /* Sequenz forces endless — auto-select and disable others */
   if (isSequenz && app.selectedPlayType !== 'endless') {
     app.selectedPlayType = 'endless';
   }
+  if (!competitionUnlocked && app.selectedPlayType === 'competition') {
+    app.selectedPlayType = 'blitz';
+  }
   $$('.play-type-btn').forEach(btn => {
     const play = btn.dataset.play;
+    const shouldHide = (isSequenz && play !== 'endless') || (play === 'competition' && !competitionUnlocked);
+    btn.hidden = shouldHide;
+    btn.setAttribute('aria-hidden', shouldHide ? 'true' : 'false');
     btn.classList.toggle('selected', play === app.selectedPlayType);
     if (play === 'competition') {
-      btn.classList.toggle('locked', !save.isCompetitionUnlocked());
+      btn.classList.toggle('locked', !competitionUnlocked);
     }
     /* Sequenz: grey out non-endless play types */
     if (isSequenz && play !== 'endless') {

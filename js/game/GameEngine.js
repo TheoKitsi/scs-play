@@ -202,6 +202,10 @@ export class GameEngine {
     return this.mode === 'sequenz';
   }
 
+  get refreshCornersEachSpawn() {
+    return this.mode === 'beginner';
+  }
+
   get _spawnStart() {
     if (this.isSequenzMode || this.isMemoMode) return CONFIG.SPAWN_MEMO_START;
     if (!this.isBrainMode && !this.isReflexMode) return CONFIG.SPAWN_INTERVAL_START;
@@ -303,8 +307,8 @@ export class GameEngine {
     this.spawnInterval = this._spawnStart;
     this._isFirstSpawn = true;
     this._assignCorners();
-    /* Corner shuffle: set first threshold for shape modes */
-    if (!this.isBrainMode && !this.isMemoMode && !this.isSequenzMode && !this.isReflexMode) {
+    /* Corner shuffle: set first threshold for stable-map shape modes */
+    if (!this.refreshCornersEachSpawn && !this.isBrainMode && !this.isMemoMode && !this.isSequenzMode && !this.isReflexMode) {
       this._nextShuffleAt = CONFIG.CORNER_SHUFFLE_FIRST;
       this._shuffleCount = 0;
     }
@@ -649,6 +653,11 @@ export class GameEngine {
     if (this.mode === 'stroop') { this._spawnStroop(); return; }
     if (this.mode === 'fokus')  { this._spawnFokus();  return; }
     if (this.mode === 'chaos')  { this._spawnChaos();  return; }
+
+    if (this.refreshCornersEachSpawn) {
+      this._assignCorners();
+      if (this.onCornersUpdate) this.onCornersUpdate(this.cornerMap);
+    }
 
     const dirs = this.directions;
     const idx = Math.floor(this.rng() * dirs.length);
@@ -2005,7 +2014,7 @@ export class GameEngine {
 
   /* ─── Corner Shuffle ─── */
   _triggerCornerShuffle() {
-    if (this.isBrainMode || this.isMemoMode || this.isSequenzMode || this.isReflexMode) return;
+    if (this.refreshCornersEachSpawn || this.isBrainMode || this.isMemoMode || this.isSequenzMode || this.isReflexMode) return;
     this._shuffleCount++;
     const interval = Math.max(
       CONFIG.CORNER_SHUFFLE_MIN_INTERVAL,
