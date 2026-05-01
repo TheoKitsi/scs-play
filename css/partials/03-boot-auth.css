@@ -106,12 +106,12 @@
   box-shadow: 0 0 12px var(--primary-glow);
 }
 .boot-status{
-  margin-top:16px;font-family:'Space Grotesk'; font-size:.85rem; font-weight:700; color:var(--text-dim);min-height:20px;
+  margin-top:16px;font-family:'Space Grotesk'; font-size:.85rem; font-weight:700; color:var(--text);min-height:20px;
   letter-spacing: 2px; text-transform: uppercase;
   animation:bootTextPulse 1.5s ease-in-out infinite alternate;
 }
 @keyframes bootTextPulse{
-  0%{opacity:.4; text-shadow:0 0 0 transparent;}
+  0%{opacity:1; text-shadow:0 0 0 transparent;}
   100%{opacity:1; text-shadow:0 0 8px rgba(255,255,255,0.4), 0 0 12px var(--primary-glow);}
 }
 
