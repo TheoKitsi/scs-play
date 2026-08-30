@@ -382,20 +382,22 @@ function updateQuickShortcuts() {
   const el = $('#quickShortcuts');
   if (!el) return;
   const { save } = app;
-  const pins = (save.data.pinnedModes || [null, null, null, null]).slice(0, 4);
-  while (pins.length < 4) pins.push(null);
+  const pins = (save.data.pinnedModes || [null, null, null, null]).filter(Boolean).slice(0, 4);
   const current = app.selectedMode;
 
+  el.hidden = pins.length === 0;
+  if (pins.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+
   el.innerHTML = pins.map((m, i) => {
-    if (m) {
-      const isActive = m === current ? ' active' : '';
-      const name = t(`mode_${m}`) || m.toUpperCase();
-      return `<button class="qs-slot filled${isActive}" data-mode="${m}" data-slot="${i}">
-        <span class="qs-slot-icon">${getModeSVG(m)}</span>
-        <span class="qs-slot-name">${name}</span>
-      </button>`;
-    }
-    return `<button class="qs-slot empty" data-slot="${i}"><span class="qs-slot-plus">+</span></button>`;
+    const isActive = m === current ? ' active' : '';
+    const name = t(`mode_${m}`) || m.toUpperCase();
+    return `<button class="qs-slot filled${isActive}" data-mode="${m}" data-slot="${i}">
+      <span class="qs-slot-icon">${getModeSVG(m)}</span>
+      <span class="qs-slot-name">${name}</span>
+    </button>`;
   }).join('');
 
   el.querySelectorAll('.qs-slot').forEach(btn => {
@@ -406,9 +408,6 @@ function updateQuickShortcuts() {
         const idx = CONFIG.MODE_ORDER.indexOf(mode);
         if (idx !== -1) goToSlide(idx);
         updateQuickShortcuts();
-      } else {
-        // Empty slot → pin current carousel mode
-        togglePin(current);
       }
     });
   });

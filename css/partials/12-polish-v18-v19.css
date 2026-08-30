@@ -246,8 +246,8 @@
   animation:actionTimerPulse .42s ease-in-out infinite;
 }
 @keyframes actionClimaxBeat{
-  0%,100%{transform:scale(1)}
-  50%{transform:scale(1.035)}
+  0%,100%{transform:translate(-50%,-50%) scale(1.05)}
+  50%{transform:translate(-50%,-50%) scale(1.085)}
 }
 @keyframes actionTimerPulse{
   0%,100%{transform:scale(1);text-shadow:0 0 0 rgba(255,107,53,0)}
@@ -1059,3 +1059,167 @@ body[data-perf-mode="low"] .season-pass-card{
   font-variant-numeric:tabular-nums;
 }
 .sp-foot .sp-next{color:var(--text-muted, #94A3B8);font-weight:600}
+
+/* ═══ Focused mobile home: one viewport, one primary action ═══ */
+.play-type-btn[hidden]{display:none!important}
+
+#home .hero-zone{
+  gap:2px;
+  padding-bottom:5px;
+}
+#home .hero-top-bar{
+  padding-top:calc(env(safe-area-inset-top, 6px) + 2px);
+  min-height:42px;
+}
+#home .htb-left .avatar-small{width:36px;height:36px}
+#home .home-greeting{font-size:.65rem}
+#home .htb-left .user-info-badge{font-size:.72rem}
+#home .resource-pill{padding:2px 7px}
+#home .hero-xp-bar{min-height:14px;padding-bottom:0}
+#home .hero-xp-bar .xp-title,
+#home .hero-xp-bar .xp-numbers,
+#home .weekend-badge{display:none}
+#home .hero-slider{height:112px}
+#home .hero-slide{gap:2px;padding-block:0}
+#home .hero-slide-visual{width:46px;height:46px}
+#home .hero-slide-name{font-size:.86rem}
+#home .hero-slide-desc{font-size:.56rem;line-height:1.1}
+#home .hero-slide-badges{margin-top:0}
+#home .hero-slide-badge{font-size:.58rem;padding:1px 7px}
+#home .hero-slide-badge--level,
+#home .hero-slide-badge--mastery,
+#home .hero-slide-level-bar{display:none}
+#home .hero-pin-btn{top:8px;right:12px;width:32px;height:32px}
+#home .hero-nav-arrow{top:42%}
+#home .home-play-command{gap:5px;padding-inline:8px}
+#home .play-type-selector--primary{min-height:40px}
+#home .play-type-btn{min-height:36px;padding:2px}
+#home .play-type-icon{min-height:12px}
+#home .btn-play-fab{min-height:48px;padding:9px 24px;font-size:.98rem}
+
+#home .home-bottom-sheet{
+  overflow:hidden;
+  gap:6px;
+  padding:3px 8px calc(58px + var(--bottom-inset));
+  background:rgba(3,0,20,.34);
+  -webkit-mask-image:none;
+  mask-image:none;
+}
+#home .sheet-handle{opacity:.55}
+#home .quick-shortcuts{
+  flex:0 0 40px;
+  gap:6px;
+  padding:0;
+  align-items:center;
+}
+#home .quick-shortcuts[hidden]{display:none}
+#home .qs-slot{
+  flex:1 1 0;
+  width:auto;
+  max-width:104px;
+  height:36px;
+  border-radius:10px;
+}
+
+#home .today-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  flex:0 0 58px;
+  min-height:58px;
+}
+#home .today-actions .daily-card,
+#home .today-actions .wheel-card{
+  min-width:0;
+  height:58px;
+  margin:0;
+  padding:6px 7px;
+  gap:4px;
+  border-radius:12px;
+  flex-shrink:0;
+  flex-direction:column;
+  justify-content:center;
+}
+#home .today-actions .daily-left{width:100%;justify-content:center;gap:0}
+#home .today-actions .daily-icon-wrap{display:none}
+#home .today-actions .daily-info{width:100%;text-align:center}
+#home .today-actions .daily-title{
+  width:100%;
+  font-size:.52rem;
+  letter-spacing:.1px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#home .today-actions .daily-reward,
+#home .today-actions .daily-streak-pill,
+#home .today-actions .wheel-meta-row{display:none}
+#home .today-actions .daily-right{width:100%;gap:0}
+#home .today-actions .btn-daily-cta,
+#home .today-actions .btn-wheel-cta{
+  width:100%;
+  min-height:32px;
+  padding:5px 8px;
+  font-size:.62rem;
+  border-radius:9px;
+  box-shadow:none;
+}
+#home .today-actions .daily-timer{
+  max-width:74px;
+  overflow:hidden;
+  padding:5px 6px;
+  font-size:.58rem;
+}
+
+#home .daily-quests-panel{
+  flex:0 0 40px;
+  min-height:40px;
+  margin:0;
+  padding:0 12px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  box-shadow:none;
+}
+#home .dq-head{width:100%;margin:0}
+#home .dq-list{display:none}
+#home .dq-head-title{font-size:.68rem}
+
+#home .season-pass-card{
+  flex:0 0 52px;
+  min-height:52px;
+  margin:0;
+  padding:7px 12px;
+  border-radius:12px;
+  box-shadow:none;
+}
+#home .sp-head{margin-bottom:4px}
+#home .sp-title{font-size:.66rem}
+#home .sp-bar{height:5px}
+#home .sp-foot{margin-top:4px;font-size:.62rem}
+
+/* Progression remains calculated, but no longer competes with the core play flow. */
+#home .daily-quests-panel,
+#home .season-pass-card{display:none}
+
+#home .pwa-install-banner{
+  position:fixed;
+  left:8px;
+  right:8px;
+  bottom:calc(64px + var(--bottom-inset));
+  z-index:40;
+}
+
+@media (max-height:700px){
+  #home .hero-slider{height:92px}
+  #home .hero-slide-desc{display:none}
+  #home .hero-slide-visual{width:40px;height:40px}
+  #home .hero-slide-name{font-size:.8rem}
+  #home .hero-slide-badge{font-size:.54rem}
+  #home .play-type-selector--primary{min-height:38px}
+  #home .play-type-btn{min-height:34px}
+  #home .btn-play-fab{min-height:46px;padding-block:7px}
+  #home .today-actions{flex-basis:54px;min-height:54px}
+  #home .today-actions .daily-card,
+  #home .today-actions .wheel-card{height:54px}
+}

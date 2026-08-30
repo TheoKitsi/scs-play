@@ -185,7 +185,7 @@ export const CONFIG = {
   CORNER_SHUFFLE_INTERVAL: 10,      // then every N correct
   CORNER_SHUFFLE_STEP: 2,           // reduce interval by 2 each shuffle
   CORNER_SHUFFLE_MIN_INTERVAL: 6,   // never faster than every 6
-  CORNER_SHUFFLE_WARNING_MS: 1400,  // warning flash before shuffle (was 800ms)
+  CORNER_SHUFFLE_WARNING_MS: 320,   // brief cue without breaking a skilled player's rhythm
   CORNER_SHUFFLE_COLORS: true,      // also shuffle colors when corners shuffle
 
   /* ─── Anti-Frustration System (v23 — streak protection removed for tension) ─── */

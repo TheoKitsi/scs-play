@@ -560,7 +560,7 @@
 
 /* Corner shuffle warning pulse */
 .corner-shape.shuffle-warn{
-  animation:cornerShuffleWarn .8s ease-in-out;
+  animation:cornerShuffleWarn .32s ease-out;
 }
 @keyframes cornerShuffleWarn{
   0%,100%{transform:scale(1);opacity:1}
@@ -572,7 +572,7 @@
 
 /* Corner shuffle done pop-in */
 .corner-shape.shuffle-done{
-  animation:cornerShuffleDone .4s cubic-bezier(.34,1.56,.64,1);
+  animation:cornerShuffleDone .18s cubic-bezier(.34,1.56,.64,1);
 }
 @keyframes cornerShuffleDone{
   0%{transform:scale(.5) rotate(90deg);opacity:0}

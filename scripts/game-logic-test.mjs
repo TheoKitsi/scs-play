@@ -12,6 +12,8 @@ globalThis.localStorage = {
 
 const { GameEngine } = await import('../js/game/GameEngine.js');
 const { SaveService } = await import('../js/save.js');
+const { CONFIG } = await import('../js/config.js');
+const { SwipeHandler } = await import('../js/input.js');
 
 const wissenEndless = new GameEngine();
 wissenEndless.start('wissen', 'endless', { lang: 'de' });
@@ -46,6 +48,127 @@ const answer = snapshot.handleSwipe('ul', performance.now());
 assert.equal(answer.item.display, 'Hund');
 assert.equal(answer.item.category, 'tier');
 assert.equal(snapshot.currentShape, null, 'Answered item must be cleared after snapshotting');
+
+const staleGesture = new GameEngine();
+staleGesture.running = true;
+staleGesture.practice = true;
+staleGesture._scheduleSpawn = () => {};
+staleGesture.currentShape = { direction: 'ul' };
+staleGesture._emitSpawn();
+const oldStimulusId = staleGesture.currentShape.stimulusId;
+staleGesture.currentShape = { direction: 'dr' };
+staleGesture._emitSpawn();
+staleGesture.lastSpawnTime = performance.now() - 100;
+assert.equal(
+  staleGesture.handleSwipe('ul', performance.now(), oldStimulusId),
+  null,
+  'A gesture started on an old stimulus must not score or miss the new stimulus'
+);
+assert.equal(staleGesture.total, 0);
+assert.equal(staleGesture.currentShape.direction, 'dr');
+const currentStimulusId = staleGesture.currentShape.stimulusId;
+assert.equal(staleGesture.handleSwipe('dr', performance.now(), currentStimulusId)?.correct, true);
+
+const invalidTimestamp = new GameEngine();
+invalidTimestamp.running = true;
+invalidTimestamp.practice = true;
+invalidTimestamp.currentShape = { direction: 'ul', stimulusId: 1 };
+assert.equal(invalidTimestamp.handleSwipe('ul', Number.NaN, 1), null);
+assert.equal(invalidTimestamp.total, 0, 'Invalid input timestamps must not mutate game state');
+
+const memoReveal = new GameEngine();
+memoReveal.running = true;
+memoReveal.mode = 'memo';
+memoReveal.practice = false;
+memoReveal._memoPhase = 'playing';
+memoReveal._memoCorrectSinceReveal = CONFIG.MEMO_REVEAL_EVERY - 1;
+memoReveal.currentShape = { direction: 'ul', stimulusId: 1 };
+memoReveal.lastSpawnTime = performance.now() - 1000;
+const memoSchedules = [];
+memoReveal._scheduleSpawn = delay => memoSchedules.push(delay);
+memoReveal.handleSwipe('ul', performance.now(), 1);
+assert.equal(memoReveal._memoPhase, 'reveal');
+assert.equal(memoSchedules.length, 0, 'Memo must not spawn while corners are revealed');
+clearTimeout(memoReveal._memoPreviewTimeout);
+
+const smoothSpeed = new GameEngine();
+smoothSpeed.mode = 'klassik';
+smoothSpeed.correct = 10;
+smoothSpeed.spawnInterval = CONFIG.SPAWN_INTERVAL_START;
+smoothSpeed._recentWindow = Array.from({ length: 10 }, () => ({ correct: true, reaction: 100 }));
+smoothSpeed._adjustDifficulty();
+assert.equal(
+  smoothSpeed.spawnInterval,
+  CONFIG.SPAWN_INTERVAL_START,
+  'Adaptive difficulty must not compound the normal correct-answer speed curve'
+);
+
+const equationBounds = new GameEngine();
+equationBounds.rng = () => 0.999999;
+const maxAddition = equationBounds._generateEquation({ ops: ['+'], min: 10, max: 50 });
+assert.equal(maxAddition.equation, '50 + 50', 'Math max must be an upper bound, not a range width');
+
+const exactPerfect = new GameEngine();
+exactPerfect.correct = 999;
+exactPerfect.total = 1000;
+assert.equal(exactPerfect._buildStats().isPerfectRound, false, 'Rounded 99.9% accuracy is not perfect');
+
+assert.ok(CONFIG.CORNER_SHUFFLE_WARNING_MS <= 400, 'Corner shuffle cue must remain rhythm-safe');
+
+const inputElement = { querySelectorAll: () => [], querySelector: () => null };
+const input = new SwipeHandler(inputElement);
+let gestureToken = 1;
+input.onGestureStart = () => gestureToken++;
+input._start({ touches: [{ clientX: 10, clientY: 10 }] });
+assert.equal(input._gestureStimulusId, 1);
+input._start({ touches: [{ clientX: 20, clientY: 20 }] });
+assert.equal(input._gestureStimulusId, 1, 'A second finger must not replace the active gesture target');
+input._cancel();
+assert.equal(input._isTouch, false, 'Cancelled touches must not disable later mouse input');
+
+const pausedShuffle = new GameEngine();
+pausedShuffle.running = true;
+pausedShuffle.mode = 'klassik';
+pausedShuffle._assignCorners();
+let shuffledAfterResume = 0;
+pausedShuffle.onCornerShuffle = () => { shuffledAfterResume++; };
+pausedShuffle._triggerCornerShuffle();
+pausedShuffle.pause();
+pausedShuffle._scheduleSpawn = () => {};
+pausedShuffle.resume();
+assert.equal(pausedShuffle._shuffleInProgress, false);
+assert.equal(shuffledAfterResume, 1, 'A paused corner switch must complete exactly once after resume');
+pausedShuffle.stop();
+
+const pausedMemo = new GameEngine();
+pausedMemo.running = true;
+pausedMemo.mode = 'memo';
+pausedMemo._memoPhase = 'playing';
+pausedMemo.currentShape = { direction: 'ul', stimulusId: 1 };
+pausedMemo.lastSpawnTime = performance.now() - 100;
+let memoReveals = 0;
+pausedMemo.onMemoReveal = () => { memoReveals++; };
+pausedMemo.pause();
+pausedMemo._scheduleSpawn = () => {};
+pausedMemo.resume();
+assert.equal(memoReveals, 0, 'Pausing normal Memo play must not reveal corners');
+assert.equal(pausedMemo.currentShape.direction, 'ul', 'Memo pause must preserve the active stimulus');
+pausedMemo.stop();
+
+const terminalMiss = new GameEngine();
+terminalMiss.running = true;
+terminalMiss.mode = 'beginner';
+terminalMiss.playType = 'endless';
+terminalMiss.endlessLives = 1;
+terminalMiss.endlessTotalMisses = CONFIG.ENDLESS_MAX_MISSES - 1;
+terminalMiss.currentShape = { direction: 'ul', stimulusId: 1 };
+terminalMiss.lastSpawnTime = performance.now() - terminalMiss._minAnswerWindow - 100;
+terminalMiss._scheduleSpawn = () => {};
+let terminalSpawns = 0;
+terminalMiss.onSpawn = () => { terminalSpawns++; };
+terminalMiss._spawn();
+assert.equal(terminalMiss.running, false);
+assert.equal(terminalSpawns, 0, 'No stimulus may spawn after the final endless life is lost');
 
 const bonusCap = new GameEngine();
 bonusCap.timer = 30;

@@ -11,7 +11,6 @@ const HINTS = [
   { id: 'hint_carousel',  target: '.hero-slider',        i18n: 'hint_carousel' },
   { id: 'hint_playflow',  target: '#homePlayCommand',     i18n: 'hint_playflow' },
   { id: 'hint_pin',       target: '.hero-pin-btn',        i18n: 'hint_pin' },
-  { id: 'hint_shortcuts', target: '#quickShortcuts',      i18n: 'hint_shortcuts' },
 ];
 
 let _overlay = null;

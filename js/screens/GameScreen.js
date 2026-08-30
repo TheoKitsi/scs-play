@@ -1914,7 +1914,7 @@ function updateModeMasteryAfterAnswer(game, result) {
 
 export function cleanupGameClasses() {
   const g = $('#game');
-  g?.classList.remove('intensity-low','intensity-mid','intensity-high','intensity-max','edge-glow-warm','edge-glow-hot','edge-glow-fire');
+  g?.classList.remove('intensity-low','intensity-mid','intensity-high','intensity-max','edge-glow-warm','edge-glow-hot','edge-glow-fire','action-climax','action-climax-peak');
   /* Remove memo-covered from corners */
   $$('.corner-shape').forEach(el => el.classList.remove('memo-covered', 'memo-revealing'));
   /* Remove mode class from body */
@@ -2178,12 +2178,12 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     });
     setTimeout(() => {
       $$('.corner-shape').forEach(el => el.classList.remove('shuffle-done'));
-    }, 500);
+    }, 220);
     if (typeof audio.cornerShuffleDone === 'function') audio.cornerShuffleDone();
     /* Clean up text overlay */
     setTimeout(() => {
       $('#shuffleText')?.classList.remove('active');
-    }, 1200);
+    }, 500);
   };
 
   game.onCornersUpdate = (cm) => { renderCorners(cm); };
@@ -2554,7 +2554,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     tip.className = 'shuffle-explain';
     tip.textContent = t('shuffle_explain');
     gameEl.appendChild(tip);
-    setTimeout(() => tip.remove(), 2800);
+    setTimeout(() => tip.remove(), 1200);
   };
 
   game.onWissenLevelUp = (level) => {
@@ -2703,19 +2703,21 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     updateHUD();
   };
 
-  swipe.onSwipe = (dir, ts) => {
+  swipe.onGestureStart = () => game.currentShape?.stimulusId ?? null;
+
+  swipe.onSwipe = (dir, ts, stimulusId) => {
     if (game.paused) return;
     /* Sequenz mode: route to sequence input handler */
     if (game.isSequenzMode) {
       game.handleSequenzInput(dir);
       return;
     }
-    const result = game.handleSwipe(dir, ts);
+    const result = game.handleSwipe(dir, ts, stimulusId);
     effects.trailEnd();
   };
 
   /* ── Tap-to-corner: tap a corner shape to answer ── */
-  swipe.onCornerTap = (dir, ts) => {
+  swipe.onCornerTap = (dir, ts, stimulusId) => {
     if (game.paused) return;
     /* Sequenz mode: route to sequence input handler */
     if (game.isSequenzMode) {
@@ -2744,7 +2746,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       setTimeout(() => corner.classList.remove('corner-tapped'), 350);
     }
     haptic('hover', save);
-    const result = game.handleSwipe(dir, ts);
+    const result = game.handleSwipe(dir, ts, stimulusId);
     effects.trailEnd();
   };
 

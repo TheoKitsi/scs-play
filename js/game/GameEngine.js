@@ -27,6 +27,9 @@ function shuffle(arr, rng) {
   }
   return a;
 }
+function randomIntInclusive(min, max, rng) {
+  return min + Math.floor(rng() * (max - min + 1));
+}
 
 export class GameEngine {
   constructor() { this.reset(); }
@@ -66,6 +69,7 @@ export class GameEngine {
 
     this.spawnInterval = CONFIG.SPAWN_INTERVAL_START;
     this.currentShape = null;
+    this._stimulusId = 0;
     this.cornerMap = {};
     this.rng = Math.random;
 
@@ -106,6 +110,7 @@ export class GameEngine {
     this._shuffleCount = 0;
     clearTimeout(this._shuffleTimeout);
     this._shuffleTimeout = null;
+    this._shuffleInProgress = false;
 
     /* Word mode: corner-label shuffle tracking */
     this._wordShuffleCounter = 0;
@@ -573,9 +578,12 @@ export class GameEngine {
     if (!this.paused) return;
     this.paused = false;
     /* Accumulate paused duration for drift-corrected timer */
+    let pausedDuration = 0;
     if (this._timerPauseStart) {
-      this._timerPausedAccum = (this._timerPausedAccum || 0) + (Date.now() - this._timerPauseStart);
+      pausedDuration = Date.now() - this._timerPauseStart;
+      this._timerPausedAccum = (this._timerPausedAccum || 0) + pausedDuration;
       this._timerPauseStart = null;
+      if (this.currentShape && this.lastSpawnTime) this.lastSpawnTime += pausedDuration;
     }
     /* Fever: restart with remaining duration */
     if (this.feverActive && this._feverRemainingMs > 0) {
@@ -608,6 +616,16 @@ export class GameEngine {
     }
     /* Memo: continue the exact preview phase that was interrupted. */
     if (this.isMemoMode) {
+      if (this._memoPhase === 'playing') {
+        if (this.currentShape) {
+          const remaining = Math.max(100, this._minAnswerWindow - (performance.now() - this.lastSpawnTime));
+          this._scheduleSpawn(remaining);
+          this._startComboDecay();
+        } else {
+          this._scheduleSpawn(400);
+        }
+        return;
+      }
       const wasInitialPreview = this._memoPhase === 'initialPreview';
       const previewMs = wasInitialPreview
         ? this._memoPhaseRemainingMs
@@ -628,6 +646,14 @@ export class GameEngine {
         }
         this._scheduleSpawn(400);
       }, previewMs);
+      return;
+    }
+    if (this._shuffleInProgress) {
+      this._shuffleCorners();
+      this._shuffleInProgress = false;
+      if (this.onCornerShuffle) this.onCornerShuffle(this.cornerMap);
+      this.currentShape = null;
+      this._scheduleSpawn(100);
       return;
     }
     this.currentShape = null;
@@ -660,6 +686,7 @@ export class GameEngine {
 
   /* Central spawn finalization: records time, starts combo decay, fires callback */
   _emitSpawn() {
+    this.currentShape.stimulusId = ++this._stimulusId;
     this.lastSpawnTime = performance.now();
     if (this.onSpawn) this.onSpawn(this.currentShape);
     this._startComboDecay();
@@ -668,7 +695,7 @@ export class GameEngine {
   _spawn() {
     if (!this.running || this.paused) return;
     /* Grace period: don't auto-miss if the player hasn't had enough time to answer */
-    if (this.currentShape && !this.practice && !this.inRush) {
+    if (this.currentShape && !this.practice) {
       const elapsed = performance.now() - this.lastSpawnTime;
       const minAnswerWindow = this._minAnswerWindow;
       if (elapsed < minAnswerWindow) {
@@ -678,6 +705,7 @@ export class GameEngine {
         return;
       }
       this.autoMiss();
+      if (!this.running) return;
     }
 
     if (this.mode === 'mathe')  { this._spawnMath();  return; }
@@ -727,13 +755,13 @@ export class GameEngine {
     let a, b, answer;
     switch (op) {
       case '+':
-        a = Math.floor(this.rng() * phase.max) + phase.min;
-        b = Math.floor(this.rng() * phase.max) + phase.min;
+        a = randomIntInclusive(phase.min, phase.max, this.rng);
+        b = randomIntInclusive(phase.min, phase.max, this.rng);
         answer = a + b;
         return { equation: `${a} + ${b}`, answer };
       case '\u2212':
-        a = Math.floor(this.rng() * phase.max) + phase.min + 1;
-        b = Math.floor(this.rng() * a) + 1;
+        a = randomIntInclusive(phase.min + 1, phase.max, this.rng);
+        b = randomIntInclusive(phase.min, a - 1, this.rng);
         answer = a - b;
         return { equation: `${a} \u2212 ${b}`, answer };
       case '\u00D7': {
@@ -1113,7 +1141,12 @@ export class GameEngine {
       } else {
         const dist = distractors[dIdx];
         this.cornerMap[d].display = String(dist);
-        this.cornerMap[d].value = isFraction ? parseFloat(dist) || 0 : dist;
+        if (isFraction) {
+          const [n, denominator] = String(dist).split('/').map(Number);
+          this.cornerMap[d].value = denominator ? n / denominator : 0;
+        } else {
+          this.cornerMap[d].value = dist;
+        }
         dIdx++;
       }
     });
@@ -1126,7 +1159,7 @@ export class GameEngine {
     }
 
     this.currentShape = {
-      direction: correctDir, display: equation, type: 'math',
+      direction: correctDir, display: equation, type: 'math', equationType: phase.type,
       color: this.cornerMap[correctDir].color,
       colorblind: this.cornerMap[correctDir].colorblind,
       bonus
@@ -1470,13 +1503,15 @@ export class GameEngine {
     }
   }
 
-  handleSwipe(direction, timestamp) {
+  handleSwipe(direction, timestamp, stimulusId) {
     if (!this.running || this.paused || !this.currentShape) return null;
     if (!direction) return null;  /* guard against null from dead-zone or missed hit-test */
-    this._stopComboDecay();
+    if (stimulusId !== undefined && stimulusId !== this.currentShape.stimulusId) return null;
+    if (!Number.isFinite(timestamp)) return null;
     const reaction = timestamp - this.lastSpawnTime;
     if (reaction < CONFIG.ANTI_CHEAT_MIN_REACTION) return null;
     if (this.mode === 'wissen' && reaction < (CONFIG.WISSEN_MIN_DISPLAY_MS || 0)) return null;
+    this._stopComboDecay();
 
     const answeredItem = Object.freeze({ ...this.currentShape });
 
@@ -1743,7 +1778,7 @@ export class GameEngine {
     } else {
       postAnswerDelay = this.practice ? CONFIG.PRACTICE_INTERVAL : Math.max(80, this.spawnInterval * 0.15);
     }
-    this._scheduleSpawn(postAnswerDelay);
+    if (this._memoPhase !== 'reveal') this._scheduleSpawn(postAnswerDelay);
     if (this.onResult) this.onResult(result);
 
     /* ── Gentle Start (v22): suppress rush/shuffle during opening seconds ── */
@@ -2063,7 +2098,8 @@ export class GameEngine {
 
   /* ─── Corner Shuffle ─── */
   _triggerCornerShuffle() {
-    if (this.refreshCornersEachSpawn || this.isBrainMode || this.isMemoMode || this.isSequenzMode || this.isReflexMode) return;
+    if (this._shuffleInProgress || this.refreshCornersEachSpawn || this.isBrainMode || this.isMemoMode || this.isSequenzMode || this.isReflexMode) return;
+    this._shuffleInProgress = true;
     this._shuffleCount++;
     const interval = Math.max(
       CONFIG.CORNER_SHUFFLE_MIN_INTERVAL,
@@ -2085,9 +2121,10 @@ export class GameEngine {
     this._shuffleTimeout = setTimeout(() => {
       if (!this.running || this.paused) return;
       this._shuffleCorners();
+      this._shuffleInProgress = false;
       if (this.onCornerShuffle) this.onCornerShuffle(this.cornerMap);
       /* Resume spawning after shuffle */
-      this._scheduleSpawn(400);
+      this._scheduleSpawn(100);
     }, CONFIG.CORNER_SHUFFLE_WARNING_MS);
   }
 
@@ -2192,13 +2229,10 @@ export class GameEngine {
     const acc = w.filter(r => r.correct).length / w.length;
     const avgReact = w.filter(r => r.correct).reduce((s, r) => s + r.reaction, 0) /
                      Math.max(1, w.filter(r => r.correct).length);
-    const minI = this._spawnMin, maxI = this._spawnMax, step = this._spawnStep;
-    const reactionThreshold = (this.isBrainMode || this.isMemoMode || this.isReflexMode)
-      ? CONFIG.DIFFICULTY_GOOD_REACTION_BRAIN
-      : CONFIG.DIFFICULTY_GOOD_REACTION;
-    if (acc >= CONFIG.DIFFICULTY_GOOD_ACCURACY && avgReact <= reactionThreshold) {
-      this.spawnInterval = Math.max(minI, this.spawnInterval - step);
-    } else if (acc <= CONFIG.DIFFICULTY_BAD_ACCURACY || this._consecutiveMisses >= CONFIG.DIFFICULTY_BAD_CONSECUTIVE_MISSES) {
+    const maxI = this._spawnMax, step = this._spawnStep;
+    /* Correct answers already follow the smooth 90-answer speed curve. Adaptive
+       difficulty only adds recovery, otherwise both systems accelerate at once. */
+    if (acc <= CONFIG.DIFFICULTY_BAD_ACCURACY || this._consecutiveMisses >= CONFIG.DIFFICULTY_BAD_CONSECUTIVE_MISSES) {
       this.spawnInterval = Math.min(maxI, this.spawnInterval + step);
     }
   }
@@ -2242,7 +2276,7 @@ export class GameEngine {
     const xp = Math.round(finalScore / 100 * CONFIG.XP_PER_100_SCORE);
     const lightningCount = this.reactionTimes.filter(r => r < 300).length;
     const bestReactionTime = this.reactionTimes.length > 0 ? Math.min(...this.reactionTimes) : 0;
-    const isPerfectRound = Math.round(accuracy * 100) === 100 && this.total >= 15;
+    const isPerfectRound = this.correct === this.total && this.total >= 15;
     const perfectBonus = isPerfectRound ? 500 : 0;
     const lightningBonus = lightningCount * 25;
     const day = new Date().getDay();

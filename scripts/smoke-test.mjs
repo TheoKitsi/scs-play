@@ -117,6 +117,19 @@ async function run() {
   assert(hudScore, 'HUD score element exists');
   assert(hudTimer, 'HUD timer element exists');
 
+  const centerBeforeClimax = await page.locator('#centerPlatform').boundingBox();
+  await page.evaluate(() => document.querySelector('#game')?.classList.add('action-climax', 'action-climax-peak'));
+  await page.waitForTimeout(250);
+  const centerDuringClimax = await page.locator('#centerPlatform').boundingBox();
+  await page.evaluate(() => document.querySelector('#game')?.classList.remove('action-climax', 'action-climax-peak'));
+  const centerDelta = centerBeforeClimax && centerDuringClimax
+    ? Math.hypot(
+      centerBeforeClimax.x + centerBeforeClimax.width / 2 - centerDuringClimax.x - centerDuringClimax.width / 2,
+      centerBeforeClimax.y + centerBeforeClimax.height / 2 - centerDuringClimax.y - centerDuringClimax.height / 2
+    )
+    : Infinity;
+  assert(centerDelta < 1.5, 'Center stimulus stays centered during climax animation');
+
   // ─── 5) Pause and Resume ───
   console.log('\n5. Pause/Resume');
   await clickSel('#btnPause', 600);
@@ -225,16 +238,21 @@ async function run() {
   }
   const homeState = await page.evaluate(() => {
     const visiblePlayTypes = [...document.querySelectorAll('.play-type-btn')]
-      .filter(btn => !btn.hidden && getComputedStyle(btn).display !== 'none').length;
+      .filter(btn => getComputedStyle(btn).display !== 'none' && btn.getBoundingClientRect().height > 0).length;
+    const sheet = document.querySelector('#homeBottomSheet');
+    const quests = document.querySelector('#dailyQuestsPanel');
+    const season = document.querySelector('#seasonPassCard');
     return {
       essentials: Boolean(document.querySelector('#quickShortcuts') && document.querySelector('#dailyCard') && document.querySelector('#wheelCard')),
-      progressFeed: Boolean(document.querySelector('#dailyQuestsPanel') && document.querySelector('#seasonPassCard')),
+      progressionDetached: Boolean(quests && season && getComputedStyle(quests).display === 'none' && getComputedStyle(season).display === 'none'),
       visiblePlayTypes,
+      fitsViewport: Boolean(sheet && sheet.scrollHeight <= sheet.clientHeight + 2),
     };
   });
   assert(homeState.essentials, 'Home keeps shortcuts, daily challenge, and wheel');
-  assert(homeState.progressFeed, 'Quest and season progress feed is connected');
+  assert(homeState.progressionDetached, 'Quest and season details stay off the focused dashboard');
   assert(homeState.visiblePlayTypes <= 3, `Visible play types reduced (${homeState.visiblePlayTypes})`);
+  assert(homeState.fitsViewport, 'Home dashboard fits without scrolling');
 
   // ─── 14) Near-Miss pill is reachable through Game→Results path ───
   console.log('\n14. Near-Miss pill DOM hook');

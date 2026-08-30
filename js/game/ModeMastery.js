@@ -876,7 +876,7 @@ export function startMatheGame(mastery) {
  */
 export function trackMatheAnswer(mastery, result, engine) {
   const mode = 'mathe';
-  const eq = engine?.currentShape?.display || '';
+  const eq = result?.item?.display || '';
   const op = _parseOp(eq);
 
   /* Track current phase */
@@ -912,7 +912,6 @@ export function trackMatheAnswer(mastery, result, engine) {
     m._roundOps[op]++;
 
     /* Math Facts Tracker (Plan 5 feature 4) — per-equation mastery */
-    const eq = engine?.currentShape?.display || '';
     if (eq) {
       mastery.mapInc(mode, 'factCorrect', eq);
       mastery.mapInc(mode, 'factTotal', eq);
@@ -928,7 +927,7 @@ export function trackMatheAnswer(mastery, result, engine) {
     mastery.mapInc(mode, 'opTotal', op);
     mastery.mapInc(mode, 'opWrong', op);
     /* Math Facts Tracker — track misses too */
-    const eqMiss = engine?.currentShape?.display || '';
+    const eqMiss = result?.item?.display || '';
     if (eqMiss) mastery.mapInc(mode, 'factTotal', eqMiss);
   }
 
@@ -1103,19 +1102,11 @@ export function startAlgebraGame(mastery) {
  */
 export function trackAlgebraAnswer(mastery, result, engine) {
   const mode = 'algebra';
-  const eqType = _getAlgType(engine);
+  const eqType = result?.item?.equationType || _getAlgType(engine);
 
   /* Track current phase index */
   const phases = CONFIG.ALGEBRA_PHASES || [];
-  let phaseIdx = 0;
-  for (let i = phases.length - 1; i >= 0; i--) {
-    const correct = engine?.correct ?? 0;
-    const elapsed = engine?.elapsed ?? 0;
-    const timeIdx = Math.min(phases.length - 1, Math.floor(elapsed / 20));
-    const correctIdx = phases.findIndex(p => correct < p.threshold) - 1;
-    phaseIdx = Math.max(correctIdx < 0 ? phases.length - 1 : correctIdx, timeIdx);
-    break;
-  }
+  const phaseIdx = Math.max(0, phases.findIndex(p => p.type === eqType));
   const m = mastery._ensure(mode);
   if (phaseIdx > (m._highestPhase || 0)) m._highestPhase = phaseIdx;
 

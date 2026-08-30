@@ -17,6 +17,7 @@ export class SwipeHandler {
     this.onCornerTap = null;   /* (dir, timestamp) — tapped a corner */
     this.onCenterTap = null;   /* () — tapped the center area */
     this.onSwipeRejected = null; /* () — swipe fell in dead zone */
+    this.onGestureStart = null; /* () => current stimulus id */
     this.onTrailStart = null;
     this.onTrailMove  = null;
     this.onTrailEnd   = null;
@@ -29,6 +30,7 @@ export class SwipeHandler {
     this._onStart = this._start.bind(this);
     this._onMove  = this._move.bind(this);
     this._onEnd   = this._end.bind(this);
+    this._onCancel = this._cancel.bind(this);
     this._onKeyDown = this._keyDown.bind(this);
   }
 
@@ -39,6 +41,7 @@ export class SwipeHandler {
     this.el.addEventListener('touchstart', this._onStart, { passive: true });
     this.el.addEventListener('touchmove',  this._onMove,  { passive: true });
     this.el.addEventListener('touchend',   this._onEnd,   { passive: true });
+    this.el.addEventListener('touchcancel', this._onCancel, { passive: true });
     this.el.addEventListener('mousedown',  this._onStart, { passive: true });
     this.el.addEventListener('mousemove',  this._onMove,  { passive: true });
     this.el.addEventListener('mouseup',    this._onEnd,   { passive: true });
@@ -50,6 +53,7 @@ export class SwipeHandler {
     this.el.removeEventListener('touchstart', this._onStart);
     this.el.removeEventListener('touchmove',  this._onMove);
     this.el.removeEventListener('touchend',   this._onEnd);
+    this.el.removeEventListener('touchcancel', this._onCancel);
     this.el.removeEventListener('mousedown',  this._onStart);
     this.el.removeEventListener('mousemove',  this._onMove);
     this.el.removeEventListener('mouseup',    this._onEnd);
@@ -76,16 +80,19 @@ export class SwipeHandler {
     }
     if (this.mode !== 'ultra' && ['ene', 'nnw', 'wsw', 'sse'].includes(direction)) return;
     e.preventDefault();
-    if (this.onSwipe) this.onSwipe(direction, performance.now());
+    const stimulusId = this.onGestureStart ? this.onGestureStart() : undefined;
+    if (this.onSwipe) this.onSwipe(direction, performance.now(), stimulusId);
   }
 
   _start(e) {
+    if (this._active) return;
     if (e.touches) this._isTouch = true;
     else if (this._isTouch) return;
     const p = e.touches ? e.touches[0] : e;
     this._sx = p.clientX;
     this._sy = p.clientY;
     this._st = performance.now();
+    this._gestureStimulusId = this.onGestureStart ? this.onGestureStart() : undefined;
     this._active = true;
     if (this.onTrailStart) this.onTrailStart(p.clientX, p.clientY);
   }
@@ -129,7 +136,7 @@ export class SwipeHandler {
       if (this.onCornerTap) {
         const hit = this._hitTestCorner(tapX, tapY);
         if (hit) {
-          this.onCornerTap(hit, performance.now());
+          this.onCornerTap(hit, performance.now(), this._gestureStimulusId);
           return;
         }
       }
@@ -156,11 +163,19 @@ export class SwipeHandler {
     const cornerHit = this.onCornerTap ? this._hitTestCorner(p.clientX, p.clientY) : null;
     const dir = cornerHit || ((velocity >= minVelocity) ? this._classify(dx, dy) : null);
     if (dir && this.onSwipe) {
-      this.onSwipe(dir, performance.now());
+      this.onSwipe(dir, performance.now(), this._gestureStimulusId);
     } else {
       if (!dir && this.onSwipeRejected) this.onSwipeRejected();
       if (this.onTrailEnd) this.onTrailEnd();
     }
+  }
+
+  _cancel() {
+    if (!this._active) return;
+    this._active = false;
+    this._isTouch = false;
+    this._gestureStimulusId = undefined;
+    if (this.onTrailEnd) this.onTrailEnd();
   }
 
   /* ─── Hit-test visible corner shapes ─── */
