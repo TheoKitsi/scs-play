@@ -1,15 +1,23 @@
 /* ═══════════════════════════════════════
    SCS Play — Service Worker
    ═══════════════════════════════════════ */
-const CACHE = 'scs-v52';
+const CACHE = 'scs-v53';
 const ASSETS = [
   './',
   './index.html',
+  './privacy-policy.html',
+  './terms-of-service.html',
   './css/style.bundle.css',
   './js/app.bundle.js',
   './manifest.json',
   './img/icon-192.svg',
-  './img/icon-512.svg'
+  './img/icon-512.svg',
+  './audio/music/tracks.json',
+  './audio/music/menu.mp3',
+  './audio/music/classic.mp3',
+  './audio/music/endless.mp3',
+  './audio/music/blitz.mp3',
+  './audio/music/competition.mp3'
 ];
 
 self.addEventListener('install', e => {
@@ -37,20 +45,24 @@ self.addEventListener('fetch', e => {
       url.includes('firebase.googleapis.com')) {
     return;
   }
-  /* Stale-while-revalidate: serve cache immediately, update in background */
-  e.respondWith(
-    caches.open(CACHE).then(cache =>
-      cache.match(e.request).then(cached => {
-        const fetchPromise = fetch(e.request).then(response => {
-          if (response && response.status === 200) {
-            cache.put(e.request, response.clone());
-          }
-          return response;
-        }).catch(() => null);
-        return cached || fetchPromise || caches.match('./index.html');
-      })
-    )
-  );
+  e.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    const cached = await cache.match(e.request);
+    if (cached) {
+      e.waitUntil(fetch(e.request).then(response => {
+        if (response?.ok) return cache.put(e.request, response.clone());
+      }).catch(() => {}));
+      return cached;
+    }
+    try {
+      const response = await fetch(e.request);
+      if (response?.ok) await cache.put(e.request, response.clone());
+      return response;
+    } catch {
+      if (e.request.mode === 'navigate') return caches.match('./index.html');
+      return Response.error();
+    }
+  })());
 });
 
 /* ═══════ Push Notification Handlers ═══════ */

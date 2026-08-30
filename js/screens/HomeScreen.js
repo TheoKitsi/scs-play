@@ -339,7 +339,7 @@ function initCarouselListeners() {
 /* ═══════ Hero stats spotlight ═══════ */
 export function updateHeroStats() {
   const { save } = app;
-  const pb     = save.getPB(app.selectedMode);
+  const pb     = save.getPB(app.selectedMode, app.selectedPlayType);
   const streak = save.getDailyLoginStreak ? save.getDailyLoginStreak() : (save.data?.loginStreak || 0);
   const games  = save.getGamesPlayed ? save.getGamesPlayed() : (save.data?.gamesPlayed || 0);
   const pbEl     = $('#hstPB');
@@ -513,7 +513,12 @@ function renderSeasonPassCard() {
   if (!p) return;
   const pct = Math.min(1, p.points / p.nextAt);
   const fill = $('#spBarFill');
-  if (fill) fill.style.transform = `scaleX(${pct})`;
+  if (fill) {
+    fill.style.transform = `scaleX(${pct})`;
+    fill.parentElement?.setAttribute('aria-valuenow', String(Math.round(pct * 100)));
+    fill.parentElement?.setAttribute('aria-valuemin', '0');
+    fill.parentElement?.setAttribute('aria-valuemax', '100');
+  }
   const meta = $('#spMeta');
   if (meta) {
     meta.textContent = (typeof t === 'function')
@@ -611,7 +616,7 @@ export function showHome() {
   /* XP rate hint when throttled */
   const xpRateHint = $('#xpRateHint');
   if (xpRateHint) {
-    const rate = save.getXPRate ? save.getXPRate() : 1;
+    const rate = save.getDailyXPInfo ? save.getDailyXPInfo().rate : 1;
     xpRateHint.textContent = rate < 1 ? t('xp_rate_info', { n: Math.round(rate * 100) }) : '';
   }
 

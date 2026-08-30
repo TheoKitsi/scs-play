@@ -29,6 +29,9 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
+      - name: Game logic regression tests
+        run: npm run game-logic-test
+
       - name: Contrast audit
         run: npm run contrast-audit
 

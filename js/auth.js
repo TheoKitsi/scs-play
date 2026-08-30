@@ -83,6 +83,8 @@ export class AuthService {
   }
 
   _checkGuest() {
+    this.user = null;
+    this.isGuest = true;
     const raw = localStorage.getItem('scs_guest');
     if (raw) {
       try { this.user = JSON.parse(raw); this.isGuest = true; } catch (_) {}

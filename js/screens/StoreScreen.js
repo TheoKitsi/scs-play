@@ -9,7 +9,6 @@ import { haptic }           from '../helpers/haptics.js';
 import { applyTheme }       from '../services/ThemeService.js';
 import app                   from '../appState.js';
 import { getBodyFx }        from '../services/EffectsService.js';
-import { updateLivesDisplay } from '../helpers/livesDisplayHelper.js';
 
 const IAP_ITEMS = [
   { id: 'adfree',       price: '4,99 \u20AC', lives: 0 },
@@ -51,7 +50,7 @@ function renderStoreItems() {
           <span class="store-item-name">${t('iap_' + item.id)}</span>
           <span class="store-item-desc">${t('iap_' + item.id + '_desc')}</span>
         </div>
-        <button class="btn btn-store-buy" ${owned ? 'disabled' : ''}>${owned ? t('iap_owned') : item.price}</button>
+        <button class="btn btn-store-buy">${t('iap_demo_label')} · ${item.price}</button>
       </div>`;
   }).join('');
 
@@ -155,30 +154,10 @@ function renderShopContent() {
 }
 
 async function handlePurchase(id) {
-  const { save } = app;
   const item = IAP_ITEMS.find(i => i.id === id);
   if (!item) return;
-
-  const confirmed = confirm(t('iap_confirm') + `\n${t('iap_' + id)} - ${item.price}`);
-  if (!confirmed) return;
-
-  const isVip = id.startsWith('vip_');
-  if (id === 'adfree' || isVip) await save.setPurchase(id);
-  if (id === 'avatar_photo') await save.setPurchase('avatar_photo');
-  if (item.lives > 0) await save.addLives(item.lives);
-  if (isVip) await save.setPurchase('adfree');
-
-  const bodyFx = getBodyFx();
-  bodyFx.achievementToast(t('iap_success'));
-  bodyFx.confetti(120, 2500);
-  haptic('purchase', save);
-  if (item.lives > 0) {
-    setTimeout(() => bodyFx.achievementToast(t('iap_lives_added', { n: item.lives })), 1500);
-    updateLivesDisplay();
-    updateShopLives();
-  }
-  renderShopContent();
-  updateShopLives();
+  getBodyFx().achievementToast(t('iap_demo_notice'));
+  app.audio.tap();
 }
 
 export function showStore(showHome) {

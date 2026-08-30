@@ -26,7 +26,7 @@
   <p>If you choose to create an account via Firebase Authentication, we store:</p>
   <ul>
     <li>Your email address (for login purposes only)</li>
-    <li>Game progress data (scores, XP, achievements) synced to Firebase Firestore</li>
+    <li>Game progress and in-app usage data, including scores, XP, achievements, played modes, session duration and feature usage, synced to Firebase Firestore</li>
   </ul>
   <p>Account creation is entirely optional. The App is fully functional without an account.</p>
 
@@ -35,6 +35,7 @@
   <ul>
     <li><strong>Firebase Authentication</strong> — for optional account management</li>
     <li><strong>Firebase Firestore</strong> — for optional cloud sync of game data</li>
+    <li><strong>Google Fonts</strong> — for loading the App's typefaces; request metadata such as IP address may be processed by Google</li>
   </ul>
   <p>These services are governed by <a href="https://firebase.google.com/support/privacy" rel="noopener">Google's Privacy Policy</a>.</p>
 
@@ -42,7 +43,7 @@
   <p>The App does not display ads during gameplay. If rewarded ads are offered, they are opt-in only and handled through standard ad SDKs with their own privacy policies.</p>
 
   <h2>6. Analytics</h2>
-  <p>The App does not use analytics or tracking services. No usage data is sent to external servers.</p>
+  <p>The App records gameplay and feature-usage signals to create an engagement report. For guests these signals remain in local browser storage. If you sign in and enable cloud sync, they are included in the Firebase game save associated with your account. The App does not send these signals to a separate advertising analytics service.</p>
 
   <h2>7. Children's Privacy</h2>
   <p>The App does not knowingly collect personal information from children under 13. If you believe a child has provided personal data, please contact us.</p>

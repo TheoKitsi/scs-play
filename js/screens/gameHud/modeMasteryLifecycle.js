@@ -40,6 +40,7 @@ export function startModeMastery(mode, mastery) {
 export function finishModeMastery(mode, mastery, stats, save) {
   const handler = MODE_MASTERY[mode];
   if (!handler || !mastery) return;
-  handler.end(mastery, stats, stats.score > (save.getPB(handler.pbMode) || 0));
+  const ruleset = stats.isDaily ? `daily_${new Date().toISOString().slice(0, 10)}` : stats.playType;
+  handler.end(mastery, stats, stats.score > (save.getPB(handler.pbMode, ruleset) || 0));
   mastery.persist();
 }

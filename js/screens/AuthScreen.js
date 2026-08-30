@@ -19,12 +19,12 @@ export function bindAuth(showHome) {
   });
 
   $('#btnGoogle')?.addEventListener('click', async () => {
-    try { await auth.signInWithGoogle?.(); showHome(); }
+    try { await auth.signInWithGoogle?.(); await showHome(); }
     catch { setText('#authError', t('auth_error')); }
   });
 
   $('#btnApple')?.addEventListener('click', async () => {
-    try { await auth.signInWithApple?.(); showHome(); }
+    try { await auth.signInWithApple?.(); await showHome(); }
     catch { setText('#authError', t('auth_error')); }
   });
 
@@ -34,15 +34,15 @@ export function bindAuth(showHome) {
     if (!email || !pw) return;
     try {
       await auth.signInWithEmail?.(email, pw);
-      showHome();
+      await showHome();
     } catch {
-      try { await auth.registerWithEmail?.(email, pw, email.split('@')[0]); showHome(); }
+      try { await auth.registerWithEmail?.(email, pw, email.split('@')[0]); await showHome(); }
       catch { setText('#authError', t('auth_error')); }
     }
   });
 
   $('#btnGuest')?.addEventListener('click', async () => {
-    try { await auth.signInAsGuest?.(); showHome(); }
+    try { await auth.signInAsGuest?.(); await showHome(); }
     catch { setText('#authError', t('auth_error')); }
   });
 

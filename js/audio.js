@@ -10,6 +10,9 @@ export class AudioManager {
     this.ctx = null;
     this.enabled = true;
     this.musicEnabled = true;
+    this._sfxGain = null;
+    this._sfxVolume = 0.8;
+    this._musicVolume = 0.7;
     this._musicGain = null;
     this._musicRunning = false;
     this._musicTempo = 120;
@@ -190,6 +193,10 @@ export class AudioManager {
       this._compressor.release.value = 0.25;
       this._compressor.connect(this.ctx.destination);
 
+      this._sfxGain = this.ctx.createGain();
+      this._sfxGain.gain.value = this._sfxVolume;
+      this._sfxGain.connect(this.ctx.destination);
+
       /* Algorithmic reverb — synthetic impulse response */
       this._reverbGain = this.ctx.createGain();
       this._reverbGain.gain.value = 0.18;
@@ -214,16 +221,16 @@ export class AudioManager {
       }
 
       this._musicGain = this.ctx.createGain();
-      this._musicGain.gain.value = 0.18;
+      this._musicGain.gain.value = 0.18 * this._musicVolume;
       this._musicGain.connect(this._compressor);
 
       this._melodyGain = this.ctx.createGain();
-      this._melodyGain.gain.value = 0.12;
+      this._melodyGain.gain.value = 0.12 * this._musicVolume;
       this._melodyGain.connect(this._compressor);
       this._melodyGain.connect(this._reverbGain); // send melody to reverb
 
       this._padGain = this.ctx.createGain();
-      this._padGain.gain.value = 0.08;
+      this._padGain.gain.value = 0.08 * this._musicVolume;
       this._padGain.connect(this._compressor);
       this._padGain.connect(this._reverbGain); // send pads to reverb
     }
@@ -260,9 +267,9 @@ export class AudioManager {
       const panner = new StereoPannerNode(this.ctx, {
         pan: Math.max(-1, Math.min(1, pan))
       });
-      osc.connect(gain).connect(panner).connect(this.ctx.destination);
+      osc.connect(gain).connect(panner).connect(this._sfxGain);
     } else {
-      osc.connect(gain).connect(this.ctx.destination);
+      osc.connect(gain).connect(this._sfxGain);
     }
     osc.start(t);
     osc.stop(t + dur);
@@ -299,9 +306,9 @@ export class AudioManager {
       const panner = new StereoPannerNode(this.ctx, {
         pan: Math.max(-1, Math.min(1, pan))
       });
-      src.connect(filter).connect(gain).connect(panner).connect(this.ctx.destination);
+      src.connect(filter).connect(gain).connect(panner).connect(this._sfxGain);
     } else {
-      src.connect(filter).connect(gain).connect(this.ctx.destination);
+      src.connect(filter).connect(gain).connect(this._sfxGain);
     }
     src.start(t);
     src.stop(t + dur);
@@ -411,7 +418,7 @@ export class AudioManager {
           eg.gain.linearRampToValueAtTime(0.055, t + 0.12);
           eg.gain.setValueAtTime(0.055, t + 0.6);
           eg.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-          osc.connect(eg).connect(this.ctx.destination);
+          osc.connect(eg).connect(this._sfxGain);
           osc.start(t);
           osc.stop(t + 1.25);
         }
@@ -616,7 +623,7 @@ export class AudioManager {
     osc.frequency.exponentialRampToValueAtTime(baseFreq, t + 0.08);
     eg.gain.setValueAtTime(vol, t);
     eg.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    osc.connect(eg).connect(this.ctx.destination);
+    osc.connect(eg).connect(this._sfxGain);
     osc.start(t);
     osc.stop(t + dur + 0.01);
 
@@ -714,7 +721,7 @@ export class AudioManager {
           eg.gain.linearRampToValueAtTime(0.03, t + 0.08);
           eg.gain.setValueAtTime(0.03, t + 0.7);
           eg.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
-          osc.connect(eg).connect(this.ctx.destination);
+          osc.connect(eg).connect(this._sfxGain);
           osc.start(t);
           osc.stop(t + 1.05);
         }
@@ -754,7 +761,7 @@ export class AudioManager {
     eg.gain.linearRampToValueAtTime(0.06, t + dur * 0.3);
     eg.gain.exponentialRampToValueAtTime(0.001, t + dur);
 
-    src.connect(bandpass).connect(eg).connect(this.ctx.destination);
+    src.connect(bandpass).connect(eg).connect(this._sfxGain);
     src.start(t);
     src.stop(t + dur + 0.01);
 
@@ -766,7 +773,7 @@ export class AudioManager {
     osc.frequency.exponentialRampToValueAtTime(800, t + dur);
     og.gain.setValueAtTime(0.03, t);
     og.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    osc.connect(og).connect(this.ctx.destination);
+    osc.connect(og).connect(this._sfxGain);
     osc.start(t);
     osc.stop(t + dur + 0.01);
   }
@@ -795,7 +802,7 @@ export class AudioManager {
     osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.4, t + 0.25);
     eg.gain.setValueAtTime(0.08 + intensity * 0.04, t);
     eg.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-    osc.connect(eg).connect(this.ctx.destination);
+    osc.connect(eg).connect(this._sfxGain);
     osc.start(t);
     osc.stop(t + 0.35);
     this._playNoise(0.12, 0.04 + intensity * 0.02, 3000);
@@ -817,7 +824,7 @@ export class AudioManager {
     osc.frequency.exponentialRampToValueAtTime(80, t + 0.15);
     eg.gain.setValueAtTime(0.06, t);
     eg.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-    osc.connect(eg).connect(this.ctx.destination);
+    osc.connect(eg).connect(this._sfxGain);
     osc.start(t);
     osc.stop(t + 0.25);
   }
@@ -892,14 +899,14 @@ export class AudioManager {
     osc1.type = 'sine'; osc1.frequency.value = 60;
     eg1.gain.setValueAtTime(0.1, t);
     eg1.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-    osc1.connect(eg1).connect(this.ctx.destination);
+    osc1.connect(eg1).connect(this._sfxGain);
     osc1.start(t); osc1.stop(t + 0.15);
     const osc2 = this.ctx.createOscillator();
     const eg2 = this.ctx.createGain();
     osc2.type = 'sine'; osc2.frequency.value = 70;
     eg2.gain.setValueAtTime(0.07, t + 0.15);
     eg2.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-    osc2.connect(eg2).connect(this.ctx.destination);
+    osc2.connect(eg2).connect(this._sfxGain);
     osc2.start(t + 0.15); osc2.stop(t + 0.3);
   }
 
@@ -959,9 +966,9 @@ export class AudioManager {
     eg.gain.exponentialRampToValueAtTime(0.001, t + dur);
     if (pan !== 0 && typeof StereoPannerNode !== 'undefined') {
       const panner = new StereoPannerNode(this.ctx, { pan: Math.max(-1, Math.min(1, pan)) });
-      src.connect(bp).connect(eg).connect(panner).connect(this.ctx.destination);
+      src.connect(bp).connect(eg).connect(panner).connect(this._sfxGain);
     } else {
-      src.connect(bp).connect(eg).connect(this.ctx.destination);
+      src.connect(bp).connect(eg).connect(this._sfxGain);
     }
     src.start(t);
     src.stop(t + dur + 0.01);
@@ -1144,7 +1151,7 @@ export class AudioManager {
     // Interval: 800ms -> 200ms   Volume: 0.02 -> 0.05
     const tickDest = this.ctx.createGain();
     tickDest.gain.value = 1.0;
-    tickDest.connect(this.ctx.destination);
+    tickDest.connect(this._sfxGain);
     this._tensionNodes.push(tickDest);
 
     const scheduleTick = () => {
@@ -1198,7 +1205,7 @@ export class AudioManager {
     const heartGain = this.ctx.createGain();
     heartGain.gain.value = 0;
 
-    heartOsc.connect(heartLP).connect(heartGain).connect(this.ctx.destination);
+    heartOsc.connect(heartLP).connect(heartGain).connect(this._sfxGain);
     heartOsc.start(this.ctx.currentTime);
     this._tensionNodes.push(heartOsc, heartLP, heartGain);
 
@@ -1760,8 +1767,16 @@ export class AudioManager {
   toggleMusic(on) { this.musicEnabled = on; if (!on) this.stopMusic(); }
 
   setMusicVolume(v) {
-    if (this._musicGain) this._musicGain.gain.value = v;
-    this._musicFileVolume = Math.min(1, v * 2);
+    this._musicVolume = Math.max(0, Math.min(1, Number(v)));
+    if (this._musicGain) this._musicGain.gain.value = 0.18 * this._musicVolume;
+    if (this._melodyGain) this._melodyGain.gain.value = 0.12 * this._musicVolume;
+    if (this._padGain) this._padGain.gain.value = 0.08 * this._musicVolume;
+    this._musicFileVolume = Math.min(1, this._musicVolume * 0.55);
     if (this._musicAudio) this._musicAudio.volume = this._musicFileVolume;
+  }
+
+  setSfxVolume(v) {
+    this._sfxVolume = Math.max(0, Math.min(1, Number(v)));
+    if (this._sfxGain) this._sfxGain.gain.value = this._sfxVolume;
   }
 }

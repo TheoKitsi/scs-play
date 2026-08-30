@@ -12,7 +12,8 @@ import {
   migrateOldAchievements, getAchById
 } from './achievements/AchievementSystem.js';
 
-const KEY = 'scs_save';
+const LEGACY_KEY = 'scs_save';
+const KEY_PREFIX = 'scs_save:';
 
 function defaults() {
   return {
@@ -91,6 +92,8 @@ function defaults() {
       haptics: true,
       sound: true,
       music: true,
+      sfxVolume: 80,
+      musicVolume: 70,
       language: 'auto',
       gameMode: 'klassik',
       playType: 'blitz',          // blitz | classic | endless | competition
@@ -128,11 +131,32 @@ export class SaveService {
     this.auth = authService;
     this.data = defaults();
     this._loaded = false;
+    this._activeScope = null;
+    this._activeKey = null;
   }
 
+  _scope() {
+    return this.auth && !this.auth.isGuest && this.auth.user?.id
+      ? this.auth.user.id
+      : 'guest';
+  }
+
+  _key(scope = this._scope()) { return KEY_PREFIX + scope; }
+
   async load() {
+    const scope = this._scope();
+    const key = this._key(scope);
+    this._activeScope = scope;
+    this._activeKey = key;
+    this.data = defaults();
     try {
-      const raw = localStorage.getItem(KEY);
+      let raw = localStorage.getItem(key);
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (!raw && legacy) {
+        localStorage.setItem(key, legacy);
+        raw = legacy;
+        localStorage.removeItem(LEGACY_KEY);
+      }
       if (raw) {
         const parsed = JSON.parse(raw);
         this.data = { ...defaults(), ...parsed, settings: { ...defaults().settings, ...(parsed.settings || {}) } };
@@ -171,10 +195,31 @@ export class SaveService {
     } catch { /* ignore corrupt data */ }
 
     /* Cloud sync */
-    if (this.auth && !this.auth.isGuest) {
+    if (scope !== 'guest') {
       try {
         const cloud = await this.auth.cloudLoad('saves');
+        if (this._scope() !== scope) return this.data;
         if (cloud) {
+          const local = this.data;
+          this.data = {
+            ...defaults(),
+            ...local,
+            ...cloud,
+            settings: { ...defaults().settings, ...(local.settings || {}), ...(cloud.settings || {}) }
+          };
+          new Set([...Object.keys(defaults()), ...Object.keys(local), ...Object.keys(cloud)]).forEach(k => {
+            if (!k.startsWith('pb_')) return;
+            this.data[k] = Math.max(local[k] || 0, cloud[k] || 0);
+          });
+          ['totalXP', 'gamesPlayed', 'competitionLevel'].forEach(k => {
+            this.data[k] = Math.max(local[k] || 0, cloud[k] || 0);
+          });
+          Object.keys(defaults()).filter(k => k.startsWith('scores_')).forEach(k => {
+            const cloudScores = k === 'scores_beginner' ? (cloud[k] || cloud.scores_indie) : cloud[k];
+            this.data[k] = this._mergeScores(local[k] || [], cloudScores || []);
+          });
+          this.data.achievements = [...new Set([...(local.achievements || []), ...(cloud.achievements || [])])];
+          this.data.dailyChallenges = { ...(local.dailyChallenges || {}), ...(cloud.dailyChallenges || {}) };
           this.data.pb_klassik = Math.max(this.data.pb_klassik, cloud.pb_klassik || 0);
           this.data.pb_beginner = Math.max(this.data.pb_beginner, cloud.pb_beginner || cloud.pb_indie || 0);
           this.data.pb_expert = Math.max(this.data.pb_expert, cloud.pb_expert || 0);
@@ -198,6 +243,16 @@ export class SaveService {
           this.data.level = Math.max(this.data.level, cloud.level || 0);
           this.data.gamesPlayed = Math.max(this.data.gamesPlayed, cloud.gamesPlayed || 0);
           this.data.competitionLevel = Math.max(this.data.competitionLevel, cloud.competitionLevel || 0);
+          const localStars = local.competitionStars || [];
+          const cloudStars = cloud.competitionStars || [];
+          this.data.competitionStars = Array.from(
+            { length: Math.max(localStars.length, cloudStars.length) },
+            (_, i) => Math.max(localStars[i] || 0, cloudStars[i] || 0)
+          );
+          this.data.purchases = {};
+          for (const id of new Set([...Object.keys(local.purchases || {}), ...Object.keys(cloud.purchases || {})])) {
+            this.data.purchases[id] = Boolean(local.purchases?.[id] || cloud.purchases?.[id]);
+          }
           if (cloud.ultraUnlockedViaCompetition) this.data.ultraUnlockedViaCompetition = true;
           if (cloud.achievements) {
             this.data.achievements = [...new Set([...this.data.achievements, ...cloud.achievements])];
@@ -230,12 +285,14 @@ export class SaveService {
   }
 
   async save() {
-    localStorage.setItem(KEY, JSON.stringify(this.data));
-    if (this.auth && !this.auth.isGuest) {
+    if (!this._activeKey || this._scope() !== this._activeScope) return false;
+    localStorage.setItem(this._activeKey, JSON.stringify(this.data));
+    if (this._activeScope !== 'guest') {
       try { await this.auth.cloudSave('saves', this.data); } catch (e) {
         this._showSyncToast();
       }
     }
+    return true;
   }
 
   _showSyncToast() {
@@ -275,9 +332,12 @@ export class SaveService {
     this.data[key].sort((a, b) => b.score - a.score);
     this.data[key] = this.data[key].slice(0, 50);
 
-    const pbKey = `pb_${stats.mode}`;
-    const isNewPB = stats.score > (this.data[pbKey] || 0);
-    if (isNewPB) this.data[pbKey] = stats.score;
+    const ruleset = stats.isDaily ? `daily_${new Date().toISOString().slice(0, 10)}` : (stats.playType || 'blitz');
+    const scopedPBKey = `pb_${stats.mode}_${ruleset}`;
+    const isNewPB = stats.score > (this.data[scopedPBKey] || 0);
+    if (isNewPB) this.data[scopedPBKey] = stats.score;
+    const allTimePBKey = `pb_${stats.mode}`;
+    this.data[allTimePBKey] = Math.max(this.data[allTimePBKey] || 0, stats.score);
 
     /* Endless PB tracking (by correct count) */
     if (stats.playType === 'endless') {
@@ -403,11 +463,13 @@ export class SaveService {
   }
 
   /* ─── Competition progress ─── */
-  getCompetitionLevel() { return this.data.competitionLevel || 0; }
+  getCompetitionLevel() {
+    return Math.min(this.data.competitionLevel || 0, CONFIG.COMPETITION_LEVELS - 1);
+  }
 
   async completeCompetitionLevel(level, stars) {
     if (level >= (this.data.competitionLevel || 0)) {
-      this.data.competitionLevel = level + 1;
+      this.data.competitionLevel = Math.min(level + 1, CONFIG.COMPETITION_LEVELS);
     }
     if (!this.data.competitionStars) this.data.competitionStars = [];
     const prev = this.data.competitionStars[level] || 0;
@@ -453,10 +515,10 @@ export class SaveService {
     return ach.name[lang || getLanguage()] || ach.name.en || id;
   }
 
-  async addAchievement(id) {
+  addAchievement(id) {
     if (!this.data.achievements.includes(id)) {
       this.data.achievements.push(id);
-      await this.save();
+      void this.save();
       return true;
     }
     return false;
@@ -475,7 +537,9 @@ export class SaveService {
   }
 
   /* ─── Getters ─── */
-  getPB(mode)        { return this.data[`pb_${mode}`] || 0; }
+  getPB(mode, ruleset) {
+    return this.data[ruleset ? `pb_${mode}_${ruleset}` : `pb_${mode}`] || 0;
+  }
   getEndlessPB(mode) { return this.data[`pb_endless_${mode}`] || 0; }
   getScores(mode)    { return this.data[`scores_${mode}`] || []; }
   getLevel()         { return this.data.level; }

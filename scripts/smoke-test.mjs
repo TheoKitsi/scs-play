@@ -214,8 +214,8 @@ async function run() {
     console.log('  SKIP: Wheel button not found');
   }
 
-  // ─── 13) Streamlined Home: essentials only ───
-  console.log('\n13. Streamlined Home');
+  // ─── 13) Progressive Home feed ───
+  console.log('\n13. Progressive Home');
   if (!await visible('#home', 1000)) {
     await page.evaluate(() => {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -228,12 +228,12 @@ async function run() {
       .filter(btn => !btn.hidden && getComputedStyle(btn).display !== 'none').length;
     return {
       essentials: Boolean(document.querySelector('#quickShortcuts') && document.querySelector('#dailyCard') && document.querySelector('#wheelCard')),
-      overloadRemoved: !document.querySelector('#dailyQuestsPanel') && !document.querySelector('#seasonPassCard') && !document.querySelector('#heroStatsZone'),
+      progressFeed: Boolean(document.querySelector('#dailyQuestsPanel') && document.querySelector('#seasonPassCard')),
       visiblePlayTypes,
     };
   });
   assert(homeState.essentials, 'Home keeps shortcuts, daily challenge, and wheel');
-  assert(homeState.overloadRemoved, 'Quest, pass, and stats overload removed');
+  assert(homeState.progressFeed, 'Quest and season progress feed is connected');
   assert(homeState.visiblePlayTypes <= 3, `Visible play types reduced (${homeState.visiblePlayTypes})`);
 
   // ─── 14) Near-Miss pill is reachable through Game→Results path ───

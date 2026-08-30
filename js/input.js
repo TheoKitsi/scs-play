@@ -29,6 +29,7 @@ export class SwipeHandler {
     this._onStart = this._start.bind(this);
     this._onMove  = this._move.bind(this);
     this._onEnd   = this._end.bind(this);
+    this._onKeyDown = this._keyDown.bind(this);
   }
 
   setMode(m) { this.mode = m; }
@@ -41,6 +42,7 @@ export class SwipeHandler {
     this.el.addEventListener('mousedown',  this._onStart, { passive: true });
     this.el.addEventListener('mousemove',  this._onMove,  { passive: true });
     this.el.addEventListener('mouseup',    this._onEnd,   { passive: true });
+    window.addEventListener('keydown', this._onKeyDown);
     this._bound = true;
   }
 
@@ -51,8 +53,30 @@ export class SwipeHandler {
     this.el.removeEventListener('mousedown',  this._onStart);
     this.el.removeEventListener('mousemove',  this._onMove);
     this.el.removeEventListener('mouseup',    this._onEnd);
+    window.removeEventListener('keydown', this._onKeyDown);
     this._bound = false;
     this._active = false;
+  }
+
+  _keyDown(e) {
+    if (e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(e.target?.tagName || '')) return;
+    const directions = {
+      Numpad7: 'ul', Numpad8: 'up', Numpad9: 'ur',
+      Numpad4: 'left', Numpad6: 'right',
+      Numpad1: 'dl', Numpad2: 'down', Numpad3: 'dr',
+      ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+      KeyQ: 'ul', KeyE: 'ur', KeyZ: 'dl', KeyC: 'dr',
+      KeyR: 'ene', KeyT: 'nnw', KeyF: 'wsw', KeyV: 'sse'
+    };
+    let direction = directions[e.code];
+    if (!direction) return;
+    if (this.mode !== 'expert' && this.mode !== 'ultra' && ['up', 'down', 'left', 'right'].includes(direction)) {
+      direction = { up: 'ul', right: 'ur', down: 'dr', left: 'dl' }[direction];
+    }
+    if (this.mode !== 'ultra' && ['ene', 'nnw', 'wsw', 'sse'].includes(direction)) return;
+    e.preventDefault();
+    if (this.onSwipe) this.onSwipe(direction, performance.now());
   }
 
   _start(e) {

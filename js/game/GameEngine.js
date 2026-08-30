@@ -17,7 +17,7 @@ function mulberry32(seed) {
 }
 function todaySeed() {
   const d = new Date();
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
 }
 function shuffle(arr, rng) {
   const a = [...arr];
@@ -47,6 +47,10 @@ export class GameEngine {
     this.practice = false;
     this.paused = false;
     this.continued = false;
+    this.ranked = false;
+    this._bonusTimeAwarded = 0;
+    this._competitionWon = false;
+    this._gameOverFinalized = false;
 
     /* Achievement tracking counters */
     this._goldenCaught = 0;
@@ -110,6 +114,9 @@ export class GameEngine {
     /* Memo (hidden corners) state */
     this._memoRevealCount = 0;
     this._memoCorrectSinceReveal = 0;
+    this._memoPhase = 'idle';
+    this._memoPhaseStartedAt = 0;
+    this._memoPhaseRemainingMs = 0;
     clearTimeout(this._memoPreviewTimeout);
     this._memoPreviewTimeout = null;
 
@@ -173,6 +180,7 @@ export class GameEngine {
     this._streakProtectionUsed = false;
     this._firstShuffleDone = false;
     this._wissenLevel = 0;
+    this._stroopChallengeUntil = 0;
   }
 
   get contentType() {
@@ -256,12 +264,10 @@ export class GameEngine {
   }
 
   _getDuration() {
-    /* Wissen global timer (v22): fixed game duration */
-    if (this.mode === 'wissen' && CONFIG.WISSEN_GLOBAL_TIMER) {
-      return CONFIG.WISSEN_GAME_DURATION || 60;
-    }
     switch (this.playType) {
-      case 'classic':     return CONFIG.DURATION_CLASSIC;
+      case 'classic':     return (this.isBrainMode || this.isReflexMode)
+        ? (CONFIG.DURATION_CLASSIC_BRAIN || CONFIG.DURATION_CLASSIC)
+        : CONFIG.DURATION_CLASSIC;
       case 'endless':     return CONFIG.DURATION_ENDLESS;
       case 'competition': {
         const table = (this.isBrainMode || this.isReflexMode)
@@ -271,6 +277,9 @@ export class GameEngine {
       }
       case 'blitz':
       default:
+        if (this.mode === 'wissen' && CONFIG.WISSEN_GLOBAL_TIMER) {
+          return CONFIG.WISSEN_GAME_DURATION || 60;
+        }
         return (this.isBrainMode || this.isReflexMode)
           ? (CONFIG.DURATION_BLITZ_BRAIN || CONFIG.DURATION_BLITZ)
           : CONFIG.DURATION_BLITZ;
@@ -279,10 +288,16 @@ export class GameEngine {
 
   start(mode = 'beginner', playType = 'blitz', options = {}) {
     this.reset();
+    if (options.daily) {
+      const daily = GameEngine.dailyConfig();
+      mode = daily.mode;
+      playType = daily.playType;
+    }
     this.mode = mode;
     this.playType = playType;
     this.practice = options.practice || false;
     this.isDaily = options.daily || false;
+    this.ranked = this.isDaily || playType === 'competition';
     this._lang = options.lang || 'de';
     this.running = true;
 
@@ -327,9 +342,14 @@ export class GameEngine {
       this._memoRevealCount = 0;
       this._memoCorrectSinceReveal = 0;
       const previewMs = CONFIG.MEMO_PREVIEW_MS;
+      this._memoPhase = 'initialPreview';
+      this._memoPhaseStartedAt = Date.now();
+      this._memoPhaseRemainingMs = previewMs;
       if (this.onMemoPreview) this.onMemoPreview(this.cornerMap, previewMs);
       this._memoPreviewTimeout = setTimeout(() => {
-        if (!this.running) return;
+        if (!this.running || this.paused) return;
+        this._memoPhase = 'playing';
+        this._memoPhaseRemainingMs = 0;
         if (this.onMemoCover) this.onMemoCover();
         if (!this.practice && dur > 0) this._startTimer();
         this._startElapsedTimer();
@@ -456,7 +476,7 @@ export class GameEngine {
       const chaosShapes = CONFIG.CHAOS_SHAPES;
       const chaosSizes  = CONFIG.CHAOS_SIZES;
       this.cornerMap = {};
-      this._chaosRuleSwitchIn = CONFIG.CHAOS_RULE_SWITCH_MIN + Math.floor(this.rng() * (CONFIG.CHAOS_RULE_SWITCH_MAX - CONFIG.CHAOS_RULE_SWITCH_MIN));
+      this._chaosRuleSwitchIn = CONFIG.CHAOS_RULE_SWITCH_MIN + Math.floor(this.rng() * (CONFIG.CHAOS_RULE_SWITCH_MAX - CONFIG.CHAOS_RULE_SWITCH_MIN + 1));
       this._chaosCorrectSinceSwitch = 0;
       this._chaosRule = CONFIG.CHAOS_DIMENSIONS[Math.floor(this.rng() * CONFIG.CHAOS_DIMENSIONS.length)];
       dirs.forEach((d, i) => {
@@ -510,6 +530,7 @@ export class GameEngine {
   }
 
   _startElapsedTimer() {
+    clearInterval(this._elapsedInterval);
     this._elapsedInterval = setInterval(() => {
       if (this.paused) return;
       this.elapsed++;
@@ -525,6 +546,10 @@ export class GameEngine {
     clearTimeout(this._timerInterval);
     clearTimeout(this._spawnTimeout);
     clearTimeout(this._shuffleTimeout);
+    if (this.isMemoMode && (this._memoPhase === 'initialPreview' || this._memoPhase === 'reveal')) {
+      const elapsed = Date.now() - this._memoPhaseStartedAt;
+      this._memoPhaseRemainingMs = Math.max(0, this._memoPhaseRemainingMs - elapsed);
+    }
     clearTimeout(this._memoPreviewTimeout);
     this._stopComboDecay();
     this._rushQueue.forEach(t => clearTimeout(t));
@@ -581,17 +606,26 @@ export class GameEngine {
       };
       this._timerInterval = setTimeout(tick, Math.max(50, nextTickIn));
     }
-    /* Memo (hidden corners): brief re-reveal on resume, then cover and resume spawning */
+    /* Memo: continue the exact preview phase that was interrupted. */
     if (this.isMemoMode) {
-      const previewMs = Math.max(
-        CONFIG.MEMO_PREVIEW_MIN_MS,
-        CONFIG.MEMO_PREVIEW_MS - this._memoRevealCount * CONFIG.MEMO_PREVIEW_SHRINK
-      );
-      if (this.onMemoReveal) this.onMemoReveal(this.cornerMap, previewMs);
+      const wasInitialPreview = this._memoPhase === 'initialPreview';
+      const previewMs = wasInitialPreview
+        ? this._memoPhaseRemainingMs
+        : Math.max(250, this._memoPhaseRemainingMs || CONFIG.MEMO_PREVIEW_MIN_MS);
+      this._memoPhaseStartedAt = Date.now();
+      this._memoPhaseRemainingMs = previewMs;
+      if (wasInitialPreview && this.onMemoPreview) this.onMemoPreview(this.cornerMap, previewMs);
+      else if (this.onMemoReveal) this.onMemoReveal(this.cornerMap, previewMs);
       this._memoPreviewTimeout = setTimeout(() => {
         if (!this.running || this.paused) return;
+        this._memoPhase = 'playing';
+        this._memoPhaseRemainingMs = 0;
         if (this.onMemoCover) this.onMemoCover();
         this.currentShape = null;
+        if (wasInitialPreview) {
+          if (!this.practice && this._getDuration() > 0) this._startTimer();
+          this._startElapsedTimer();
+        }
         this._scheduleSpawn(400);
       }, previewMs);
       return;
@@ -606,8 +640,9 @@ export class GameEngine {
     this.currentShape = null;           // clear stale shape to prevent phantom autoMiss
     this.timer = CONFIG.CONTINUE_EXTRA_TIME;
     this.running = true;
-    this.spawnInterval = this._spawnStart;
+    this._gameOverFinalized = false;
     this._startTimer();
+    this._startElapsedTimer();
     this._scheduleSpawn(600);
     return true;
   }
@@ -665,14 +700,16 @@ export class GameEngine {
     const info = this.cornerMap[dir];
 
     let bonus = null;
-    if (!this.practice) {
+    if (!this.practice && !this.ranked) {
       const roll = this.rng();
       if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
       else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
     }
 
-    this.currentShape = { direction: dir, shape: info.shape, color: info.color,
-                          colorblind: info.colorblind, bonus };
+    const stimulusColor = this.mode === 'klassik' ? info.color : '#E5E7EB';
+    const stimulusColorblind = this.mode === 'klassik' ? info.colorblind : '#E5E7EB';
+    this.currentShape = { direction: dir, shape: info.shape, color: stimulusColor,
+                          colorblind: stimulusColorblind, bonus };
     this.bonusType = bonus;
     this._emitSpawn();
     this._scheduleSpawn();
@@ -785,7 +822,7 @@ export class GameEngine {
     });
 
     let bonus = null;
-    if (!this.practice) {
+    if (!this.practice && !this.ranked) {
       const roll = this.rng();
       if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
       else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
@@ -826,8 +863,8 @@ export class GameEngine {
     const correctCapital = lang === 'en' && entry.capital_en ? entry.capital_en : entry.capital;
 
     /* Generate 3 distractor capitals from same region first, then fill from global pool */
-    const sameRegion = bank.filter(e => e.region === entry.region && e !== entry);
-    const otherPool = bank.filter(e => e.region !== entry.region);
+    const sameRegion = pool.filter(e => e.region === entry.region && e !== entry);
+    const otherPool = pool.filter(e => e.region !== entry.region);
     const distractorEntries = [];
     const usedCapitals = new Set([correctCapital]);
 
@@ -868,7 +905,7 @@ export class GameEngine {
     });
 
     let bonus = null;
-    if (!this.practice) {
+    if (!this.practice && !this.ranked) {
       const roll = this.rng();
       if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
       else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
@@ -929,7 +966,7 @@ export class GameEngine {
     });
 
     let bonus = null;
-    if (!this.practice) {
+    if (!this.practice && !this.ranked) {
       const roll = this.rng();
       if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
       else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
@@ -1082,7 +1119,7 @@ export class GameEngine {
     });
 
     let bonus = null;
-    if (!this.practice) {
+    if (!this.practice && !this.ranked) {
       const roll = this.rng();
       if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
       else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
@@ -1147,7 +1184,7 @@ export class GameEngine {
     }
 
     let bonus = null;
-    if (!this.practice) {
+    if (!this.practice && !this.ranked) {
       const roll = this.rng();
       if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
       else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
@@ -1188,7 +1225,7 @@ export class GameEngine {
 
     /* Pick a WORD — different color name for incongruent, same for congruent */
     /* During challenge rounds, force all-incongruent */
-    const inChallenge = typeof app !== 'undefined' && app.mastery && app.mastery.get('stroop', '_inChallenge');
+    const inChallenge = performance.now() < this._stroopChallengeUntil;
     let wordIdx;
     if (!inChallenge && this.rng() < (CONFIG.STROOP_CONGRUENT_RATE || 0.2)) {
       wordIdx = inkIdx; /* congruent: word matches ink */
@@ -1199,7 +1236,7 @@ export class GameEngine {
     const displayWord = wordColor[`name_${lang}`] || wordColor.name_en;
 
     let bonus = null;
-    if (!this.practice) {
+    if (!this.practice && !this.ranked) {
       const roll = this.rng();
       if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
       else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
@@ -1231,7 +1268,12 @@ export class GameEngine {
     const correctDir = dirs[centerIdx];
 
     /* Pick flanker arrows */
-    const flankerCount = CONFIG.FOKUS_FLANKER_COUNT || 4;
+    const focusLevels = CONFIG.FOKUS_DISTRACTION_LEVELS || [];
+    let focusLevel = 1;
+    for (const level of focusLevels) {
+      if (this.total >= level.threshold) focusLevel = level.level;
+    }
+    const flankerCount = Math.max(2, focusLevel * 2);
     const isCongruent = this.rng() < (CONFIG.FOKUS_CONGRUENT_RATE || 0.3);
     let flankerArrow;
     if (isCongruent) {
@@ -1244,7 +1286,7 @@ export class GameEngine {
     const flankers = Array(flankerCount).fill(flankerArrow);
 
     let bonus = null;
-    if (!this.practice) {
+    if (!this.practice && !this.ranked) {
       const roll = this.rng();
       if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
       else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
@@ -1290,7 +1332,7 @@ export class GameEngine {
         }
       });
       let bonus = null;
-      if (!this.practice) {
+      if (!this.practice && !this.ranked) {
         const roll = this.rng();
         if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
         else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
@@ -1330,7 +1372,7 @@ export class GameEngine {
       const wordColor = colors[wordIdx];
       const displayWord = wordColor[`name_${lang}`] || wordColor.name_en;
       let bonus = null;
-      if (!this.practice) {
+      if (!this.practice && !this.ranked) {
         const roll = this.rng();
         if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
         else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
@@ -1386,7 +1428,7 @@ export class GameEngine {
     }
 
     let bonus = null;
-    if (!this.practice) {
+    if (!this.practice && !this.ranked) {
       const roll = this.rng();
       if (roll < CONFIG.DIAMOND_CHANCE) bonus = 'diamond';
       else if (roll < CONFIG.DIAMOND_CHANCE + CONFIG.GOLDEN_CHANCE) bonus = 'golden';
@@ -1415,7 +1457,7 @@ export class GameEngine {
     this._chaosCorrectSinceSwitch++;
     if (this._chaosCorrectSinceSwitch >= this._chaosRuleSwitchIn) {
       this._chaosCorrectSinceSwitch = 0;
-      this._chaosRuleSwitchIn = CONFIG.CHAOS_RULE_SWITCH_MIN + Math.floor(this.rng() * (CONFIG.CHAOS_RULE_SWITCH_MAX - CONFIG.CHAOS_RULE_SWITCH_MIN));
+      this._chaosRuleSwitchIn = CONFIG.CHAOS_RULE_SWITCH_MIN + Math.floor(this.rng() * (CONFIG.CHAOS_RULE_SWITCH_MAX - CONFIG.CHAOS_RULE_SWITCH_MIN + 1));
       /* After threshold, include extra dimensions (math, stroop) */
       const baseDims = CONFIG.CHAOS_DIMENSIONS;
       const extraDims = CONFIG.CHAOS_EXTRA_DIMENSIONS || [];
@@ -1434,6 +1476,9 @@ export class GameEngine {
     this._stopComboDecay();
     const reaction = timestamp - this.lastSpawnTime;
     if (reaction < CONFIG.ANTI_CHEAT_MIN_REACTION) return null;
+    if (this.mode === 'wissen' && reaction < (CONFIG.WISSEN_MIN_DISPLAY_MS || 0)) return null;
+
+    const answeredItem = Object.freeze({ ...this.currentShape });
 
     this.total++;
     const isCorrect = direction === this.currentShape.direction;
@@ -1455,11 +1500,11 @@ export class GameEngine {
         let base;
         if (isWissenGlobal) {
           const speedBonusTiers = CONFIG.WISSEN_SPEED_BONUS || [];
-          let speedMult = 1;
+          let speedBonus = 0;
           for (const tier of speedBonusTiers) {
-            if (reaction <= tier.ms) speedMult = tier.mult;
+            if (reaction <= tier.maxMs) { speedBonus = tier.bonus; break; }
           }
-          base = (CONFIG.WISSEN_BASE_POINTS || 100) * speedMult;
+          base = (CONFIG.WISSEN_BASE_POINTS || 100) + speedBonus;
         } else {
           const tbWindow = (this.isBrainMode || this.isMemoMode || this.isReflexMode)
             ? (CONFIG.TIME_BONUS_WINDOW_BRAIN || CONFIG.TIME_BONUS_WINDOW)
@@ -1498,7 +1543,7 @@ export class GameEngine {
         if (this.streak === 20 || this.streak === 30 || this.streak === 40 || this.streak === 50 || this.streak === 75) {
           const tierIdx = [20, 30, 40, 50, 75].indexOf(this.streak);
           const baseBonuses = [50, 100, 200, 350, 500];
-          const variance = Math.floor(baseBonuses[tierIdx] * 0.3 * (this.rng() - 0.5));
+          const variance = this.ranked ? 0 : Math.floor(baseBonuses[tierIdx] * 0.3 * (this.rng() - 0.5));
           const bonusPoints = baseBonuses[tierIdx] + variance;
           this.score += bonusPoints;
           if (this.onComboMilestone) this.onComboMilestone(this.streak, bonusPoints);
@@ -1518,13 +1563,8 @@ export class GameEngine {
                 if (this.onEndlessLifeEarned) this.onEndlessLifeEarned(this.endlessLives);
               }
             }
-          } else if (this._timerWallStart && this.timer > 0) {
-            // Timed modes: add seconds
-            this._timerTarget += CONFIG.STREAK_TIME_BONUS;
-            this.timer = Math.max(0, Math.ceil(
-              this._timerTarget - (Date.now() - this._timerWallStart - this._timerPausedAccum) / 1000
-            ));
-            if (this.onTimerBonus) this.onTimerBonus(CONFIG.STREAK_TIME_BONUS);
+          } else if (this.mode !== 'wissen' && (CONFIG.STREAK_TIME_MILESTONES || []).includes(this.streak)) {
+            this._awardTimerBonus(CONFIG.STREAK_TIME_BONUS);
           }
         }
 
@@ -1539,13 +1579,9 @@ export class GameEngine {
         if (isWissenGlobal) {
           /* Award bonus time for fast answers */
           const wissenBonusThreshold = CONFIG.WISSEN_TIME_BONUS_THRESHOLD || 3000;
-          if (reaction <= wissenBonusThreshold && this._timerWallStart && this.timer > 0) {
+          if (reaction <= wissenBonusThreshold) {
             const bonusSec = (CONFIG.WISSEN_TIME_BONUS_MS || 5000) / 1000;
-            this._timerTarget += bonusSec;
-            this.timer = Math.max(0, Math.ceil(
-              this._timerTarget - (Date.now() - this._timerWallStart - this._timerPausedAccum) / 1000
-            ));
-            if (this.onTimerBonus) this.onTimerBonus(bonusSec);
+            this._awardTimerBonus(bonusSec);
           }
           /* Level-up when score crosses thresholds */
           const levelThresholds = CONFIG.WISSEN_LEVEL_THRESHOLDS || [];
@@ -1573,11 +1609,16 @@ export class GameEngine {
               CONFIG.MEMO_PREVIEW_MIN_MS,
               CONFIG.MEMO_PREVIEW_MS - this._memoRevealCount * CONFIG.MEMO_PREVIEW_SHRINK
             );
+            this._memoPhase = 'reveal';
+            this._memoPhaseStartedAt = Date.now();
+            this._memoPhaseRemainingMs = previewMs;
             /* Pause spawning during reveal */
             clearTimeout(this._spawnTimeout);
             if (this.onMemoReveal) this.onMemoReveal(this.cornerMap, previewMs);
             this._memoPreviewTimeout = setTimeout(() => {
               if (!this.running || this.paused) return;
+              this._memoPhase = 'playing';
+              this._memoPhaseRemainingMs = 0;
               if (this.onMemoCover) this.onMemoCover();
               this._scheduleSpawn(400);
             }, previewMs);
@@ -1591,6 +1632,9 @@ export class GameEngine {
       if (bonus === 'diamond') this._diamondCaught++;
       this._maxMultiplier = Math.max(this._maxMultiplier, this.multiplier);
       if (bonus && this.onBonus) this.onBonus(bonus, pointsEarned);
+      if (this.mode === 'stroop' && this.streak > 0 && this.streak % (CONFIG.STROOP_CHALLENGE_EVERY || 15) === 0) {
+        this._stroopChallengeUntil = performance.now() + (CONFIG.STROOP_CHALLENGE_DURATION || 5000);
+      }
       /* Chaos: check rule switch on correct */
       if (this.mode === 'chaos') this._checkChaosRuleSwitch();
     } else {
@@ -1669,7 +1713,8 @@ export class GameEngine {
     const result = {
       correct: isCorrect, direction, expected: this.currentShape.direction,
       points: pointsEarned, reaction, bonus, prevStreak,
-      streak: this.streak, multiplier: this.multiplier, score: this.score
+      streak: this.streak, multiplier: this.multiplier, score: this.score,
+      item: answeredItem
     };
 
     /* ── Show correct answer on miss (v22) ── */
@@ -1720,7 +1765,9 @@ export class GameEngine {
     }
 
     if (this.playType === 'competition' && this.score >= this.competitionTarget && isCorrect) {
+      this._competitionWon = true;
       if (this.onCompetitionComplete) this.onCompetitionComplete(this.competitionLevel, this.score);
+      this._endGame();
     }
 
     return result;
@@ -1793,10 +1840,12 @@ export class GameEngine {
       if (this.onEndlessMiss) this.onEndlessMiss(this.endlessLives);
     }
 
+    const answeredItem = Object.freeze({ ...this.currentShape });
     const result = {
       correct: false, direction: null, expected: this.currentShape?.direction,
       points: 0, reaction: 9999, bonus: null, streak: 0,
-      multiplier: this.multiplier, score: this.score, autoMiss: true
+      multiplier: this.multiplier, score: this.score, autoMiss: true,
+      item: answeredItem
     };
     this.currentShape = null;
     if (this.onResult) this.onResult(result);
@@ -2122,6 +2171,20 @@ export class GameEngine {
     if (this._recentWindow.length > 10) this._recentWindow.shift();
   }
 
+  _awardTimerBonus(requestedSeconds) {
+    if (this.ranked || !this._timerWallStart || this.timer <= 0) return 0;
+    const cap = CONFIG.MAX_BONUS_TIME_PER_ROUND || 0;
+    const awarded = Math.max(0, Math.min(requestedSeconds, cap - this._bonusTimeAwarded));
+    if (awarded <= 0) return 0;
+    this._bonusTimeAwarded += awarded;
+    this._timerTarget += awarded;
+    this.timer = Math.max(0, Math.ceil(
+      this._timerTarget - (Date.now() - this._timerWallStart - this._timerPausedAccum) / 1000
+    ));
+    if (this.onTimerBonus) this.onTimerBonus(awarded);
+    return awarded;
+  }
+
   _adjustDifficulty() {
     if (this._recentWindow.length < 5) return;
     if (this.correct < 8) return;             // grace period: no adaptive changes in first 8 correct
@@ -2156,7 +2219,7 @@ export class GameEngine {
     clearTimeout(this._seqInputTimeout);
     this._seqInputTimeout = null;
 
-    if (this.playType !== 'endless' && !this.continued && this.onContinuePrompt && this._getDuration() > 0) {
+    if (!this.ranked && this.playType !== 'endless' && !this.continued && this.onContinuePrompt && this._getDuration() > 0) {
       this.onContinuePrompt(this._buildStats());
       return;
     }
@@ -2168,8 +2231,13 @@ export class GameEngine {
     const accuracy = this.total > 0 ? this.correct / this.total : 0;
     const avgReaction = this.reactionTimes.length > 0
       ? Math.round(this.reactionTimes.reduce((a, b) => a + b, 0) / this.reactionTimes.length) : 0;
-    const streakBonus = this.bestStreak * CONFIG.END_BONUS_STREAK_MULT;
-    const accBonus = Math.round(accuracy * 100) * CONFIG.END_BONUS_ACCURACY_MULT;
+    const streakBonus = Math.min(
+      this.bestStreak * CONFIG.END_BONUS_STREAK_MULT,
+      Math.round(this.score * 0.1)
+    );
+    const accBonus = this.total >= (CONFIG.END_BONUS_MIN_ANSWERS || 10)
+      ? Math.round(this.score * accuracy * (CONFIG.END_BONUS_ACCURACY_SCORE_SHARE || 0.25))
+      : 0;
     const finalScore = this.score + streakBonus + accBonus;
     const xp = Math.round(finalScore / 100 * CONFIG.XP_PER_100_SCORE);
     const lightningCount = this.reactionTimes.filter(r => r < 300).length;
@@ -2182,12 +2250,14 @@ export class GameEngine {
     const weekendMult = isWeekend ? (CONFIG.WEEKEND_XP_MULTIPLIER || 1) : 1;
     const totalXp = Math.round((xp + perfectBonus + lightningBonus) * weekendMult);
     return {
-      score: finalScore, streak: this.bestStreak,
+      score: finalScore, rawScore: this.score, streak: this.bestStreak,
       accuracy: Math.round(accuracy * 100),
       correct: this.correct, wrong: this.wrong, total: this.total,
       avgReaction, streakBonus, accBonus, xp: totalXp,
       mode: this.mode, playType: this.playType, isDaily: this.isDaily,
       competitionLevel: this.competitionLevel,
+      competitionTarget: this.competitionTarget,
+      competitionWon: this._competitionWon,
       elapsed: this.elapsed,
       /* Achievement tracking extras */
       goldenCaught: this._goldenCaught,
@@ -2207,6 +2277,8 @@ export class GameEngine {
   }
 
   _finalizeGameOver() {
+    if (this._gameOverFinalized) return null;
+    this._gameOverFinalized = true;
     const stats = this._buildStats();
     this.score = stats.score;
     if (this.onGameOver) this.onGameOver(stats);
@@ -2237,6 +2309,10 @@ export class GameEngine {
     this._seqInputTimeout = null;
   }
 
+  static dailyConfig() {
+    const modes = CONFIG.MODE_ORDER.filter(mode => mode !== 'sequenz');
+    return { mode: modes[todaySeed() % modes.length], playType: 'blitz', seed: todaySeed() };
+  }
   static todaySeed() { return todaySeed(); }
-  static todayKey()  { const d = new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+  static todayKey()  { return new Date().toISOString().slice(0, 10); }
 }

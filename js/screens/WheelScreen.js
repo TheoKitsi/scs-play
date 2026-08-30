@@ -33,8 +33,7 @@ let spinning = false;
 let currentAngle = 0;
 
 function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  return new Date().toISOString().slice(0, 10);
 }
 
 function usedBaseSpinToday() {

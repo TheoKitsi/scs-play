@@ -670,6 +670,9 @@ body.mode-worte .center-platform{
 #settings .setting-row{gap:10px;align-items:flex-start}
 #settings .setting-row > span{flex:1;min-width:0;line-height:1.25;padding-top:3px}
 #settings .setting-row select{max-width:48%}
+#settings .setting-volume{align-items:center}
+#settings .setting-volume input[type="range"]{width:min(34vw,130px);accent-color:var(--primary-glow)}
+#settings .setting-volume output{width:38px;text-align:right;color:var(--text-dim);font-variant-numeric:tabular-nums;font-size:.78rem}
 
 #store .store-item{gap:10px;align-items:flex-start}
 #store .store-item-info{min-width:0;flex:1}

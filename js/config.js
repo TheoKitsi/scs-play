@@ -9,8 +9,9 @@ export const CONFIG = {
   /* ─── Timer (per play type) ─── */
   GAME_DURATION: 30,                  // default (Blitz)
   DURATION_BLITZ: 30,
-  DURATION_BLITZ_BRAIN: 60,           // brain/reflex modes need more time per round
+  DURATION_BLITZ_BRAIN: 40,           // short, readable brain/reflex round
   DURATION_CLASSIC: 60,
+  DURATION_CLASSIC_BRAIN: 75,
   DURATION_ENDLESS: 0,                // 0 = no timer
   DURATION_COMPETITION: [20, 25, 30, 35, 40, 45, 50, 55, 60, 60], // per level
   DURATION_COMPETITION_BRAIN: [26, 32, 39, 45, 52, 58, 65, 71, 78, 78], // ~30% more for brain/reflex
@@ -46,10 +47,14 @@ export const CONFIG = {
   PERFECT_WINDOW_MS: 400,
   END_BONUS_STREAK_MULT: 50,
   END_BONUS_ACCURACY_MULT: 100,
+  END_BONUS_MIN_ANSWERS: 10,
+  END_BONUS_ACCURACY_SCORE_SHARE: 0.25,
 
   /* ─── Streak Time Bonus ─── */
   STREAK_TIME_THRESHOLD: 5,       // consecutive correct before time bonus starts
   STREAK_TIME_BONUS: 2,           // seconds added per correct after threshold
+  STREAK_TIME_MILESTONES: [10, 20],
+  MAX_BONUS_TIME_PER_ROUND: 8,
   WRONG_TIME_PENALTY: 1,          // seconds removed per wrong answer
   WRONG_TIME_PENALTY_BRAIN: 0,    // brain modes: no penalty for wrong (reading takes time)
   ENDLESS_LIFE_STREAK: 15,        // earn +1 life every N streak in endless

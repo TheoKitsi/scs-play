@@ -1260,8 +1260,8 @@ export function startWorteGame(mastery) {
  */
 export function trackWorteAnswer(mastery, result, engine) {
   const mode = 'worte';
-  const cat = engine?.currentShape?.category || null;
-  const word = engine?.currentShape?.display || '';
+  const cat = result.item?.category || null;
+  const word = result.item?.display || '';
   const m = mastery._ensure(mode);
 
   let isNew = false;
@@ -1416,7 +1416,7 @@ export function startHauptstaedteGame(mastery) {
 
 export function trackHauptstaedteAnswer(mastery, result, game) {
   const mode = 'hauptstaedte';
-  const entry = _lookupCapEntry(game.currentShape?.display);
+  const entry = _lookupCapEntry(result.item?.display);
   const region = entry?.region || 'unknown';
 
   if (result.correct) {
@@ -1428,7 +1428,7 @@ export function trackHauptstaedteAnswer(mastery, result, game) {
     if (result.reaction > 0) mastery.push(mode, 'reactionHistory', result.reaction, 50);
 
     /* Country collection */
-    const countryKey = (game.currentShape?.display || '').toLowerCase();
+    const countryKey = (result.item?.display || '').toLowerCase();
     const isNew = mastery.addToSet(mode, 'countryCollection', countryKey);
 
     return { region, isNew, streak: mastery.get(mode, '_sessionStreak') };
@@ -1559,9 +1559,9 @@ export function startWissenGame(mastery) {
 
 export function trackWissenAnswer(mastery, result, game) {
   const mode = 'wissen';
-  const entry = _lookupWissenEntry(game.currentShape?.display);
-  const cat = entry?.cat || 'misc';
-  const tier = entry?.tier || 0;
+  const entry = _lookupWissenEntry(result.item?.display);
+  const cat = result.item?.category || entry?.cat || 'misc';
+  const tier = result.item?.tier ?? entry?.tier ?? 0;
 
   if (result.correct) {
     mastery.inc(mode, '_sessionCorrect');
@@ -1899,8 +1899,7 @@ export function getSequenzInsights(mastery, stats) {
    STROOP (Color vs Word) Mastery
    Interference tracking, congruent/incongruent split.
    ═══════════════════════════════════════════════ */
-function _isStroopCongruent(game) {
-  const shape = game.currentShape;
+function _isStroopCongruent(shape) {
   if (!shape) return true;
   /* Compare ink color to the word meaning using STROOP_COLORS */
   const colors4 = CONFIG.STROOP_COLORS_4 || [];
@@ -1927,7 +1926,7 @@ export function startStroopGame(mastery) {
 
 export function trackStroopAnswer(mastery, result, game) {
   const mode = 'stroop';
-  const congruent = _isStroopCongruent(game);
+  const congruent = result.item?.isCongruent ?? _isStroopCongruent(result.item);
 
   if (congruent) {
     mastery.inc(mode, '_congTotal');
@@ -2076,7 +2075,7 @@ export function startFokusGame(mastery) {
 
 export function trackFokusAnswer(mastery, result, game) {
   const mode = 'fokus';
-  const congruent = game.currentShape?.isCongruent ?? true;
+  const congruent = result.item?.isCongruent ?? true;
 
   if (congruent) {
     mastery.inc(mode, '_congTotal');
@@ -2232,7 +2231,7 @@ export function startChaosGame(mastery) {
 
 export function trackChaosAnswer(mastery, result, game) {
   const mode = 'chaos';
-  const rule = game.currentShape?.chaosRule || 'color';
+  const rule = result.item?.chaosRule || 'color';
 
   /* Detect rule switch */
   const lastRule = mastery.get(mode, '_lastRule', '');

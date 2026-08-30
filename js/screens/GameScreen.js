@@ -451,10 +451,14 @@ function updateTimerBar() {
   if (!fill) return;
   if (game.practice || game.playType === 'endless' || app.gameDuration <= 0) {
     fill.style.transform = 'scaleX(0)';
+    fill.parentElement?.removeAttribute('aria-valuenow');
     return;
   }
   const ratio = Math.min(1, Math.max(0, game.timer / app.gameDuration));
   fill.style.transform = `scaleX(${ratio})`;
+  fill.parentElement?.setAttribute('aria-valuemin', '0');
+  fill.parentElement?.setAttribute('aria-valuemax', String(app.gameDuration));
+  fill.parentElement?.setAttribute('aria-valuenow', String(Math.max(0, game.timer)));
   fill.classList.remove('urgent','critical');
   const thresholds = getUrgencyThresholds();
   if (game.timer <= thresholds.critical) fill.classList.add('critical');
@@ -542,7 +546,8 @@ function updateEndlessLives() {
 
 function checkPBProximity() {
   const { game, save, audio } = app;
-  const pb = save.getPB(app.selectedMode);
+  const ruleset = game.isDaily ? `daily_${game.constructor.todayKey()}` : game.playType;
+  const pb = save.getPB(game.mode, ruleset);
   if (pb > 0 && game.score > 0) {
     const diff = pb - game.score;
     if (diff > 0 && diff <= 500) {
@@ -1827,7 +1832,7 @@ function updateModeMasteryAfterAnswer(game, result) {
       ensureWorteHUD();
       updateWorteCollection(app.mastery);
       updateWorteGhostRacer(game);
-      if (worteResult.isNew) showWorteNewWord(game.currentShape?.display || '');
+      if (worteResult.isNew) showWorteNewWord(result.item?.display || '');
     }
     return;
   }
@@ -1838,7 +1843,7 @@ function updateModeMasteryAfterAnswer(game, result) {
       ensureHauptstaedteHUD();
       updateHauptstaedteCountry(app.mastery);
       updateHauptstaedteGhostRacer(game);
-      if (hauptResult.isNew) showHauptstaedteNewCountry(game.currentShape?.display || '');
+      if (hauptResult.isNew) showHauptstaedteNewCountry(result.item?.display || '');
     }
     return;
   }
@@ -1921,6 +1926,14 @@ export function cleanupGameClasses() {
   _svgCache.clear();
 }
 
+function restoreDailySelection() {
+  if (!app.dailyPreviousSelection) return;
+  app.selectedMode = app.dailyPreviousSelection.mode;
+  app.selectedPlayType = app.dailyPreviousSelection.playType;
+  app.dailyPreviousSelection = null;
+  app.pendingDaily = false;
+}
+
 /* ═══════ Start game ═══════ */
 export function startGame(practice = false, daily = false, showTutorial, showResults, showHome, showContinuePrompt) {
   const { save, audio, game } = app;
@@ -1928,6 +1941,12 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
   app.gameStarting = true;
   setTimeout(() => { app.gameStarting = false; }, 1500);
 
+  if (daily && !app.dailyPreviousSelection) {
+    app.dailyPreviousSelection = { mode: app.selectedMode, playType: app.selectedPlayType };
+    const dailyConfig = game.constructor.dailyConfig();
+    app.selectedMode = dailyConfig.mode;
+    app.selectedPlayType = dailyConfig.playType;
+  }
   app.pendingDaily = daily;
   const gameScreen = $('#game');
   if (!gameScreen) return;
@@ -1989,17 +2008,26 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
     endlessLivesEl?.querySelectorAll('.endless-heart').forEach(h => { h.style.opacity = '1'; h.style.transform = ''; });
   } else if (app.selectedPlayType === 'competition') {
     const level = save.getCompetitionLevel();
-    const dur = CONFIG.DURATION_COMPETITION[level] || 30;
+    const isBrainLikeMode = ['mathe','worte','stroop','fokus','chaos','hauptstaedte','algebra','wissen'].includes(app.selectedMode);
+    const durationTable = isBrainLikeMode
+      ? (CONFIG.DURATION_COMPETITION_BRAIN || CONFIG.DURATION_COMPETITION)
+      : CONFIG.DURATION_COMPETITION;
+    const dur = durationTable[level] || 30;
+    const baseTarget = CONFIG.COMPETITION_SCORE_TARGETS[level] || 2000;
+    const targetScale = isBrainLikeMode ? 0.7 : app.selectedMode === 'memo' ? 0.8 : 1;
+    const target = Math.round(baseTarget * targetScale);
     if (timerEl) { timerEl.style.visibility = 'visible'; timerEl.textContent = dur; }
     if (endlessLivesEl) endlessLivesEl.style.display = 'none';
     if (compTargetEl) {
       compTargetEl.style.display = 'block';
-      compTargetEl.textContent = t('competition_target', { n: CONFIG.COMPETITION_SCORE_TARGETS[level] || 2000 });
+      compTargetEl.textContent = t('competition_target', { n: target });
     }
   } else {
     const isBrainLikeMode = ['mathe','worte','stroop','fokus','chaos','hauptstaedte','algebra','wissen'].includes(app.selectedMode);
     const blitzDur = isBrainLikeMode ? (CONFIG.DURATION_BLITZ_BRAIN || CONFIG.DURATION_BLITZ) : CONFIG.DURATION_BLITZ;
-    const dur = app.selectedPlayType === 'classic' ? CONFIG.DURATION_CLASSIC : blitzDur;
+    const dur = app.selectedPlayType === 'classic'
+      ? (isBrainLikeMode ? (CONFIG.DURATION_CLASSIC_BRAIN || CONFIG.DURATION_CLASSIC) : CONFIG.DURATION_CLASSIC)
+      : blitzDur;
     if (timerEl) { timerEl.style.visibility = 'visible'; timerEl.textContent = dur; }
     if (endlessLivesEl) endlessLivesEl.style.display = 'none';
     if (compTargetEl) compTargetEl.style.display = 'none';
@@ -2542,33 +2570,11 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     effects.flash('#a78bfa30', 300);
   };
 
-  game.onCompetitionComplete = async (level, score) => {
-    document.body.style.overflow = '';
-    document.documentElement.style.overflow = '';
-    if (window.__gameScrollBlocker) { window.__gameScrollBlocker.el?.removeEventListener('touchmove', window.__gameScrollBlocker.fn); window.__gameScrollBlocker = null; }
-    game.stop();
-    audio.stopMusic();
+  game.onCompetitionComplete = () => {
     if (typeof audio.competitionWin === 'function') audio.competitionWin();
-
-    const stars = score >= game.competitionTarget * 2 ? 3 : score >= game.competitionTarget * 1.5 ? 2 : 1;
-    const ultraUnlocked = await save.completeCompetitionLevel(level, stars);
-
     const bodyFx = getBodyFx();
     bodyFx.achievementToast(t('competition_complete'));
     bodyFx.confetti();
-
-    if (ultraUnlocked) {
-      setTimeout(() => { bodyFx.achievementToast(t('competition_ultra_unlocked')); audio.levelUp(); }, 2000);
-    }
-
-    setTimeout(() => {
-      swipe?.unbind();
-      effects?.resetMultiplierBg();
-      effects?.stopAmbient();
-      effects?.cleanup();
-      cleanupGameClasses();
-      showHome();
-    }, 3000);
   };
 
   game.onContinuePrompt = (stats) => { showContinuePrompt(stats); };
@@ -2579,7 +2585,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     if (window.__gameScrollBlocker) { window.__gameScrollBlocker.el?.removeEventListener('touchmove', window.__gameScrollBlocker.fn); window.__gameScrollBlocker = null; }
     audio.stopMusic();
     if (typeof audio.stopTension === 'function') audio.stopTension();
-    audio.gameOver();
+    if (!stats.competitionWon) audio.gameOver();
     haptic('gameOver', save);
     swipe?.unbind();
     effects.resetMultiplierBg();
@@ -2596,7 +2602,11 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     if (typeof effects.gameOverFlash === 'function') {
       effects.gameOverFlash(t('game_over'));
     }
-    setTimeout(() => { g?.classList.remove('game-over-freeze'); showResults(stats); }, CONFIG.GAME_OVER_TRANSITION_MS || 550);
+    setTimeout(() => {
+      g?.classList.remove('game-over-freeze');
+      restoreDailySelection();
+      showResults(stats);
+    }, CONFIG.GAME_OVER_TRANSITION_MS || 550);
   };
 
   /* ── Sequenz (Simon Says) callbacks ── */
@@ -2830,6 +2840,7 @@ export function quitGame(showHome) {
   if (typeof effects?.dangerZone === 'function') effects.dangerZone(false);
   effects?.cleanup();
   cleanupGameClasses();
+  restoreDailySelection();
   showHome();
 }
 

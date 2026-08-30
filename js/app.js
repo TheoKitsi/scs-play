@@ -24,7 +24,7 @@ import { ModeMastery }      from './game/ModeMastery.js';
 import app                  from './appState.js';
 
 /* ─── Screens ─── */
-import { boot }             from './screens/BootScreen.js';
+import { applyLoadedSave, boot } from './screens/BootScreen.js';
 import { bindAuth }         from './screens/AuthScreen.js';
 import { showHome, updateModeSelector, updatePlayTypeSelector }
                             from './screens/HomeScreen.js';
@@ -82,6 +82,11 @@ function bindStatTooltips() {
 const navShowHome  = () => showHome();
 const navShowAuth  = () => showScreen('auth', app);
 const navShowStore = () => showStore(navShowHome);
+const navActivateHome = async () => {
+  await app.save.load();
+  applyLoadedSave();
+  showHome();
+};
 
 const navShowResults        = (stats, cc) => showResults(stats, cc);
 const navShowContinuePrompt = (stats) => showContinuePrompt(stats);
@@ -101,7 +106,7 @@ const navTutorialFinish = () => {
 function bindEvents() {
   const { save, audio } = app;
 
-  bindAuth(navShowHome);
+  bindAuth(navActivateHome);
   bindSettings(navShowHome);
   bindStatTooltips();
   bindMicroFeedback();
@@ -149,7 +154,13 @@ function bindEvents() {
   $('#btnAchievements')?.addEventListener('click', () => showAchievements());
   $('#btnSettings')?.addEventListener('click',     () => showSettings(false, navShowHome));
   $('#btnStore')?.addEventListener('click',        () => navShowStore());
-  $('#btnLogout')?.addEventListener('click',       async () => { await app.auth.signOut(); navShowAuth(); });
+  $('#btnLogout')?.addEventListener('click',       async () => {
+    await app.save.save();
+    await app.auth.signOut();
+    await app.save.load();
+    applyLoadedSave();
+    navShowAuth();
+  });
   $('#btnInstallPWA')?.addEventListener('click',   () => app.promptInstall());
   $('#btnEngagementReport')?.addEventListener('click', () => showEngagementReport());
 

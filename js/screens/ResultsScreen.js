@@ -166,6 +166,21 @@ export async function showResults(stats, canContinue = false) {
   if (!canContinue) {
     ({ isNewPB, leveledUp, fireEarned } = await save.addScore(stats));
     fireEarned = fireEarned || 0;
+
+    if (stats.playType === 'competition' && stats.competitionWon) {
+      const target = stats.competitionTarget || 1;
+      const rankedScore = stats.rawScore ?? stats.score;
+      const stars = rankedScore >= target * 2 ? 3 : rankedScore >= target * 1.5 ? 2 : 1;
+      const ultraUnlocked = await save.completeCompetitionLevel(stats.competitionLevel, stars);
+      stats.competitionStars = stars;
+      if (ultraUnlocked) {
+        setTimeout(() => {
+          getBodyFx().achievementToast(t('competition_ultra_unlocked'));
+          audio.levelUp();
+        }, 1200);
+      }
+    }
+
     unlocked = save.checkAchievements(stats, app.sessionGames);
     if (unlocked.length) await save.save();
 
@@ -343,10 +358,9 @@ export async function showResults(stats, canContinue = false) {
   if (compEl) {
     if (stats.playType === 'competition') {
       compEl.style.display = 'block';
-      const target = CONFIG.COMPETITION_SCORE_TARGETS[stats.competitionLevel] || 2000;
-      compEl.textContent = stats.score >= target ? t('competition_complete') : t('competition_failed');
-      compEl.classList.toggle('comp-success', stats.score >= target);
-      compEl.classList.toggle('comp-fail', stats.score < target);
+      compEl.textContent = stats.competitionWon ? t('competition_complete') : t('competition_failed');
+      compEl.classList.toggle('comp-success', stats.competitionWon);
+      compEl.classList.toggle('comp-fail', !stats.competitionWon);
     } else {
       compEl.style.display = 'none';
     }
@@ -424,8 +438,9 @@ export async function showResults(stats, canContinue = false) {
 
   /* Close-to-PB motivator */
   const closePBEl = $('#resCloseToePB');
+  const pbRuleset = stats.isDaily ? `daily_${new Date().toISOString().slice(0, 10)}` : stats.playType;
   if (!canContinue && !isNewPB) {
-    const currentPB = save.getPB(stats.mode || app.selectedMode);
+    const currentPB = save.getPB(stats.mode || app.selectedMode, pbRuleset);
     if (currentPB > 0 && stats.score > 0) {
       const diff = currentPB - stats.score;
       const threshold = Math.max(currentPB * 0.15, 100);
@@ -474,7 +489,7 @@ export async function showResults(stats, canContinue = false) {
   const nearMissEl = ensureNearMissPill();
   if (nearMissEl) {
     if (!canContinue && !isNewPB) {
-      const allTimePB = save.getPB(stats.mode || app.selectedMode) || 0;
+      const allTimePB = save.getPB(stats.mode || app.selectedMode, pbRuleset) || 0;
       const nm = computeNearMiss(stats.score, app.sessionBest, allTimePB);
       if (nm) {
         const labelKey = nm.kind === 'pb' ? 'near_miss_pb' : 'near_miss_session';

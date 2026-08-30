@@ -10,6 +10,31 @@ import { isAdFree }            from '../services/AdService.js';
 import { EngagementTracker }   from '../helpers/engagementTracker.js';
 import app                     from '../appState.js';
 
+export function applyLoadedSave() {
+  const { save, audio } = app;
+  app.colorblind = save.getSetting('colorblind');
+  audio.toggle(save.getSetting('sound'));
+  audio.toggleMusic(save.getSetting('music'));
+  audio.setSfxVolume((save.getSetting('sfxVolume') ?? 80) / 100);
+  audio.setMusicVolume((save.getSetting('musicVolume') ?? 70) / 100);
+  app.selectedMode = save.getSetting('gameMode') || 'klassik';
+  app.selectedPlayType = save.getSetting('playType') || 'blitz';
+  if (!save.isModeUnlocked(app.selectedMode)) app.selectedMode = 'klassik';
+
+  const langSetting = save.getSetting('language') || 'auto';
+  if (langSetting === 'auto') {
+    const browserLang = (navigator.language || 'de').substring(0, 2);
+    setLanguage(browserLang === 'de' ? 'de' : 'en');
+  } else {
+    setLanguage(langSetting);
+  }
+  localise(t);
+  applyTheme(save.getActiveTheme());
+  document.body.classList.toggle('ad-free', isAdFree(save));
+  document.body.toggleAttribute('data-reduced-motion', Boolean(save.getSetting('reducedMotion')));
+  app.engagement = new EngagementTracker(save);
+}
+
 export async function boot(showHome, showAuth) {
   const { save, auth, audio } = app;
 
@@ -37,12 +62,7 @@ export async function boot(showHome, showAuth) {
   try { await save.load(); } catch {}
   setProgress(80);
 
-  app.colorblind = save.getSetting('colorblind');
-  audio.toggle(save.getSetting('sound'));
-  audio.toggleMusic(save.getSetting('music'));
-  app.selectedMode = save.getSetting('gameMode') || 'klassik';
-  app.selectedPlayType = save.getSetting('playType') || 'blitz';
-  if (!save.isModeUnlocked(app.selectedMode)) app.selectedMode = 'klassik';
+  applyLoadedSave();
 
   /* Assign random avatar on first run */
   const currentAvatar = save.getAvatar();
@@ -52,22 +72,6 @@ export async function boot(showHome, showAuth) {
     const randomCI = Math.floor(Math.random() * CONFIG.AVATAR_COLORS_INDICES.length);
     await save.setAvatar(randomIcon, randomCI);
   }
-
-  /* Auto-detect language */
-  const langSetting = save.getSetting('language') || 'auto';
-  if (langSetting === 'auto') {
-    const browserLang = (navigator.language || 'de').substring(0, 2);
-    setLanguage(browserLang === 'de' ? 'de' : 'en');
-  } else {
-    setLanguage(langSetting);
-  }
-  localise(t);
-
-  applyTheme(save.getActiveTheme());
-  document.body.classList.toggle('ad-free', isAdFree(save));
-
-  /* Initialize engagement tracker (after save data is fully loaded) */
-  app.engagement = new EngagementTracker(save);
 
   setProgress(100);
   setText('#bootStatus', t('boot_ready'));

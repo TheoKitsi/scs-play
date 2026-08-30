@@ -158,7 +158,10 @@ async function screenshotAll(deviceName, deviceConfig, baseUrl) {
   if (await navTo('#btnAchievements', '#achievements')) {
     await shot('04-achievements');
     await page.evaluate(() => {
-      const el = document.querySelector('#achievements .screen-content') || document.querySelector('#achievements');
+      const root = document.querySelector('#achievements');
+      const el = [...(root?.querySelectorAll('*') || [])].find(node =>
+        node.scrollHeight > node.clientHeight && /(auto|scroll)/.test(getComputedStyle(node).overflowY)
+      ) || root?.querySelector('.screen-content') || root;
       if (el) el.scrollTop = el.scrollHeight;
     });
     await shot('04-achievements-scrolled');
@@ -169,7 +172,10 @@ async function screenshotAll(deviceName, deviceConfig, baseUrl) {
   if (await navTo('#btnStore', '#store')) {
     await shot('05-store');
     await page.evaluate(() => {
-      const el = document.querySelector('#store .screen-content') || document.querySelector('#store');
+      const root = document.querySelector('#store');
+      const el = [...(root?.querySelectorAll('*') || [])].find(node =>
+        node.scrollHeight > node.clientHeight && /(auto|scroll)/.test(getComputedStyle(node).overflowY)
+      ) || root?.querySelector('.screen-content') || root;
       if (el) el.scrollTop = el.scrollHeight;
     });
     await shot('05-store-scrolled');
@@ -180,12 +186,18 @@ async function screenshotAll(deviceName, deviceConfig, baseUrl) {
   if (await navTo('#btnSettings', '#settings')) {
     await shot('06-settings-top');
     await page.evaluate(() => {
-      const el = document.querySelector('#settings .screen-content') || document.querySelector('#settings');
+      const root = document.querySelector('#settings');
+      const el = [...(root?.querySelectorAll('*') || [])].find(node =>
+        node.scrollHeight > node.clientHeight && /(auto|scroll)/.test(getComputedStyle(node).overflowY)
+      ) || root?.querySelector('.screen-content') || root;
       if (el) el.scrollTop = el.scrollHeight / 2;
     });
     await shot('06-settings-mid');
     await page.evaluate(() => {
-      const el = document.querySelector('#settings .screen-content') || document.querySelector('#settings');
+      const root = document.querySelector('#settings');
+      const el = [...(root?.querySelectorAll('*') || [])].find(node =>
+        node.scrollHeight > node.clientHeight && /(auto|scroll)/.test(getComputedStyle(node).overflowY)
+      ) || root?.querySelector('.screen-content') || root;
       if (el) el.scrollTop = el.scrollHeight;
     });
     await shot('06-settings-bottom');
@@ -194,12 +206,12 @@ async function screenshotAll(deviceName, deviceConfig, baseUrl) {
 
   // ─── 7) Avatar Screen ───
   {
-    const avatarEl = page.locator('#home img').first();
+    const avatarEl = page.locator('#homeAvatar').first();
     if (await avatarEl.isVisible({ timeout: 1000 }).catch(() => false)) {
       await avatarEl.click();
       await page.waitForTimeout(800);
       const avatarActive = await page.evaluate(() =>
-        document.querySelector('#avatar')?.classList.contains('active')
+        document.querySelector('#avatarSelect')?.classList.contains('active')
       );
       if (avatarActive) {
         await shot('07-avatar');

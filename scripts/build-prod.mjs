@@ -81,11 +81,19 @@ let sw = readFileSync(resolve(out, 'sw.js'), 'utf8');
 const bundledAssets = `const ASSETS = [
   './',
   './index.html',
+  './privacy-policy.html',
+  './terms-of-service.html',
   './css/style.bundle.css',
   './js/app.bundle.js',
   './manifest.json',
   './img/icon-192.svg',
-  './img/icon-512.svg'
+  './img/icon-512.svg',
+  './audio/music/tracks.json',
+  './audio/music/menu.mp3',
+  './audio/music/classic.mp3',
+  './audio/music/endless.mp3',
+  './audio/music/blitz.mp3',
+  './audio/music/competition.mp3'
 ];`;
 sw = sw.replace(/const ASSETS\s*=\s*\[[\s\S]*?\];/, bundledAssets);
 writeFileSync(resolve(out, 'sw.js'), sw);

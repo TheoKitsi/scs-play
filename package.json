@@ -1,6 +1,7 @@
 {
   "name": "scs-play",
   "version": "2.0.0",
+  "type": "module",
   "description": "SCS Play — 14 game modes, reflexes, brain training, speed",
   "private": true,
   "scripts": {
@@ -11,7 +12,8 @@
     "visual-review": "node scripts/visual-review.mjs",
     "contrast-audit": "node scripts/contrast-audit.mjs",
     "contrast-audit:dom": "node scripts/dom-contrast-audit.mjs",
-    "verify": "npm run contrast-audit && npm run build:prod && npm run contrast-audit:dom && npm run smoke-test",
+    "game-logic-test": "node scripts/game-logic-test.mjs",
+    "verify": "npm run game-logic-test && npm run contrast-audit && npm run build:prod && npm run contrast-audit:dom && npm run smoke-test",
     "cap:sync": "node scripts/build-prod.mjs && npx cap sync android",
     "cap:open": "npx cap open android",
     "cap:run": "node scripts/build-prod.mjs && npx cap run android"

@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -403,6 +403,28 @@
         </div>
       </div>
 
+      <section class="daily-quests-panel" id="dailyQuestsPanel" aria-labelledby="dqTitle">
+        <div class="dq-head">
+          <h3 class="dq-head-title" id="dqTitle">Tägliche Quests</h3>
+          <span class="dq-head-count" id="dqHeadCount">0/3</span>
+        </div>
+        <ul class="dq-list" id="dqList"></ul>
+      </section>
+
+      <section class="season-pass-card" id="seasonPassCard" aria-labelledby="spTitle">
+        <div class="sp-head">
+          <h3 class="sp-title" id="spTitle">Season-Fortschritt</h3>
+          <span class="sp-meta" id="spMeta"></span>
+        </div>
+        <div class="sp-bar" role="progressbar" aria-label="Season-Fortschritt">
+          <div class="sp-bar-fill" id="spBarFill"></div>
+        </div>
+        <div class="sp-foot">
+          <span id="spStage"></span>
+          <span class="sp-next" id="spNext"></span>
+        </div>
+      </section>
+
       <!-- PWA Install Banner -->
       <div class="pwa-install-banner" id="pwaInstallBanner" style="display:none">
         <div class="pwa-install-left">
@@ -786,7 +808,9 @@
       <label class="setting-row"><span data-i18n="reduced_motion">Reduzierte Animationen</span><input id="toggleMotion" type="checkbox"></label>
       <label class="setting-row"><span data-i18n="haptics">Haptik</span><input id="toggleHaptics" type="checkbox"></label>
       <label class="setting-row"><span data-i18n="sound">Sound</span><input id="toggleSound" type="checkbox"></label>
+      <label class="setting-row setting-volume"><span data-i18n="sfx_volume">Effektlautstärke</span><input id="rangeSfxVolume" type="range" min="0" max="100" step="5"><output id="sfxVolumeValue" for="rangeSfxVolume">80%</output></label>
       <label class="setting-row"><span data-i18n="music">Musik</span><input id="toggleMusic" type="checkbox"></label>
+      <label class="setting-row setting-volume"><span data-i18n="music_volume">Musiklautstärke</span><input id="rangeMusicVolume" type="range" min="0" max="100" step="5"><output id="musicVolumeValue" for="rangeMusicVolume">70%</output></label>
 
       <label class="setting-row">
         <span data-i18n="language">Sprache</span>

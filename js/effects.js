@@ -5,6 +5,7 @@
    streak counter, score zones, and more
    ═══════════════════════════════════════ */
 import { CONFIG } from './config.js';
+import { t } from './i18n.js';
 
 export class EffectsManager {
   constructor(container) {
