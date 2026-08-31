@@ -16,6 +16,7 @@
 @import url('partials/10-micro-modes.css');
 @import url('partials/11-mode-mastery.css');
 @import url('partials/12-polish-v18-v19.css');
+@import url('partials/13-mobile-2026.css');
 
 /* ═══════════════════════════════════════════
    Global accessibility safety-net.
@@ -73,4 +74,3 @@ body[data-reduced-motion] *::after{
   .play-type-btn,
   .mode-card{border:1px solid ButtonText}
 }
-

@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════
    SCS Play — Service Worker
    ═══════════════════════════════════════ */
-const CACHE = 'scs-v54';
+const CACHE = 'scs-v56';
 const ASSETS = [
   './',
   './index.html',
@@ -21,6 +21,7 @@ const ASSETS = [
   './css/partials/10-micro-modes.css',
   './css/partials/11-mode-mastery.css',
   './css/partials/12-polish-v18-v19.css',
+  './css/partials/13-mobile-2026.css',
   './manifest.json',
   './img/icon-192.svg',
   './img/icon-512.svg',

@@ -6,7 +6,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0f0c29">
+  <meta name="theme-color" content="#07090f">
   <meta name="color-scheme" content="dark">
   <meta name="description" content="SCS Play \u2013 Sort \u00B7 Think \u00B7 React. Fast-paced brain training with 11 game modes!">
   <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -691,7 +691,7 @@
     <!-- Phase 2: Stats grid (fades in after count-up) -->
     <div class="results-phase results-phase-hidden" id="resPhase2">
       <div class="results-grid">
-        <div class="res-item"><span class="res-label" data-i18n="correct">Richtig</span><span id="resCorrect" class="res-val">0</span></div>
+        <div class="res-item res-item--detail"><span class="res-label" data-i18n="correct">Richtig</span><span id="resCorrect" class="res-val">0</span></div>
         <div class="res-item"><span class="res-label" data-i18n="accuracy_label">Genauigkeit</span><span id="resAccuracy" class="res-val">0%</span></div>
         <div class="res-item"><span class="res-label" data-i18n="best_streak">Beste Serie</span><span id="resBestStreak" class="res-val">0</span></div>
         <div class="res-item"><span class="res-label" data-i18n="avg_reaction">&#216; Reaktion</span><span id="resAvgReaction" class="res-val">0ms</span></div>
@@ -789,10 +789,9 @@
     <div id="achProgress" class="ach-progress"></div>
     <!-- Filter tabs — Shop-style -->
     <div id="achTabs" class="ach-tabs">
-      <button class="ach-tab selected" data-filter="all" data-i18n="ach_filter_all">Alle</button>
+      <button class="ach-tab selected" data-filter="close" data-i18n="ach_filter_focus">Für dich</button>
       <button class="ach-tab" data-filter="earned" data-i18n="ach_filter_earned">Erreicht</button>
-      <button class="ach-tab" data-filter="locked" data-i18n="ach_filter_locked">Offen</button>
-      <button class="ach-tab" data-filter="close" data-i18n="ach_filter_close">Fast da</button>
+      <button class="ach-tab" data-filter="all" data-i18n="ach_filter_all">Alle</button>
     </div>
     <div id="achList" class="ach-list"></div>
     <div class="bottom-back-bar">

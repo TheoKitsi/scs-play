@@ -11,7 +11,7 @@ import {
 } from '../achievements/AchievementSystem.js';
 
 // ── Local UI state ──────────────────────────────────────────────
-let _filter      = 'all';       // 'all' | 'earned' | 'locked' | 'close'
+let _filter      = 'close';     // Focused goals | earned | full archive
 let _collapsed   = {};          // categoryId -> boolean (true = collapsed)
 let _hasAutoExpanded = false;   // track if first-render auto-expand happened
 let _allAchs     = null;        // cached generated list
@@ -59,7 +59,7 @@ function renderHeader(done, total) {
     <div class="ach-progress-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${t('achievements_short')}">
       <div class="ach-progress-fill" style="width:${pct}%"></div>
     </div>
-    <span class="ach-progress-text">${done} / ${total} ${t('achievements_short')} (${pct}%)</span>
+    <span class="ach-progress-text">${t(done === 1 ? 'ach_unlocked_one' : 'ach_unlocked_many', { n: `<strong>${done}</strong>` })}</span>
   `;
 }
 
@@ -104,11 +104,12 @@ function renderCategories(lang, earned, saveData, animate) {
     }
   }
 
+  const focusedIds = _filter === 'close' ? _getFocusedAchievementIds(earned, saveData) : null;
   let html = '';
   let itemIdx = 0;
   for (const cat of CATEGORIES) {
     const catAchs = _byCat[cat.id] || [];
-    const filtered = _filterAchievements(catAchs, earned, saveData);
+    const filtered = _filterAchievements(catAchs, earned, saveData, focusedIds);
     if (filtered.length === 0 && (_filter !== 'all')) continue;
 
     const catEarned = catAchs.filter(a => earned.has(a.id)).length;
@@ -129,7 +130,7 @@ function renderCategories(lang, earned, saveData, animate) {
           <span class="ach-cat-desc">${catDesc}</span>
         </div>
         <div class="ach-cat-right">
-          <span class="ach-cat-counter">${catEarned}/${catTotal}</span>
+          <span class="ach-cat-counter">${_filter === 'close' ? t(filtered.length === 1 ? 'ach_goal_one' : 'ach_goal_many', { n: filtered.length }) : t(catEarned === 1 ? 'ach_done_one' : 'ach_done_many', { n: catEarned })}</span>
           <div class="ach-cat-bar"><div class="ach-cat-bar-fill" style="width:${catPct}%"></div></div>
           <span class="ach-cat-arrow">${isCollapsed ? '\u25B6' : '\u25BC'}</span>
         </div>
@@ -234,7 +235,7 @@ function _renderChain(chainKey, filteredAchs, earned, saveData, lang) {
 // ──────────────────────────────────────────────────────────────
 //  FILTERING
 // ──────────────────────────────────────────────────────────────
-function _filterAchievements(achs, earned, saveData) {
+function _filterAchievements(achs, earned, saveData, focusedIds = null) {
   let result = achs;
 
   if (_filter === 'earned') {
@@ -242,14 +243,23 @@ function _filterAchievements(achs, earned, saveData) {
   } else if (_filter === 'locked') {
     result = result.filter(a => !earned.has(a.id));
   } else if (_filter === 'close') {
-    result = result.filter(a => {
-      if (earned.has(a.id)) return false;
-      const p = getProgress(a, saveData);
-      return p.pct >= 0.5;
-    });
+    result = result.filter(a => focusedIds?.has(a.id));
   }
 
   return result;
+}
+
+function _getFocusedAchievementIds(earned, saveData) {
+  const candidates = [];
+  for (const chainIds of Object.values(_chains)) {
+    const next = chainIds.map(id => getAchById(id)).find(a => a && !earned.has(a.id));
+    if (!next) continue;
+    const progress = getProgress(next, saveData);
+    candidates.push({ id: next.id, pct: progress.pct, target: Number(progress.target) || Infinity });
+  }
+
+  candidates.sort((a, b) => b.pct - a.pct || a.target - b.target);
+  return new Set(candidates.slice(0, 8).map(item => item.id));
 }
 
 // ──────────────────────────────────────────────────────────────

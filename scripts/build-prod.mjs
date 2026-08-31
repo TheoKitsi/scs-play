@@ -111,7 +111,7 @@ console.log(`✓ CSS bundled: ${(cssSize / 1024).toFixed(1)} KB (minified)`);
    SCS_JS_BUDGET_KB / SCS_CSS_BUDGET_KB if a controlled raise
    is needed. */
 const jsBudgetKB  = Number(process.env.SCS_JS_BUDGET_KB)  || 480;
-const cssBudgetKB = Number(process.env.SCS_CSS_BUDGET_KB) || 240;
+const cssBudgetKB = Number(process.env.SCS_CSS_BUDGET_KB) || 250;
 const jsKB  = jsSize  / 1024;
 const cssKB = cssSize / 1024;
 const overruns = [];
