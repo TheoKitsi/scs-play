@@ -126,6 +126,53 @@ assert.equal(input._gestureStimulusId, 1, 'A second finger must not replace the 
 input._cancel();
 assert.equal(input._isTouch, false, 'Cancelled touches must not disable later mouse input');
 
+input.mode = 'ultra';
+assert.equal(input._classify(100, -47), 'ene', 'Ultra ENE must match its visible right-edge slot');
+assert.equal(input._classify(47, -100), 'ur', 'Ultra upper-right must match its visible inner slot');
+assert.equal(input._classify(-100, 47), 'wsw', 'Ultra WSW must match its visible left-edge slot');
+assert.equal(input._classify(-47, 100), 'dl', 'Ultra lower-left must match its visible inner slot');
+
+const rushAnswer = new GameEngine();
+rushAnswer.running = true;
+rushAnswer.practice = true;
+rushAnswer.inRush = true;
+rushAnswer.currentShape = { direction: 'ur', stimulusId: 1 };
+rushAnswer.lastSpawnTime = performance.now() - 100;
+let rushAnswerSchedules = 0;
+rushAnswer._scheduleSpawn = () => { rushAnswerSchedules++; };
+rushAnswer.handleSwipe('ur', performance.now(), 1);
+assert.equal(rushAnswerSchedules, 0, 'Rush answers must not start a competing normal spawn timer');
+
+const sequenzCallbacks = new GameEngine();
+sequenzCallbacks.running = true;
+sequenzCallbacks.mode = 'sequenz';
+sequenzCallbacks._seqPhase = 'go';
+sequenzCallbacks._seqPattern = ['ur'];
+sequenzCallbacks._seqInputIndex = 0;
+sequenzCallbacks.lastSpawnTime = performance.now() - 100;
+let sequenzResults = 0;
+let genericResults = 0;
+sequenzCallbacks.onSequenzResult = () => { sequenzResults++; };
+sequenzCallbacks.onResult = () => { genericResults++; };
+sequenzCallbacks.handleSequenzInput('ur');
+assert.equal(sequenzResults, 1);
+assert.equal(genericResults, 0, 'Completed sequences must not emit duplicate generic feedback');
+sequenzCallbacks.stop();
+
+const continued = new GameEngine();
+continued.running = false;
+continued.feverActive = true;
+continued.inRush = true;
+continued._shuffleInProgress = true;
+continued._startTimer = () => {};
+continued._startElapsedTimer = () => {};
+continued._scheduleSpawn = () => {};
+assert.equal(continued.continueGame(), true);
+assert.equal(continued.feverActive, false);
+assert.equal(continued.inRush, false);
+assert.equal(continued._shuffleInProgress, false);
+continued.stop();
+
 const pausedShuffle = new GameEngine();
 pausedShuffle.running = true;
 pausedShuffle.mode = 'klassik';

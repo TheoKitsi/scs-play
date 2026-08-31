@@ -31,6 +31,30 @@ const SEG_ANGLE = (2 * Math.PI) / SEG_COUNT;
 
 let spinning = false;
 let currentAngle = 0;
+let wheelReturnFocus = null;
+
+function handleWheelKeydown(event) {
+  const overlay = $('#wheelOverlay');
+  if (!overlay?.classList.contains('active')) return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    hideWheel();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const focusable = [...overlay.querySelectorAll('button:not([disabled]):not([hidden]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+    .filter(el => el.offsetParent !== null);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -429,7 +453,10 @@ function revealResult(result, bonusSpin) {
 export function showWheel() {
   const overlay = $('#wheelOverlay');
   if (!overlay) return;
+  wheelReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   overlay.classList.add('active');
+  overlay.setAttribute('aria-hidden', 'false');
+  requestAnimationFrame(() => $('#btnWheelClose')?.focus());
 
   const canvas = $('#wheelCanvas');
   if (canvas) drawWheel(canvas, currentAngle);
@@ -441,7 +468,11 @@ export function showWheel() {
 
 export function hideWheel() {
   const overlay = $('#wheelOverlay');
-  if (overlay) overlay.classList.remove('active');
+  if (!overlay?.classList.contains('active')) return;
+  overlay.classList.remove('active');
+  overlay.setAttribute('aria-hidden', 'true');
+  wheelReturnFocus?.focus();
+  wheelReturnFocus = null;
 }
 
 export function updateWheelCard() {
@@ -511,6 +542,7 @@ export function bindWheel() {
   $('#wheelOverlay')?.addEventListener('click', (e) => {
     if (e.target.id === 'wheelOverlay') hideWheel();
   });
+  document.addEventListener('keydown', handleWheelKeydown);
 }
 
 function isConsecutiveDay(prev, current) {

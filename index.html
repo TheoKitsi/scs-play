@@ -964,10 +964,10 @@
 </div>
 
 <!-- ═══════ WHEEL OF FORTUNE OVERLAY ═══════ -->
-<div id="wheelOverlay" class="wheel-overlay">
+<div id="wheelOverlay" class="wheel-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="wheelHeading">
   <div class="wheel-panel">
-    <button class="wheel-close" id="btnWheelClose" aria-label="Close">&times;</button>
-    <h2 class="wheel-heading" data-i18n="wheel_title">GL&Uuml;CKSRAD</h2>
+    <button class="wheel-close" id="btnWheelClose" aria-label="Gl&uuml;cksrad schlie&szlig;en">&times;</button>
+    <h2 class="wheel-heading" id="wheelHeading" data-i18n="wheel_title">GL&Uuml;CKSRAD</h2>
     <p class="wheel-subtitle" id="wheelSubtitle" data-i18n="wheel_subtitle">T&auml;glich drehen, Serie halten, Bonus sichern.</p>
     <div class="wheel-meta">
       <span class="wheel-streak-badge" id="wheelOverlayStreak"></span>

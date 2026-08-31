@@ -222,15 +222,20 @@ function positionSlides() {
 
   slides.forEach((slide, i) => {
     const diff = ((i - carouselIdx) % total + total) % total;
+    let position;
     if (diff === 0) {
-      slide.dataset.pos = 'current';
+      position = 'current';
     } else if (diff === total - 1) {
-      slide.dataset.pos = 'prev';
+      position = 'prev';
     } else if (diff === 1) {
-      slide.dataset.pos = 'next';
+      position = 'next';
     } else {
-      slide.dataset.pos = 'hidden';
+      position = 'hidden';
     }
+    slide.dataset.pos = position;
+    const inactive = position !== 'current';
+    slide.inert = inactive;
+    slide.setAttribute('aria-hidden', String(inactive));
   });
 
   // Update selected mode

@@ -58,7 +58,7 @@ button:focus-visible,.btn:focus-visible{
 
 /* Home: one focused, full-height mode stage with a reachable action deck. */
 #home{background:#07090f}
-#home .home-viewport{isolation:isolate}
+#home .home-viewport{isolation:isolate;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
 #home .ad-banner{
   height:34px;
   min-height:34px;
@@ -552,6 +552,10 @@ body:not(.ad-free) .center-platform{top:58%}
 .setting-row,.store-item,.score-row,.ach-category,.unlock-item{border-radius:18px!important;background:#121720!important;border-color:rgba(255,255,255,.07)!important;box-shadow:none!important}
 .bottom-back-bar{padding:10px 0 calc(10px + var(--bottom-inset));border-top-color:rgba(255,255,255,.07)}
 .btn-back-bottom{width:100%;min-height:52px;border-radius:16px!important;background:#151a25!important}
+#settings .settings-list{flex:0 0 auto;overflow:visible}
+
+.wheel-overlay{padding:max(10px,var(--safe-top)) var(--phone-gutter) max(10px,var(--bottom-inset))}
+.wheel-panel{width:100%;max-height:100%;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
 
 /* Achievements: surface a small set of useful next goals instead of 1000+ counters. */
 #achievements .ach-progress{padding:10px 2px 12px;gap:8px}
@@ -614,22 +618,4 @@ body:not(.ad-free) .center-platform{top:58%}
   .footer-label{font-size:.62rem}
   .corner-shape{width:76px;height:76px;--half:38px}
   .corner-shape svg{width:46px;height:46px}
-}
-
-@media(min-width:540px){
-  body::after{
-    content:'SCS Play ist für Smartphones optimiert';
-    position:fixed;
-    left:50%;
-    bottom:18px;
-    transform:translateX(-50%);
-    z-index:100000;
-    padding:8px 14px;
-    border-radius:999px;
-    background:#151a25;
-    border:1px solid rgba(255,255,255,.1);
-    color:var(--text-muted);
-    font-size:.72rem;
-    pointer-events:none;
-  }
 }

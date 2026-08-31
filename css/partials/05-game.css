@@ -910,27 +910,27 @@ body.mode-ultra .corner-shape{
 }
 body.mode-ultra .corner-shape svg{ width:34px; height:34px; }
 body.mode-ultra .corner-shape[data-dir="up"]   { top:calc(27% - var(--half)); left:calc(50% - var(--half)); }
-body.mode-ultra .corner-shape[data-dir="ene"]  { top:calc(30% - var(--half)); left:calc(68% - var(--half)); }
-body.mode-ultra .corner-shape[data-dir="ur"]   { top:calc(40% - var(--half)); left:calc(82% - var(--half)); }
+body.mode-ultra .corner-shape[data-dir="ur"]   { top:calc(30% - var(--half)); left:calc(68% - var(--half)); }
+body.mode-ultra .corner-shape[data-dir="ene"]  { top:calc(40% - var(--half)); left:calc(82% - var(--half)); }
 body.mode-ultra .corner-shape[data-dir="right"]{ top:calc(53% - var(--half)); left:calc(87% - var(--half)); }
 body.mode-ultra .corner-shape[data-dir="dr"]   { top:calc(66% - var(--half)); left:calc(82% - var(--half)); }
 body.mode-ultra .corner-shape[data-dir="sse"]  { top:calc(76% - var(--half)); left:calc(68% - var(--half)); }
 body.mode-ultra .corner-shape[data-dir="down"] { top:calc(79% - var(--half)); left:calc(50% - var(--half)); }
-body.mode-ultra .corner-shape[data-dir="wsw"]  { top:calc(76% - var(--half)); left:calc(32% - var(--half)); }
-body.mode-ultra .corner-shape[data-dir="dl"]   { top:calc(66% - var(--half)); left:calc(18% - var(--half)); }
+body.mode-ultra .corner-shape[data-dir="dl"]   { top:calc(76% - var(--half)); left:calc(32% - var(--half)); }
+body.mode-ultra .corner-shape[data-dir="wsw"]  { top:calc(66% - var(--half)); left:calc(18% - var(--half)); }
 body.mode-ultra .corner-shape[data-dir="left"] { top:calc(53% - var(--half)); left:calc(13% - var(--half)); }
 body.mode-ultra .corner-shape[data-dir="ul"]   { top:calc(40% - var(--half)); left:calc(18% - var(--half)); }
 body.mode-ultra .corner-shape[data-dir="nnw"]  { top:calc(30% - var(--half)); left:calc(32% - var(--half)); }
 /* Ultra: ad offset (+3%) */
 body.mode-ultra:not(.ad-free) .corner-shape[data-dir="up"]   { top:calc(30% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="ene"]  { top:calc(33% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="ur"]   { top:calc(43% - var(--half)); }
+body.mode-ultra:not(.ad-free) .corner-shape[data-dir="ur"]   { top:calc(33% - var(--half)); }
+body.mode-ultra:not(.ad-free) .corner-shape[data-dir="ene"]  { top:calc(43% - var(--half)); }
 body.mode-ultra:not(.ad-free) .corner-shape[data-dir="right"]{ top:calc(56% - var(--half)); }
 body.mode-ultra:not(.ad-free) .corner-shape[data-dir="dr"]   { top:calc(69% - var(--half)); }
 body.mode-ultra:not(.ad-free) .corner-shape[data-dir="sse"]  { top:calc(79% - var(--half)); }
 body.mode-ultra:not(.ad-free) .corner-shape[data-dir="down"] { top:calc(82% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="wsw"]  { top:calc(79% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="dl"]   { top:calc(69% - var(--half)); }
+body.mode-ultra:not(.ad-free) .corner-shape[data-dir="dl"]   { top:calc(79% - var(--half)); }
+body.mode-ultra:not(.ad-free) .corner-shape[data-dir="wsw"]  { top:calc(69% - var(--half)); }
 body.mode-ultra:not(.ad-free) .corner-shape[data-dir="left"] { top:calc(56% - var(--half)); }
 body.mode-ultra:not(.ad-free) .corner-shape[data-dir="ul"]   { top:calc(43% - var(--half)); }
 body.mode-ultra:not(.ad-free) .corner-shape[data-dir="nnw"]  { top:calc(33% - var(--half)); }

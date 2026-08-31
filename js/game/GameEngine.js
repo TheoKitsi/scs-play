@@ -559,6 +559,8 @@ export class GameEngine {
     this._stopComboDecay();
     this._rushQueue.forEach(t => clearTimeout(t));
     this._rushQueue = [];
+    clearTimeout(this._rushTimeout);
+    this._rushTimeout = null;
     this.inRush = false;
     /* Sequenz: clear queued flashes + input timeout */
     this._seqFlashTimeouts.forEach(t => clearTimeout(t));
@@ -663,7 +665,18 @@ export class GameEngine {
   continueGame() {
     if (this.continued) return false;
     this.continued = true;
-    this.currentShape = null;           // clear stale shape to prevent phantom autoMiss
+    clearTimeout(this._spawnTimeout);
+    clearTimeout(this._rushTimeout);
+    this._rushTimeout = null;
+    this._rushQueue.forEach(t => clearTimeout(t));
+    this._rushQueue = [];
+    this.inRush = false;
+    this._rushIndex = 0;
+    clearTimeout(this._shuffleTimeout);
+    this._shuffleInProgress = false;
+    if (this.feverActive) this._endFever();
+    this._feverRemainingMs = 0;
+    this.currentShape = null;
     this.timer = CONFIG.CONTINUE_EXTRA_TIME;
     this.running = true;
     this._gameOverFinalized = false;
@@ -1778,7 +1791,7 @@ export class GameEngine {
     } else {
       postAnswerDelay = this.practice ? CONFIG.PRACTICE_INTERVAL : Math.max(80, this.spawnInterval * 0.15);
     }
-    if (this._memoPhase !== 'reveal') this._scheduleSpawn(postAnswerDelay);
+    if (this._memoPhase !== 'reveal' && !this.inRush) this._scheduleSpawn(postAnswerDelay);
     if (this.onResult) this.onResult(result);
 
     /* ── Gentle Start (v22): suppress rush/shuffle during opening seconds ── */
@@ -2044,7 +2057,6 @@ export class GameEngine {
           seqLen
         };
         if (this.onSequenzResult) this.onSequenzResult(result);
-        if (this.onResult) this.onResult(result);
 
         /* Next round */
         this._seqRound++;
@@ -2086,7 +2098,6 @@ export class GameEngine {
       sequenzRound: this._seqRound, sequenzComplete: false
     };
     if (this.onSequenzResult) this.onSequenzResult(fail);
-    if (this.onResult) this.onResult(fail);
 
     if (this.endlessLives <= 0) { this._endGame(); return fail; }
 
@@ -2167,6 +2178,7 @@ export class GameEngine {
   }
 
   _triggerRush() {
+    if (this.inRush) return;
     /* Rush Pre-Warning (v22): notify UI before rush starts */
     const preWarnSec = CONFIG.RUSH_PRE_WARNING_SEC || 0;
     if (preWarnSec > 0 && this.onRushWarning) {
@@ -2175,6 +2187,8 @@ export class GameEngine {
 
     if (this.onRush) this.onRush();
     clearTimeout(this._spawnTimeout);
+    clearTimeout(this._rushTimeout);
+    this._rushTimeout = null;
     this._rushQueue.forEach(t => clearTimeout(t));
     this._rushQueue = [];
 
@@ -2193,7 +2207,8 @@ export class GameEngine {
         this._rushIndex = i + 1;
         this._spawn();
         if (this._rushIndex >= totalShapes) {
-          setTimeout(() => {
+          this._rushTimeout = setTimeout(() => {
+            this._rushTimeout = null;
             this.inRush = false;
             if (this.running && !this.paused) this._scheduleSpawn();
           }, rushDelay);
@@ -2245,9 +2260,12 @@ export class GameEngine {
     clearTimeout(this._feverTimeout);
     clearTimeout(this._shuffleTimeout);
     clearTimeout(this._memoPreviewTimeout);
+    clearTimeout(this._rushTimeout);
+    this._rushTimeout = null;
     this._stopComboDecay();
     this._rushQueue.forEach(t => clearTimeout(t));
     this._rushQueue = [];
+    this.inRush = false;
     this._seqFlashTimeouts.forEach(t => clearTimeout(t));
     this._seqFlashTimeouts = [];
     clearTimeout(this._seqInputTimeout);
@@ -2334,6 +2352,8 @@ export class GameEngine {
     clearTimeout(this._feverTimeout);
     clearTimeout(this._shuffleTimeout);
     clearTimeout(this._memoPreviewTimeout);
+    clearTimeout(this._rushTimeout);
+    this._rushTimeout = null;
     this._stopComboDecay();
     this._rushQueue.forEach(t => clearTimeout(t));
     this._rushQueue = [];

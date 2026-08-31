@@ -90,16 +90,26 @@ async function screenshotAll(deviceName, deviceConfig, baseUrl) {
 
   // Scroll home content to see game modes
   await page.evaluate(() => {
-    const home = document.querySelector('#homeBottomSheet');
+    const home = document.querySelector('#home .home-viewport');
     if (home) home.scrollTop = 200;
   });
   await shot('02-home-mid');
 
   await page.evaluate(() => {
-    const home = document.querySelector('#homeBottomSheet');
+    const home = document.querySelector('#home .home-viewport');
     if (home) home.scrollTop = home.scrollHeight;
   });
   await shot('02-home-bottom');
+
+  if (await click('#btnWheel')) {
+    await shot('02-wheel-top');
+    await page.evaluate(() => {
+      const panel = document.querySelector('#wheelOverlay .wheel-panel');
+      if (panel) panel.scrollTop = panel.scrollHeight;
+    });
+    await shot('02-wheel-bottom');
+    await click('#btnWheelClose');
+  }
 
   const goBack = async () => {
     // Dismiss any modal/overlay that might block clicks
