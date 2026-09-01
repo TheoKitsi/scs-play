@@ -8,19 +8,16 @@ on:
 permissions:
   contents: read
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -29,17 +26,5 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
-      - name: Game logic regression tests
-        run: npm run game-logic-test
-
-      - name: Contrast audit
-        run: npm run contrast-audit
-
-      - name: Build production bundle
-        run: npm run build:prod
-
-      - name: DOM contrast audit
-        run: npm run contrast-audit:dom
-
-      - name: Smoke test
-        run: npm run smoke-test
+      - name: Verify
+        run: npm run verify
