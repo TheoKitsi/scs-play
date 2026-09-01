@@ -118,7 +118,7 @@
 /* ═══════════════════════════════════════════
    AUTH SCREEN v6 — Redesigned hero layout
    ═══════════════════════════════════════════ */
-#auth{overflow:hidden}
+#auth{overflow-x:hidden;overflow-y:auto;justify-content:flex-start}
 
 /* Floating shape background */
 .auth-bg{

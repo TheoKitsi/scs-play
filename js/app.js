@@ -43,10 +43,6 @@ import { showSettings, bindSettings }
                             from './screens/SettingsScreen.js';
 import { showStore, bindShopTabs, updateShopLives }
                             from './screens/StoreScreen.js';
-import { showAvatarSelect, bindAvatarSave }
-                            from './screens/AvatarScreen.js';
-import { showEngagementReport }
-                            from './screens/EngagementReportScreen.js';
 import { bindWheel, updateWheelCard }
                             from './screens/WheelScreen.js';
 
@@ -162,12 +158,23 @@ function bindEvents() {
     navShowAuth();
   });
   $('#btnInstallPWA')?.addEventListener('click',   () => app.promptInstall());
-  $('#btnEngagementReport')?.addEventListener('click', () => showEngagementReport());
+  $('#btnEngagementReport')?.addEventListener('click', async () => {
+    const { showEngagementReport } = await import('./screens/EngagementReportScreen.js');
+    showEngagementReport();
+  });
 
   /* ─ Avatar ─ */
-  $('#btnAvatar')?.addEventListener('click',  () => showAvatarSelect(navShowStore));
-  $('#homeAvatar')?.addEventListener('click', () => showAvatarSelect(navShowStore));
-  bindAvatarSave(navShowHome);
+  let avatarSaveBound = false;
+  const openAvatar = async () => {
+    const avatarScreen = await import('./screens/AvatarScreen.js');
+    if (!avatarSaveBound) {
+      avatarScreen.bindAvatarSave(navShowHome);
+      avatarSaveBound = true;
+    }
+    avatarScreen.showAvatarSelect(navShowStore);
+  };
+  $('#btnAvatar')?.addEventListener('click', openAvatar);
+  $('#homeAvatar')?.addEventListener('click', openAvatar);
 
   /* ─ Tutorial ─ */
   $('#btnTutorialNext')?.addEventListener('click', () => tutorialNext(navTutorialFinish));
@@ -237,6 +244,10 @@ function bindEvents() {
 
 /* ═══════ Init ═══════ */
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('svg.ui-icon').forEach(icon => {
+    if (!icon.hasAttribute('aria-label')) icon.setAttribute('aria-hidden', 'true');
+    icon.setAttribute('focusable', 'false');
+  });
   initGestureNavInset();
   initErrorBoundary(DEBUG);
   /* global-haptics-bound */
@@ -249,6 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
   boot(navShowHome, navShowAuth);
   initOfflineIndicator();
   initVisibilityPause(pauseGame);
-  initBackButton({ pauseGame, showHome: navShowHome });
+  initBackButton({ pauseGame, quitGame: () => quitGame(navShowHome), showHome: navShowHome });
   checkOrientation();
 });

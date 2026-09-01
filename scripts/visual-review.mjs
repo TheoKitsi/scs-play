@@ -78,13 +78,23 @@ async function screenshotAll(deviceName, deviceConfig, baseUrl) {
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
   await shot('01-boot-auth');
+  if (await page.locator('#btnShowEmail').isVisible({ timeout: 300 }).catch(() => false)) {
+    await click('#btnShowEmail');
+    await shot('01-auth-email');
+  }
 
   // ─── 2) Enter Home Screen ───
   await click('#btnGuest');
-  // Dismiss any onboarding overlays that might block interactions
-  await page.evaluate(() => {
-    document.querySelectorAll('.onboarding-overlay').forEach(o => o.remove());
-  });
+  if (await page.locator('.onboarding-overlay.active').isVisible({ timeout: 500 }).catch(() => false)) {
+    await shot('02-onboarding');
+  }
+  // Close onboarding through its controller so modal focus/inert cleanup runs.
+  for (let i = 0; i < 4; i++) {
+    const hintButton = page.locator('.onboarding-overlay.active .onboarding-btn-ok');
+    if (!await hintButton.isVisible({ timeout: 300 }).catch(() => false)) break;
+    await hintButton.click();
+    await page.waitForTimeout(550);
+  }
   await page.waitForTimeout(400);
   await shot('02-home-top');
 
@@ -211,6 +221,15 @@ async function screenshotAll(deviceName, deviceConfig, baseUrl) {
       if (el) el.scrollTop = el.scrollHeight;
     });
     await shot('06-settings-bottom');
+    const openedReport = await page.evaluate(() => {
+      const btn = document.querySelector('#btnEngagementReport');
+      if (btn) { btn.click(); return true; }
+      return false;
+    });
+    if (openedReport) {
+      await page.waitForTimeout(900);
+      await shot('06-engagement-report');
+    }
     await goBack();
   }
 
@@ -237,6 +256,10 @@ async function screenshotAll(deviceName, deviceConfig, baseUrl) {
       document.querySelectorAll('.onboarding-overlay').forEach(o => o.remove());
     });
     await page.waitForTimeout(400);
+    for (let i = 0; i < 4; i++) {
+      await page.locator('#heroNavNext').click();
+      await page.waitForTimeout(420);
+    }
 
     const played = await page.evaluate(() => {
       const btn = document.querySelector('#btnPlay');
@@ -260,6 +283,10 @@ async function screenshotAll(deviceName, deviceConfig, baseUrl) {
         null,
         { timeout: 5000 }
       );
+      if (await page.locator('#modeInstructionOverlay.active').isVisible({ timeout: 500 }).catch(() => false)) {
+        await shot('08-game-instruction');
+        await click('#btnStartAfterInstruction');
+      }
       await shot('08-game-countdown');
       await page.waitForTimeout(4000);
       await shot('08-game-active');
@@ -303,6 +330,12 @@ async function screenshotAll(deviceName, deviceConfig, baseUrl) {
         ).catch(() => console.log('    WARN: results buttons phase not visible'));
         await page.waitForTimeout(400);
         await shot('10-results');
+        await click('#btnHome');
+        await click('#btnPlay');
+        if (await page.locator('#modeInstructionOverlay.active').isVisible({ timeout: 1200 }).catch(() => false)) {
+          await shot('10-game-instruction');
+          await click('#btnStartAfterInstruction');
+        }
       }
     }
   }

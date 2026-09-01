@@ -6,6 +6,7 @@
 import { t } from '../i18n.js';
 import { $ } from './dom.js';
 import app from '../appState.js';
+import { closeModal, openModal } from './modal.js';
 
 const HINTS = [
   { id: 'hint_carousel',  target: '.hero-slider',        i18n: 'hint_carousel' },
@@ -17,6 +18,7 @@ let _overlay = null;
 let _queue = [];
 let _activeHint = null;
 let _showTimer = null;
+let _nextTimer = null;
 
 function isHomeActive() {
   return document.querySelector('#home')?.classList.contains('active');
@@ -51,6 +53,7 @@ function createOverlay() {
     if (e.target === div) dismissCurrent();
   });
   _overlay = div;
+  div.setAttribute('aria-label', t('hint_ok'));
   return div;
 }
 
@@ -58,10 +61,12 @@ function dismissCurrent() {
   if (!_overlay) return;
   const hintId = _overlay.dataset.hintId;
   if (hintId) markShown(hintId);
-  _overlay.classList.remove('active');
+  closeModal(_overlay);
   _activeHint = null;
   // Show next hint in queue after short delay
-  setTimeout(() => {
+  clearTimeout(_nextTimer);
+  _nextTimer = setTimeout(() => {
+    _nextTimer = null;
     if (isHomeActive() && _queue.length > 0) {
       showHint(_queue.shift());
     }
@@ -70,11 +75,13 @@ function dismissCurrent() {
 
 function clearOnboardingHints() {
   clearTimeout(_showTimer);
+  clearTimeout(_nextTimer);
   _showTimer = null;
+  _nextTimer = null;
   _queue = [];
   _activeHint = null;
   if (_overlay) {
-    _overlay.classList.remove('active');
+    closeModal(_overlay, { restoreFocus: false });
     _overlay.removeAttribute('data-hint-id');
   }
 }
@@ -82,6 +89,7 @@ function clearOnboardingHints() {
 function positionSpotlight(overlay, hint) {
   const targetEl = $(hint.target);
   const spotlight = overlay.querySelector('.onboarding-spotlight');
+  const bubble = overlay.querySelector('.onboarding-bubble');
   if (targetEl) {
     const rect = targetEl.getBoundingClientRect();
     const pad = 8;
@@ -91,8 +99,14 @@ function positionSpotlight(overlay, hint) {
     spotlight.style.height = `${rect.height + pad * 2}px`;
     spotlight.style.borderRadius = '16px';
     spotlight.style.display = '';
+    const below = window.innerHeight - rect.bottom;
+    bubble.style.position = 'fixed';
+    bubble.style.left = '50%';
+    bubble.style.transform = 'translateX(-50%)';
+    bubble.style.top = `${below >= 180 ? rect.bottom + 16 : Math.max(16, rect.top - 166)}px`;
   } else {
     spotlight.style.display = 'none';
+    bubble.removeAttribute('style');
   }
 }
 
@@ -108,7 +122,10 @@ function showHint(hint) {
   overlay.querySelector('.onboarding-text').textContent = t(hint.i18n);
   overlay.querySelector('.onboarding-btn-ok').textContent = t('hint_ok');
 
-  requestAnimationFrame(() => overlay.classList.add('active'));
+  openModal(overlay, {
+    initialFocus: '.onboarding-btn-ok',
+    onDismiss: dismissCurrent,
+  });
 }
 
 /** Check and show pending onboarding hints for the home screen */

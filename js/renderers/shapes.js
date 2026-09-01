@@ -21,8 +21,8 @@ export function shapeSVG(shape, color, size = 48, bonus = null) {
   const sw = 0;
 
   let defs = '';
-  if (bonus === 'golden')  defs = '<defs><filter id="gGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
-  if (bonus === 'diamond') defs = '<defs><filter id="dGlow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+  if (bonus === 'golden')  defs = '<defs><filter id="gGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+  if (bonus === 'diamond') defs = '<defs><filter id="dGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
 
   let inner = '';
   switch (shape) {

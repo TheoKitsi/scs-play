@@ -6,11 +6,13 @@ import { $ }     from '../helpers/dom.js';
 import { t }     from '../i18n.js';
 import { haptic } from '../helpers/haptics.js';
 import app from '../appState.js';
+import { closeModal, openModal } from '../helpers/modal.js';
 
 const AD_INTERSTITIAL_DELAY = 2;
 const AD_FIRST_INTERSTITIAL_AT = 5;
 const AD_SHOW_EVERY_N_GAMES = 4;
 let adContextActive = false;
+let activeMockClose = null;
 
 function shouldShowInterstitial(sessionGames) {
   if (sessionGames < AD_FIRST_INTERSTITIAL_AT) return false;
@@ -89,73 +91,66 @@ export function showRewardedAd(save) {
 }
 
 function _showMockInterstitial(resolve) {
-    const overlay = $('#adInterstitial');
-    const closeBtn = $('#btnAdClose');
-    const timerEl = $('#adSkipTimer');
-    if (!overlay) { resolve(); return; }
-
-    overlay.classList.add('active');
-    if (closeBtn) closeBtn.style.display = 'none';
-    let countdown = AD_INTERSTITIAL_DELAY;
-    if (timerEl) timerEl.textContent = t('ad_interstitial_skip', { n: countdown });
-    
-    let timer = setInterval(() => {
-      countdown--;
-      if (countdown > 0) {
-        if (timerEl) timerEl.textContent = t('ad_interstitial_skip', { n: countdown });
-      } else {
-        clearInterval(timer);
-        timer = null;
-        if (timerEl) timerEl.textContent = '';
-        if (closeBtn) closeBtn.style.display = '';
-      }
-    }, 1000);
-
-    /* Safety: auto-close after max 10s to prevent stuck overlay */
-    const safetyTimeout = setTimeout(() => { close(); }, 10000);
-
-    const close = () => {
-      if (timer) { clearInterval(timer); timer = null; }
-      clearTimeout(safetyTimeout);
-      overlay.classList.remove('active');
-      if (app && app.save) haptic('tap', app.save);
-      resolve();
-    };
-    closeBtn?.addEventListener('click', close, { once: true });
+  _showMockAd(resolve, false);
 }
 
 function _showMockRewarded(resolve) {
-    const overlay = $('#adInterstitial'); // Reuse interstitial UI as mock
-    const closeBtn = $('#btnAdClose');
-    const timerEl = $('#adSkipTimer');
-    if (!overlay) { resolve(false); return; }
+  _showMockAd(resolve, true);
+}
 
-    overlay.classList.add('active');
-    if (closeBtn) closeBtn.style.display = 'none';
-    let countdown = 5; 
-    if (timerEl) timerEl.textContent = t('ad_reward_loading') || ('Loading Video Ad... ' + countdown + 's');
-    
-    let timer = setInterval(() => {
-      countdown--;
-      if (countdown > 0) {
-        if (timerEl) timerEl.textContent = t('ad_reward_loading') ? (t('ad_reward_loading') + ' ' + countdown) : ('Loading Video Ad... ' + countdown + 's');
-      } else {
-        clearInterval(timer);
-        timer = null;
-        if (timerEl) timerEl.textContent = t('ad_reward_ready') || 'Reward granted! You can close now.';
-        if (closeBtn) closeBtn.style.display = '';
+function _showMockAd(resolve, rewarded) {
+  activeMockClose?.(false);
+
+  const overlay = $('#adInterstitial');
+  const closeBtn = $('#btnAdClose');
+  const timerEl = $('#adSkipTimer');
+  if (!overlay) { resolve(rewarded ? false : undefined); return; }
+
+  let settled = false;
+  let countdown = rewarded ? 5 : AD_INTERSTITIAL_DELAY;
+  let timer = null;
+  let safetyTimeout = null;
+  const updateTimer = () => {
+    if (!timerEl) return;
+    timerEl.textContent = rewarded
+      ? ((t('ad_reward_loading') || 'Loading Video Ad...') + ` ${countdown}s`)
+      : t('ad_interstitial_skip', { n: countdown });
+  };
+  const close = (completed = true) => {
+    if (settled) return;
+    settled = true;
+    clearInterval(timer);
+    clearTimeout(safetyTimeout);
+    closeBtn?.removeEventListener('click', handleCloseClick);
+    closeModal(overlay);
+    if (activeMockClose === close) activeMockClose = null;
+    if (completed && app?.save) haptic('tap', app.save);
+    resolve(rewarded ? completed : undefined);
+  };
+  const handleCloseClick = () => close(true);
+
+  activeMockClose = close;
+  if (closeBtn) closeBtn.style.display = 'none';
+  updateTimer();
+  openModal(overlay, {
+    initialFocus: '#btnAdClose',
+    canDismiss: () => countdown <= 0,
+    onDismiss: () => close(true),
+  });
+
+  timer = setInterval(() => {
+    countdown--;
+    if (countdown > 0) updateTimer();
+    else {
+      clearInterval(timer);
+      timer = null;
+      if (timerEl) timerEl.textContent = rewarded ? (t('ad_reward_ready') || 'Reward granted! You can close now.') : '';
+      if (closeBtn) {
+        closeBtn.style.display = '';
+        closeBtn.focus();
       }
-    }, 1000);
-
-    /* Safety: auto-close after max 15s to prevent stuck overlay */
-    const safetyTimeout = setTimeout(() => { close(); }, 15000);
-
-    const close = () => {
-      if (timer) { clearInterval(timer); timer = null; }
-      clearTimeout(safetyTimeout);
-      overlay.classList.remove('active');
-      if (app && app.save) haptic('tap', app.save);
-      resolve(true); // completed
-    };
-    closeBtn?.addEventListener('click', close, { once: true });
+    }
+  }, 1000);
+  safetyTimeout = setTimeout(() => close(true), rewarded ? 15000 : 10000);
+  closeBtn?.addEventListener('click', handleCloseClick);
 }

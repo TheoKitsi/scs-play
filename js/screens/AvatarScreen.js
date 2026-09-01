@@ -3,6 +3,7 @@
    Icon picker, color picker, photo upload.
    ═══════════════════════════════════════ */
 import { CONFIG }           from '../config.js';
+import { t }                from '../i18n.js';
 import { $, $$, setHTML, showScreen, safeSrc } from '../helpers/dom.js';
 import { updateAvatarDisplay } from '../helpers/avatarDisplayHelper.js';
 import { avatarSVG }        from '../renderers/avatars.js';
@@ -26,13 +27,18 @@ function renderAvatarIconGrid(selectedIcon) {
   grid.innerHTML = CONFIG.AVATAR_ICONS.map(icon => {
     const selected = icon === selectedIcon ? 'selected' : '';
     const color = selected ? (CONFIG.COLORS.normal[parseInt($('.avatar-color-item.selected')?.dataset.ci || '0')] || iconColor) : iconColor;
-    return `<div class="avatar-grid-item ${selected}" data-icon="${icon}">${avatarSVG(icon, color, 28)}</div>`;
+    const label = t('avatar_icon_choice', { icon: t(`avatar_icon_${icon}`) });
+    return `<button type="button" class="avatar-grid-item ${selected}" data-icon="${icon}" aria-label="${label}" aria-pressed="${icon === selectedIcon}">${avatarSVG(icon, color, 28)}</button>`;
   }).join('');
 
   $$('.avatar-grid-item', grid).forEach(item => {
     item.addEventListener('click', () => {
-      $$('.avatar-grid-item', grid).forEach(i => i.classList.remove('selected'));
+      $$('.avatar-grid-item', grid).forEach(i => {
+        i.classList.remove('selected');
+        i.setAttribute('aria-pressed', 'false');
+      });
       item.classList.add('selected');
+      item.setAttribute('aria-pressed', 'true');
       const ci = parseInt($('.avatar-color-item.selected')?.dataset.ci || '0');
       renderAvatarPreview(item.dataset.icon, ci);
       audio.tap();
@@ -47,13 +53,18 @@ function renderAvatarColorGrid(selectedCI) {
   grid.innerHTML = CONFIG.AVATAR_COLORS_INDICES.map(ci => {
     const color = CONFIG.COLORS.normal[ci];
     const selected = ci === selectedCI ? 'selected' : '';
-    return `<div class="avatar-color-item ${selected}" data-ci="${ci}" style="background:${color}"></div>`;
+    const label = t('avatar_color_choice', { color: t(`avatar_color_${ci + 1}`) });
+    return `<button type="button" class="avatar-color-item ${selected}" data-ci="${ci}" style="background:${color}" aria-label="${label}" aria-pressed="${ci === selectedCI}"></button>`;
   }).join('');
 
   $$('.avatar-color-item', grid).forEach(item => {
     item.addEventListener('click', () => {
-      $$('.avatar-color-item', grid).forEach(i => i.classList.remove('selected'));
+      $$('.avatar-color-item', grid).forEach(i => {
+        i.classList.remove('selected');
+        i.setAttribute('aria-pressed', 'false');
+      });
       item.classList.add('selected');
+      item.setAttribute('aria-pressed', 'true');
       const icon = $('.avatar-grid-item.selected')?.dataset.icon || 'circle';
       renderAvatarPreview(icon, parseInt(item.dataset.ci));
       audio.tap();

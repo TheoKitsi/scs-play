@@ -481,8 +481,8 @@
 
 .expert-compass-ring {
   position: absolute;
-  bottom: 12px;
-  left: 12px;
+  top: 126px;
+  left: calc(50% - 36px);
   width: 72px;
   height: 72px;
   border-radius: 50%;
@@ -642,8 +642,8 @@
 
 .ultra-compass-grid {
   position: absolute;
-  bottom: 70px;
-  left: 8px;
+  top: 122px;
+  left: calc(50% - 40px);
   width: 80px;
   height: 80px;
   border-radius: 50%;
@@ -1238,8 +1238,9 @@
    ═══════════════════════════════════════════════ */
 .hauptstaedte-hud {
   position: fixed;
-  top: 52px;
-  left: 8px;
+  top: 112px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1342,8 +1343,9 @@
    ═══════════════════════════════════════════════ */
 .wissen-hud {
   position: fixed;
-  top: 52px;
-  left: 8px;
+  top: 112px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 4px;

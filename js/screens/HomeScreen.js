@@ -93,10 +93,10 @@ app._stopDailyCountdown = stopDailyCountdown;
 /* ═══════ Personalized Greeting ═══════ */
 function getGreeting() {
   const h = new Date().getHours();
-  if (h < 6) return t('greeting_night') || 'Gute Nacht';
-  if (h < 12) return t('greeting_morning') || 'Guten Morgen';
-  if (h < 18) return t('greeting_afternoon') || 'Guten Tag';
-  return t('greeting_evening') || 'Guten Abend';
+  if (h < 6) return t('greeting_night');
+  if (h < 12) return t('greeting_morning');
+  if (h < 18) return t('greeting_afternoon');
+  return t('greeting_evening');
 }
 
 /* ═══════ Hero card ═══════ */
@@ -155,12 +155,13 @@ function buildSlide(mode) {
     const lvPct = Math.round(Math.min(1, Math.max(0, lvProgress)) * 100);
     const pins = save.data.pinnedModes || [null,null,null,null];
     const isPinned = pins.includes(mode);
+    const modeName = t(`mode_${mode}`);
     slide.innerHTML = `
       <div class="hero-slide-visual" style="--slide-aura:${aura}">${getModeSVG(mode)}</div>
-      <span class="hero-slide-name">${t(`mode_${mode}`) || mode.toUpperCase()}</span>
+      <span class="hero-slide-name">${modeName}</span>
       <span class="hero-slide-desc">${t(MODE_DESC_KEYS[mode] || 'mode_klassik_desc')}</span>
       <div class="hero-slide-badges">
-        <span class="hero-slide-badge hero-slide-badge--pb">${pb > 0 ? `PB ${pb.toLocaleString()}` : (t('hero_first_record') || '--')}</span>
+        <span class="hero-slide-badge hero-slide-badge--pb">${pb > 0 ? `PB ${pb.toLocaleString()}` : t('hero_first_record')}</span>
         ${lv > 0 ? `<span class="hero-slide-badge hero-slide-badge--level">Lv.${lv} ${lvName}</span>` : ''}
         ${(() => {
           if (app.mastery) {
@@ -173,7 +174,7 @@ function buildSlide(mode) {
         })()}
       </div>
       <div class="hero-slide-level-bar"><div class="hero-slide-level-fill" style="width:${lvPct}%"></div></div>
-      <button class="hero-pin-btn ${isPinned ? 'pinned' : ''}" data-pin-mode="${mode}" aria-label="${isPinned ? 'Unpin' : 'Pin'}">
+      <button class="hero-pin-btn ${isPinned ? 'pinned' : ''}" data-pin-mode="${mode}" aria-label="${t(isPinned ? 'unpin' : 'pin', { mode: modeName })}">
         <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="${isPinned ? 'M16 9V4h1V2H7v2h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z' : 'M14 4v5c0 1.12.37 2.16 1 3H9c.65-.86 1-1.9 1-3V4h4m3-2H7v2h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3V4h1V2z'}"/></svg>
       </button>`;
   } else {
@@ -181,8 +182,8 @@ function buildSlide(mode) {
     slide.innerHTML = `
       <div class="hero-slide-locked">
         <div class="hero-slide-visual" style="filter:grayscale(1) brightness(0.5)">${getModeSVG(mode)}</div>
-        <span class="hero-slide-name" style="opacity:0.5">${t(`mode_${mode}`) || mode.toUpperCase()}</span>
-        <span class="hero-slide-lock-label">Level ${unlockLv} ${t('required') || 'benötigt'}</span>
+        <span class="hero-slide-name" style="opacity:0.5">${t(`mode_${mode}`)}</span>
+        <span class="hero-slide-lock-label">Level ${unlockLv} ${t('required')}</span>
       </div>`;
   }
   return slide;
@@ -373,7 +374,7 @@ function togglePin(mode) {
   updateQuickShortcuts();
 
   // Toast feedback
-  const modeName = t(`mode_${mode}`) || mode.toUpperCase();
+  const modeName = t(`mode_${mode}`);
   const msg = wasPinned ? t('pin_removed', { mode: modeName }) : t('pin_added', { mode: modeName });
   getBodyFx().achievementToast(msg);
 }
@@ -393,7 +394,7 @@ function updateQuickShortcuts() {
 
   el.innerHTML = pins.map((m, i) => {
     const isActive = m === current ? ' active' : '';
-    const name = t(`mode_${m}`) || m.toUpperCase();
+    const name = t(`mode_${m}`);
     return `<button class="qs-slot filled${isActive}" data-mode="${m}" data-slot="${i}">
       <span class="qs-slot-icon">${getModeSVG(m)}</span>
       <span class="qs-slot-name">${name}</span>
@@ -449,7 +450,7 @@ export function updatePlayTypeSelector() {
     /* Sequenz: grey out non-endless play types */
     if (isSequenz && play !== 'endless') {
       btn.classList.add('locked');
-      btn.title = t('sequenz_endless_only') || 'Sequenz: nur Endlos';
+      btn.title = t('sequenz_endless_only');
     } else if (!isSequenz && play !== 'competition') {
       btn.classList.remove('locked');
       btn.title = '';
@@ -487,9 +488,7 @@ function renderDailyQuestsPanel() {
     const done = q.progress >= q.target;
     const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
     const labelKey = `quest_label_${q.type}`;
-    const labelTxt = (typeof t === 'function')
-      ? t(labelKey, { n: q.target })
-      : `${q.type} ${q.target}`;
+    const labelTxt = t(labelKey, { n: q.target });
     return `<li class="dq-item${done ? ' dq-done' : ''}" data-id="${q.id}">
       <div class="dq-text">
         <span class="dq-label">${labelTxt}</span>
@@ -520,21 +519,15 @@ function renderSeasonPassCard() {
   }
   const meta = $('#spMeta');
   if (meta) {
-    meta.textContent = (typeof t === 'function')
-      ? t('sp_meta', { d: p.daysLeft })
-      : `${p.daysLeft}d`;
+    meta.textContent = t('sp_meta', { d: p.daysLeft });
   }
   const stage = $('#spStage');
   if (stage) {
-    stage.textContent = (typeof t === 'function')
-      ? t('sp_stage', { s: p.stage, total: p.totalStages })
-      : `Stage ${p.stage}/${p.totalStages}`;
+    stage.textContent = t('sp_stage', { s: p.stage, total: p.totalStages });
   }
   const next = $('#spNext');
   if (next) {
-    next.textContent = (typeof t === 'function')
-      ? t('sp_next', { n: Math.max(0, p.nextAt - p.points) })
-      : `${Math.max(0, p.nextAt - p.points)} pts`;
+    next.textContent = t('sp_next', { n: Math.max(0, p.nextAt - p.points) });
   }
 }
 
@@ -563,6 +556,10 @@ export function showHome() {
   /* Personalized greeting */
   const greetEl = $('#homeGreeting');
   if (greetEl) greetEl.textContent = getGreeting();
+
+  setText('#dqTitle', t('dq_title'));
+  setText('#spTitle', t('sp_title'));
+  setText('#dailyCard .daily-title', t('daily_challenge_short'));
 
   /* Update lives & fire display in home header */
   const livesEl = $('#homeLivesCount');

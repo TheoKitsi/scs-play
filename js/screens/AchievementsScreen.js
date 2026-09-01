@@ -119,12 +119,13 @@ function renderCategories(lang, earned, saveData, animate) {
     const catName   = cat.name[lang] || cat.name.en;
     const catDesc   = cat.desc[lang] || cat.desc.en;
     const chainKeys = _getUniqueChains(filtered);
+    const bodyId = `ach-cat-body-${cat.id}`;
     // v25: stagger handled by CSS .screen.active .ach-category (listItemIn) — no inline override
     const animStyle = '';
 
     html += `
     <div class="ach-category ${isCollapsed ? 'collapsed' : 'expanded'}" data-cat="${cat.id}" style="${animStyle}">
-      <div class="ach-cat-header" data-cat="${cat.id}">
+      <button type="button" class="ach-cat-header" data-cat="${cat.id}" aria-expanded="${!isCollapsed}" aria-controls="${bodyId}" style="font:inherit;color:inherit;background:none;border:0;width:100%;text-align:left">
         <div class="ach-cat-info">
           <span class="ach-cat-name">${catName}</span>
           <span class="ach-cat-desc">${catDesc}</span>
@@ -134,8 +135,8 @@ function renderCategories(lang, earned, saveData, animate) {
           <div class="ach-cat-bar"><div class="ach-cat-bar-fill" style="width:${catPct}%"></div></div>
           <span class="ach-cat-arrow">${isCollapsed ? '\u25B6' : '\u25BC'}</span>
         </div>
-      </div>
-      <div class="ach-cat-body" style="${isCollapsed ? 'display:none' : ''}">
+      </button>
+      <div class="ach-cat-body" id="${bodyId}" style="${isCollapsed ? 'display:none' : ''}">
         ${chainKeys.map(ck => _renderChain(ck, filtered, earned, saveData, lang)).join('')}
       </div>
     </div>`;
@@ -144,9 +145,9 @@ function renderCategories(lang, earned, saveData, animate) {
 
   if (!html) {
     if (_filter === 'close') {
-      html = `<div class="ach-empty">${t('ach_none_close') || 'Noch keine Erfolge in Reichweite \u2013 spiel weiter!'}</div>`;
+      html = `<div class="ach-empty">${t('ach_none_close')}</div>`;
     } else {
-      html = `<div class="ach-empty">${t('no_achievements_found') || 'Keine Erfolge gefunden'}</div>`;
+      html = `<div class="ach-empty">${t('no_achievements_found')}</div>`;
     }
   }
 

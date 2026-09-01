@@ -835,15 +835,15 @@
   filter:blur(0);
 }
 .hero-slide[data-pos="prev"]{
-  transform:translateX(-35%) scale(0.72);
-  opacity:0.55;
+  transform:translateX(-70%) scale(0.72);
+  opacity:0;
   z-index:1;
   pointer-events:none;
   filter:blur(1.5px);
 }
 .hero-slide[data-pos="next"]{
-  transform:translateX(35%) scale(0.72);
-  opacity:0.55;
+  transform:translateX(70%) scale(0.72);
+  opacity:0;
   z-index:1;
   pointer-events:none;
   filter:blur(1.5px);

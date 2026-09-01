@@ -15,6 +15,7 @@ export function bindAuth(showHome) {
       $('#btnGoogle')?.closest('.auth-buttons')?.classList.add('hidden');
       $('#btnShowEmail')?.closest('.auth-form-toggle')?.classList.add('hidden');
       $('#authEmailForm')?.classList.add('hidden');
+      $('#authDivider')?.classList.add('hidden');
     }
   });
 
@@ -48,6 +49,9 @@ export function bindAuth(showHome) {
 
   $('#btnShowEmail')?.addEventListener('click', () => {
     const form = $('#authEmailForm');
-    if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    if (!form) return;
+    const opening = form.style.display === 'none';
+    form.style.display = opening ? 'flex' : 'none';
+    if (opening) $('#inputEmail')?.focus();
   });
 }

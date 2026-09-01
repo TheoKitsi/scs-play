@@ -188,7 +188,7 @@ button:focus-visible{border-radius:var(--radius-sm)}
   margin: 6px auto 0; max-width: 320px; padding: 6px;
 }
 .avatar-color-item {
-  width: 28px; height: 28px; border-radius: 50%;
+  width: 44px; height: 44px; border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.1); cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
@@ -413,10 +413,10 @@ button:focus-visible{border-radius:var(--radius-sm)}
 }
 
 /* Leaderboard empty state */
-.lb-empty-state{text-align:center;padding:48px 24px;opacity:0.5;margin:auto 0}
-.lb-empty-icon{font-size:2rem;display:block;margin-bottom:12px}
+.lb-empty-state{text-align:center;padding:16px;margin:auto 0}
+.lb-empty-icon{font-size:1.7rem;display:block;margin-bottom:6px}
 .lb-empty-state p{margin:0;font-size:0.9rem;font-weight:600;color:var(--text-dim)}
-.lb-empty-hint{font-size:0.8rem !important;margin-top:8px !important;opacity:0.6}
+.lb-empty-hint{font-size:0.8rem !important;margin-top:4px !important;opacity:0.6}
 
 /* ═══════════════════════════════════════════
    DANGER ZONE VIGNETTE

@@ -37,9 +37,9 @@ function renderLeaderboard() {
     list.innerHTML = `
       <div class="lb-empty-state">
         <span class="lb-empty-icon">\uD83C\uDFC6</span>
-        <p>${t('lb_no_scores') || 'Noch keine Eintr\u00e4ge'}</p>
-        <p class="lb-empty-hint">${t('lb_play_hint') || 'Spiele eine Runde, um den ersten Eintrag zu setzen'}</p>
-        <button class="btn btn-primary btn-sm lb-play-now" id="btnLbPlayNow">${t('lb_play_now') || 'Jetzt spielen!'}</button>
+        <p>${t('lb_no_scores')}</p>
+        <p class="lb-empty-hint">${t('lb_play_hint')}</p>
+        <button class="btn btn-primary btn-sm lb-play-now" id="btnLbPlayNow">${t('lb_play_now')}</button>
       </div>`;
     const playBtn = list.querySelector('#btnLbPlayNow');
     if (playBtn) playBtn.addEventListener('click', () => {
@@ -50,7 +50,7 @@ function renderLeaderboard() {
 
   const avatar = save.getAvatar();
   const medals = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'];
-  const medalLabels = ['1st place', '2nd place', '3rd place'];
+  const medalLabels = [t('medal_place_1'), t('medal_place_2'), t('medal_place_3')];
 
   list.innerHTML = scores.slice(0, 20).map((s, i) => {
     const medal = i < 3 ? `<span class="lb-rank-icon" role="img" aria-label="${medalLabels[i]}">${medals[i]}</span>` : `<span class="lb-rank-num">#${i + 1}</span>`;

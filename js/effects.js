@@ -1373,13 +1373,18 @@ export class EffectsManager {
      Enhanced: scale pulse at every 10% milestone
      ══════════════════════════════════════ */
   scoreCountUp(el, from, to, duration = 600, onTick = null) {
-    if (!el) return;
+    if (!el) return () => {};
 
     const start = performance.now();
     const diff = to - from;
     let lastMilestone = -1;
+    let rafId = null;
+    let cancelled = false;
+    const pulseTimers = new Set();
 
     const step = () => {
+      rafId = null;
+      if (cancelled) return;
       const elapsed = performance.now() - start;
       const progress = Math.min(elapsed / duration, 1);
       /* Ease-out cubic for satisfying deceleration */
@@ -1392,20 +1397,31 @@ export class EffectsManager {
         const milestone = Math.floor(current / (diff * 0.1));
         if (milestone > lastMilestone) {
           el.style.transform = 'scale(1.15)';
-          setTimeout(() => { el.style.transform = ''; }, 80);
+          const pulseTimer = setTimeout(() => {
+            pulseTimers.delete(pulseTimer);
+            if (!cancelled) el.style.transform = '';
+          }, 80);
+          pulseTimers.add(pulseTimer);
           lastMilestone = milestone;
           if (typeof onTick === 'function') onTick(progress);
         }
       }
 
       if (progress < 1) {
-        requestAnimationFrame(step);
+        rafId = requestAnimationFrame(step);
       } else {
         el.textContent = to.toLocaleString();
         if (typeof onTick === 'function') onTick(1);
       }
     };
-    requestAnimationFrame(step);
+    rafId = requestAnimationFrame(step);
+    return () => {
+      cancelled = true;
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      pulseTimers.forEach(clearTimeout);
+      pulseTimers.clear();
+      el.style.transform = '';
+    };
   }
 
   /* ══════════════════════════════════════

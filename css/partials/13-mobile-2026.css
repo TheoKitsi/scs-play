@@ -117,8 +117,8 @@ button:focus-visible,.btn:focus-visible{
   margin-inline:calc(-1 * var(--phone-gutter));
 }
 #home .hero-slide{gap:8px;padding:12px 48px 6px}
-#home .hero-slide[data-pos="prev"]{transform:translateX(-64%) scale(.7);opacity:.18;filter:none}
-#home .hero-slide[data-pos="next"]{transform:translateX(64%) scale(.7);opacity:.18;filter:none}
+#home .hero-slide[data-pos="prev"]{transform:translateX(-64%) scale(.7);opacity:0;filter:none}
+#home .hero-slide[data-pos="next"]{transform:translateX(64%) scale(.7);opacity:0;filter:none}
 #home .hero-slide-visual{
   width:clamp(92px,24vw,116px);
   height:clamp(92px,24vw,116px);
@@ -233,14 +233,14 @@ button:focus-visible,.btn:focus-visible{
 #home .today-actions .daily-card,#home .today-actions .wheel-card{
   height:62px;
   min-height:62px;
-  padding:8px;
+  padding:2px 8px;
   border-radius:16px;
   background:#121720;
   border:1px solid rgba(255,255,255,.08);
 }
 #home .today-actions .daily-title{font-family:inherit;font-size:.68rem;letter-spacing:0;color:var(--text-dim)}
 #home .today-actions .btn-daily-cta,#home .today-actions .btn-wheel-cta{
-  min-height:34px;
+  min-height:44px;
   font-family:inherit;
   font-size:.72rem;
   text-transform:none;
@@ -591,7 +591,12 @@ body:not(.ad-free) .center-platform{top:58%}
   #home .play-type-btn{min-height:42px}
   #home .btn-play-fab{min-height:54px}
   #home .home-bottom-sheet{padding-top:7px;padding-bottom:calc(75px + var(--bottom-inset))}
-  #home .today-actions,#home .today-actions .daily-card,#home .today-actions .wheel-card{min-height:54px;height:54px}
+  #home .today-actions,#home .today-actions .daily-card,#home .today-actions .wheel-card{min-height:62px;height:62px}
+  .wheel-panel{padding:14px 14px 12px}
+  .wheel-heading{font-size:1.1rem;margin-bottom:3px}
+  .wheel-subtitle,.wheel-prize-strip{display:none}
+  .wheel-meta{margin-bottom:6px}
+  .wheel-container{width:min(70vw,34dvh,250px);height:min(70vw,34dvh,250px);margin-bottom:8px}
   .footer-nav{min-height:58px}
   .footer-item{min-height:46px}
   .hud{padding-top:6px}
@@ -606,6 +611,7 @@ body:not(.ad-free) .center-platform{top:58%}
   .results-bonus{display:none}
   .results-xp{padding:5px 8px}
   #resPhase3{padding-top:2px}
+  .res-label{font-size:.68rem}
   .results-buttons .btn{min-height:46px;padding:7px 10px}
   #btnOneMore{min-height:50px}
 }

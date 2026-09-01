@@ -1,6 +1,7 @@
 import { t } from '../i18n.js';
 import app from '../appState.js';
 import { $ } from './dom.js';
+import { dismissTopModal } from './modal.js';
 
 let wakeLock = null;
 let deferredInstall = null;
@@ -26,11 +27,16 @@ export function initOfflineIndicator() {
   const msgEl = $('#offlineMsg');
   if (!toast) return;
 
+  let hideTimer = null;
   function showToast(isOnline) {
     if (msgEl) msgEl.textContent = isOnline ? t('online_msg') : t('offline_msg');
     toast.classList.toggle('online', isOnline);
     toast.classList.add('active');
-    setTimeout(() => toast.classList.remove('active'), 5000);
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      hideTimer = null;
+      toast.classList.remove('active');
+    }, 5000);
   }
 
   window.addEventListener('offline', () => showToast(false));
@@ -104,16 +110,21 @@ export function initPwaInstallPrompt() {
   };
 }
 
-export function initBackButton({ pauseGame, showHome }) {
-  window.addEventListener('popstate', () => {
+export function initBackButton({ pauseGame, quitGame, showHome }) {
+  const handleBack = () => {
+    if (dismissTopModal('back')) return;
     const isRootScreen = app.currentScreen === 'home' || app.currentScreen === 'boot' || app.currentScreen === 'auth';
     if (!app.currentScreen || isRootScreen) return;
-    if (app.currentScreen === 'game' && app.game.running && !app.game.paused) {
-      pauseGame();
-    } else {
-      showHome();
+    if (app.currentScreen === 'game') {
+      if (app.game.running && !app.game.paused) pauseGame();
+      else quitGame();
+      return;
     }
-  });
+    showHome();
+  };
+
+  window.addEventListener('popstate', handleBack);
+  window.Capacitor?.Plugins?.App?.addListener?.('backButton', handleBack);
 }
 
 export function initOrientationListeners() {

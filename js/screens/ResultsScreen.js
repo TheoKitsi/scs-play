@@ -18,6 +18,43 @@ import { recordGameResult as recordQuestProgress, autoClaim as autoClaimQuests }
 import { recordGamePoint as recordPassGamePoint, addBonusPoints as addPassBonusPoints } from '../services/SeasonPass.js';
 
 let _lastRetryKey = '';
+let _resultGeneration = 0;
+let _resultCountUpCancel = null;
+const _resultTimers = new Set();
+const _resultFrames = new Set();
+
+function cancelResultWork() {
+  _resultGeneration++;
+  _resultTimers.forEach(clearTimeout);
+  _resultTimers.clear();
+  _resultFrames.forEach(cancelAnimationFrame);
+  _resultFrames.clear();
+  if (_resultCountUpCancel) _resultCountUpCancel();
+  _resultCountUpCancel = null;
+  return _resultGeneration;
+}
+
+function scheduleResult(generation, callback, delay) {
+  if (generation !== _resultGeneration) return;
+  const id = setTimeout(() => {
+    _resultTimers.delete(id);
+    if (generation === _resultGeneration) callback();
+  }, delay);
+  _resultTimers.add(id);
+}
+
+function scheduleResultFrame(generation, callback) {
+  if (generation !== _resultGeneration) return;
+  const id = requestAnimationFrame(() => {
+    _resultFrames.delete(id);
+    if (generation === _resultGeneration) callback();
+  });
+  _resultFrames.add(id);
+}
+
+window.addEventListener('scs:screenchange', ({ detail }) => {
+  if (detail?.prevScreen === 'results' && detail.id !== 'results') cancelResultWork();
+});
 
 function ensureReplayHook() {
   let el = $('#resNextHook');
@@ -132,6 +169,7 @@ export function wasLastGameGood() {
 }
 
 export async function showResults(stats, canContinue = false) {
+  const resultGeneration = cancelResultWork();
   const { save, audio, effects, engagement } = app;
   app.lastResultStats = stats;
 
@@ -174,7 +212,7 @@ export async function showResults(stats, canContinue = false) {
       const ultraUnlocked = await save.completeCompetitionLevel(stats.competitionLevel, stars);
       stats.competitionStars = stars;
       if (ultraUnlocked) {
-        setTimeout(() => {
+        scheduleResult(resultGeneration, () => {
           getBodyFx().achievementToast(t('competition_ultra_unlocked'));
           audio.levelUp();
         }, 1200);
@@ -196,7 +234,7 @@ export async function showResults(stats, canContinue = false) {
         const fx = getBodyFx();
         const lang = getLanguage();
         completed.forEach((q, i) => {
-          setTimeout(() => {
+          scheduleResult(resultGeneration, () => {
             try {
               const label = (typeof t === 'function') ? t('quest_complete_toast', { n: q.target, xp: q.rewardXP, fire: q.rewardFire }) : 'Quest!';
               fx.achievementToast(label);
@@ -210,13 +248,15 @@ export async function showResults(stats, canContinue = false) {
     if (stats.isDaily) {
       const reward = await save.claimDailyReward();
       if (reward) {
-        setTimeout(() => {
+        scheduleResult(resultGeneration, () => {
           const fx = getBodyFx();
           fx.achievementToast(t('daily_reward_earned', { l: reward.lives, x: reward.xp }));
         }, 1500);
       }
     }
   }
+
+  if (resultGeneration !== _resultGeneration) return;
 
   const headingEl = $('[data-i18n="game_over"]');
   if (headingEl) {
@@ -261,7 +301,7 @@ export async function showResults(stats, canContinue = false) {
   const xpRing = $('.results-xp-ring');
   if (xpRing) {
     xpRing.classList.remove('ring-entrance');
-    requestAnimationFrame(() => xpRing.classList.add('ring-entrance'));
+    scheduleResultFrame(resultGeneration, () => xpRing.classList.add('ring-entrance'));
   }
 
   const phase2 = $('#resPhase2');
@@ -283,8 +323,8 @@ export async function showResults(stats, canContinue = false) {
             if (progress > 0.1 && Math.random() > 0.5) haptic('tap', app.save);
         }
         : null;
-      effects.scoreCountUp(scoreEl, 0, stats.score, CONFIG.RESULTS_COUNTUP_MS, tickFn);
-      setTimeout(() => scoreEl.classList.add('score-complete'), CONFIG.RESULTS_COUNTUP_MS + 50);
+      _resultCountUpCancel = effects.scoreCountUp(scoreEl, 0, stats.score, CONFIG.RESULTS_COUNTUP_MS, tickFn);
+      scheduleResult(resultGeneration, () => scoreEl.classList.add('score-complete'), CONFIG.RESULTS_COUNTUP_MS + 50);
   } else {
     setText('#resScore', stats.score.toLocaleString());
     if (scoreEl) scoreEl.classList.add('score-complete');
@@ -409,7 +449,7 @@ export async function showResults(stats, canContinue = false) {
     haptic('levelUp', save);
     const lvlEl = $('#resLevelUp');
     if (lvlEl) { lvlEl.style.display = 'block'; lvlEl.textContent = `${t('level_up')} ${save.getLevelName()}`; }
-    setTimeout(() => {
+    scheduleResult(resultGeneration, () => {
       const fx = getBodyFx();
       fx.levelUpCelebration();
       fx.achievementToast(t('lives_earned_levelup'));
@@ -429,11 +469,11 @@ export async function showResults(stats, canContinue = false) {
   const achBaseDelay = countupDuration + statsDelay + 260;
   toastSlice.forEach((id, i) => {
     const achName = save.getAchievementName(id) || id;
-    setTimeout(() => { bodyFx.achievementToast(`${t('achievement')} ${achName}`); audio.achievementUnlock(); haptic('diamond', app.save); }, achBaseDelay + i * 1500);
+    scheduleResult(resultGeneration, () => { bodyFx.achievementToast(`${t('achievement')} ${achName}`); audio.achievementUnlock(); haptic('diamond', app.save); }, achBaseDelay + i * 1500);
   });
   if (unlocked.length > maxToasts) {
     const extra = unlocked.length - maxToasts;
-    setTimeout(() => { bodyFx.achievementToast(t('more_achievements', { n: extra })); }, achBaseDelay + maxToasts * 1500);
+    scheduleResult(resultGeneration, () => { bodyFx.achievementToast(t('more_achievements', { n: extra })); }, achBaseDelay + maxToasts * 1500);
   }
 
   /* Close-to-PB motivator */
@@ -515,7 +555,7 @@ export async function showResults(stats, canContinue = false) {
   if (retryBtn) {
     retryBtn.classList.remove('retry-glow');
     const countupDone = countupDuration + statsDelay + buttonsDelay + 220;
-    setTimeout(() => retryBtn.classList.add('retry-glow'), countupDone);
+    scheduleResult(resultGeneration, () => retryBtn.classList.add('retry-glow'), countupDone);
   }
 
   setText('#oneMoreText', t('retry'));
@@ -540,21 +580,21 @@ export async function showResults(stats, canContinue = false) {
     xpRingFill.classList.remove('animated');
     const targetOffset = circumference * (1 - prog.pct);
     xpRingFill.style.setProperty('--ring-target', targetOffset);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => { xpRingFill.classList.add('animated'); });
+    scheduleResultFrame(resultGeneration, () => {
+      scheduleResultFrame(resultGeneration, () => { xpRingFill.classList.add('animated'); });
     });
   }
 
-  setTimeout(() => { if (phase2) phase2.classList.add('results-phase-visible'); },
+  scheduleResult(resultGeneration, () => { if (phase2) phase2.classList.add('results-phase-visible'); },
     countupDuration + statsDelay);
-  setTimeout(() => { if (phase3) phase3.classList.add('results-phase-visible'); },
+  scheduleResult(resultGeneration, () => { if (phase3) phase3.classList.add('results-phase-visible'); },
     countupDuration + statsDelay + buttonsDelay);
 
   /* Auto-pulse the Replay CTA once buttons are visible.
      Compositor-safe (transform only); css gates it for low-perf
      and reduced-motion in 12-polish-v18-v19.css. */
   const ctaPulseDelay = countupDuration + statsDelay + buttonsDelay + 600;
-  setTimeout(() => {
+  scheduleResult(resultGeneration, () => {
     const btn = $('#btnOneMore');
     if (!btn) return;
     /* Only pulse when the normal buttons row is actually shown
@@ -567,7 +607,7 @@ export async function showResults(stats, canContinue = false) {
   /* ─── MicroFeedback trigger (delayed to not clash with animations) ─── */
   if (!canContinue && engagement) {
     const feedbackDelay = countupDuration + 1800;
-    setTimeout(() => {
+    scheduleResult(resultGeneration, () => {
       const ctx = { mode: stats.mode || app.selectedMode, score: stats.score, sessionGame: app.sessionGames };
       if (isNewPB)           maybeShowFeedback('pb', ctx);
       else if (leveledUp)    maybeShowFeedback('levelup', ctx);
@@ -578,12 +618,12 @@ export async function showResults(stats, canContinue = false) {
 
   /* Achievement progress teasers (show after phase 2 loads) */
   if (!canContinue) {
-    setTimeout(() => renderAchTeasers(save), countupDuration + statsDelay + 120);
+    scheduleResult(resultGeneration, () => renderAchTeasers(save), countupDuration + statsDelay + 120);
   }
 
   /* Mode Mastery insights (show after stats phase) */
   if (!canContinue && app.mastery) {
-    setTimeout(() => renderMasteryInsights(app.mastery, stats), countupDuration + statsDelay + 300);
+    scheduleResult(resultGeneration, () => renderMasteryInsights(app.mastery, stats), countupDuration + statsDelay + 300);
   }
 }
 

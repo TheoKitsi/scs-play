@@ -19,13 +19,15 @@ mkdirSync(out, { recursive: true });
 
 // ── 1. Bundle JS ──
 const jsResult = await esbuild.build({
-  entryPoints: [resolve(root, 'js/app.js')],
+  entryPoints: { 'app.bundle': resolve(root, 'js/app.js') },
   bundle: true,
+  splitting: true,
   minify: true,
   sourcemap: false,
   format: 'esm',
-  target: ['es2020'],
-  outfile: resolve(out, 'js/app.bundle.js'),
+  target: ['es2022'],
+  outdir: resolve(out, 'js'),
+  chunkNames: 'chunks/[name]-[hash]',
   external: [
     'https://www.gstatic.com/firebasejs/*'  // Firebase loaded from CDN
   ],
@@ -99,10 +101,22 @@ sw = sw.replace(/const ASSETS\s*=\s*\[[\s\S]*?\];/, bundledAssets);
 writeFileSync(resolve(out, 'sw.js'), sw);
 
 // ── 5. Report sizes ──
-const jsSize  = statSync(resolve(out, 'js/app.bundle.js')).size;
+const jsOutputs = jsResult.metafile.outputs;
+const entryOutput = Object.keys(jsOutputs).find(path => jsOutputs[path].entryPoint);
+const initialOutputs = new Set();
+function collectStaticImports(path) {
+  if (!path || initialOutputs.has(path)) return;
+  initialOutputs.add(path);
+  for (const item of jsOutputs[path]?.imports || []) {
+    if (!item.external && item.kind === 'import-statement') collectStaticImports(item.path);
+  }
+}
+collectStaticImports(entryOutput);
+const jsSize = [...initialOutputs].reduce((sum, path) => sum + (jsOutputs[path]?.bytes || 0), 0);
+const mainJsSize = statSync(resolve(out, 'js/app.bundle.js')).size;
 const cssSize = statSync(resolve(out, 'css/style.bundle.css')).size;
 
-console.log(`✓ JS  bundled: ${(jsSize / 1024).toFixed(1)} KB (minified)`);
+console.log(`✓ JS  initial: ${(jsSize / 1024).toFixed(1)} KB (main ${(mainJsSize / 1024).toFixed(1)} KB, minified)`);
 console.log(`✓ CSS bundled: ${(cssSize / 1024).toFixed(1)} KB (minified)`);
 
 /* ── 6. Bundle Budget Gate ──

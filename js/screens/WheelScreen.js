@@ -7,6 +7,7 @@ import { t } from '../i18n.js';
 import { $ } from '../helpers/dom.js';
 import { EffectsManager } from '../effects.js';
 import app from '../appState.js';
+import { closeModal, openModal } from '../helpers/modal.js';
 
 const PRIZES = [
   { type: 'life', amount: 1, weight: 25, color: '#EF4444', icon: '+1', label: () => t('wheel_prize_life', { n: 1 }) },
@@ -31,30 +32,6 @@ const SEG_ANGLE = (2 * Math.PI) / SEG_COUNT;
 
 let spinning = false;
 let currentAngle = 0;
-let wheelReturnFocus = null;
-
-function handleWheelKeydown(event) {
-  const overlay = $('#wheelOverlay');
-  if (!overlay?.classList.contains('active')) return;
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    hideWheel();
-    return;
-  }
-  if (event.key !== 'Tab') return;
-  const focusable = [...overlay.querySelectorAll('button:not([disabled]):not([hidden]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
-    .filter(el => el.offsetParent !== null);
-  if (!focusable.length) return;
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
-  }
-}
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -241,6 +218,8 @@ function spinWheel(prizeIdx, bonusSpin = false) {
     if (!canvas) return resolve();
 
     spinning = true;
+    const closeBtn = $('#btnWheelClose');
+    if (closeBtn) { closeBtn.disabled = true; closeBtn.setAttribute('aria-disabled', 'true'); }
     const targetAngle = -(prizeIdx * SEG_ANGLE + SEG_ANGLE / 2) - Math.PI / 2;
     const fullRotations = (bonusSpin ? 4 : 6) + Math.floor(Math.random() * 2);
     const totalAngle = fullRotations * 2 * Math.PI + (targetAngle - (currentAngle % (2 * Math.PI)));
@@ -272,6 +251,7 @@ function spinWheel(prizeIdx, bonusSpin = false) {
       } else {
         currentAngle = endAngle;
         spinning = false;
+        if (closeBtn) { closeBtn.disabled = false; closeBtn.removeAttribute('aria-disabled'); }
         resolve();
       }
     }
@@ -453,10 +433,11 @@ function revealResult(result, bonusSpin) {
 function showWheel() {
   const overlay = $('#wheelOverlay');
   if (!overlay) return;
-  wheelReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  overlay.classList.add('active');
-  overlay.setAttribute('aria-hidden', 'false');
-  requestAnimationFrame(() => $('#btnWheelClose')?.focus());
+  openModal(overlay, {
+    initialFocus: '#btnWheelClose',
+    canDismiss: () => !spinning,
+    onDismiss: hideWheel,
+  });
 
   const canvas = $('#wheelCanvas');
   if (canvas) drawWheel(canvas, currentAngle);
@@ -468,11 +449,8 @@ function showWheel() {
 
 function hideWheel() {
   const overlay = $('#wheelOverlay');
-  if (!overlay?.classList.contains('active')) return;
-  overlay.classList.remove('active');
-  overlay.setAttribute('aria-hidden', 'true');
-  wheelReturnFocus?.focus();
-  wheelReturnFocus = null;
+  if (!overlay?.classList.contains('active') || spinning) return;
+  closeModal(overlay);
 }
 
 export function updateWheelCard() {
@@ -542,7 +520,6 @@ export function bindWheel() {
   $('#wheelOverlay')?.addEventListener('click', (e) => {
     if (e.target.id === 'wheelOverlay') hideWheel();
   });
-  document.addEventListener('keydown', handleWheelKeydown);
 }
 
 function isConsecutiveDay(prev, current) {

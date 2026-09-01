@@ -7,6 +7,7 @@ import { CONFIG }           from '../config.js';
 import { t, getLanguage }   from '../i18n.js';
 import { $, $$, setText, hexToRgba, showScreen } from '../helpers/dom.js';
 import { haptic }           from '../helpers/haptics.js';
+import { closeModal, openModal } from '../helpers/modal.js';
 import { shapeSVG }         from '../renderers/shapes.js';
 import { SwipeHandler }     from '../input.js';
 import { EffectsManager }   from '../effects.js';
@@ -112,6 +113,7 @@ function renderCorners(cornerMap, forceAll = false) {
 
     const el = $(`.corner-shape[data-dir="${dir}"]`);
     if (!el) return;
+    el.setAttribute('aria-label', String(display ?? info.value ?? info.shape ?? dir));
 
     /* ── STROOP corners: solid color swatch (no text — pure Stroop effect) ── */
     if (info.type === 'stroop') {
@@ -171,6 +173,7 @@ function renderCenter(shapeData) {
   const color = app.colorblind ? shapeData.colorblind : shapeData.color;
   const inRush = app.game.inRush;
   const inFever = app.game.feverActive;
+  platform?.setAttribute('aria-label', String(shapeData.display ?? shapeData.shape ?? shapeData.value ?? t('game_shape')));
 
   /* Brain & reflex modes: use neutral platform glow so it doesn't reveal the answer */
   const isBrainLike = shapeData.type === 'math' || shapeData.type === 'word'
@@ -621,8 +624,34 @@ function cornerScorePop(dir, text) {
   setTimeout(() => { el.style.display = 'none'; }, 700);
 }
 
+let _instructionTimer = null;
+let _cancelInstruction = null;
+let _countdownGeneration = 0;
+const _countdownTimers = new Set();
+
+function _cancelPreGame() {
+  _countdownGeneration++;
+  _countdownTimers.forEach(clearTimeout);
+  _countdownTimers.clear();
+  clearTimeout(_instructionTimer);
+  _instructionTimer = null;
+  _cancelInstruction?.();
+  _cancelInstruction = null;
+  $('#countdownOverlay')?.classList.remove('active');
+  const num = $('#countdownNum');
+  if (num) { num.classList.remove('cd-go'); num.removeAttribute('data-n'); }
+}
+
+function _scheduleCountdown(generation, callback, delay) {
+  const timer = setTimeout(() => {
+    _countdownTimers.delete(timer);
+    if (generation === _countdownGeneration) callback();
+  }, delay);
+  _countdownTimers.add(timer);
+}
+
 /* ═══════ Pre-game Mode Instruction overlay ═══════ */
-function _showModeInstruction(mode, onDone) {
+function _showModeInstruction(mode, onDone, onCancel) {
   const overlay = $('#modeInstructionOverlay');
   if (!overlay) { onDone(); return; }
   const icons = { mathe:'🧮', worte:'📝', memo:'🧠', sequenz:'🔔', stroop:'🎨', fokus:'🎯', chaos:'🌀', hauptstaedte:'🌍', algebra:'📐', wissen:'💡' };
@@ -632,18 +661,33 @@ function _showModeInstruction(mode, onDone) {
   if (iconEl) iconEl.textContent = icons[mode] || '💡';
   if (titleEl) titleEl.textContent = t(`mode_${mode}`) || mode.toUpperCase();
   if (textEl) textEl.textContent = t(`instr_${mode}`) || '';
-  overlay.classList.add('active');
   const btn = $('#btnStartAfterInstruction');
-  const handleStart = () => {
+  const cleanup = (restoreFocus = true) => {
     btn?.removeEventListener('click', handleStart);
-    overlay.classList.remove('active');
-    setTimeout(onDone, 200);
+    closeModal(overlay, { restoreFocus });
+    if (_cancelInstruction === cleanup) _cancelInstruction = null;
   };
+  const handleStart = () => {
+    cleanup(false);
+    _instructionTimer = setTimeout(() => {
+      _instructionTimer = null;
+      onDone();
+    }, 200);
+  };
+  _cancelInstruction = cleanup;
   btn?.addEventListener('click', handleStart);
+  openModal(overlay, {
+    initialFocus: '#btnStartAfterInstruction',
+    onDismiss: () => { cleanup(false); onCancel?.(); },
+  });
 }
 
 /* ═══════ Countdown overlay ═══════ */
 export function doCountdown(cb) {
+  _countdownGeneration++;
+  _countdownTimers.forEach(clearTimeout);
+  _countdownTimers.clear();
+  const generation = _countdownGeneration;
   const { audio } = app;
   const overlay = $('#countdownOverlay');
   if (!overlay) { cb(); return; }
@@ -662,16 +706,16 @@ export function doCountdown(cb) {
       if (numEl) { numEl.setAttribute('data-n', n); numEl.style.animation = 'none'; void numEl.offsetWidth; numEl.style.animation = ''; }
       setText('#countdownNum', n);
       audio.countdown(n);
-      setTimeout(tick, 800);
+      _scheduleCountdown(generation, tick, 800);
     } else {
       const numEl = $('#countdownNum');
       if (numEl) { numEl.classList.add('cd-go'); numEl.style.animation = 'none'; void numEl.offsetWidth; numEl.style.animation = ''; }
       setText('#countdownNum', t('countdown_go'));
       audio.countdown(0);
-      setTimeout(() => { overlay.classList.remove('active'); const el = $('#countdownNum'); if (el) { el.classList.remove('cd-go'); el.removeAttribute('data-n'); } cb(); }, 500);
+      _scheduleCountdown(generation, () => { overlay.classList.remove('active'); const el = $('#countdownNum'); if (el) { el.classList.remove('cd-go'); el.removeAttribute('data-n'); } cb(); }, 500);
     }
   };
-  setTimeout(tick, 800);
+  _scheduleCountdown(generation, tick, 800);
 }
 
 /* ═══════ Cleanup intensity classes ═══════ */
@@ -983,7 +1027,7 @@ function showFullCompassPop() {
   if (!gameEl) return;
   const pop = document.createElement('div');
   pop.className = 'full-compass-pop';
-  pop.textContent = 'FULL COMPASS!';
+  pop.textContent = t('mastery_full_compass');
   gameEl.appendChild(pop);
   setTimeout(() => pop.remove(), 1200);
 }
@@ -1082,7 +1126,7 @@ function showUltraFullCompassPop() {
   if (!gameEl) return;
   const pop = document.createElement('div');
   pop.className = 'ultra-full-compass-pop';
-  pop.textContent = 'FULL COMPASS XII!';
+  pop.textContent = `${t('mastery_full_compass')} XII`;
   gameEl.appendChild(pop);
   setTimeout(() => pop.remove(), 1400);
 }
@@ -1171,7 +1215,7 @@ function showMathePhaseUp(phase) {
   const label = phaseNames[phase] || `Phase ${phase}`;
   const pop = document.createElement('div');
   pop.className = 'mathe-phase-pop';
-  pop.textContent = `PHASE UP: ${label}`;
+  pop.textContent = t('mastery_phase_up', { label });
   $('#game')?.appendChild(pop);
   pop.addEventListener('animationend', () => pop.remove());
 }
@@ -1254,7 +1298,7 @@ function showAlgebraUnlock(eqType, phase) {
   const label = ALG_TYPE_LABELS_SHORT[eqType] || eqType;
   const pop = document.createElement('div');
   pop.className = 'algebra-unlock-pop';
-  pop.textContent = `UNLOCKED: ${label}`;
+  pop.textContent = t('mastery_unlocked', { label });
   $('#game')?.appendChild(pop);
   pop.addEventListener('animationend', () => pop.remove());
 }
@@ -1277,7 +1321,7 @@ function ensureWorteHUD() {
   const el = document.createElement('div');
   el.id = 'worteCollectionHUD';
   el.className = 'worte-collection-hud';
-  el.innerHTML = `<span class="worte-coll-count">0</span><span class="worte-coll-label">collected</span>`;
+  el.innerHTML = `<span class="worte-coll-count">0</span><span class="worte-coll-label">${t('mastery_collected')}</span>`;
   $('#game')?.appendChild(el);
 
   const ghost = document.createElement('div');
@@ -1308,7 +1352,7 @@ function updateWorteGhostRacer(game) {
 function showWorteNewWord(word) {
   const pop = document.createElement('div');
   pop.className = 'worte-new-word-pop';
-  pop.textContent = `NEW: ${word}`;
+  pop.textContent = t('mastery_new', { item: word });
   $('#game')?.appendChild(pop);
   pop.addEventListener('animationend', () => pop.remove());
 }
@@ -1333,7 +1377,7 @@ function ensureHauptstaedteHUD() {
   /* Add tier display (Plan 8 feature 4) */
   const tierInfo = app.mastery ? app.mastery.getMasteryTier('hauptstaedte') : null;
   const tierLabel = tierInfo?.name || '';
-  el.innerHTML = `<span class="haupt-count">0</span><span class="haupt-label">countries</span>${tierLabel ? `<span class="haupt-tier">${tierLabel}</span>` : ''}`;
+  el.innerHTML = `<span class="haupt-count">0</span><span class="haupt-label">${t('mastery_countries')}</span>${tierLabel ? `<span class="haupt-tier">${tierLabel}</span>` : ''}`;
   $('#game')?.appendChild(el);
 
   const ghost = document.createElement('div');
@@ -1364,7 +1408,7 @@ function updateHauptstaedteGhostRacer(game) {
 function showHauptstaedteNewCountry(country) {
   const pop = document.createElement('div');
   pop.className = 'haupt-new-country-pop';
-  pop.textContent = `NEW: ${country}`;
+  pop.textContent = t('mastery_new', { item: country });
   $('#game')?.appendChild(pop);
   pop.addEventListener('animationend', () => pop.remove());
 }
@@ -1404,7 +1448,7 @@ function updateWissenTopicBar(mastery) {
   const total = correct + wrong;
   const acc = total > 0 ? Math.round((correct / total) * 100) : 0;
   const iqEl = el.querySelector('.wissen-iq-live');
-  if (iqEl) iqEl.textContent = `${acc}% acc`;
+  if (iqEl) iqEl.textContent = `${acc}% ${t('mastery_accuracy_short')}`;
 }
 
 function updateWissenGhostRacer(game) {
@@ -1433,9 +1477,9 @@ function showWissenDifficultyReveal(tier) {
     el.className = 'wissen-diff-reveal';
     $('#game')?.appendChild(el);
   }
-  const labels = ['Easy', 'Medium', 'Hard', 'Expert', 'Master'];
+  const labels = ['easy', 'medium', 'hard', 'expert', 'master'];
   const pcts = [85, 62, 38, 23, 8];
-  const label = labels[tier] || labels[0];
+  const label = t(`difficulty_${labels[tier] || labels[0]}`);
   const pct = pcts[tier] || pcts[0];
   el.textContent = `${label} — ${pct}%`;
   el.dataset.tier = tier;
@@ -1452,7 +1496,7 @@ function showWissenTopicStreakPop(streak) {
     el.className = 'wissen-topic-streak';
     $('#game')?.appendChild(el);
   }
-  el.textContent = `${streak}x Topic!`;
+  el.textContent = `${streak}x ${t('mastery_topic')}!`;
   el.classList.add('pop-in');
   setTimeout(() => el.classList.remove('pop-in'), 1200);
 }
@@ -1466,7 +1510,7 @@ function showStroopChallengeRound() {
     el.className = 'stroop-challenge-round';
     $('#game')?.appendChild(el);
   }
-  el.textContent = 'CHALLENGE!';
+  el.textContent = t('mastery_challenge');
   el.classList.add('challenge-active');
   const duration = CONFIG.STROOP_CHALLENGE_DURATION || 5000;
   setTimeout(() => {
@@ -1499,7 +1543,7 @@ function ensureMemoHUD() {
   const el = document.createElement('div');
   el.id = 'memoHUD';
   el.className = 'memo-hud';
-  el.innerHTML = `<span class="memo-span-label">Span</span><span class="memo-span-val">0</span>`;
+  el.innerHTML = `<span class="memo-span-label">${t('mastery_span')}</span><span class="memo-span-val">0</span>`;
   $('#game')?.appendChild(el);
 
   const ghost = document.createElement('div');
@@ -1543,7 +1587,7 @@ function ensureSequenzHUD() {
   const el = document.createElement('div');
   el.id = 'sequenzHUD';
   el.className = 'sequenz-hud';
-  el.innerHTML = `<span class="seq-rec-label">Record</span><span class="seq-rec-val">0</span>`;
+  el.innerHTML = `<span class="seq-rec-label">${t('mastery_record')}</span><span class="seq-rec-val">0</span>`;
   $('#game')?.appendChild(el);
 }
 
@@ -1559,7 +1603,7 @@ function updateSequenzRecord(mastery) {
 function showSequenzNewRecord(seqLen) {
   const pop = document.createElement('div');
   pop.className = 'sequenz-record-pop';
-  pop.textContent = `NEW RECORD: ${seqLen}`;
+  pop.textContent = t('mastery_new_record', { n: seqLen });
   $('#game')?.appendChild(pop);
   pop.addEventListener('animationend', () => pop.remove());
 }
@@ -1579,7 +1623,7 @@ function ensureStroopHUD() {
   const el = document.createElement('div');
   el.id = 'stroopHUD';
   el.className = 'stroop-hud';
-  el.innerHTML = `<span class="stroop-int-label">Interference</span><span class="stroop-int-val">--</span>`;
+  el.innerHTML = `<span class="stroop-int-label">${t('mastery_interference')}</span><span class="stroop-int-val">--</span>`;
   $('#game')?.appendChild(el);
 
   const ghost = document.createElement('div');
@@ -1629,7 +1673,7 @@ function ensureFokusHUD() {
   const el = document.createElement('div');
   el.id = 'fokusHUD';
   el.className = 'fokus-hud';
-  el.innerHTML = `<span class="fokus-cost-label">Distraction</span><span class="fokus-cost-val">--</span>`;
+  el.innerHTML = `<span class="fokus-cost-label">${t('mastery_distraction')}</span><span class="fokus-cost-val">--</span>`;
   $('#game')?.appendChild(el);
 
   const ghost = document.createElement('div');
@@ -1679,7 +1723,7 @@ function ensureChaosHUD() {
   const el = document.createElement('div');
   el.id = 'chaosHUD';
   el.className = 'chaos-hud';
-  el.innerHTML = `<span class="chaos-rule-label">Rule</span><span class="chaos-rule-val">--</span><span class="chaos-switch-count">0 switches</span>`;
+  el.innerHTML = `<span class="chaos-rule-label">${t('mastery_rule')}</span><span class="chaos-rule-val">--</span><span class="chaos-switch-count">${t('mastery_switches', { n: 0 })}</span>`;
   $('#game')?.appendChild(el);
 
   const ghost = document.createElement('div');
@@ -1696,7 +1740,7 @@ function updateChaosRuleDisplay(mastery, game) {
   const ruleEl = el.querySelector('.chaos-rule-val');
   if (ruleEl) ruleEl.textContent = rule.toUpperCase();
   const switchEl = el.querySelector('.chaos-switch-count');
-  if (switchEl) switchEl.textContent = `${mastery.get('chaos', '_switchCount', 0)} switches`;
+  if (switchEl) switchEl.textContent = t('mastery_switches', { n: mastery.get('chaos', '_switchCount', 0) });
 }
 
 function updateChaosGhostRacer(game) {
@@ -1936,6 +1980,7 @@ function restoreDailySelection() {
 
 /* ═══════ Start game ═══════ */
 export function startGame(practice = false, daily = false, showTutorial, showResults, showHome, showContinuePrompt) {
+  _cancelPreGame();
   const { save, audio, game } = app;
   if (app.gameStarting) return;
   app.gameStarting = true;
@@ -2074,7 +2119,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
     save.incrementInstructionViews(app.selectedMode);
     _showModeInstruction(app.selectedMode, () => {
       doCountdown(() => beginGame(practice, daily, showResults, showHome, showContinuePrompt));
-    });
+    }, () => quitGame(showHome));
   } else {
     doCountdown(() => beginGame(practice, daily, showResults, showHome, showContinuePrompt));
   }
@@ -2804,7 +2849,9 @@ export function pauseGame() {
   }
   const pauseAd = $('#pauseAdBanner');
   if (pauseAd) pauseAd.classList.toggle('hidden', isAdFree(save));
-  $('#pauseOverlay')?.classList.add('active');
+  const overlay = $('#pauseOverlay');
+  openModal(overlay, { initialFocus: '#btnResume', onDismiss: resumeGame });
+  if (overlay) overlay.onclick = (event) => { if (event.target === overlay) resumeGame(); };
 }
 
 export function resumeGame() {
@@ -2812,12 +2859,13 @@ export function resumeGame() {
   game.resume();
   audio.startMusic();
   /* Memo re-reveal is handled by the engine's resume() via callbacks */
-  $('#pauseOverlay')?.classList.remove('active');
+  closeModal($('#pauseOverlay'));
 }
 
 export function restartGame(showTutorial, showResults, showHome, showContinuePrompt) {
   const { game, audio } = app;
-  $('#pauseOverlay')?.classList.remove('active');
+  _cancelPreGame();
+  closeModal($('#pauseOverlay'), { restoreFocus: false });
   game.stop();
   audio.stopMusic();
   if (typeof audio.stopTension === 'function') audio.stopTension();
@@ -2829,10 +2877,11 @@ export function restartGame(showTutorial, showResults, showHome, showContinuePro
 
 export function quitGame(showHome) {
   const { game, audio, effects } = app;
+  _cancelPreGame();
   document.body.style.overflow = '';
   document.documentElement.style.overflow = '';
   if (window.__gameScrollBlocker) { window.__gameScrollBlocker.el?.removeEventListener('touchmove', window.__gameScrollBlocker.fn); window.__gameScrollBlocker = null; }
-  $('#pauseOverlay')?.classList.remove('active');
+  closeModal($('#pauseOverlay'), { restoreFocus: false });
   game.stop();
   audio.stopMusic();
   if (typeof audio.stopTension === 'function') audio.stopTension();

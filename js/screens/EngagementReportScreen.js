@@ -27,11 +27,11 @@ function scoreColor(score) {
 
 function labelText(label) {
   const map = {
-    engagement_high: t('er_high') || 'Klar Spass!',
-    engagement_solid: t('er_solid') || 'Solides Engagement',
-    engagement_mixed: t('er_mixed') || 'Gemischte Signale',
-    engagement_low: t('er_low') || 'Wenig Engagement',
-    not_enough_data: t('er_no_data') || 'Nicht genug Daten'
+    engagement_high: t('er_high'),
+    engagement_solid: t('er_solid'),
+    engagement_mixed: t('er_mixed'),
+    engagement_low: t('er_low'),
+    not_enough_data: t('er_no_data')
   };
   return map[label] || label;
 }
@@ -42,7 +42,7 @@ export function showEngagementReport() {
   showScreen('engagementReport', app);
 
   if (!engagement) {
-    renderNoData(t('er_not_init') || 'Engagement-Tracker nicht initialisiert');
+    renderNoData(t('er_not_init'));
     return;
   }
 
@@ -65,7 +65,7 @@ export function showEngagementReport() {
 /* ─── No data state ─── */
 function renderNoData(msg) {
   const el = $('#erScoreCircle');
-  if (el) el.innerHTML = `<div class="er-no-data"><span class="er-no-data-icon">&#x1F4CA;</span>${escHTML(msg)}<br><small>${t('er_play_more') || 'Spiele ein paar Runden, um Daten zu sammeln.'}</small></div>`;
+  if (el) el.innerHTML = `<div class="er-no-data"><span class="er-no-data-icon">&#x1F4CA;</span>${escHTML(msg)}<br><small>${t('er_play_more')}</small></div>`;
   ['erSummary', 'erSignals', 'erFeedback', 'erDailyChart'].forEach(id => {
     const e = $(`#${id}`);
     if (e) e.innerHTML = '';
@@ -77,7 +77,7 @@ function renderSummary(signals) {
   const el = $('#erSummary');
   if (!el) return;
   const since = signals.firstSeen ? signals.firstSeen.slice(0, 10) : '?';
-  el.innerHTML = `${t('er_basis') || 'Datengrundlage'}: <strong>${signals.totalSessions}</strong> Sessions, <strong>${signals.totalGames}</strong> ${t('er_games') || 'Spiele'}, ${t('er_since') || 'seit'} ${since}`;
+  el.innerHTML = `${t('er_basis')}: <strong>${signals.totalSessions}</strong> Sessions, <strong>${signals.totalGames}</strong> ${t('er_games')}, ${t('er_since')} ${since}`;
 }
 
 /* ─── Big score circle (SVG ring) ─── */
@@ -119,33 +119,33 @@ function renderSignals(signals, subscores) {
 
   const cards = [
     {
-      title: t('er_retention') || 'R\u00fcckkehr',
-      value: `${signals.activeDaysPerWeek} ${t('er_days_week') || 'T/Wo.'}`,
+      title: t('er_retention'),
+      value: `${signals.activeDaysPerWeek} ${t('er_days_week')}`,
       pct: subscores.retention
     },
     {
-      title: t('er_sessions') || 'Sessions',
+      title: t('er_sessions'),
       value: `\u00d8 ${signals.avgSessionMin} Min.`,
       pct: subscores.sessionLen
     },
     {
-      title: t('er_learning') || 'Lernkurve',
+      title: t('er_learning'),
       value: `${signals.avgScoreTrend >= 0 ? '\u2197 +' : '\u2198 '}${(signals.avgScoreTrend * 100).toFixed(1)}%`,
       pct: subscores.scoreTrend
     },
     {
-      title: t('er_retry') || 'Retry',
+      title: t('er_retry'),
       value: `${(signals.retryRate * 100).toFixed(0)}%`,
       pct: subscores.retryRate
     },
     {
-      title: t('er_quits') || 'Abbr\u00fcche',
+      title: t('er_quits'),
       value: `${(signals.quitRate * 100).toFixed(0)}%`,
       pct: subscores.quitRate
     },
     {
-      title: t('er_modes') || 'Modi',
-      value: `${signals.modesPlayed} / 11`,
+      title: t('er_modes'),
+      value: `${signals.modesPlayed} / 14`,
       pct: subscores.exploration
     }
   ];
@@ -170,8 +170,8 @@ function renderFeedback(signals) {
 
   if (signals.feedbackCount === 0) {
     el.innerHTML = `
-      <span class="er-feedback-title">${t('er_feedback') || 'Spieler-Feedback'}</span>
-      <div class="er-feedback-row"><span class="er-feedback-label">${t('er_no_feedback') || 'Noch kein Feedback gesammelt'}</span></div>`;
+      <span class="er-feedback-title">${t('er_feedback')}</span>
+      <div class="er-feedback-row"><span class="er-feedback-label">${t('er_no_feedback')}</span></div>`;
     return;
   }
 
@@ -179,17 +179,17 @@ function renderFeedback(signals) {
   const ratingEmoji = signals.avgRating >= 3.5 ? emojis[3] : signals.avgRating >= 2.5 ? emojis[2] : signals.avgRating >= 1.5 ? emojis[1] : emojis[0];
 
   el.innerHTML = `
-    <span class="er-feedback-title">${t('er_feedback') || 'Spieler-Feedback'}</span>
+    <span class="er-feedback-title">${t('er_feedback')}</span>
     <div class="er-feedback-row">
-      <span class="er-feedback-label">${t('er_avg_rating') || 'Durchschnitt'}</span>
+      <span class="er-feedback-label">${t('er_avg_rating')}</span>
       <span>${ratingEmoji} ${signals.avgRating} / 4</span>
     </div>
     <div class="er-feedback-row">
-      <span class="er-feedback-label">${t('er_entries') || 'Eintr\u00e4ge'}</span>
+      <span class="er-feedback-label">${t('er_entries')}</span>
       <span>${signals.feedbackCount}</span>
     </div>
     <div class="er-feedback-row">
-      <span class="er-feedback-label">${t('er_skip_rate') || 'Skip-Rate'}</span>
+      <span class="er-feedback-label">${t('er_skip_rate')}</span>
       <span>${(signals.skipRate * 100).toFixed(0)}%</span>
     </div>`;
 }
@@ -203,11 +203,11 @@ function renderDailyChart(engagement) {
   const maxCount = Math.max(1, ...dailyCounts.map(([, c]) => c));
 
   el.innerHTML = `
-    <span class="er-chart-title">${t('er_daily_games') || 'Spiele / Tag (14 Tage)'}</span>
+    <span class="er-chart-title">${t('er_daily_games')}</span>
     <div class="er-chart-bars">
-      ${dailyCounts.map(([date, count]) => {
+      ${dailyCounts.map(([date, count], index) => {
         const heightPct = Math.max(2, (count / maxCount) * 100);
-        const dayLabel = date.slice(8, 10) + '.' + date.slice(5, 7);
+        const dayLabel = window.innerWidth <= 360 && index % 2 ? '' : date.slice(8, 10) + '.' + date.slice(5, 7);
         return `<div class="er-chart-bar" style="height:${heightPct}%"><span class="er-chart-bar-label">${dayLabel}</span></div>`;
       }).join('')}
     </div>`;
@@ -224,7 +224,7 @@ function bindExport(engagement) {
       try {
         await navigator.clipboard.writeText(text);
         const bodyFx = app.bodyFx || (typeof app.effects?.achievementToast === 'function' ? app.effects : null);
-        const msg = t('er_copied') || 'In Zwischenablage kopiert!';
+        const msg = t('er_copied');
         if (bodyFx && typeof bodyFx.achievementToast === 'function') {
           bodyFx.achievementToast(msg);
         }
