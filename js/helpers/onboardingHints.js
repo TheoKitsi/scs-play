@@ -68,7 +68,7 @@ function dismissCurrent() {
   }, 400);
 }
 
-export function clearOnboardingHints() {
+function clearOnboardingHints() {
   clearTimeout(_showTimer);
   _showTimer = null;
   _queue = [];

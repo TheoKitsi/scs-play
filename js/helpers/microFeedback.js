@@ -43,7 +43,7 @@ export function maybeShowFeedback(trigger, context) {
  * Record feedback and dismiss the prompt.
  * @param {number|null} rating — 1-4 or null if skipped
  */
-export function dismissFeedback(rating) {
+function dismissFeedback(rating) {
   clearTimeout(_dismissTimer);
   const el = $('#microFeedback');
   if (!el || !el.classList.contains('active')) return;

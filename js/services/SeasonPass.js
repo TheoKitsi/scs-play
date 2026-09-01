@@ -94,14 +94,3 @@ export function getProgress(save) {
     claimedStages: s.claimedStages.slice()
   };
 }
-
-/* Claim one stage if eligible. Returns reward or null. */
-export function claimStage(save, stageIdx) {
-  const s = ensureState(save);
-  if (!s) return null;
-  if (stageIdx < 0 || stageIdx >= PASS_STAGES.length) return null;
-  if (s.claimedStages.includes(stageIdx)) return null;
-  if ((s.points || 0) < PASS_STAGES[stageIdx].at) return null;
-  s.claimedStages.push(stageIdx);
-  return { ...PASS_STAGES[stageIdx], stage: stageIdx + 1 };
-}

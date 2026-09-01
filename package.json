@@ -13,7 +13,8 @@
     "contrast-audit": "node scripts/contrast-audit.mjs",
     "contrast-audit:dom": "node scripts/dom-contrast-audit.mjs",
     "game-logic-test": "node scripts/game-logic-test.mjs",
-    "verify": "npm run game-logic-test && npm run contrast-audit && npm run build:prod && npm run contrast-audit:dom && npm run smoke-test",
+    "knip": "knip --no-progress",
+    "verify": "npm run knip && npm run game-logic-test && npm run contrast-audit && npm run build:prod && npm run contrast-audit:dom && npm run smoke-test",
     "cap:sync": "node scripts/build-prod.mjs && npx cap sync android",
     "cap:open": "npx cap open android",
     "cap:run": "node scripts/build-prod.mjs && npx cap run android"
@@ -27,7 +28,8 @@
     "@capacitor/core": "^8.1.0"
   },
   "devDependencies": {
-    "esbuild": "^0.27.4",
+    "esbuild": "^0.28.2",
+    "knip": "^6.34.0",
     "lamejs": "^1.2.1",
     "playwright": "^1.58.2"
   }

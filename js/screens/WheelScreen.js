@@ -450,7 +450,7 @@ function revealResult(result, bonusSpin) {
   }
 }
 
-export function showWheel() {
+function showWheel() {
   const overlay = $('#wheelOverlay');
   if (!overlay) return;
   wheelReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -466,7 +466,7 @@ export function showWheel() {
   renderWheelStatus();
 }
 
-export function hideWheel() {
+function hideWheel() {
   const overlay = $('#wheelOverlay');
   if (!overlay?.classList.contains('active')) return;
   overlay.classList.remove('active');

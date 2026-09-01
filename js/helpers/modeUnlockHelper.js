@@ -17,7 +17,7 @@ const MODE_UNLOCK_LEVELS = {
   wissen: CONFIG.UNLOCK_WISSEN,
 };
 
-export function getUnlockLevelIndex(mode) {
+function getUnlockLevelIndex(mode) {
   if (!Object.prototype.hasOwnProperty.call(MODE_UNLOCK_LEVELS, mode)) return Infinity;
   return MODE_UNLOCK_LEVELS[mode] || 0;
 }

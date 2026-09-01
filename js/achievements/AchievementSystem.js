@@ -5,12 +5,12 @@
    ================================================================ */
 
 // ── Mode & Play-Type Constants ──────────────────────────────────
-export const ALL_MODES      = ['klassik','beginner','expert','ultra','mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra','wissen'];
-export const SORT_MODES     = ['klassik','beginner','expert','ultra'];
-export const BRAIN_MODES    = ['mathe','worte','hauptstaedte','algebra','wissen'];
-export const MEMORY_MODES   = ['memo','sequenz'];
-export const REFLEX_MODES   = ['stroop','fokus','chaos'];
-export const ALL_PLAY_TYPES = ['blitz','classic','endless','competition'];
+const ALL_MODES      = ['klassik','beginner','expert','ultra','mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra','wissen'];
+const SORT_MODES     = ['klassik','beginner','expert','ultra'];
+const BRAIN_MODES    = ['mathe','worte','hauptstaedte','algebra','wissen'];
+const MEMORY_MODES   = ['memo','sequenz'];
+const REFLEX_MODES   = ['stroop','fokus','chaos'];
+const ALL_PLAY_TYPES = ['blitz','classic','endless','competition'];
 
 const MODE_NAMES = {
   de: { klassik:'Klassik', beginner:'Formen', expert:'Expert', ultra:'Ultra',
@@ -586,7 +586,7 @@ export function getChainIndex() {
  * @param {object} saveData - save.data (the full save object)
  * @returns {boolean}
  */
-export function isAchievementMet(ach, saveData) {
+function isAchievementMet(ach, saveData) {
   const achStats = saveData.achStats || initAchStats();
   const metricFn = M[ach.metric];
   if (!metricFn) return false;
@@ -683,7 +683,7 @@ export function getChainProgress(chainKey, saveData) {
 // ══════════════════════════════════════════════════════════════════
 
 /** Create a new blank achStats object */
-export function initAchStats() {
+function initAchStats() {
   return {
     modeGames: {},
     playTypeGames: {},

@@ -87,7 +87,7 @@ function getCornerStyles(color) {
 /* ═══════ Render corners (with diffing — only touch changed DOM) ═══════ */
 const _prevCornerState = {};
 
-export function renderCorners(cornerMap, forceAll = false) {
+function renderCorners(cornerMap, forceAll = false) {
   const { game } = app;
   const isText = game.contentType !== 'shape';
 
@@ -164,7 +164,7 @@ export function renderCorners(cornerMap, forceAll = false) {
 /* Neutral platform accent for brain/reflex modes — prevents leaking correct-answer color */
 const NEUTRAL_PLATFORM_COLOR = '#9D4EDD';
 
-export function renderCenter(shapeData) {
+function renderCenter(shapeData) {
   const center = $('#centerShape');
   const platform = $('#centerPlatform');
   if (!center || !shapeData) return;
@@ -373,7 +373,7 @@ function spawnBurstParticles(color) {
   }, 500);
 }
 
-export function clearCenter() {
+function clearCenter() {
   const center = $('#centerShape');
   const platform = $('#centerPlatform');
   if (center) { center.textContent = ''; center.className = 'center-shape'; }
@@ -414,7 +414,7 @@ function _getHudEls() {
   return _hudCache;
 }
 /** Call when leaving game screen to drop cached refs */
-export function invalidateHudCache() { _hudCache = null; }
+function invalidateHudCache() { _hudCache = null; }
 
 function updateIntensity() {
   const { game } = app;
@@ -467,7 +467,7 @@ function updateTimerBar() {
 
 let _hudRafPending = false;
 
-export function updateHUD() {
+function updateHUD() {
   if (_hudRafPending) return;
   _hudRafPending = true;
   requestAnimationFrame(_updateHUDInner);
@@ -1912,7 +1912,7 @@ function updateModeMasteryAfterAnswer(game, result) {
   }
 }
 
-export function cleanupGameClasses() {
+function cleanupGameClasses() {
   const g = $('#game');
   g?.classList.remove('intensity-low','intensity-mid','intensity-high','intensity-max','edge-glow-warm','edge-glow-hot','edge-glow-fire','action-climax','action-climax-peak');
   /* Remove memo-covered from corners */

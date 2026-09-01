@@ -29,16 +29,9 @@ function reducedMotionActive() {
   }
 }
 
-let _perfClass = 'high';
-
-export function getPerfClass() { return _perfClass; }
-export function isLowPerf()    { return _perfClass === 'low'; }
-export function isReducedMotion() { return reducedMotionActive(); }
-
 export function initPerfMode() {
   if (typeof document === 'undefined' || !document.body) return;
-  _perfClass = detectClass();
-  document.body.dataset.perfMode = _perfClass;
+  document.body.dataset.perfMode = detectClass();
   if (reducedMotionActive()) {
     document.body.dataset.reducedMotion = 'true';
   }

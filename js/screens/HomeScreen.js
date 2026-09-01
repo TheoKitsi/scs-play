@@ -127,11 +127,6 @@ const MODE_AURA = {
   wissen:   'rgba(251,191,36,0.22)',
 };
 
-export function updateHeroCard() {
-  /* Now handled by renderCarousel() — kept as a no-op for compat */
-  renderCarousel();
-}
-
 /* ═══════ Carousel Engine ═══════ */
 
 /** Get the SVG HTML for a mode from the hidden template cards */
@@ -342,7 +337,7 @@ function initCarouselListeners() {
 }
 
 /* ═══════ Hero stats spotlight ═══════ */
-export function updateHeroStats() {
+function updateHeroStats() {
   const { save } = app;
   const pb     = save.getPB(app.selectedMode, app.selectedPlayType);
   const streak = save.getDailyLoginStreak ? save.getDailyLoginStreak() : (save.data?.loginStreak || 0);
@@ -465,7 +460,7 @@ export function updatePlayTypeSelector() {
 }
 
 /* ═══════ Daily login check ═══════ */
-export async function checkDailyLogin() {
+async function checkDailyLogin() {
   const { save } = app;
   try {
     const result = await save.claimDailyLogin();
