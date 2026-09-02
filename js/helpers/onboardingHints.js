@@ -11,7 +11,6 @@ import { closeModal, openModal } from './modal.js';
 const HINTS = [
   { id: 'hint_carousel',  target: '.hero-slider',        i18n: 'hint_carousel' },
   { id: 'hint_playflow',  target: '#homePlayCommand',     i18n: 'hint_playflow' },
-  { id: 'hint_pin',       target: '.hero-pin-btn',        i18n: 'hint_pin' },
 ];
 
 let _overlay = null;

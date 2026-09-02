@@ -256,13 +256,13 @@ async function run() {
     const quests = document.querySelector('#dailyQuestsPanel');
     const season = document.querySelector('#seasonPassCard');
     return {
-      essentials: Boolean(document.querySelector('#quickShortcuts') && document.querySelector('#dailyCard') && document.querySelector('#wheelCard')),
+      essentials: Boolean(document.querySelector('#dailyCard') && document.querySelector('#wheelCard')),
       progressionDetached: Boolean(quests && season && getComputedStyle(quests).display === 'none' && getComputedStyle(season).display === 'none'),
       visiblePlayTypes,
       fitsViewport: Boolean(sheet && sheet.scrollHeight <= sheet.clientHeight + 2),
     };
   });
-  assert(homeState.essentials, 'Home keeps shortcuts, daily challenge, and wheel');
+  assert(homeState.essentials, 'Home keeps daily challenge and wheel');
   assert(homeState.progressionDetached, 'Quest and season details stay off the focused dashboard');
   assert(homeState.visiblePlayTypes <= 3, `Visible play types reduced (${homeState.visiblePlayTypes})`);
   assert(homeState.fitsViewport, 'Home dashboard fits without scrolling');

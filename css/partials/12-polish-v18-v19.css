@@ -1088,7 +1088,6 @@ body[data-perf-mode="low"] .season-pass-card{
 #home .hero-slide-badge--level,
 #home .hero-slide-badge--mastery,
 #home .hero-slide-level-bar{display:none}
-#home .hero-pin-btn{top:8px;right:12px;width:32px;height:32px}
 #home .hero-nav-arrow{top:42%}
 #home .home-play-command{gap:5px;padding-inline:8px}
 #home .play-type-selector--primary{min-height:40px}
@@ -1105,21 +1104,6 @@ body[data-perf-mode="low"] .season-pass-card{
   mask-image:none;
 }
 #home .sheet-handle{opacity:.55}
-#home .quick-shortcuts{
-  flex:0 0 40px;
-  gap:6px;
-  padding:0;
-  align-items:center;
-}
-#home .quick-shortcuts[hidden]{display:none}
-#home .qs-slot{
-  flex:1 1 0;
-  width:auto;
-  max-width:104px;
-  height:36px;
-  border-radius:10px;
-}
-
 #home .today-actions{
   display:grid;
   grid-template-columns:1fr 1fr;

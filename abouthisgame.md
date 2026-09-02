@@ -163,7 +163,6 @@ Vollbild-Split-Layout, scrollbares Bottom-Sheet:
 
 **Bottom-Sheet** (scrollbar):
 - Sheet-Handle: 36×2px abgerundeter Balken
-- **Schnellzugriffe** (4 pinnbare Slots): Direktstart zu Lieblingsmodi
 - **Spieltyp-Selector** (4 horizontale Pills): BLITZ (Play-Icon), MARATHON (Uhr), ENDLOS (∞), WETTKAMPF (Pokal). Ausgewählt: Lila Hintergrund, Scale 1.05
 - **Modus-Grid** (7 Spalten, 14 Karten): Alle Spielmodi als 40–56px quadratische Karten mit SVG-Icon; Hover: leicht heben; Auswahl: Glow + Scale 1.08
 - **Statistik-Zone** (3 Spalten):
@@ -1217,7 +1216,7 @@ _end()    → Geste klassifizieren + auflösen
 - Login: `lastLoginDate`, `loginStreak`
 - XP-Tracking: `dailyXPDate`, `dailyXPEarned`
 - Settings: 6 Toggle-Werte + `language`, `gameMode`, `playType`, `tutorialDone`
-- Onboarding: `hintsShown`, `pinnedModes` (4 Slots)
+- Onboarding: `hintsShown`
 - Wheel: `lastWheelSpin`, `wheelSpinsToday`, `wheelStreak`, `lastWheelDate`
 - Avatar: `{icon, colorIndex, photo}` (photo = base64 WebP)
 - Themes: `activeTheme`, `activeTrail`

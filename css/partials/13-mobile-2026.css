@@ -142,14 +142,6 @@ button:focus-visible,.btn:focus-visible{
   background:rgba(7,9,15,.7);
   text-shadow:none;
 }
-#home .hero-pin-btn{
-  top:14px;
-  right:18px;
-  width:48px;
-  height:48px;
-  background:#11151e;
-  border-color:rgba(255,255,255,.1);
-}
 #home .hero-nav-arrow{
   top:48%;
   width:48px;
@@ -222,7 +214,6 @@ button:focus-visible,.btn:focus-visible{
   -webkit-mask-image:none;
 }
 #home .sheet-handle{width:34px;height:3px;background:rgba(255,255,255,.2)}
-#home .quick-shortcuts{display:none!important}
 #home .today-actions{height:auto;min-height:62px;grid-template-columns:1fr 1fr;gap:8px}
 #home .today-actions .daily-card,#home .today-actions .wheel-card{
   height:68px;

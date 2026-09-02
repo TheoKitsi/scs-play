@@ -258,16 +258,9 @@ const S = {
     sequenz_endless_only:'Sequenz: nur Highscore-Modus',
     near_miss:'Knapp!',
     timer_bar:'Zeitbalken',
-    /* Pin feedback */
-    pin_added:'{mode} auf Startseite fixiert',
-    pin_removed:'{mode} von Startseite entfernt',
-    pin:'{mode} fixieren',
-    unpin:'Fixierung von {mode} lösen',
     /* Onboarding hints */
     hint_carousel:'Wische links oder rechts, um alle Spielmodi zu entdecken!',
     hint_playflow:'Wähle einen Modus, dann den Spieltyp, und tippe SPIELEN!',
-    hint_pin:'Tippe den Pin, um Spiele auf deine Startseite zu fixieren.',
-    hint_shortcuts:'Tippe auf ein fixiertes Spiel, um es direkt zu starten!',
     hint_ok:'Verstanden',
     hint_dismiss:'Nicht mehr anzeigen',
     /* Wheel of Fortune */
@@ -729,16 +722,9 @@ const S = {
     sequenz_endless_only:'Sequence: highscore mode only',
     near_miss:'Close!',
     timer_bar:'Timer bar',
-    /* Pin feedback */
-    pin_added:'{mode} pinned to home',
-    pin_removed:'{mode} removed from home',
-    pin:'Pin {mode}',
-    unpin:'Unpin {mode}',
     /* Onboarding hints */
     hint_carousel:'Swipe left or right to discover all game modes!',
     hint_playflow:'Select a mode, then a play type, and tap PLAY!',
-    hint_pin:'Tap the pin to add games to your home shortcuts.',
-    hint_shortcuts:'Tap a pinned game to start it instantly!',
     hint_ok:'Got it',
     hint_dismiss:'Don\'t show again',
     /* Wheel of Fortune */

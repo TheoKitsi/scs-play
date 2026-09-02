@@ -103,8 +103,6 @@ function defaults() {
     instructionViews: {},
     /* v7: Avatar */
     avatar: null,   // { icon: 'star', colorIndex: 3 }
-    /* v34: Hero carousel shortcut pinboard (4 user slots) */
-    pinnedModes: [null, null, null, null],
     /* v46: Onboarding hints tracking */
     hintsShown: {},
     /* v46: Wheel of Fortune */

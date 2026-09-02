@@ -9,7 +9,6 @@ import { $, $$, setText, setHTML, showScreen } from '../helpers/dom.js';
 import { getUnlockLevel }   from '../helpers/modeUnlockHelper.js';
 import { updateAvatarDisplay } from '../helpers/avatarDisplayHelper.js';
 import { applyTheme }       from '../services/ThemeService.js';
-import { getBodyFx }        from '../services/EffectsService.js';
 import { updateXPBar }      from '../helpers/xpBarHelper.js';
 import { checkOnboardingHints } from '../helpers/onboardingHints.js';
 import { getOrSeedQuests, countCompleted as questsCompleted } from '../services/DailyQuestService.js';
@@ -152,8 +151,6 @@ function buildSlide(mode) {
     const aura = MODE_AURA[mode] || 'rgba(124,58,237,0.5)';
     const lvProgress = save.getModeLevelProgress ? save.getModeLevelProgress(mode) : 0;
     const lvPct = Math.round(Math.min(1, Math.max(0, lvProgress)) * 100);
-    const pins = save.data.pinnedModes || [null,null,null,null];
-    const isPinned = pins.includes(mode);
     const modeName = t(`mode_${mode}`);
     slide.innerHTML = `
       <div class="hero-slide-visual" style="--slide-aura:${aura}">${getModeSVG(mode)}</div>
@@ -172,10 +169,7 @@ function buildSlide(mode) {
           return '';
         })()}
       </div>
-      <div class="hero-slide-level-bar"><div class="hero-slide-level-fill" style="width:${lvPct}%"></div></div>
-      <button class="hero-pin-btn ${isPinned ? 'pinned' : ''}" data-pin-mode="${mode}" aria-label="${t(isPinned ? 'unpin' : 'pin', { mode: modeName })}">
-        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="${isPinned ? 'M16 9V4h1V2H7v2h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z' : 'M14 4v5c0 1.12.37 2.16 1 3H9c.65-.86 1-1.9 1-3V4h4m3-2H7v2h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3V4h1V2z'}"/></svg>
-      </button>`;
+      <div class="hero-slide-level-bar"><div class="hero-slide-level-fill" style="width:${lvPct}%"></div></div>`;
   } else {
     const unlockLv = getUnlockLevel(mode);
     slide.innerHTML = `
@@ -261,28 +255,6 @@ function navigateCarousel(direction) {
       btn.classList.toggle('selected', btn.dataset.play === prevPlayType);
     });
   }
-  updateQuickShortcuts();
-  setTimeout(() => { carouselAnimating = false; }, 360);
-}
-
-/** Navigate to specific index */
-function goToSlide(idx) {
-  if (carouselAnimating || idx === carouselIdx) return;
-  carouselAnimating = true;
-  const prevPlayType = app.selectedPlayType;
-  carouselIdx = idx;
-  positionSlides();
-  updateBackdropAura();
-  updateHeroStats();
-  updatePlayTypeSelector();
-  // Restore play type if the new mode supports it (A6 fix)
-  if (app.selectedMode !== 'sequenz' && prevPlayType) {
-    app.selectedPlayType = prevPlayType;
-    $$('.play-type-btn').forEach(btn => {
-      btn.classList.toggle('selected', btn.dataset.play === prevPlayType);
-    });
-  }
-  updateQuickShortcuts();
   setTimeout(() => { carouselAnimating = false; }, 360);
 }
 
@@ -324,14 +296,6 @@ function initCarouselListeners() {
       }
     }, { passive: true });
 
-    // Delegated pin/unpin click
-    slider.addEventListener('click', (e) => {
-      const btn = e.target.closest('.hero-pin-btn');
-      if (!btn) return;
-      e.stopPropagation();
-      const mode = btn.dataset.pinMode;
-      togglePin(mode);
-    });
   }
 
 }
@@ -348,71 +312,6 @@ function updateHeroStats() {
   if (pbEl)     pbEl.textContent     = pb     > 0 ? pb.toLocaleString()     : '—';
   if (streakEl) streakEl.textContent = streak > 0 ? streak                  : '—';
   if (gamesEl)  gamesEl.textContent  = games  > 0 ? games.toLocaleString()  : '—';
-}
-
-/* ═══════ Quick shortcuts — 4 pinnable slots ═══════ */
-function togglePin(mode) {
-  const { save } = app;
-  const pins = save.data.pinnedModes || [null, null, null, null];
-  // Ensure exactly 4 slots
-  while (pins.length < 4) pins.push(null);
-  const idx = pins.indexOf(mode);
-  let wasPinned = false;
-  if (idx !== -1) {
-    // Unpin
-    pins[idx] = null;
-    wasPinned = true;
-  } else {
-    // Pin into first empty slot
-    const empty = pins.indexOf(null);
-    if (empty !== -1) pins[empty] = mode;
-  }
-  save.data.pinnedModes = pins.slice(0, 4);
-  save.save();
-  renderCarousel();          // re-render pin icons on slides
-  updateQuickShortcuts();
-
-  // Toast feedback
-  const modeName = t(`mode_${mode}`);
-  const msg = wasPinned ? t('pin_removed', { mode: modeName }) : t('pin_added', { mode: modeName });
-  getBodyFx().achievementToast(msg);
-}
-
-function updateQuickShortcuts() {
-  const el = $('#quickShortcuts');
-  if (!el) return;
-  const { save } = app;
-  const pins = (save.data.pinnedModes || [null, null, null, null])
-    .filter(mode => mode && CONFIG.MODE_ORDER.includes(mode))
-    .slice(0, 4);
-  const current = app.selectedMode;
-
-  el.hidden = pins.length === 0;
-  if (pins.length === 0) {
-    el.innerHTML = '';
-    return;
-  }
-
-  el.innerHTML = pins.map((m, i) => {
-    const isActive = m === current ? ' active' : '';
-    const name = t(`mode_${m}`);
-    return `<button class="qs-slot filled${isActive}" data-mode="${m}" data-slot="${i}">
-      <span class="qs-slot-icon">${getModeSVG(m)}</span>
-      <span class="qs-slot-name">${name}</span>
-    </button>`;
-  }).join('');
-
-  el.querySelectorAll('.qs-slot').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const mode = btn.dataset.mode;
-      if (mode) {
-        // Navigate to pinned mode
-        const idx = CONFIG.MODE_ORDER.indexOf(mode);
-        if (idx !== -1) goToSlide(idx);
-        updateQuickShortcuts();
-      }
-    });
-  });
 }
 
 /* ═══════ Mode selector ═══════ */
@@ -540,7 +439,6 @@ export function showHome() {
   updateModeSelector();
   updatePlayTypeSelector();
   updateHeroStats();
-  updateQuickShortcuts();
   applyTheme(save.getActiveTheme());
   document.body.classList.add('ad-free');
 
