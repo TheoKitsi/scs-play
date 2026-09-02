@@ -54,7 +54,6 @@ const ASSETS = [
   './js/game/GameEngine.js',
   './js/game/ModeMastery.js',
   /* ─── Services ─── */
-  './js/services/AdService.js',
   './js/services/ThemeService.js',
   './js/services/ShareService.js',
   /* ─── Screens ─── */

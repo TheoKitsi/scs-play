@@ -134,6 +134,19 @@ async function run() {
   console.log('\n5. Pause/Resume');
   await clickSel('#btnPause', 600);
   assert(await hasActiveClass('#pauseOverlay', 2000), 'Pause overlay visible');
+
+  await clickSel('#btnPauseSettings', 600);
+  assert(await hasActiveClass('#settings', 2000), 'Pause Settings opens settings');
+  await clickSel('#settings .btn-back-bottom', 600);
+  assert(await hasActiveClass('#game', 2000), 'Visible Settings Back returns to game');
+  assert(await hasActiveClass('#pauseOverlay', 2000), 'Visible Settings Back reopens pause overlay');
+
+  await clickSel('#btnPauseSettings', 600);
+  assert(await hasActiveClass('#settings', 2000), 'Pause Settings can reopen without stale modal state');
+  await page.evaluate(() => window.dispatchEvent(new PopStateEvent('popstate')));
+  await page.waitForTimeout(600);
+  assert(await hasActiveClass('#game', 2000), 'Browser Back returns from Settings to game');
+  assert(await hasActiveClass('#pauseOverlay', 2000), 'Browser Back reopens pause overlay');
   await clickSel('#btnResume', 1500);
 
   // ─── 6) Pause and Quit → Home ───

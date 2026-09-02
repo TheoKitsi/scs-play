@@ -8,7 +8,6 @@ import { t, getLanguage }    from '../i18n.js';
 import { $, $$, setText, setHTML, showScreen } from '../helpers/dom.js';
 import { getUnlockLevel }   from '../helpers/modeUnlockHelper.js';
 import { updateAvatarDisplay } from '../helpers/avatarDisplayHelper.js';
-import { updateAdBanner, isAdFree } from '../services/AdService.js';
 import { applyTheme }       from '../services/ThemeService.js';
 import { getBodyFx }        from '../services/EffectsService.js';
 import { updateXPBar }      from '../helpers/xpBarHelper.js';
@@ -383,7 +382,9 @@ function updateQuickShortcuts() {
   const el = $('#quickShortcuts');
   if (!el) return;
   const { save } = app;
-  const pins = (save.data.pinnedModes || [null, null, null, null]).filter(Boolean).slice(0, 4);
+  const pins = (save.data.pinnedModes || [null, null, null, null])
+    .filter(mode => mode && CONFIG.MODE_ORDER.includes(mode))
+    .slice(0, 4);
   const current = app.selectedMode;
 
   el.hidden = pins.length === 0;
@@ -540,9 +541,8 @@ export function showHome() {
   updatePlayTypeSelector();
   updateHeroStats();
   updateQuickShortcuts();
-  updateAdBanner(save);
   applyTheme(save.getActiveTheme());
-  document.body.classList.toggle('ad-free', isAdFree(save));
+  document.body.classList.add('ad-free');
 
   if (typeof audio.setMusicMode === 'function') audio.setMusicMode('menu');
   audio.startMusic();

@@ -2,10 +2,10 @@
 
 ## Requirements
 
-- Node.js 20 for CI parity. Node 18+ also works for most local tasks.
+- Node.js 22 or newer (required by Capacitor 8).
 - npm.
-- Java 17 and Android Studio for Android builds.
-- Android SDK with target SDK 35 installed.
+- JDK 21 and Android Studio for Android builds. Capacitor's generated Android configuration compiles for Java 21.
+- Android SDK Platform 36 and compatible SDK Build Tools. The project compiles against and targets SDK 36.
 
 ## Web Build
 
@@ -29,10 +29,12 @@ npm run verify
 
 This runs:
 
-1. Static WCAG token/theme contrast audit.
-2. Production web build.
-3. Playwright DOM contrast audit against rendered screens.
-4. Playwright smoke test for the core game flow.
+1. Knip static dependency and export checks.
+2. Game and audio logic regression tests.
+3. Static WCAG token/theme contrast audit.
+4. Production web build.
+5. Playwright DOM contrast audit against rendered screens.
+6. Playwright smoke test for the core game flow.
 
 The Playwright scripts start a local static server for `docs/` automatically. To target an external deployment instead, pass `SCS_BASE`:
 
@@ -42,6 +44,8 @@ npm run smoke-test
 ```
 
 ## Android Build
+
+`npm run cap:sync` is mandatory before every Android debug or release build. It runs the production web build and then copies the current `docs/` output and Capacitor configuration into the Android project. Running Gradle without this step can package stale web assets.
 
 ```powershell
 npm ci
@@ -56,18 +60,48 @@ Debug APK:
 android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Release APK/AAB signing must use a private keystore that is never committed.
+## Google Play Release
+
+Google Play requires an Android App Bundle (AAB) signed with the app's upload key. Before the first release:
+
+1. Create the app in Play Console with package name `com.scs.play`.
+2. Enroll in Play App Signing and create or securely obtain the upload keystore, key alias, and passwords. Back them up outside the repository.
+3. Complete the Play Console store listing, privacy-policy URL, Data safety form, content rating, target-audience declaration, and app-access declaration.
+4. Confirm `versionCode` is unique and increasing and that `versionName` is intentional in `android/app/build.gradle`.
+5. Install JDK 21 and Android SDK Platform 36, and confirm Android Studio and Gradle use JDK 21.
+6. Run the full local gate, followed by the mandatory sync:
+
+```powershell
+npm ci
+npm run verify
+npm run cap:sync
+```
+
+The release build reads signing credentials from Gradle properties or environment variables. Keep all values and the keystore outside source control:
+
+```powershell
+$env:SCS_RELEASE_STORE_FILE="C:\secure\scs-upload.jks"
+$env:SCS_RELEASE_STORE_PASSWORD="..."
+$env:SCS_RELEASE_KEY_ALIAS="scs-upload"
+$env:SCS_RELEASE_KEY_PASSWORD="..."
+```
+
+With all four values set, `bundleRelease` creates a signed AAB. Without them it creates an unsigned artifact for local checks. Android Studio's **Build > Generate Signed Bundle / APK** remains a supported alternative.
+
+For a local unsigned release artifact check after `cap:sync`:
 
 ```powershell
 cd android
-.\gradlew.bat assembleRelease
+.\gradlew.bat bundleRelease
 ```
 
-Unsigned release APK:
+Release bundle output:
 
 ```text
-android/app/build/outputs/apk/release/app-release-unsigned.apk
+android/app/build/outputs/bundle/release/app-release.aab
 ```
+
+Do not upload it until its signature has been verified. For the signed bundle, run `jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab` and require successful verification before submission.
 
 ## Android Studio
 
@@ -78,7 +112,11 @@ npm run cap:open
 ## Release Checklist
 
 1. `npm run verify` passes locally.
-2. No secrets or signing files are staged.
-3. Generated `docs/` diffs are expected and come from `npm run build:prod`.
-4. Android version metadata is intentionally updated when releasing native builds.
-5. GitHub Actions is green on the pushed branch before collaborator access or store submission.
+2. `npm run cap:sync` is run after the final source change and before the final AAB build.
+3. The AAB is signed with the upload key and its signature is verified.
+4. No secrets, keystores, signing properties, or generated APK/AAB files are staged.
+5. Generated `docs/` diffs are expected and come from `npm run build:prod`.
+6. `versionCode` and `versionName` are intentionally updated for the release.
+7. Play Console declarations match the shipped build: no ads, no real-money in-app purchases, guest-only accounts, and locally stored gameplay data.
+8. The ten-mode top-level store catalog and all submitted screenshots match the release build.
+9. GitHub Actions is green before store submission.

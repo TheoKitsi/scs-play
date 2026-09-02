@@ -226,9 +226,8 @@ export const CONFIG = {
 
   /* ─── Canonical mode order for carousel ─── */
   MODE_ORDER: [
-    'klassik', 'beginner', 'expert', 'ultra',
-    'mathe', 'algebra',
-    'worte', 'hauptstaedte', 'wissen',
+    'klassik', 'beginner', 'expert',
+    'mathe', 'wissen',
     'memo', 'sequenz',
     'stroop', 'fokus', 'chaos'
   ],

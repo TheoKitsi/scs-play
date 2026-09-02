@@ -1,40 +1,36 @@
 # SCS Play — Store Listing
 
 ## Kurzbeschreibung (80 Zeichen max)
-Reflexe, Gehirn, Geschwindigkeit — 14 Modi, ein Spiel. Trainiere jetzt.
+10 schnelle Modi fuer Reflexe, Fokus, Mathe und Gedaechtnis.
 
 ## Short Description (80 chars max)
-Reflexes, brain, speed — 14 modes, one game. Train now.
+10 fast modes for reflexes, focus, math, and memory.
 
 ## Vollstaendige Beschreibung (DE)
 
 SCS PLAY — Swipe. Sort. Score.
 
-Teste deine Reflexe. Trainiere dein Gehirn. In 30 oder 60 Sekunden.
+Teste deine Reflexe. Trainiere Fokus und Gedaechtnis. In kurzen Runden.
 
-14 Spielmodi fordern unterschiedliche kognitive Faehigkeiten — von Farbsortierung und Formerkennung ueber mathematisches Rechnen bis hin zu Gedaechtnistraining und Reaktionsschnelligkeit.
+10 zentrale Spielmodi fordern unterschiedliche Faehigkeiten - von Farbsortierung und Formerkennung ueber Kopfrechnen bis zu Gedaechtnis und Reaktionsschnelligkeit.
 
 SPIELMODI
 
 Sortieren
 - Farben — 4 Farben, reine Geschwindigkeit
-- Formen — Formen und Farben diagonal zuordnen
+- Formen — Formen der passenden Richtung zuordnen
 - Expert — 8 Richtungen fuer Fortgeschrittene
-- Ultra — 12 Richtungen, maximale Komplexitaet
 
 Denken
 - Mathe — Kopfrechnen unter Zeitdruck
-- Algebra — Gleichungen loesen, Variablen finden
-- Hauptstaedte — Weltwissen testen
 - Wissen — Allgemeinwissen aus vielen Kategorien
-- Woerter — Woerter nach Kategorien sortieren
 
 Merken
-- Stroop — Farbname vs. Schriftfarbe
 - Memo — Ecken merken und blind zuordnen
 - Sequenz — Muster merken und wiederholen
 
 Reflex
+- Stroop — Farbname vs. Schriftfarbe
 - Fokus — Flanker-Test mit Ablenkung
 - Chaos — Wechselnde Regeln in Echtzeit
 
@@ -46,48 +42,45 @@ WAS SCS PLAY BESONDERS MACHT
 - Corner Shuffle — die Zuordnung aendert sich waehrend des Spiels
 - 30 Level mit steigender XP-Kurve
 - Ueber 100 Achievements, davon versteckte Raritaeten
-- Taegliche Herausforderungen mit Login-Streak-Belohnungen
+- Taegliche Herausforderungen mit Serien-Belohnungen
 - Gluecksrad mit taeglichem Spin
-- 4 Spieltypen: Blitz (30s), Marathon (60s), Endlos, Wettkampf
-- Offline spielbar, kein Account noetig
+- Mehrere Spieltypen: Blitz (30s), Marathon (60s), Endlos und Wettkampf
+- Kernspiel offline spielbar; kein Account noetig
+- Lokale Bestleistungen und teilbare Ergebnisse
 
 FUER WEN
 
 - Kurze Pausen: Eine Runde dauert 30-60 Sekunden
-- Gehirntraining: Reaktion, Gedaechtnis, Konzentration messen
-- Wettbewerb: Leaderboard und teilbare Ergebnisse
+- Gehirntraining: Reaktion, Gedaechtnis und Konzentration ueben
+- Eigene Bestleistungen verbessern und Ergebnisse teilen
 
-Kostenlos. Keine Werbung waehrend des Spielens.
+Kostenlos. Keine Werbung. Keine Echtgeldkaeufe.
 
 ## Full Description (EN)
 
 SCS PLAY — Swipe. Sort. Score.
 
-Test your reflexes. Train your brain. In 30 or 60 seconds.
+Test your reflexes. Train focus and memory. In quick rounds.
 
-14 game modes challenge different cognitive skills — from color sorting and shape recognition to mental math, memory training, and reaction speed.
+10 core game modes challenge different skills, from color sorting and shape recognition to mental math, memory, and reaction speed.
 
 GAME MODES
 
 Sort
 - Colors — 4 colors, pure speed
-- Shapes — Match shapes and colors diagonally
+- Shapes — Match each shape to the correct direction
 - Expert — 8 directions for advanced players
-- Ultra — 12 directions, maximum complexity
 
 Think
 - Math — Mental arithmetic under time pressure
-- Algebra — Solve equations, find variables
-- Capitals — Test your world knowledge
 - Trivia — General knowledge across categories
-- Words — Sort words by category
 
 Remember
-- Stroop — Color name vs. ink color
 - Memo — Memorize corners, match blindly
 - Sequence — Remember and replay patterns
 
 Reflex
+- Stroop — Color name vs. ink color
 - Focus — Flanker test with distractions
 - Chaos — Rules change in real time
 
@@ -99,29 +92,38 @@ WHAT MAKES SCS PLAY DIFFERENT
 - Corner Shuffle — assignments change mid-game
 - 30 levels with escalating XP curve
 - Over 100 achievements, including hidden rarities
-- Daily challenges with login streak rewards
+- Daily challenges with play-streak rewards
 - Fortune wheel with daily spin
-- 4 play types: Blitz (30s), Marathon (60s), Endless, Competition
-- Works offline, no account required
+- Multiple play types: Blitz (30s), Marathon (60s), Endless, and Competition
+- Core gameplay works offline; no account required
+- Local personal bests and shareable results
 
 WHO IT IS FOR
 
 - Quick breaks: One round takes 30-60 seconds
-- Brain training: Measure reaction, memory, focus
-- Competition: Leaderboard and shareable results
+- Brain training: Practice reaction, memory, and focus
+- Improve your own best scores and share results
 
-Free. No ads during gameplay.
+Free. No ads. No real-money purchases.
 
 ## Kategorien / Categories
 Primary: Game > Puzzle
 Secondary: Game > Educational
 
-## Screenshots (Phone — 16:9 or 2:3)
-1. Boot screen with logo and tagline
-2. Home screen with mode selection grid
-3. Active gameplay — Farben mode with combo counter
-4. Fever Mode activated — visual effect
-5. Results screen with XP ring and stats
-6. Achievement screen with categories
-7. Daily challenge complete
-8. Rush mode rapid-fire sequence
+## Play Store Assets
+
+- Store icon: `img/store-icon-512.png` (512 x 512)
+- Feature graphic: `img/feature-graphic-1024x500.png` (1024 x 500)
+
+Use only screenshots from `screenshots/small-android/`; their 360 x 640 ratio is Play-compatible. The Galaxy S25 captures are for internal visual review and exceed a 2:1 aspect ratio.
+
+Recommended phone screenshots:
+
+1. `01-boot-auth.png` - immediate guest entry
+2. `02-home-top.png` - focused mode selection
+3. `08-game-active.png` - active gameplay
+4. `10-game-instruction.png` - mode onboarding
+5. `10-results.png` - results and mastery
+6. `04-achievements.png` - achievement progression
+7. `05-store.png` - earned visual collection
+8. `06-settings-bottom.png` - controls and legal links

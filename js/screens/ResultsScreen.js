@@ -6,7 +6,6 @@ import { CONFIG }           from '../config.js';
 import { t, getLanguage }    from '../i18n.js';
 import { $, setText, showScreen } from '../helpers/dom.js';
 import { haptic }           from '../helpers/haptics.js';
-import { showAdInterstitial, isAdFree } from '../services/AdService.js';
 import app                   from '../appState.js';
 import { updateXPBar }      from '../helpers/xpBarHelper.js';
 import { updateLivesDisplay } from '../helpers/livesDisplayHelper.js';
@@ -186,17 +185,14 @@ export async function showResults(stats, canContinue = false) {
   }
 
   showScreen('results', app);
-  if (!canContinue) {
-    void showAdInterstitial(save, app.sessionGames);
-  }
   if (engagement) engagement.markResultsShown();
   if (stats.score > app.sessionBest) app.sessionBest = stats.score;
 
   /* v19: Victory jingle based on performance tier */
   if (!canContinue && typeof audio.victoryJingle === 'function') {
-    const tier = stats.accuracy >= 95 && stats.score >= 5000 ? 3
-      : stats.accuracy >= 80 && stats.score >= 2000 ? 2
-      : stats.accuracy >= 60 ? 1 : 0;
+    const tier = stats.accuracy >= 95 && stats.score >= 5000 ? 'platinum'
+      : stats.accuracy >= 80 && stats.score >= 2000 ? 'gold'
+      : stats.accuracy >= 60 ? 'silver' : 'bronze';
     audio.victoryJingle(tier);
   }
 
@@ -416,16 +412,10 @@ export async function showResults(stats, canContinue = false) {
       setText('#resContinueDesc', t('continue_desc', { n: CONFIG.CONTINUE_EXTRA_TIME }));
       const lives = save.getLives();
       const btnUse = $('#btnResContinueUse');
-      const btnBuy = $('#btnResContinueBuy');
-      const btnAd  = $('#btnResContinueAd');
       if (lives > 0) {
         if (btnUse) { btnUse.style.display = ''; btnUse.textContent = `${t('continue_btn')} (${t('continue_lives', { n: lives })})`; }
-        if (btnBuy) btnBuy.style.display = 'none';
-        if (btnAd)  btnAd.style.display = 'none';
       } else {
         if (btnUse) btnUse.style.display = 'none';
-        if (btnBuy) btnBuy.style.display = '';
-        if (btnAd)  btnAd.style.display = isAdFree(save) ? 'none' : '';
       }
     }
   } else {
@@ -645,6 +635,16 @@ function renderMasteryInsights(mastery, stats) {
 
   const mode = stats.mode;
   let insights = [];
+
+  if (!stats.correct) {
+    el.style.display = '';
+    el.classList.add('results-mastery--empty');
+    el.innerHTML = `<div class="results-mastery-title">Mastery</div><p>${getLanguage() === 'de'
+      ? 'Deine Modus-Analyse startet mit der ersten richtigen Antwort.'
+      : 'Your mode analysis starts with the first correct answer.'}</p>`;
+    return;
+  }
+  el.classList.remove('results-mastery--empty');
 
   if (mode === 'klassik') {
     insights = getKlassikInsights(mastery, stats);

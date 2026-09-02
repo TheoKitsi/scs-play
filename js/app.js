@@ -3,12 +3,12 @@
    Wires all modules, binds events, boots.
    ═══════════════════════════════════════ */
 import { haptic } from './helpers/haptics.js';
-import { CONFIG, DEBUG }    from './config.js';
+import { DEBUG }            from './config.js';
 import { t }                from './i18n.js';
 import { $, $$, showScreen } from './helpers/dom.js';
+import { closeModal }        from './helpers/modal.js';
 import { initPerfMode }     from './helpers/perfMode.js';
 import { getUnlockLevel }   from './helpers/modeUnlockHelper.js';
-import { updateLivesDisplay } from './helpers/livesDisplayHelper.js';
 import { bindQaHooks, checkOrientation, initBackButton, initErrorBoundary,
          initGestureNavInset, initOfflineIndicator, initOrientationListeners,
          initPwaInstallPrompt, initVisibilityPause, initWakeLock }
@@ -18,7 +18,6 @@ import { AuthService }      from './auth.js';
 import { SaveService }      from './save.js';
 import { GameEngine }       from './game/GameEngine.js';
 import { shareScore }       from './services/ShareService.js';
-import { initAdService, showRewardedAd } from './services/AdService.js';
 import { bindMicroFeedback } from './helpers/microFeedback.js';
 import { ModeMastery }      from './game/ModeMastery.js';
 import app                  from './appState.js';
@@ -32,16 +31,16 @@ import { getBodyFx }        from './services/EffectsService.js';
 import { showTutorial, tutorialNext, tutorialPrev, tutorialFinish }
                             from './screens/TutorialScreen.js';
 import { startGame, beginGame, doCountdown, pauseGame, resumeGame,
-         restartGame, quitGame, stopPractice }
+         reopenPauseMenu, restartGame, quitGame, stopPractice }
                             from './screens/GameScreen.js';
 import { showResults, showContinuePrompt, doContinue, declineContinue,
          wasLastGameGood }
                             from './screens/ResultsScreen.js';
 import { showLeaderboard }  from './screens/LeaderboardScreen.js';
 import { showAchievements } from './screens/AchievementsScreen.js';
-import { showSettings, bindSettings }
+import { showSettings, bindSettings, backFromSettings }
                             from './screens/SettingsScreen.js';
-import { showStore, bindShopTabs, updateShopLives }
+import { showStore, bindShopTabs }
                             from './screens/StoreScreen.js';
 import { bindWheel, updateWheelCard }
                             from './screens/WheelScreen.js';
@@ -192,32 +191,17 @@ function bindEvents() {
   $('#btnResume')?.addEventListener('click',        () => resumeGame());
   $('#btnPauseRestart')?.addEventListener('click',  () => restartGame(navShowTutorial, navShowResults, navShowHome, navShowContinuePrompt));
   $('#btnPauseSettings')?.addEventListener('click', () => {
-    $('#pauseOverlay')?.classList.remove('active');
-    showSettings(true, navShowHome);
+    closeModal($('#pauseOverlay'), { restoreFocus: false });
+    showSettings(true, navShowHome, () => {
+      showScreen('game', app);
+      reopenPauseMenu();
+    });
   });
   $('#btnPauseQuit')?.addEventListener('click', () => { app.engagement?.trackPauseToQuit(); quitGame(navShowHome); });
 
   /* ─ Continue prompt ─ */
   $('#btnResContinueUse')?.addEventListener('click', () => doContinue());
   $('#btnResContinueNo')?.addEventListener('click',  () => declineContinue());
-  $('#btnResContinueBuy')?.addEventListener('click', () => {
-    app.continueStats = null;
-    app.game.declineContinue();
-    navShowStore();
-  });
-  $('#btnResContinueAd')?.addEventListener('click', async () => {
-    const rewarded = await showRewardedAd(save);
-    if (!rewarded) {
-      getBodyFx().achievementToast(t('ad_failed') || 'Ad not available');
-      return;
-    }
-    await save.addLives(CONFIG.LIVES_REWARDED_AD);
-    updateLivesDisplay();
-    updateShopLives();
-    getBodyFx().achievementToast(t('iap_lives_added', { n: CONFIG.LIVES_REWARDED_AD }));
-    setTimeout(() => doContinue(), 500);
-  });
-
   /* ─ Shop tabs ─ */
   bindShopTabs();
   bindWheel();
@@ -236,7 +220,9 @@ function bindEvents() {
 
   /* ─ Bottom back buttons (phone-friendly) ─ */
   $$('.btn-back-bottom').forEach(btn => {
-    btn.addEventListener('click', () => navShowHome());
+    btn.addEventListener('click', () => {
+      if (!btn._customBack) navShowHome();
+    });
   });
 
   initOrientationListeners();
@@ -256,10 +242,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tapTarget) haptic('tap', app.save);
   });
   bindEvents();
-  initAdService();
   boot(navShowHome, navShowAuth);
   initOfflineIndicator();
   initVisibilityPause(pauseGame);
-  initBackButton({ pauseGame, quitGame: () => quitGame(navShowHome), showHome: navShowHome });
+  initBackButton({ pauseGame, quitGame: () => quitGame(navShowHome), showHome: navShowHome, backFromSettings });
   checkOrientation();
 });

@@ -4,7 +4,7 @@
 const S = {
   de: {
     app_title:'SCS Play', app_sub:'Sortieren · Denken · Reagieren',
-    play:'SPIELEN', practice:'ÜBUNG', leaderboard:'BESTENLISTE', settings:'EINSTELLUNGEN', settings_footer:'MEHR',
+    play:'SPIELEN', practice:'ÜBUNG', leaderboard:'BESTLEISTUNGEN', settings:'EINSTELLUNGEN', settings_footer:'MEHR',
     login:'Anmelden', logout:'Abmelden', guest:'Als Gast spielen',
     google_login:'Mit Google anmelden', apple_login:'Mit Apple anmelden',
     email_login:'Mit E-Mail anmelden', email_placeholder:'E-Mail-Adresse',
@@ -53,7 +53,7 @@ const S = {
     mode_expert_desc:'8 Richtungen – Für Profis!',
     mode_ultra_desc:'12 Richtungen – Ultimativ!',
     select_mode:'Modus wählen',
-    leaderboard_short:'Rang', achievements_short:'Erfolge',
+    leaderboard_short:'Besten', achievements_short:'Erfolge',
     mode_locked:'Ab Level {n}',
     mode_locked_toast:'Erreiche Level {n}, um diesen Modus freizuschalten!',
     /* Play types */
@@ -125,7 +125,7 @@ const S = {
     continue_buy:'Leben kaufen',
     no_lives:'Keine Leben mehr',
     /* Store / IAP */
-    store:'SHOP', store_sub:'Upgrades & Extras',
+    store:'SAMMLUNG', store_sub:'Erspielte Themen & Trails', privacy_policy:'Datenschutz', terms_of_service:'Nutzungsbedingungen',
     iap_adfree:'Werbefrei', iap_adfree_desc:'Alle Werbung entfernen',
     iap_lives3:'3 Leben', iap_lives3_desc:'3× Weiterspielen',
     iap_lives10:'10 Leben', iap_lives10_desc:'10× Weiterspielen',
@@ -489,7 +489,7 @@ const S = {
   },
   en: {
     app_title:'SCS Play', app_sub:'Sort · Think · React',
-    play:'PLAY', practice:'PRACTICE', leaderboard:'LEADERBOARD', settings:'SETTINGS', settings_footer:'MORE',
+    play:'PLAY', practice:'PRACTICE', leaderboard:'PERSONAL BESTS', settings:'SETTINGS', settings_footer:'MORE',
     login:'Sign In', logout:'Sign Out', guest:'Play as Guest',
     google_login:'Sign in with Google', apple_login:'Sign in with Apple',
     email_login:'Sign in with Email', email_placeholder:'Email address',
@@ -536,7 +536,7 @@ const S = {
     mode_expert_desc:'8 Directions – For pros!',
     mode_ultra_desc:'12 Directions – Ultimate!',
     select_mode:'Select Mode',
-    leaderboard_short:'Rank', achievements_short:'Achievements',
+    leaderboard_short:'Bests', achievements_short:'Achievements',
     mode_locked:'Unlocks at Lv {n}',
     mode_locked_toast:'Reach Level {n} to unlock this mode!',
     play_blitz:'BLITZ',
@@ -598,7 +598,7 @@ const S = {
     continue_no:'No thanks',
     continue_buy:'Buy Lives',
     no_lives:'No lives left',
-    store:'SHOP', store_sub:'Upgrades & Extras',
+    store:'COLLECTION', store_sub:'Earned themes & trails', privacy_policy:'Privacy policy', terms_of_service:'Terms of service',
     iap_adfree:'Ad-Free', iap_adfree_desc:'Remove all ads',
     iap_lives3:'3 Lives', iap_lives3_desc:'3× Continue',
     iap_lives10:'10 Lives', iap_lives10_desc:'10× Continue',

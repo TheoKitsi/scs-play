@@ -1,7 +1,7 @@
 {
   "name": "SCS Play — Swipe Sort Score",
   "short_name": "SCS Play",
-  "description": "14 game modes — reflexes, brain training, speed. Swipe, sort, score.",
+  "description": "Ten focused reflex, math, memory and attention games. Swipe, sort, score.",
   "start_url": "./index.html",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],

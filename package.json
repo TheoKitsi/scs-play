@@ -2,7 +2,7 @@
   "name": "scs-play",
   "version": "2.0.0",
   "type": "module",
-  "description": "SCS Play — 14 game modes, reflexes, brain training, speed",
+  "description": "SCS Play - 10-mode reflex, focus, math, and memory game",
   "private": true,
   "scripts": {
     "build": "node scripts/build-cap.mjs",
@@ -10,11 +10,13 @@
     "music:generate": "node scripts/generate-music.mjs",
     "smoke-test": "node scripts/smoke-test.mjs",
     "visual-review": "node scripts/visual-review.mjs",
+    "store-assets": "node scripts/generate-store-assets.mjs",
     "contrast-audit": "node scripts/contrast-audit.mjs",
     "contrast-audit:dom": "node scripts/dom-contrast-audit.mjs",
     "game-logic-test": "node scripts/game-logic-test.mjs",
+    "audio-logic-test": "node scripts/audio-logic-test.mjs",
     "knip": "knip --no-progress",
-    "verify": "npm run knip && npm run game-logic-test && npm run contrast-audit && npm run build:prod && npm run contrast-audit:dom && npm run smoke-test",
+    "verify": "npm run knip && npm run game-logic-test && npm run audio-logic-test && npm run contrast-audit && npm run build:prod && npm run contrast-audit:dom && npm run smoke-test",
     "cap:sync": "node scripts/build-prod.mjs && npx cap sync android",
     "cap:open": "npx cap open android",
     "cap:run": "node scripts/build-prod.mjs && npx cap run android"

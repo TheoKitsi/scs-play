@@ -11,7 +11,6 @@ import { closeModal, openModal } from '../helpers/modal.js';
 import { shapeSVG }         from '../renderers/shapes.js';
 import { SwipeHandler }     from '../input.js';
 import { EffectsManager }   from '../effects.js';
-import { updateGameAdBanner, isAdFree } from '../services/AdService.js';
 import app                   from '../appState.js';
 import { getBodyFx }        from '../services/EffectsService.js';
 import { startModeMastery, finishModeMastery } from './gameHud/modeMasteryLifecycle.js';
@@ -2006,8 +2005,6 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
   app.swipe = new SwipeHandler(gameScreen, app.selectedMode);
   app.swipe.bind();
 
-  updateGameAdBanner(save);
-
   const modeIndicator = $('#modeIndicator');
   if (modeIndicator) {
     const modeIcons = { beginner:'🟢', klassik:'🔵', expert:'🔷', ultra:'💎', mathe:'🧮', worte:'📝', memo:'🧠', sequenz:'🔔', stroop:'🎨', fokus:'🎯', chaos:'🌀', hauptstaedte:'🌍', algebra:'📐', wissen:'💡' };
@@ -2834,7 +2831,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
 /* ═══════ Pause / Resume / Quit ═══════ */
 export function pauseGame() {
-  const { game, audio, save } = app;
+  const { game, audio } = app;
   if (!game.running || game.paused) return;
   game.pause();
   audio.stopMusic();
@@ -2847,8 +2844,10 @@ export function pauseGame() {
       info.innerHTML += `<span class="pause-seq-warn">${t('sequenz_pause_warn')}</span>`;
     }
   }
-  const pauseAd = $('#pauseAdBanner');
-  if (pauseAd) pauseAd.classList.toggle('hidden', isAdFree(save));
+  reopenPauseMenu();
+}
+
+export function reopenPauseMenu() {
   const overlay = $('#pauseOverlay');
   openModal(overlay, { initialFocus: '#btnResume', onDismiss: resumeGame });
   if (overlay) overlay.onclick = (event) => { if (event.target === overlay) resumeGame(); };

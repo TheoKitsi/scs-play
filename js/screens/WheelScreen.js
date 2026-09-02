@@ -359,7 +359,6 @@ function renderWheelStatus() {
   const overlayBonus = $('#wheelOverlayBonus');
   const statusNote = $('#wheelStatusNote');
   const spinBtn = $('#btnWheelSpin');
-  const adBtn = $('#btnWheelAd');
 
   const streak = getWheelStreak();
   const upcomingStreak = getUpcomingSpinStreak();
@@ -393,15 +392,12 @@ function renderWheelStatus() {
   if (statusNote) {
     if (finished) statusNote.textContent = t('wheel_status_complete');
     else if (bonusReady) statusNote.textContent = t('wheel_bonus_ready');
-    else if (usedBaseSpinToday() && !hasBonusSpinUnlocked()) statusNote.textContent = t('wheel_ad_spin');
+    else if (usedBaseSpinToday()) statusNote.textContent = t('wheel_status_complete');
     else statusNote.textContent = t('wheel_subtitle');
   }
   if (spinBtn) {
     spinBtn.disabled = !canSpinNow() || spinning;
     spinBtn.textContent = bonusSpin ? t('wheel_bonus_spin') : t('wheel_spin');
-  }
-  if (adBtn) {
-    adBtn.style.display = usedBaseSpinToday() && !hasBonusSpinUnlocked() ? '' : 'none';
   }
 }
 
@@ -497,24 +493,6 @@ export function bindWheel() {
     renderPrizeStrip();
     renderWheelStatus();
     if (app.audio) app.audio.tap();
-  });
-
-  $('#btnWheelAd')?.addEventListener('click', async () => {
-    if (spinning || hasBonusSpinUnlocked()) return;
-    const { showRewardedAd } = await import('../services/AdService.js');
-    const rewarded = await showRewardedAd(app.save);
-    if (!rewarded) {
-      const fx = new EffectsManager(document.body);
-      fx.achievementToast(t('ad_failed') || 'Ad not available');
-      return;
-    }
-
-    const today = todayKey();
-    app.save.data.wheelBonusSpinUnlockedDate = today;
-    await app.save.save();
-    renderWheelStatus();
-    const fx = new EffectsManager(document.body);
-    fx.achievementToast(t('wheel_bonus_unlock_toast'));
   });
 
   $('#wheelOverlay')?.addEventListener('click', (e) => {

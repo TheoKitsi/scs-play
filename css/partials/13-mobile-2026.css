@@ -58,14 +58,7 @@ button:focus-visible,.btn:focus-visible{
 
 /* Home: one focused, full-height mode stage with a reachable action deck. */
 #home{background:#07090f}
-#home .home-viewport{isolation:isolate;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
-#home .ad-banner{
-  height:34px;
-  min-height:34px;
-  opacity:.58;
-  border-bottom:1px solid rgba(255,255,255,.05);
-}
-#home .ad-banner-placeholder{font-size:.68rem;letter-spacing:.04em}
+#home .home-viewport{isolation:isolate;overflow:hidden;overscroll-behavior:contain}
 #home .hero-zone{
   flex:1 1 auto;
   min-height:0;
@@ -217,8 +210,9 @@ button:focus-visible,.btn:focus-visible{
 #home .btn-play-fab::before{display:none}
 #home .home-bottom-sheet{
   flex:0 0 auto;
+  max-height:28dvh;
   min-height:0;
-  overflow:visible;
+  overflow-y:auto;
   gap:8px;
   padding:10px var(--phone-gutter) calc(78px + var(--bottom-inset));
   background:#0b0e15;
@@ -231,14 +225,14 @@ button:focus-visible,.btn:focus-visible{
 #home .quick-shortcuts{display:none!important}
 #home .today-actions{height:auto;min-height:62px;grid-template-columns:1fr 1fr;gap:8px}
 #home .today-actions .daily-card,#home .today-actions .wheel-card{
-  height:62px;
-  min-height:62px;
-  padding:2px 8px;
+  height:68px;
+  min-height:68px;
+  padding:7px 8px;
   border-radius:16px;
   background:#121720;
   border:1px solid rgba(255,255,255,.08);
 }
-#home .today-actions .daily-title{font-family:inherit;font-size:.68rem;letter-spacing:0;color:var(--text-dim)}
+#home .today-actions .daily-title{font-family:inherit;font-size:.62rem;line-height:1.25;letter-spacing:0;color:var(--text-dim)}
 #home .today-actions .btn-daily-cta,#home .today-actions .btn-wheel-cta{
   min-height:44px;
   font-family:inherit;
@@ -280,31 +274,28 @@ button:focus-visible,.btn:focus-visible{
 .footer-item.active{background:#252033;color:#d8ccff;box-shadow:none}
 .footer-item.active::after{display:none}
 
+.legal-links{
+  display:flex;
+  justify-content:center;
+  gap:18px;
+  margin:16px 0 4px;
+  font-size:.78rem;
+}
+.legal-links a{color:var(--text-muted);text-decoration:underline;text-underline-offset:3px}
+.legal-links a:focus-visible{outline:2px solid #c4b5fd;outline-offset:4px;border-radius:4px}
+
 /* Gameplay: information stays peripheral, the stimulus owns the stage. */
 #game{
   background:#06080d!important;
 }
 #game::before{
-  content:'';
-  position:absolute;
-  z-index:1;
-  left:50%;
-  top:56%;
-  width:min(92vw,420px);
-  aspect-ratio:1/1.25;
-  transform:translate(-50%,-50%);
-  border:1px solid hsla(var(--mode-hue,250),65%,65%,.09);
-  border-radius:48%;
-  background:radial-gradient(circle at 50% 50%,hsla(var(--mode-hue,250),70%,50%,.075),transparent 55%);
-  pointer-events:none;
+  display:none;
 }
-.game-ad-banner{opacity:.55;transform:scale(.85);transform-origin:top center}
 .timer-bar{height:3px;background:rgba(255,255,255,.06)}
 .hud{
   top:var(--safe-top);
   padding:10px var(--phone-gutter) 0;
 }
-body:not(.ad-free) .hud{top:34px}
 .hud-top{
   display:grid;
   grid-template-columns:48px minmax(0,1fr) 54px;
@@ -337,18 +328,22 @@ body:not(.ad-free) .hud{top:34px}
   text-align:center;
 }
 .mode-rule-label{
+  display:none!important;
+}
+body.mode-chaos .mode-rule-label{
+  display:block!important;
   position:absolute;
-  top:58px;
+  top:112px;
   left:50%;
   max-width:74vw;
   transform:translateX(-50%);
   padding:4px 10px;
-  border:0;
-  background:transparent;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(13,16,23,.88);
   font-family:inherit;
   font-size:.68rem;
   letter-spacing:.02em;
-  color:var(--text-muted);
+  color:var(--text-dim);
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
@@ -394,7 +389,6 @@ body:not(.ad-free) .hud{top:34px}
 .corner-shape svg{width:54px;height:54px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.36))}
 .corner-shape[data-dir="ur"],.corner-shape[data-dir="ul"]{top:31%}
 .corner-shape[data-dir="dr"],.corner-shape[data-dir="dl"]{bottom:10%}
-body:not(.ad-free) .corner-shape[data-dir="ur"],body:not(.ad-free) .corner-shape[data-dir="ul"]{top:34%}
 .center-platform{
   top:56%;
   width:clamp(132px,36vw,158px)!important;
@@ -403,10 +397,23 @@ body:not(.ad-free) .corner-shape[data-dir="ur"],body:not(.ad-free) .corner-shape
   background:rgba(13,17,25,.88);
   box-shadow:0 20px 50px rgba(0,0,0,.4),0 0 48px hsla(var(--mode-hue,250),70%,50%,.1);
 }
-body:not(.ad-free) .center-platform{top:58%}
 .center-shape svg{width:92px;height:92px}
 .pb-proximity{font-size:.7rem;opacity:.78}
-.rush-text,.fever-text,.combo-text,.shuffle-text{font-family:inherit;letter-spacing:-.02em}
+.rush-text,.fever-text,.combo-text,.shuffle-text{
+  font-family:inherit;
+  max-width:80vw;
+  font-size:clamp(1.45rem,5.5vw,2.2rem);
+  letter-spacing:.01em;
+}
+
+.results-mastery--empty{
+  padding:14px 16px;
+  border-color:rgba(167,139,250,.16);
+  background:rgba(139,92,246,.06);
+  color:var(--text-dim);
+  text-align:center;
+}
+.results-mastery--empty p{margin:4px 0 0;font-size:.78rem;line-height:1.4}
 
 /* Pause is a bottom action sheet, not an advertising interstitial. */
 .pause-overlay{align-items:flex-end;justify-content:flex-end;padding:var(--phone-gutter);background:rgba(2,4,8,.76);backdrop-filter:blur(12px)}
@@ -591,7 +598,8 @@ body:not(.ad-free) .center-platform{top:58%}
   #home .play-type-btn{min-height:42px}
   #home .btn-play-fab{min-height:54px}
   #home .home-bottom-sheet{padding-top:7px;padding-bottom:calc(75px + var(--bottom-inset))}
-  #home .today-actions,#home .today-actions .daily-card,#home .today-actions .wheel-card{min-height:62px;height:62px}
+  #home .today-actions{min-height:68px;height:68px}
+  #home .today-actions .daily-card,#home .today-actions .wheel-card{min-height:68px;height:68px}
   .wheel-panel{padding:14px 14px 12px}
   .wheel-heading{font-size:1.1rem;margin-bottom:3px}
   .wheel-subtitle,.wheel-prize-strip{display:none}

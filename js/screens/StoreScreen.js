@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════
    SCS Play — Store Screen
-   IAP items, themes, trails tabs.
+   Earned themes and trails.
    ═══════════════════════════════════════ */
 import { CONFIG }           from '../config.js';
 import { t }                from '../i18n.js';
@@ -10,57 +10,16 @@ import { applyTheme }       from '../services/ThemeService.js';
 import app                   from '../appState.js';
 import { getBodyFx }        from '../services/EffectsService.js';
 
-const IAP_ITEMS = [
-  { id: 'adfree',       price: '4,99 \u20AC', lives: 0 },
-  { id: 'lives3',       price: '0,99 \u20AC', lives: 3 },
-  { id: 'lives10',      price: '2,99 \u20AC', lives: 10 },
-  { id: 'avatar_photo', price: '1,99 \u20AC', lives: 0 },
-  { id: 'vip_bronze',   price: '9,99 \u20AC', lives: 5 },
-  { id: 'vip_silber',   price: '19,99 \u20AC', lives: 10 },
-  { id: 'vip_gold',     price: '29,99 \u20AC', lives: 20 }
-];
+let shopTab = 'themes';
 
-let shopTab = 'premium';
-
-export function updateShopLives() {
+function updateShopLives() {
   const { save } = app;
-  const el = $('#shopLivesCount');
-  if (el) el.textContent = save.getLives();
   const fireEl = $('#shopFireCount');
   if (fireEl) fireEl.textContent = save.getFireBalance();
-  const bar = $('#shopLivesBar');
-  if (bar) bar.style.display = shopTab === 'premium' ? '' : 'none';
 }
 
 function renderShopTabs() {
   $$('.shop-tab').forEach(btn => btn.classList.toggle('selected', btn.dataset.tab === shopTab));
-}
-
-function renderStoreItems() {
-  const { save } = app;
-  const list = $('#storeList');
-  if (!list) return;
-  list.className = 'store-list';
-  list.innerHTML = IAP_ITEMS.map((item, i) => {
-    const isVip = item.id.startsWith('vip_');
-    const owned = (item.id === 'adfree' || isVip) && save.hasPurchase(item.id);
-    return `
-      <div class="store-item ${owned ? 'owned' : ''} ${isVip || item.id === 'adfree' ? 'premium-glow-item' : ''}" data-iap="${item.id}">
-        <div class="store-item-info">
-          <span class="store-item-name">${t('iap_' + item.id)}</span>
-          <span class="store-item-desc">${t('iap_' + item.id + '_desc')}</span>
-        </div>
-        <button class="btn btn-store-buy">${t('iap_demo_label')} · ${item.price}</button>
-      </div>`;
-  }).join('');
-
-  $$('.btn-store-buy', list).forEach(btn => {
-    if (btn.disabled) return;
-    btn.addEventListener('click', () => {
-      const id = btn.closest('.store-item')?.dataset.iap;
-      if (id) handlePurchase(id);
-    });
-  });
 }
 
 function renderUnlockItems(type) {
@@ -91,7 +50,7 @@ function renderUnlockItems(type) {
     } else if (isOwned) {
       btnHTML = `<button class="btn-unlock btn-activate" data-id="${item.id}" data-type="${type}">${t('unlockable_activate')}</button>`;
     } else {
-      btnHTML = `<button class="btn-unlock btn-fire-buy ${canAfford ? '' : 'btn-locked'}" data-id="${item.id}" data-type="${type}" data-cost="${cost}" ${canAfford ? '' : 'disabled'}>\uD83D\uDD25 ${cost}${!canAfford ? ' ' + t('fire_balance_short', { n: fireBalance }) : ''}</button>`;
+      btnHTML = `<button class="btn-unlock btn-fire-buy ${canAfford ? '' : 'btn-locked'}" data-id="${item.id}" data-type="${type}" data-cost="${cost}" ${canAfford ? '' : 'disabled'}>\uD83D\uDD25 ${cost}</button>`;
     }
 
     return `
@@ -148,22 +107,14 @@ function renderUnlockItems(type) {
 }
 
 function renderShopContent() {
-  if (shopTab === 'premium') renderStoreItems();
-  else if (shopTab === 'themes') renderUnlockItems('themes');
+  if (shopTab === 'themes') renderUnlockItems('themes');
   else if (shopTab === 'trails') renderUnlockItems('trails');
-}
-
-async function handlePurchase(id) {
-  const item = IAP_ITEMS.find(i => i.id === id);
-  if (!item) return;
-  getBodyFx().achievementToast(t('iap_demo_notice'));
-  app.audio.tap();
 }
 
 export function showStore(showHome) {
   const { audio } = app;
   showScreen('store', app);
-  shopTab = 'premium';
+  shopTab = 'themes';
   renderShopTabs();
   renderShopContent();
   updateShopLives();

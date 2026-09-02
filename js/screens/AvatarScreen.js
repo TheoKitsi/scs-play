@@ -96,22 +96,16 @@ function resizeImageToBase64(file, maxSize = 128) {
   });
 }
 
-function setupAvatarUpload(showStore) {
+function setupAvatarUpload() {
   const { save, audio } = app;
-  const locked   = $('#avatarUploadLocked');
   const unlocked = $('#avatarUploadUnlocked');
   const fileInput = $('#avatarFileInput');
   const removeBtn = $('#btnAvatarRemovePhoto');
-  const buyBtn   = $('#btnAvatarBuyUpload');
-
-  const hasPurchased = save.hasPurchase('avatar_photo');
-  if (locked)   locked.style.display = hasPurchased ? 'none' : '';
-  if (unlocked) unlocked.style.display = hasPurchased ? '' : 'none';
+  if (unlocked) unlocked.style.display = '';
 
   const avatar = save.getAvatar();
   if (removeBtn) removeBtn.style.display = avatar.photo ? '' : 'none';
 
-  if (buyBtn) { buyBtn.onclick = () => { showStore(); audio.tap(); }; }
 
   if (fileInput) {
     fileInput.value = '';
@@ -147,7 +141,7 @@ export function showAvatarSelect(showStore) {
   renderAvatarPreview(avatar.icon, avatar.colorIndex, avatar.photo);
   renderAvatarIconGrid(avatar.icon);
   renderAvatarColorGrid(avatar.colorIndex);
-  setupAvatarUpload(showStore);
+  setupAvatarUpload();
 }
 
 export function bindAvatarSave(showHome) {

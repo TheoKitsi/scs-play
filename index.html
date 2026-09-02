@@ -8,13 +8,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#07090f">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="SCS Play &ndash; Sort &middot; Think &middot; React. Fast-paced brain training with 14 game modes!">
+  <meta name="description" content="SCS Play &ndash; Sort &middot; Think &middot; React. Ten focused reflex, math, memory and attention games.">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
   <!-- Open Graph -->
   <meta property="og:title" content="SCS Play &ndash; Sort &middot; Think &middot; React">
-  <meta property="og:description" content="Fast-paced brain training with 14 game modes &ndash; Sort, Math, Memory &amp; more.">
+  <meta property="og:description" content="Ten focused reflex, math, memory and attention games.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="img/icon-512.svg">
 
@@ -181,15 +181,6 @@
 <!-- ═══════ HOME ═══════ -->
 <div id="home" class="screen">
   <div class="home-viewport">
-
-    <!-- Ad banner — top of screen -->
-    <div id="adBanner" class="ad-banner">
-      <span class="ad-banner-text">AD</span>
-      <div class="ad-banner-placeholder">
-        <svg class="ui-icon" viewBox="0 0 24 24" style="opacity:.3"><use href="#icon-ad"></use></svg>
-        <span data-i18n="game_ad_text">WERBUNG</span>
-      </div>
-    </div>
 
     <!-- ═══ HERO ZONE — swipeable mode carousel ═══ -->
     <div class="hero-zone" id="heroZone">
@@ -455,7 +446,7 @@
       </button>
       <button id="btnStore" class="footer-item">
         <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-cart"></use></svg></span>
-        <span class="footer-label" data-i18n="store">Shop</span>
+        <span class="footer-label" data-i18n="store">Sammlung</span>
       </button>
       <button id="btnSettings" class="footer-item">
         <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-gear"></use></svg></span>
@@ -539,15 +530,6 @@
 
 <!-- ═══════ GAME ═══════ -->
 <div id="game" class="screen" role="application" aria-label="Spielfeld">
-  <!-- Game Ad Banner -->
-  <div id="gameAdBanner" class="game-ad-banner">
-    <span class="game-ad-banner-label" data-i18n="game_ad_text">AD</span>
-    <div class="game-ad-banner-placeholder">
-      <svg class="ui-icon" viewBox="0 0 24 24" style="opacity:.3"><use href="#icon-ad"></use></svg>
-      <span data-i18n="game_ad_text">WERBUNG</span>
-    </div>
-  </div>
-
   <!-- Timer progress bar (v14) -->
   <div class="timer-bar" role="progressbar" aria-label="Time remaining"><div id="timerBarFill" class="timer-bar-fill"></div></div>
 
@@ -647,14 +629,6 @@
 
   <!-- PAUSE Overlay -->
   <div id="pauseOverlay" class="pause-overlay" role="dialog" aria-label="Pause" aria-modal="true" aria-hidden="true">
-    <!-- Pause Ad Banner (larger) -->
-    <div id="pauseAdBanner" class="pause-ad-banner">
-      <span class="pause-ad-label">AD</span>
-      <div class="pause-ad-placeholder">
-        <svg class="ui-icon" viewBox="0 0 24 24" style="opacity:.2"><use href="#icon-ad"></use></svg>
-        <span data-i18n="game_ad_text">WERBUNG</span>
-      </div>
-    </div>
     <div class="pause-panel">
       <div id="pauseGameInfo" class="pause-game-info"></div>
       <h2 data-i18n="paused"><svg class="ui-icon" viewBox="0 0 24 24" style="vertical-align:middle"><use href="#icon-pause"></use></svg> PAUSE</h2>
@@ -732,8 +706,6 @@
         <p id="resContinueDesc" class="results-continue-desc"></p>
         <div class="results-continue-btns">
           <button id="btnResContinueUse" class="btn btn-primary btn-continue-use"></button>
-          <button id="btnResContinueBuy" class="btn btn-secondary btn-sm" data-i18n="continue_buy" style="display:none"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-cart"></use></svg> Leben kaufen</button>
-          <button id="btnResContinueAd" class="btn btn-ghost btn-sm" style="display:none"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg> <span data-i18n="watch_ad_life">Werbung schauen (+1 Leben)</span></button>
           <button id="btnResContinueNo" class="btn btn-ghost btn-sm" data-i18n="continue_no">Nein danke</button>
         </div>
       </div>
@@ -751,17 +723,13 @@
 <!-- ═══════ LEADERBOARD ═══════ -->
 <div id="leaderboard" class="screen">
   <div class="screen-content">
-    <div class="screen-header"><h2 data-i18n="leaderboard">Bestenliste</h2></div>
+    <div class="screen-header"><h2 data-i18n="leaderboard">Bestleistungen</h2></div>
     <!-- Mode filter -->
     <div id="lbModeFilters" class="lb-mode-tabs">
       <button class="lb-mode-btn selected" data-mode="klassik" data-i18n="mode_klassik">KLASSIK</button>
       <button class="lb-mode-btn" data-mode="beginner" data-i18n="mode_beginner">FORMEN</button>
       <button class="lb-mode-btn" data-mode="expert" data-i18n="mode_expert">EXPERT</button>
-      <button class="lb-mode-btn" data-mode="ultra" data-i18n="mode_ultra">ULTRA</button>
       <button class="lb-mode-btn" data-mode="mathe" data-i18n="mode_mathe">MATHE</button>
-      <button class="lb-mode-btn" data-mode="algebra" data-i18n="mode_algebra">ALGEBRA</button>
-      <button class="lb-mode-btn" data-mode="worte" data-i18n="mode_worte">WÖRTER</button>
-      <button class="lb-mode-btn" data-mode="hauptstaedte" data-i18n="mode_hauptstaedte">HAUPTSTÄDTE</button>
       <button class="lb-mode-btn" data-mode="wissen" data-i18n="mode_wissen">WISSEN</button>
       <button class="lb-mode-btn" data-mode="memo" data-i18n="mode_memo">MEMO</button>
       <button class="lb-mode-btn" data-mode="sequenz" data-i18n="mode_sequenz">SEQUENZ</button>
@@ -821,6 +789,10 @@
     </div>
     <button id="btnAvatar" class="btn btn-secondary" style="margin-top:12px" data-i18n="avatar_change">Avatar &#228;ndern</button>
     <button id="btnEngagementReport" class="btn btn-secondary" style="margin-top:8px" data-i18n="engagement_report_btn">&#x1F4CA; Engagement Report</button>
+    <div class="legal-links" aria-label="Rechtliches">
+      <a href="privacy-policy.html" target="_blank" rel="noopener" data-i18n="privacy_policy">Datenschutz</a>
+      <a href="terms-of-service.html" target="_blank" rel="noopener" data-i18n="terms_of_service">Nutzungsbedingungen</a>
+    </div>
     <button id="btnLogout" class="btn btn-ghost btn-logout" data-i18n="logout" style="margin-top:16px">Abmelden</button>
     <div class="bottom-back-bar">
       <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
@@ -835,17 +807,11 @@
     <div class="avatar-preview">
       <div id="avatarPreviewSvg" class="avatar-preview-svg"></div>
     </div>
-    <!-- Custom photo upload — compact inline -->
+    <!-- Custom photo upload -->
     <div id="avatarUploadSection" class="avatar-upload-section">
-      <div id="avatarUploadLocked" class="avatar-upload-locked">
-        <span>&#x1F512;</span>
-        <span data-i18n="avatar_upload_locked">Im Shop freischalten</span>
-        <button id="btnAvatarBuyUpload" class="btn btn-secondary btn-sm" style="padding:4px 10px;font-size:.7rem" data-i18n="avatar_upload_buy">Zum Shop</button>
-      </div>
-      <div id="avatarUploadUnlocked" class="avatar-upload-unlocked" style="display:none">
+      <div id="avatarUploadUnlocked" class="avatar-upload-unlocked">
         <label id="avatarUploadLabel" class="avatar-upload-btn">
           <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
-          <svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-ad"></use></svg>
           <span data-i18n="avatar_upload_choose">Bild w&#228;hlen</span>
         </label>
         <button id="btnAvatarRemovePhoto" class="btn btn-ghost btn-sm" style="display:none" data-i18n="avatar_upload_remove">Foto entfernen</button>
@@ -865,19 +831,14 @@
 <!-- ═══════ STORE ═══════ -->
 <div id="store" class="screen">
   <div class="screen-content">
-    <div class="screen-header"><h2 data-i18n="store">Shop</h2></div>
+    <div class="screen-header"><h2 data-i18n="store">Sammlung</h2></div>
     <!-- Shop Tabs -->
     <div id="shopTabs" class="shop-tabs">
-      <button class="shop-tab selected" data-tab="premium" data-i18n="shop_tab_premium">Premium</button>
-      <button class="shop-tab" data-tab="themes" data-i18n="shop_tab_themes">Themen</button>
+      <button class="shop-tab selected" data-tab="themes" data-i18n="shop_tab_themes">Themen</button>
       <button class="shop-tab" data-tab="trails" data-i18n="shop_tab_trails">Trails</button>
     </div>
-    <!-- Lives indicator (premium tab only) -->
+    <!-- Earned currency balance -->
     <div id="shopLivesBar" class="shop-lives-bar">
-      <svg class="ui-icon" viewBox="0 0 24 24" style="color:var(--color-heart);width:18px;height:18px"><use href="#icon-heart"></use></svg>
-      <span id="shopLivesCount">3</span>
-      <span class="shop-lives-label" data-i18n="lives_label">Leben</span>
-      <span class="shop-lives-sep">&middot;</span>
       <svg class="ui-icon" viewBox="0 0 24 24" style="color:var(--color-fire);width:18px;height:18px"><use href="#icon-fire"></use></svg>
       <span id="shopFireCount">0</span>
     </div>
@@ -924,26 +885,6 @@
   </div>
 </div>
 
-<!-- ═══════ AD INTERSTITIAL ═══════ -->
-<div id="adInterstitial" class="ad-interstitial" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="adInterstitialLabel">
-  <div class="ad-interstitial-content">
-    <div class="ad-interstitial-header">
-      <span id="adInterstitialLabel" class="ad-interstitial-label" data-i18n="game_ad_text">WERBUNG</span>
-      <button id="btnAdClose" class="ad-interstitial-close" style="display:none" data-i18n-aria="ad_interstitial_close" aria-label="Schließen">
-        <svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-close"></use></svg>
-      </button>
-      <span id="adSkipTimer" class="ad-skip-timer"></span>
-    </div>
-    <div class="ad-interstitial-body">
-        <div class="ad-interstitial-placeholder">
-        <svg class="ui-icon" viewBox="0 0 24 24" style="opacity:.18"><use href="#icon-ad"></use></svg>
-        <span data-i18n="game_ad_text">WERBUNG</span>
-        <span class="ad-format-hint">320×480</span>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ═══════ MICRO FEEDBACK PROMPT ═══════ -->
 <div id="microFeedback" class="micro-feedback" role="dialog" aria-label="Feedback">
   <div class="mf-inner">
@@ -986,7 +927,6 @@
     </div>
     <div class="wheel-actions">
       <button id="btnWheelSpin" class="btn-wheel-spin" data-i18n="wheel_spin">DREHEN!</button>
-      <button id="btnWheelAd" class="btn-wheel-ad" style="display:none" data-i18n="wheel_ad_spin">Werbung schauen f&uuml;r Extra-Dreh</button>
     </div>
     <div class="wheel-status-note" id="wheelStatusNote"></div>
   </div>

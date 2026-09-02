@@ -1,6 +1,6 @@
 # SCS Play — Vollständige Spielbeschreibung
 
-> Stand: April 2026 · v22 — Aktualisiert nach vollständiger Implementierung aller 9 Verbesserungsphasen.
+> Architekturreferenz für alle 14 intern implementierten Modi. Der Google-Play-Release vom September 2026 zeigt einen fokussierten Top-Level-Katalog mit 10 Modi. Historische Abschnitte zu Ads, Echtgeld-IAP, Accounts und dem früher so bezeichneten Leaderboard sind nicht mehr Teil des Release-Produkts; maßgeblich sind `STORE_LISTING.md`, `privacy-policy.html` und der aktuelle Quellcode.
 
 ---
 
@@ -36,8 +36,8 @@
 | Spieltyp | Reflex / Kognition / Mobile |
 | Plattformen | Web (PWA), Android (Capacitor) |
 | Sprachen | Deutsch + Englisch (vollständig lokalisiert) |
-| Authentifizierung | Google, Apple, E-Mail (Firebase) oder Gast (localStorage) |
-| Spielmodi | 14 |
+| Authentifizierung | Google-Play-Release: Gast (localStorage) |
+| Spielmodi | 10 sichtbar, 14 intern implementiert |
 | Spieltypen | 4 |
 | Achievements | 1000+ (template-basiert generiert) |
 | Speicher | localStorage + optionale Firebase Firestore Cloud-Sync |
@@ -68,15 +68,14 @@ js/
     TutorialScreen.js    — 4-Slide interaktives Onboarding
     GameScreen.js        — Vollbild-Spielfeld, HUD, Overlays, Trail-Canvas
     ResultsScreen.js     — XP-Ring, Stats-Grid, PB-Badge, Level-Up, Buttons
-    LeaderboardScreen.js — Top-20 gefiltert nach Modus + Spieltyp
+    LeaderboardScreen.js — Lokale Bestleistungen nach Modus + Spieltyp
     AchievementsScreen.js— Akkordeon, 13 Kategorien
     SettingsScreen.js    — 6 Toggles, Sprache, Avatar, Report, Logout
-    StoreScreen.js       — 3 Tabs: Premium IAP, Themes, Trails
+    StoreScreen.js       — Erspielte Themes und Trails
     AvatarScreen.js      — Icon-Grid (16), Farb-Grid (8), Foto-Upload
     WheelScreen.js       — Tägliches Glücksrad (Canvas)
     EngagementReportScreen.js — Analyse-Dashboard
   services/
-    AdService.js         — AdMob-Integration (Capacitor) + Mock-Fallback
     ShareService.js      — Viral-Cards, Web Share API, Clipboard-Fallback
     ThemeService.js      — Wechselt body-Klassen für CSS-Theme-Switching
   helpers/

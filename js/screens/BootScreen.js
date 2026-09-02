@@ -6,7 +6,6 @@ import { CONFIG }              from '../config.js';
 import { t, setLanguage }      from '../i18n.js';
 import { $, $$, setText, localise, showScreen } from '../helpers/dom.js';
 import { applyTheme } from '../services/ThemeService.js';
-import { isAdFree }            from '../services/AdService.js';
 import { EngagementTracker }   from '../helpers/engagementTracker.js';
 import app                     from '../appState.js';
 
@@ -19,7 +18,7 @@ export function applyLoadedSave() {
   audio.setMusicVolume((save.getSetting('musicVolume') ?? 70) / 100);
   app.selectedMode = save.getSetting('gameMode') || 'klassik';
   app.selectedPlayType = save.getSetting('playType') || 'blitz';
-  if (!save.isModeUnlocked(app.selectedMode)) app.selectedMode = 'klassik';
+  if (!CONFIG.MODE_ORDER.includes(app.selectedMode) || !save.isModeUnlocked(app.selectedMode)) app.selectedMode = 'klassik';
 
   const langSetting = save.getSetting('language') || 'auto';
   if (langSetting === 'auto') {
@@ -30,7 +29,7 @@ export function applyLoadedSave() {
   }
   localise(t);
   applyTheme(save.getActiveTheme());
-  document.body.classList.toggle('ad-free', isAdFree(save));
+  document.body.classList.add('ad-free');
   document.body.toggleAttribute('data-reduced-motion', Boolean(save.getSetting('reducedMotion')));
   app.engagement = new EngagementTracker(save);
 }

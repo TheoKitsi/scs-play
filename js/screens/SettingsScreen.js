@@ -6,8 +6,19 @@ import { t, setLanguage }   from '../i18n.js';
 import { $, $$, localise, showScreen } from '../helpers/dom.js';
 import app                   from '../appState.js';
 
-export function showSettings(fromPause, showHome) {
+let _settingsBack = null;
+
+export function backFromSettings() {
+  if (app.currentScreen !== 'settings' || !_settingsBack) return false;
+  const back = _settingsBack;
+  _settingsBack = null;
+  back();
+  return true;
+}
+
+export function showSettings(fromPause, showHome, showPausedGame) {
   const { save } = app;
+  _settingsBack = fromPause && showPausedGame ? showPausedGame : showHome;
   showScreen('settings', app);
   $('#toggleColorblind').checked = save.getSetting('colorblind');
   $('#toggleMotion').checked     = save.getSetting('reducedMotion');
@@ -26,12 +37,7 @@ export function showSettings(fromPause, showHome) {
     btn._customBack = true;
     btn.onclick = () => {
       btn._customBack = false;
-      if (fromPause) {
-        showScreen('game', app);
-        $('#pauseOverlay')?.classList.add('active');
-      } else {
-        showHome();
-      }
+      backFromSettings();
     };
   });
 }

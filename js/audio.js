@@ -54,6 +54,9 @@ export class AudioManager {
     this._musicFileMode = null;
     this._musicFileVolume = 0.4;
     this._musicFadeTimer = null;
+    this._musicFileAttempt = 0;
+    this._musicRequested = false;
+    this._pageHidden = false;
 
     this._initMusicData();
     this._loadMusicManifest();
@@ -1099,14 +1102,21 @@ export class AudioManager {
     this._musicAudio.currentTime = 0;
     this._musicAudio.playbackRate = 1;
     this._musicAudio.volume = 0;
+    const attempt = ++this._musicFileAttempt;
     this._musicAudio.play().then(() => {
+      if (attempt !== this._musicFileAttempt) return;
       this._musicFilePlaying = true;
       this._musicFileMode = mode;
       this._fadeMusicFileTo(this._musicFileVolume, 450);
     }).catch(() => {
+      if (attempt !== this._musicFileAttempt) return;
       this._musicFilePlaying = false;
       this._musicFileMode = null;
       this._availableMusicTracks.delete(mode);
+      if (this._musicRunning && this._musicMode === mode) {
+        this._musicRunning = false;
+        this.startMusic();
+      }
     });
     return true;
   }
@@ -1115,6 +1125,7 @@ export class AudioManager {
    * Stop file-based music playback.
    */
   _stopMusicFile() {
+    this._musicFileAttempt++;
     clearInterval(this._musicFadeTimer);
     this._musicFadeTimer = null;
     if (this._musicAudio) {
@@ -1272,7 +1283,8 @@ export class AudioManager {
      ═══════════════════════════════════════ */
 
   startMusic() {
-    if (!this.musicEnabled || this._musicRunning) return;
+    this._musicRequested = true;
+    if (!this.musicEnabled || this._pageHidden || this._musicRunning) return;
     this._ensure();
     this._musicRunning = true;
 
@@ -1724,7 +1736,8 @@ export class AudioManager {
     schedule();
   }
 
-  stopMusic() {
+  stopMusic({ preserveRequest = false } = {}) {
+    if (!preserveRequest) this._musicRequested = false;
     this._musicRunning = false;
 
     /* Stop file-based music if active */
@@ -1764,7 +1777,17 @@ export class AudioManager {
   }
 
   toggle(on)      { this.enabled = on; }
-  toggleMusic(on) { this.musicEnabled = on; if (!on) this.stopMusic(); }
+  toggleMusic(on) {
+    this.musicEnabled = on;
+    if (!on) this.stopMusic({ preserveRequest: true });
+    else if (this._musicRequested) this.startMusic();
+  }
+
+  setVisibility(hidden) {
+    this._pageHidden = Boolean(hidden);
+    if (this._pageHidden) this.stopMusic({ preserveRequest: true });
+    else if (this._musicRequested) this.startMusic();
+  }
 
   setMusicVolume(v) {
     this._musicVolume = Math.max(0, Math.min(1, Number(v)));

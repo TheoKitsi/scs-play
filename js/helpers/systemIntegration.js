@@ -48,6 +48,7 @@ export function initVisibilityPause(pauseGame) {
     if (document.hidden && app.currentScreen === 'game' && app.game.running && !app.game.paused) {
       pauseGame();
     }
+    app.audio?.setVisibility?.(document.hidden);
   });
 }
 
@@ -110,9 +111,10 @@ export function initPwaInstallPrompt() {
   };
 }
 
-export function initBackButton({ pauseGame, quitGame, showHome }) {
+export function initBackButton({ pauseGame, quitGame, showHome, backFromSettings }) {
   const handleBack = () => {
     if (dismissTopModal('back')) return;
+    if (backFromSettings?.()) return;
     const isRootScreen = app.currentScreen === 'home' || app.currentScreen === 'boot' || app.currentScreen === 'auth';
     if (!app.currentScreen || isRootScreen) return;
     if (app.currentScreen === 'game') {

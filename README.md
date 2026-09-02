@@ -1,6 +1,6 @@
 # SCS Play
 
-SCS Play is a mobile-first reaction and brain-training game built as a Progressive Web App with a Capacitor Android wrapper. Players sort shapes, colors, words, math prompts, memory sequences, and rule-switching challenges by swiping toward the correct direction.
+SCS Play is a mobile-first reaction and brain-training game built as a Progressive Web App with a Capacitor Android wrapper. Its release catalog focuses on ten top-level modes covering sorting, math, knowledge, memory, focus, and rule-switching challenges.
 
 ## What Matters
 
@@ -8,7 +8,7 @@ SCS Play is a mobile-first reaction and brain-training game built as a Progressi
 - Source lives in `js/`, `css/`, `audio/`, `img/`, and root app files.
 - Production output is generated into `docs/` by `npm run build:prod`.
 - Do not manually edit generated files in `docs/`.
-- Guest mode works without backend setup; Firebase auth/cloud sync is optional.
+- The current Google Play release is guest-only and keeps gameplay data local; Firebase auth/cloud sync remains unconfigured development scaffolding.
 - CI requires static contrast audit, production build, DOM contrast audit, and smoke test.
 
 ## Quick Start
@@ -58,7 +58,7 @@ SCS Play/
   js/game/                    Game engine and mode mastery core
   js/screens/                 Screen-specific rendering and bindings
   js/helpers/                 DOM, haptics, onboarding, display helpers
-  js/services/                Ads, quests, season pass, effects, sharing
+  js/services/                Quests, effects, sharing, and ad demo scaffolding (no packaged ad SDK)
   scripts/                    Build, QA, contrast, screenshot tooling
   android/                    Capacitor Android project
   docs/                       Generated production web output
@@ -74,9 +74,9 @@ npm run verify
 
 The contrast gates enforce WCAG AA expectations across tokens, themes, common states, and rendered screens. If a screen introduces new text over a new surface, update both CSS and the relevant audit coverage instead of weakening the checks.
 
-## Firebase
+## Firebase (Not Enabled in the Current Release)
 
-The game runs in guest mode out of the box. To enable cloud auth/sync, configure Firebase in `js/auth.js` and keep all project secrets out of git. Android signing files, `google-services.json`, keystores, and `.env` files are ignored by default.
+The Google Play release runs in guest mode and does not offer account creation or cloud sync. The source contains an optional Firebase path for development, but `js/auth.js` has no Firebase project configuration. Enabling it would change the release's privacy and account-deletion obligations and requires a separate release review. Keep all project secrets out of git. Android signing files, `google-services.json`, keystores, and `.env` files are ignored by default.
 
 Firestore rule baseline:
 
