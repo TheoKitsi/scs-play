@@ -68,7 +68,12 @@ export function showEngagementReport() {
 function renderNoData(msg) {
   $('#engagementReport')?.classList.add('no-data');
   const el = $('#erScoreCircle');
-  if (el) el.innerHTML = `<div class="er-no-data"><span class="er-no-data-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="6" y="25" width="8" height="17" rx="3"/><rect x="20" y="15" width="8" height="27" rx="3"/><rect x="34" y="6" width="8" height="36" rx="3"/></svg></span>${escHTML(msg)}<br><small>${t('er_play_more')}</small></div>`;
+  if (el) {
+    el.innerHTML = `<div class="er-no-data"><span class="er-no-data-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="6" y="25" width="8" height="17" rx="3"/><rect x="20" y="15" width="8" height="27" rx="3"/><rect x="34" y="6" width="8" height="36" rx="3"/></svg></span>${escHTML(msg)}<br><small>${t('er_play_more')}</small><br><button type="button" class="btn btn-primary" id="btnErPlayNow">${t('lb_play_now')}</button></div>`;
+    el.querySelector('#btnErPlayNow')?.addEventListener('click', () => {
+      window.dispatchEvent(new Event('scs:show-home'));
+    });
+  }
   ['erSummary', 'erSignals', 'erFeedback', 'erDailyChart'].forEach(id => {
     const e = $(`#${id}`);
     if (e) e.innerHTML = '';

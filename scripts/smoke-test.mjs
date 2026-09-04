@@ -303,10 +303,12 @@ async function run() {
     return {
       active: report?.classList.contains('active'),
       validEmptyState: !report?.classList.contains('no-data') || (exports?.hidden && getComputedStyle(exports).display === 'none'),
+      emptyStateHasAction: !report?.classList.contains('no-data') || Boolean(document.querySelector('#btnErPlayNow')),
     };
   });
   assert(reportState.active, 'Engagement report opens');
   assert(reportState.validEmptyState, 'Empty report hides unavailable export actions');
+  assert(reportState.emptyStateHasAction, 'Empty report offers a clear next action');
   await clickSel('.btn-back-bottom', 800);
 
   // ─── 11) Store Screen ───

@@ -568,6 +568,33 @@ body.mode-chaos .mode-rule-label{
 #engagementReport.no-data #erExportButtons{display:none!important}
 #engagementReport .er-no-data-icon svg{width:46px;height:46px;fill:#a78bfa}
 #leaderboard .lb-empty-icon .ui-icon{width:44px;height:44px;color:#fbbf24}
+#leaderboard .lb-mode-tabs,
+#leaderboard .lb-filter-tabs{
+  flex-wrap:nowrap;
+  flex:0 0 auto;
+  gap:7px;
+  margin:0;
+  padding:2px 2px 8px;
+  overflow-x:auto;
+  overscroll-behavior-x:contain;
+  scrollbar-width:none;
+  scroll-snap-type:x proximity;
+}
+#leaderboard .lb-mode-tabs::-webkit-scrollbar,
+#leaderboard .lb-filter-tabs::-webkit-scrollbar{display:none}
+#leaderboard .lb-mode-btn,
+#leaderboard .lb-filter-btn{
+  flex:0 0 auto;
+  min-height:44px;
+  padding:8px 14px;
+  border-radius:15px;
+  scroll-snap-align:start;
+  letter-spacing:.03em;
+}
+#leaderboard .lb-empty-state{margin:auto;padding:24px 16px}
+#leaderboard .lb-play-now{min-height:50px;margin-top:14px;padding-inline:24px}
+#engagementReport .er-no-data{padding:34px 18px}
+#engagementReport .er-no-data .btn{min-height:52px;margin-top:18px;padding-inline:24px}
 .setting-row,.store-item,.score-row,.ach-category,.unlock-item{border-radius:18px!important;background:#121720!important;border-color:rgba(255,255,255,.07)!important;box-shadow:none!important}
 .bottom-back-bar{padding:10px 0 calc(10px + var(--bottom-inset));border-top-color:rgba(255,255,255,.07)}
 .btn-back-bottom{width:100%;min-height:52px;border-radius:16px!important;background:#151a25!important}
@@ -644,11 +671,4 @@ body.mode-chaos .mode-rule-label{
   .footer-label{font-size:.62rem}
   .corner-shape{width:76px;height:76px;--half:38px}
   .corner-shape svg{width:46px;height:46px}
-}
-
-@media(min-width:768px){
-  #leaderboard .screen-content,#achievements .screen-content,#settings .screen-content,#store .screen-content,#avatarSelect .screen-content,#engagementReport .screen-content{width:min(720px,100%);margin-inline:auto}
-  #home .home-viewport{width:min(620px,100%);margin-inline:auto;border-inline:1px solid rgba(255,255,255,.05)}
-  .footer-nav{left:50%;right:auto;width:min(580px,calc(100% - 40px));transform:translateX(-50%)}
-  .results-panel{max-width:520px}
 }

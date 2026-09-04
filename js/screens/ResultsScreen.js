@@ -647,7 +647,7 @@ function renderMasteryInsights(mastery, stats) {
   if (!stats.correct) {
     el.style.display = '';
     el.classList.add('results-mastery--empty');
-    el.innerHTML = `<div class="results-mastery-title">Mastery</div><p>${getLanguage() === 'de'
+    el.innerHTML = `<div class="results-mastery-title">${getLanguage() === 'de' ? 'Modus-Analyse' : 'Mode insights'}</div><p>${getLanguage() === 'de'
       ? 'Deine Modus-Analyse startet mit der ersten richtigen Antwort.'
       : 'Your mode analysis starts with the first correct answer.'}</p>`;
     return;
@@ -704,7 +704,7 @@ function renderMasteryInsights(mastery, stats) {
   }
 
   const lang = getLanguage();
-  let html = `<div class="results-mastery-title">${lang === 'de' ? 'Mastery' : 'Mastery'}</div>`;
+  let html = `<div class="results-mastery-title">${lang === 'de' ? 'Modus-Analyse' : 'Mode insights'}</div>`;
 
   for (const insight of insights) {
     switch (insight.type) {
