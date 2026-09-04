@@ -331,6 +331,11 @@ export function updatePlayTypeSelector() {
   const isSequenz = app.selectedMode === 'sequenz';
   const isBrainReflex = ['mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra','wissen'].includes(app.selectedMode);
   const competitionUnlocked = save.isCompetitionUnlocked();
+  const completedStages = Math.min(save.data.competitionLevel || 0, CONFIG.COMPETITION_LEVELS);
+  const competitionStars = (save.data.competitionStars || [])
+    .slice(0, CONFIG.COMPETITION_LEVELS)
+    .reduce((sum, stars) => sum + (stars || 0), 0);
+  setText('#compBadge', `${completedStages}/${CONFIG.COMPETITION_LEVELS} ★${competitionStars}`);
   /* Sequenz forces endless — auto-select and disable others */
   if (isSequenz && app.selectedPlayType !== 'endless') {
     app.selectedPlayType = 'endless';

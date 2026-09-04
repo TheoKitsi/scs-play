@@ -1935,7 +1935,7 @@ function updateModeMasteryAfterAnswer(game, result) {
       ensureStroopHUD();
       updateStroopInterference(app.mastery);
       updateStroopGhostRacer(game);
-      if (stroopResult.challengeTriggered) showStroopChallengeRound(runId);
+      if (stroopResult.challengeTriggered) showStroopChallengeRound();
     } else {
       updateStroopInterference(app.mastery);
     }
@@ -2101,7 +2101,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
     if (endlessLivesEl) endlessLivesEl.style.display = 'none';
     if (compTargetEl) {
       compTargetEl.style.display = 'block';
-      compTargetEl.textContent = t('competition_target', { n: target });
+      compTargetEl.textContent = `${t('competition_level', { n: level + 1 })} · ${t('competition_target', { n: target })}`;
     }
   } else {
     const isBrainLikeMode = ['mathe','worte','stroop','fokus','chaos','hauptstaedte','algebra','wissen'].includes(app.selectedMode);

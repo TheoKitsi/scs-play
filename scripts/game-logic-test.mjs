@@ -14,6 +14,49 @@ const { GameEngine } = await import('../js/game/GameEngine.js');
 const { SaveService } = await import('../js/save.js');
 const { CONFIG } = await import('../js/config.js');
 const { SwipeHandler } = await import('../js/input.js');
+const {
+  ModeMastery,
+  endStroopGame,
+  startStroopGame,
+  trackSequenzResult,
+  trackStroopAnswer
+} = await import('../js/game/ModeMastery.js');
+
+const mastery = new ModeMastery({ data: {} });
+trackSequenzResult(mastery, {
+  correct: true,
+  sequenzComplete: true,
+  seqLen: 4,
+  sequenzRound: 0
+}, { _seqPattern: ['ul', 'ur', 'dr', 'dl'] });
+assert.deepEqual(
+  mastery.get('sequenz', 'bestPattern'),
+  ['ul', 'ur', 'dr', 'dl'],
+  'Sequenz best pattern must use the engine sequence state'
+);
+
+startStroopGame(mastery);
+trackStroopAnswer(mastery, {
+  correct: false,
+  reaction: 0,
+  item: { isCongruent: true }
+}, { _stroopChallengeUntil: 0 });
+trackStroopAnswer(mastery, {
+  correct: false,
+  reaction: 0,
+  item: { isCongruent: false }
+}, { _stroopChallengeUntil: 0 });
+endStroopGame(mastery, { correct: 0 }, false);
+assert.equal(mastery.get('stroop', 'lastCongRt'), 0, 'Stroop congruent RT must be zero without correct answers');
+assert.equal(mastery.get('stroop', 'lastIncongRt'), 0, 'Stroop incongruent RT must be zero without correct answers');
+
+mastery.set('stroop', '_inChallenge', true);
+trackStroopAnswer(mastery, {
+  correct: false,
+  reaction: 0,
+  item: { isCongruent: true }
+}, { _stroopChallengeUntil: performance.now() - 1 });
+assert.equal(mastery.get('stroop', '_inChallenge'), false, 'Expired Stroop challenges must reset their tracking state');
 
 const wissenEndless = new GameEngine();
 wissenEndless.start('wissen', 'endless', { lang: 'de' });
@@ -37,6 +80,83 @@ ranked._scheduleSpawn = () => {};
 ranked._spawn();
 assert.equal(ranked.currentShape.bonus, null, 'Ranked runs must not roll score bonuses');
 ranked.stop();
+
+const competitionStage = new GameEngine();
+competitionStage.running = true;
+competitionStage.mode = 'klassik';
+competitionStage.playType = 'competition';
+competitionStage.ranked = true;
+competitionStage.competitionLevel = 0;
+competitionStage.competitionTarget = 100;
+competitionStage.currentShape = { direction: 'ul', stimulusId: 1 };
+competitionStage.lastSpawnTime = performance.now() - 200;
+competitionStage._scheduleSpawn = () => {};
+let competitionCompletions = 0;
+competitionStage.onCompetitionComplete = () => { competitionCompletions++; };
+competitionStage.handleSwipe('ul', performance.now(), 1);
+assert.equal(competitionStage.running, true, 'Competition must continue after reaching the one-star target');
+assert.equal(competitionStage._competitionWon, true);
+competitionStage.currentShape = { direction: 'ul', stimulusId: 2 };
+competitionStage.lastSpawnTime = performance.now() - 200;
+competitionStage.handleSwipe('ul', performance.now(), 2);
+assert.equal(competitionCompletions, 1, 'Competition completion feedback must only fire once');
+competitionStage.stop();
+
+for (const [score, expectedStars] of [[99, 0], [100, 1], [150, 2], [200, 3]]) {
+  const starStage = new GameEngine();
+  starStage.playType = 'competition';
+  starStage.competitionTarget = 100;
+  starStage.score = score;
+  assert.equal(starStage._buildStats().competitionStars, expectedStars, `Score ${score} must award ${expectedStars} stars`);
+}
+
+const earlyStage = new GameEngine();
+earlyStage.start('mathe', 'competition', { competitionLevel: 0 });
+const earlyInterval = earlyStage.spawnInterval;
+earlyStage.stop();
+const lateStage = new GameEngine();
+lateStage.start('mathe', 'competition', { competitionLevel: 9 });
+assert.ok(lateStage.spawnInterval < earlyInterval, 'Later stages must start faster');
+assert.equal(lateStage.correct, 0, 'Stage difficulty must not prefill correct-answer statistics');
+assert.equal(lateStage._getMathPhase(), CONFIG.MATH_PHASES[4], 'Late stages must start in a higher content phase');
+lateStage.stop();
+
+const preservedQuestion = new GameEngine();
+preservedQuestion.running = true;
+preservedQuestion.mode = 'mathe';
+preservedQuestion.playType = 'competition';
+preservedQuestion.currentShape = { direction: 'dr', stimulusId: 7 };
+preservedQuestion.lastSpawnTime = performance.now() - 200;
+preservedQuestion.pause();
+let resumedDelay = null;
+preservedQuestion._scheduleSpawn = delay => { resumedDelay = delay; };
+preservedQuestion.resume();
+assert.equal(preservedQuestion.currentShape.direction, 'dr', 'Pause must preserve the active task');
+assert.ok(resumedDelay > 0, 'Resumed tasks must retain an answer deadline');
+preservedQuestion.stop();
+
+const wissenRush = new GameEngine();
+wissenRush.running = true;
+wissenRush.mode = 'wissen';
+let wissenRushTriggered = false;
+wissenRush.onRush = () => { wissenRushTriggered = true; };
+wissenRush._triggerRush();
+assert.equal(wissenRushTriggered, false, 'Wissen must not use the generic timed Rush');
+
+const algebraSquare = new GameEngine();
+algebraSquare.rng = () => 0;
+const positiveRoot = algebraSquare._generateAlgebraEquation({ type: 'square' });
+assert.match(positiveRoot.equation, /^x > 0:/, 'Square equations must state the positive-root restriction');
+
+const focusAttempts = new GameEngine();
+focusAttempts.mode = 'fokus';
+focusAttempts.total = 10;
+focusAttempts.correct = 2;
+focusAttempts.rng = () => 0;
+focusAttempts._assignCorners();
+focusAttempts._scheduleSpawn = () => {};
+focusAttempts._spawnFokus();
+assert.equal(focusAttempts.currentShape.flankers.length, 4, 'Fokus difficulty must continue to scale by attempts');
 
 const snapshot = new GameEngine();
 snapshot.running = true;
@@ -299,5 +419,17 @@ await migrated.addScore({ mode: 'klassik', playType: 'classic', score: 900, stre
 assert.equal(migrated.getPB('klassik', 'blitz'), 500);
 assert.equal(migrated.getPB('klassik', 'classic'), 900);
 assert.equal(migrated.getPB('klassik'), 900, 'All-time PB should remain available for overview UI');
+
+migrated.data.competitionLevel = 0;
+migrated.data.competitionStars = [];
+migrated.data.ultraUnlockedViaCompetition = false;
+assert.equal(await migrated.completeCompetitionLevel(0, 0), false, 'A failed stage must not advance Competition');
+assert.equal(migrated.data.competitionLevel, 0);
+for (let level = 0; level < CONFIG.COMPETITION_LEVELS; level++) {
+  const unlocked = await migrated.completeCompetitionLevel(level, 1);
+  assert.equal(unlocked, level === CONFIG.COMPETITION_LEVELS - 1, 'Ultra must unlock only after all ten stages');
+}
+assert.equal(migrated.data.competitionLevel, CONFIG.COMPETITION_LEVELS);
+assert.equal(migrated.data.competitionStars.length, CONFIG.COMPETITION_LEVELS);
 
 console.log('Game logic regression tests passed.');

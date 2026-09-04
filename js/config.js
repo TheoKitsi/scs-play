@@ -22,6 +22,7 @@ export const CONFIG = {
   /* ─── Competition levels ─── */
   COMPETITION_LEVELS: 10,
   COMPETITION_SCORE_TARGETS: [500, 1200, 2000, 3000, 4500, 6000, 7500, 9000, 11000, 14000],
+  COMPETITION_DIFFICULTY_OFFSETS: [0, 3, 5, 8, 12, 18, 25, 35, 45, 65],
 
   /* ─── Spawn interval (ms) ─── */
   SPAWN_INTERVAL_START: 850,

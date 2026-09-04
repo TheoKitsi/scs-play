@@ -35,6 +35,8 @@ export class GameEngine {
   constructor() { this.reset(); }
 
   reset() {
+    clearTimeout(this._feverTimeout);
+    this._seqFlashTimeouts?.forEach(t => clearTimeout(t));
     this.mode = 'beginner';
     this.playType = 'blitz';
     this.isDaily = false;
@@ -221,6 +223,13 @@ export class GameEngine {
     return this.mode === 'beginner';
   }
 
+  get difficultyProgress() {
+    const offset = this.playType === 'competition'
+      ? (CONFIG.COMPETITION_DIFFICULTY_OFFSETS?.[this.competitionLevel] || 0)
+      : 0;
+    return this.correct + offset;
+  }
+
   get _spawnStart() {
     if (this.isSequenzMode || this.isMemoMode) return CONFIG.SPAWN_MEMO_START;
     if (!this.isBrainMode && !this.isReflexMode) return CONFIG.SPAWN_INTERVAL_START;
@@ -326,7 +335,10 @@ export class GameEngine {
     }
 
     this.rng = this.isDaily ? mulberry32(todaySeed()) : mulberry32(Date.now() & 0xFFFFFFFF);
-    this.spawnInterval = this._spawnStart;
+    const stageOffset = this.playType === 'competition'
+      ? (CONFIG.COMPETITION_DIFFICULTY_OFFSETS?.[this.competitionLevel] || 0)
+      : 0;
+    this.spawnInterval = Math.max(this._spawnMin, this._spawnStart - stageOffset * this._speedStep);
     this._isFirstSpawn = true;
     this._assignCorners();
     /* Corner shuffle: set first threshold for stable-map shape modes */
@@ -485,7 +497,10 @@ export class GameEngine {
       this.cornerMap = {};
       this._chaosRuleSwitchIn = CONFIG.CHAOS_RULE_SWITCH_MIN + Math.floor(this.rng() * (CONFIG.CHAOS_RULE_SWITCH_MAX - CONFIG.CHAOS_RULE_SWITCH_MIN + 1));
       this._chaosCorrectSinceSwitch = 0;
-      this._chaosRule = CONFIG.CHAOS_DIMENSIONS[Math.floor(this.rng() * CONFIG.CHAOS_DIMENSIONS.length)];
+      const chaosDimensions = this.difficultyProgress >= (CONFIG.CHAOS_EXTRA_THRESHOLD || 15)
+        ? [...CONFIG.CHAOS_DIMENSIONS, ...(CONFIG.CHAOS_EXTRA_DIMENSIONS || [])]
+        : CONFIG.CHAOS_DIMENSIONS;
+      this._chaosRule = chaosDimensions[Math.floor(this.rng() * chaosDimensions.length)];
       dirs.forEach((d, i) => {
         this.cornerMap[d] = {
           shape: chaosShapes[i % chaosShapes.length],
@@ -574,7 +589,8 @@ export class GameEngine {
     /* Fever: save remaining duration so it can resume later */
     if (this._feverTimeout && this.feverActive) {
       const feverElapsed = performance.now() - (this._feverStartedAt || 0);
-      this._feverRemainingMs = Math.max(0, CONFIG.FEVER_DURATION - feverElapsed);
+      const remaining = this._feverRemainingMs || CONFIG.FEVER_DURATION;
+      this._feverRemainingMs = Math.max(0, remaining - feverElapsed);
       clearTimeout(this._feverTimeout);
       this._feverTimeout = null;
     }
@@ -595,7 +611,6 @@ export class GameEngine {
     if (this.feverActive && this._feverRemainingMs > 0) {
       this._feverStartedAt = performance.now();
       this._feverTimeout = setTimeout(() => this._endFever(), this._feverRemainingMs);
-      this._feverRemainingMs = 0;
     }
     /* Sequenz: restart current round from scratch if interrupted during watch */
     if (this.isSequenzMode) {
@@ -662,7 +677,15 @@ export class GameEngine {
       this._scheduleSpawn(100);
       return;
     }
-    this.currentShape = null;
+    if (this.currentShape) {
+      if (this.mode !== 'wissen' || !CONFIG.WISSEN_GLOBAL_TIMER) {
+        const deadline = Math.max(this.spawnInterval, this._minAnswerWindow);
+        const remaining = Math.max(100, deadline - (performance.now() - this.lastSpawnTime));
+        this._scheduleSpawn(remaining);
+      }
+      this._startComboDecay();
+      return;
+    }
     this._scheduleSpawn(400);
   }
 
@@ -763,7 +786,7 @@ export class GameEngine {
   _getMathPhase() {
     const phases = CONFIG.MATH_PHASES;
     let phase = phases[0];
-    for (const p of phases) { if (this.correct >= p.threshold) phase = p; }
+    for (const p of phases) { if (this.difficultyProgress >= p.threshold) phase = p; }
     return phase;
   }
 
@@ -890,7 +913,7 @@ export class GameEngine {
   _getCapitalsTier() {
     const tiers = CONFIG.CAPITALS_TIERS;
     let tier = tiers[0];
-    for (const t of tiers) { if (this.correct >= t.threshold) tier = t; }
+    for (const t of tiers) { if (this.difficultyProgress >= t.threshold) tier = t; }
     return tiers.indexOf(tier);
   }
 
@@ -973,7 +996,7 @@ export class GameEngine {
   _getWissenTier() {
     const tiers = CONFIG.WISSEN_TIERS;
     let tier = tiers[0];
-    for (const t of tiers) { if (this.correct >= t.threshold) tier = t; }
+    for (const t of tiers) { if (this.difficultyProgress >= t.threshold) tier = t; }
     return tiers.indexOf(tier);
   }
 
@@ -1039,7 +1062,7 @@ export class GameEngine {
   _getAlgebraPhase() {
     const phases = CONFIG.ALGEBRA_PHASES;
     let phase = phases[0];
-    for (const p of phases) { if (this.correct >= p.threshold) phase = p; }
+    for (const p of phases) { if (this.difficultyProgress >= p.threshold) phase = p; }
     return phase;
   }
 
@@ -1070,11 +1093,11 @@ export class GameEngine {
         return { equation: `${a}(x + ${b}) = ${c}`, answer: x, answerDisplay: String(x) };
       }
       case 'square': {
-        /* x² = n → x = ? (use only perfect squares) */
+        /* Restrict x to the positive root so the four-choice answer is unambiguous. */
         const squares = CONFIG.ALGEBRA_PERFECT_SQUARES;
         const n = squares[Math.floor(this.rng() * squares.length)];
         const x = Math.round(Math.sqrt(n));
-        return { equation: `x\u00B2 = ${n}`, answer: x, answerDisplay: String(x) };
+        return { equation: `x > 0: x\u00B2 = ${n}`, answer: x, answerDisplay: String(x) };
       }
       case 'sqrt': {
         /* √n = ? */
@@ -1223,7 +1246,7 @@ export class GameEngine {
        Phase 0 (< 20 correct): plain words only
        Phase 1 (20+ correct):  emoji spawns mixed in
        Phase 2 (30+ correct):  Stroop-style text coloring added */
-    const wordPhase = this.correct >= 30 ? 2 : this.correct >= 20 ? 1 : 0;
+    const wordPhase = this.difficultyProgress >= 30 ? 2 : this.difficultyProgress >= 20 ? 1 : 0;
 
     if (wordPhase >= 1 && this.rng() < 0.25 && emojiBanks && emojiBanks[correctCat]) {
       const eBank = emojiBanks[correctCat];
@@ -1320,8 +1343,9 @@ export class GameEngine {
     /* Pick flanker arrows */
     const focusLevels = CONFIG.FOKUS_DISTRACTION_LEVELS || [];
     let focusLevel = 1;
+    const stageOffset = this.difficultyProgress - this.correct;
     for (const level of focusLevels) {
-      if (this.total >= level.threshold) focusLevel = level.level;
+      if (this.total + stageOffset >= level.threshold) focusLevel = level.level;
     }
     const flankerCount = Math.max(2, focusLevel * 2);
     const isCongruent = this.rng() < (CONFIG.FOKUS_CONGRUENT_RATE || 0.3);
@@ -1512,7 +1536,7 @@ export class GameEngine {
       const baseDims = CONFIG.CHAOS_DIMENSIONS;
       const extraDims = CONFIG.CHAOS_EXTRA_DIMENSIONS || [];
       const threshold = CONFIG.CHAOS_EXTRA_THRESHOLD || 15;
-      const dims = this.correct >= threshold ? [...baseDims, ...extraDims] : baseDims;
+      const dims = this.difficultyProgress >= threshold ? [...baseDims, ...extraDims] : baseDims;
       let newRule;
       do { newRule = dims[Math.floor(this.rng() * dims.length)]; } while (newRule === this._chaosRule && dims.length > 1);
       this._chaosRule = newRule;
@@ -1664,6 +1688,9 @@ export class GameEngine {
             this._memoPhase = 'reveal';
             this._memoPhaseStartedAt = Date.now();
             this._memoPhaseRemainingMs = previewMs;
+            if (this._timerWallStart && this.timer > 0) {
+              this._timerTarget += previewMs / 1000;
+            }
             /* Pause spawning during reveal */
             clearTimeout(this._spawnTimeout);
             if (this.onMemoReveal) this.onMemoReveal(this.cornerMap, previewMs);
@@ -1808,18 +1835,18 @@ export class GameEngine {
 
     const dur = this._getDuration();
     const hasTimer = dur > 0;
-    if (!this.practice && hasTimer && this.timer > 5 && this.timer < dur &&
+    if (this.mode !== 'wissen' && !this.practice && hasTimer && this.timer > 5 && this.timer < dur &&
         isCorrect && this.timer % CONFIG.RUSH_INTERVAL === 0 && this.streak >= 3 && !gentleActive) {
       this._triggerRush();
     }
-    if (this.playType === 'endless' && isCorrect && this.correct > 0 && this.correct % 20 === 0 && this.streak >= 3 && !gentleActive) {
+    if (this.mode !== 'wissen' && this.playType === 'endless' && isCorrect && this.correct > 0 && this.correct % 20 === 0 && this.streak >= 3 && !gentleActive) {
       this._triggerRush();
     }
 
-    if (this.playType === 'competition' && this.score >= this.competitionTarget && isCorrect) {
+    if (this.playType === 'competition' && !this._competitionWon
+        && this.score >= this.competitionTarget && isCorrect) {
       this._competitionWon = true;
       if (this.onCompetitionComplete) this.onCompetitionComplete(this.competitionLevel, this.score);
-      this._endGame();
     }
 
     return result;
@@ -1829,7 +1856,10 @@ export class GameEngine {
   _startComboDecay() {
     this._stopComboDecay();
     if (this.practice || this.streak <= 0) return;
-    const threshold = (CONFIG.COMBO_DECAY_THRESHOLD || 2.0) * this.spawnInterval;
+    const threshold = Math.max(
+      this._minAnswerWindow,
+      (CONFIG.COMBO_DECAY_THRESHOLD || 2.0) * this.spawnInterval
+    );
     this._comboDecayTimeout = setTimeout(() => {
       if (!this.running || this.paused || this.streak <= 0) return;
       this._comboDecayInterval = setInterval(() => {
@@ -2175,7 +2205,7 @@ export class GameEngine {
     this.feverStreak = 0;
     this._feverTriggered++;  /* count for achievements */
     this._feverStartedAt = performance.now();
-    this._feverRemainingMs = 0;
+    this._feverRemainingMs = CONFIG.FEVER_DURATION;
     if (this.onFeverStart) this.onFeverStart();
     clearTimeout(this._feverTimeout);
     this._feverTimeout = setTimeout(() => this._endFever(), CONFIG.FEVER_DURATION);
@@ -2185,12 +2215,13 @@ export class GameEngine {
     this.feverActive = false;
     clearTimeout(this._feverTimeout);
     this._feverTimeout = null;
+    this._feverRemainingMs = 0;
     this._feverCooldownUntil = performance.now() + (CONFIG.FEVER_COOLDOWN_MS || 3000);
     if (this.onFeverEnd) this.onFeverEnd();
   }
 
   _triggerRush() {
-    if (this.inRush) return;
+    if (this.inRush || this.mode === 'wissen') return;
     /* Rush Pre-Warning (v22): notify UI before rush starts */
     const preWarnSec = CONFIG.RUSH_PRE_WARNING_SEC || 0;
     if (preWarnSec > 0 && this.onRushWarning) {
@@ -2313,6 +2344,9 @@ export class GameEngine {
     const isWeekend = (day === 0 || day === 6);
     const weekendMult = isWeekend ? (CONFIG.WEEKEND_XP_MULTIPLIER || 1) : 1;
     const totalXp = Math.round((xp + perfectBonus + lightningBonus) * weekendMult);
+    const competitionStars = this.playType !== 'competition' || this.score < this.competitionTarget ? 0
+      : this.score >= this.competitionTarget * 2 ? 3
+        : this.score >= this.competitionTarget * 1.5 ? 2 : 1;
     return {
       score: finalScore, rawScore: this.score, streak: this.bestStreak,
       accuracy: Math.round(accuracy * 100),
@@ -2321,7 +2355,8 @@ export class GameEngine {
       mode: this.mode, playType: this.playType, isDaily: this.isDaily,
       competitionLevel: this.competitionLevel,
       competitionTarget: this.competitionTarget,
-      competitionWon: this._competitionWon,
+      competitionWon: competitionStars > 0,
+      competitionStars,
       elapsed: this.elapsed,
       /* Achievement tracking extras */
       goldenCaught: this._goldenCaught,

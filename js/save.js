@@ -466,17 +466,21 @@ export class SaveService {
   }
 
   async completeCompetitionLevel(level, stars) {
-    if (level >= (this.data.competitionLevel || 0)) {
-      this.data.competitionLevel = Math.min(level + 1, CONFIG.COMPETITION_LEVELS);
+    const safeLevel = Math.max(0, Math.min(CONFIG.COMPETITION_LEVELS - 1, Math.trunc(level)));
+    const safeStars = Math.max(0, Math.min(3, Math.trunc(stars)));
+    if (safeStars < 1) return false;
+    const current = Math.min(this.data.competitionLevel || 0, CONFIG.COMPETITION_LEVELS);
+    if (safeLevel <= current) {
+      this.data.competitionLevel = Math.max(current, Math.min(safeLevel + 1, CONFIG.COMPETITION_LEVELS));
     }
     if (!this.data.competitionStars) this.data.competitionStars = [];
-    const prev = this.data.competitionStars[level] || 0;
-    this.data.competitionStars[level] = Math.max(prev, stars);
+    const prev = this.data.competitionStars[safeLevel] || 0;
+    this.data.competitionStars[safeLevel] = Math.max(prev, safeStars);
 
     /* Unlock Ultra through competition (all 10 levels) */
-    if (this.data.competitionLevel >= CONFIG.COMPETITION_LEVELS) {
-      this.data.ultraUnlockedViaCompetition = true;
-    }
+    this.data.ultraUnlockedViaCompetition = this.data.competitionStars
+      .slice(0, CONFIG.COMPETITION_LEVELS)
+      .filter(value => value >= 1).length === CONFIG.COMPETITION_LEVELS;
     await this.save();
     return this.data.ultraUnlockedViaCompetition;
   }

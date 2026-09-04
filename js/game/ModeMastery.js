@@ -1815,8 +1815,8 @@ export function trackSequenzResult(mastery, result, game) {
     }
 
     /* Pattern Replay data (Plan 11 feature 4) — store the best sequence pattern */
-    if (seqLen > mastery.get(mode, 'bestSeqLength', 0) && game?.sequenzPattern) {
-      mastery.set(mode, 'bestPattern', [...game.sequenzPattern]);
+    if (seqLen > mastery.get(mode, 'bestSeqLength', 0) && game?._seqPattern) {
+      mastery.set(mode, 'bestPattern', [...game._seqPattern]);
     }
 
     return { seqLen, round: mastery.get(mode, '_sessionRounds'), isRecord: seqLen > mastery.get(mode, 'bestSeqLength', 0) };
@@ -1919,6 +1919,12 @@ export function trackStroopAnswer(mastery, result, game) {
   const mode = 'stroop';
   const congruent = result.item?.isCongruent ?? _isStroopCongruent(result.item);
 
+  if (mastery.get(mode, '_inChallenge')
+      && Number.isFinite(game?._stroopChallengeUntil)
+      && performance.now() >= game._stroopChallengeUntil) {
+    mastery.set(mode, '_inChallenge', false);
+  }
+
   if (congruent) {
     mastery.inc(mode, '_congTotal');
     if (result.correct) {
@@ -1966,8 +1972,10 @@ export function endStroopGame(mastery, stats, isPB) {
   const congAcc = congTotal > 0 ? mastery.get(mode, '_congCorrect') / congTotal : 1;
   const incongAcc = incongTotal > 0 ? mastery.get(mode, '_incongCorrect') / incongTotal : 1;
   const interference = Math.round(Math.max(0, (congAcc - incongAcc) * 100));
-  const congRt = congTotal > 0 ? Math.round(mastery.get(mode, '_congRtSum') / mastery.get(mode, '_congCorrect', 1)) : 0;
-  const incongRt = incongTotal > 0 ? Math.round(mastery.get(mode, '_incongRtSum') / mastery.get(mode, '_incongCorrect', 1)) : 0;
+  const congCorrect = mastery.get(mode, '_congCorrect', 0);
+  const incongCorrect = mastery.get(mode, '_incongCorrect', 0);
+  const congRt = congCorrect > 0 ? Math.round(mastery.get(mode, '_congRtSum') / congCorrect) : 0;
+  const incongRt = incongCorrect > 0 ? Math.round(mastery.get(mode, '_incongRtSum') / incongCorrect) : 0;
 
   mastery.set(mode, 'lastInterference', interference);
   mastery.set(mode, 'lastCongRt', congRt);

@@ -119,10 +119,11 @@ function getRemainingToNextLevel(xp, level) {
 
 function getReplayHook(save, stats, modeLabel) {
   if (stats.playType === 'competition') {
-    const target = CONFIG.COMPETITION_SCORE_TARGETS[stats.competitionLevel] || 2000;
-    if (stats.score < target) {
+    const target = stats.competitionTarget || CONFIG.COMPETITION_SCORE_TARGETS[stats.competitionLevel] || 2000;
+    const rankedScore = stats.rawScore ?? stats.score;
+    if (rankedScore < target) {
       return {
-        text: t('next_goal_competition_push', { n: target - stats.score }),
+        text: t('next_goal_competition_push', { n: target - rankedScore }),
         tone: 'competition',
       };
     }
@@ -202,11 +203,8 @@ export async function showResults(stats, canContinue = false) {
     fireEarned = fireEarned || 0;
 
     if (stats.playType === 'competition' && stats.competitionWon) {
-      const target = stats.competitionTarget || 1;
-      const rankedScore = stats.rawScore ?? stats.score;
-      const stars = rankedScore >= target * 2 ? 3 : rankedScore >= target * 1.5 ? 2 : 1;
+      const stars = stats.competitionStars;
       const ultraUnlocked = await save.completeCompetitionLevel(stats.competitionLevel, stars);
-      stats.competitionStars = stars;
       if (ultraUnlocked) {
         scheduleResult(resultGeneration, () => {
           getBodyFx().achievementToast(t('competition_ultra_unlocked'));
@@ -394,7 +392,10 @@ export async function showResults(stats, canContinue = false) {
   if (compEl) {
     if (stats.playType === 'competition') {
       compEl.style.display = 'block';
-      compEl.textContent = stats.competitionWon ? t('competition_complete') : t('competition_failed');
+      const levelLabel = t('competition_level', { n: stats.competitionLevel + 1 });
+      compEl.textContent = stats.competitionWon
+        ? `${levelLabel} · ${t('competition_complete')} · ${'★'.repeat(stats.competitionStars)}`
+        : `${levelLabel} · ${t('competition_failed')} · ${stats.rawScore}/${stats.competitionTarget}`;
       compEl.classList.toggle('comp-success', stats.competitionWon);
       compEl.classList.toggle('comp-fail', !stats.competitionWon);
     } else {
@@ -548,16 +549,23 @@ export async function showResults(stats, canContinue = false) {
     scheduleResult(resultGeneration, () => retryBtn.classList.add('retry-glow'), countupDone);
   }
 
-  setText('#oneMoreText', t('retry'));
+  const hasNextCompetitionStage = stats.playType === 'competition'
+    && stats.competitionWon
+    && stats.competitionLevel < CONFIG.COMPETITION_LEVELS - 1;
+  setText('#oneMoreText', hasNextCompetitionStage
+    ? t('competition_level', { n: stats.competitionLevel + 2 })
+    : t('retry'));
   /* v19: Randomize retry button text for freshness (avoid repeats) */
-  const retryVariants = ['retry', 'retry_2', 'retry_3', 'retry_4', 'retry_5'];
+  const retryVariants = hasNextCompetitionStage ? [] : ['retry', 'retry_2', 'retry_3', 'retry_4', 'retry_5'];
   let retryKey;
-  do {
-    retryKey = retryVariants[Math.floor(Math.random() * retryVariants.length)];
-  } while (retryKey === _lastRetryKey && retryVariants.length > 1);
-  _lastRetryKey = retryKey;
-  const retryText = t(retryKey);
-  if (retryText && retryText !== retryKey) setText('#oneMoreText', retryText);
+  if (retryVariants.length) {
+    do {
+      retryKey = retryVariants[Math.floor(Math.random() * retryVariants.length)];
+    } while (retryKey === _lastRetryKey && retryVariants.length > 1);
+    _lastRetryKey = retryKey;
+    const retryText = t(retryKey);
+    if (retryText && retryText !== retryKey) setText('#oneMoreText', retryText);
+  }
 
   updateXPBar();
 
