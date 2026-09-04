@@ -185,6 +185,83 @@ async function run() {
   await clickSel('#btnHome', 1000);
   assert(await hasActiveClass('#home', 3000), 'Home screen visible after results');
 
+  // ─── 8b) Leaving during Game Over must not reopen Results ───
+  console.log('\n8b. Cancel stale Game Over transition');
+  await clickSel('#btnPlay', 1500);
+  assert(await hasActiveClass('#game', 5000), 'Game screen starts for stale-transition check');
+  await page.waitForTimeout(4500);
+  await page.evaluate(() => {
+    globalThis.__SCS_QA__.forceGameOver();
+    document.querySelector('#btnPauseQuit')?.click();
+  });
+  await page.waitForTimeout(1000);
+  assert(await hasActiveClass('#home', 2000), 'Quit remains on home after a pending game-over transition');
+  assert(!await hasActiveClass('#results', 300), 'Old game-over transition cannot reopen results');
+
+  // ─── 8c) Incompatible mode switch clears prior game presentation ───
+  console.log('\n8c. Memo to Chaos transition cleanup');
+  await page.evaluate(() => globalThis.__SCS_QA__.setGameSelection('memo'));
+  await clickSel('#btnPlay', 300);
+  if (await visible('#modeInstructionOverlay', 1000)) {
+    await clickSel('#btnStartAfterInstruction', 300);
+  }
+  assert(await hasActiveClass('#game', 3000), 'Memo game screen starts');
+  await page.waitForTimeout(4500);
+  assert(await page.evaluate(() => document.body.classList.contains('mode-memo')), 'Memo mode class is active');
+  await page.evaluate(() => document.querySelector('#btnPauseQuit')?.click());
+  assert(await hasActiveClass('#home', 3000), 'Memo quit returns home');
+  await page.evaluate(() => globalThis.__SCS_QA__.setGameSelection('chaos'));
+  await clickSel('#btnPlay', 300);
+  if (await visible('#modeInstructionOverlay', 1000)) {
+    await clickSel('#btnStartAfterInstruction', 300);
+  }
+  assert(await hasActiveClass('#game', 3000), 'Chaos game screen starts after Memo');
+  await page.waitForTimeout(4500);
+  const cleanModeSwitch = await page.evaluate(() => ({
+    chaosActive: document.body.classList.contains('mode-chaos'),
+    memoInactive: !document.body.classList.contains('mode-memo'),
+    memoCornersCleared: !document.querySelector('.corner-shape.memo-covered, .corner-shape.memo-revealing'),
+    memoHudCleared: !document.querySelector('#memoHUD, #memoGhostRacer'),
+  }));
+  assert(cleanModeSwitch.chaosActive && cleanModeSwitch.memoInactive, 'Chaos replaces the Memo body mode');
+  assert(cleanModeSwitch.memoCornersCleared && cleanModeSwitch.memoHudCleared, 'Memo presentation is cleared before Chaos');
+  await page.evaluate(() => globalThis.__SCS_QA__.triggerChaosRuleSwitch());
+  assert(await visible('.chaos-rule-banner', 1000), 'Chaos rule switch banner appears');
+  await page.evaluate(() => document.querySelector('#btnPauseQuit')?.click());
+  assert(await hasActiveClass('#home', 3000), 'Chaos quit returns home');
+  assert(!await page.locator('.chaos-rule-banner').count(), 'Chaos rule switch banner is removed on quit');
+
+  // ─── 8d) Leaving Sequenz during watch clears timed feedback ───
+  console.log('\n8d. Sequenz watch to Math transition cleanup');
+  await page.evaluate(() => globalThis.__SCS_QA__.setGameSelection('sequenz', 'endless'));
+  await clickSel('#btnPlay', 300);
+  if (await visible('#modeInstructionOverlay', 1000)) {
+    await clickSel('#btnStartAfterInstruction', 300);
+  }
+  assert(await hasActiveClass('#game', 3000), 'Sequenz game screen starts');
+  await page.waitForTimeout(4500);
+  assert(await page.evaluate(() => document.body.classList.contains('mode-sequenz')), 'Sequenz mode class is active during watch');
+  await page.evaluate(() => document.querySelector('#btnPauseQuit')?.click());
+  assert(await hasActiveClass('#home', 3000), 'Sequenz quit returns home during watch');
+  await page.evaluate(() => globalThis.__SCS_QA__.setGameSelection('mathe'));
+  await clickSel('#btnPlay', 300);
+  if (await visible('#modeInstructionOverlay', 1000)) {
+    await clickSel('#btnStartAfterInstruction', 300);
+  }
+  assert(await hasActiveClass('#game', 3000), 'Math game screen starts after Sequenz');
+  await page.waitForTimeout(4500);
+  const cleanSequenzSwitch = await page.evaluate(() => ({
+    mathActive: document.body.classList.contains('mode-mathe'),
+    sequenzInactive: !document.body.classList.contains('mode-sequenz'),
+    noFlash: !document.querySelector('.corner-shape.sequenz-flash'),
+    noSequenzHud: !document.querySelector('#sequenzHUD, .sequenz-record-pop'),
+    noSequenzCenter: !document.querySelector('.sequenz-round-display'),
+  }));
+  assert(cleanSequenzSwitch.mathActive && cleanSequenzSwitch.sequenzInactive, 'Math replaces the Sequenz body mode');
+  assert(cleanSequenzSwitch.noFlash && cleanSequenzSwitch.noSequenzHud && cleanSequenzSwitch.noSequenzCenter, 'Sequenz watch feedback is cleared before Math');
+  await page.evaluate(() => document.querySelector('#btnPauseQuit')?.click());
+  assert(await hasActiveClass('#home', 3000), 'Math quit returns home');
+
   // ─── 9) Achievements Screen ───
   console.log('\n9. Achievements');
   await clickSel('#btnAchievements', 1000);

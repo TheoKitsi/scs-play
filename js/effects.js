@@ -103,6 +103,9 @@ export class EffectsManager {
      ══════════════════════════════════════ */
   initTrailCanvas(canvas) {
     if (!canvas) return;
+    if (this._resizeBound) {
+      window.removeEventListener('resize', this._resizeBound);
+    }
     this._canvas = canvas;
     this._ctx = canvas.getContext('2d');
     this._resizeCanvas();
@@ -1605,7 +1608,15 @@ export class EffectsManager {
       this._ctx.restore();
     }
     this._trailPoints = [];
+    this._trailActive = false;
+    this._trailFadeId = null;
+    this._completeFadeTimeout = null;
     if (this._resizeBound) window.removeEventListener('resize', this._resizeBound);
+    this._resizeBound = null;
+    this._canvas = null;
+    this._ctx = null;
+    this.c.style.transform = '';
+    this.c.style.willChange = '';
   }
 
   /* ══════════════════════════════════════

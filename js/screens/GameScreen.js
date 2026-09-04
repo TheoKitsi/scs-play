@@ -32,6 +32,16 @@ import { trackChaosAnswer, getChaosGhostDelta } from '../game/ModeMastery.js';
 /* ═══════ SVG Cache — avoid regenerating & parsing identical SVGs ═══════ */
 const _svgCache = new Map();
 const SPEED_REACTIVE_MUSIC_MODES = new Set(['klassik', 'beginner', 'expert', 'ultra', 'stroop', 'fokus', 'chaos']);
+let _gameRunId = 0;
+
+function beginGameRun() {
+  _gameRunId++;
+  return _gameRunId;
+}
+
+function invalidateGameRun() {
+  _gameRunId++;
+}
 
 function getCachedSVGNode(shape, color, size, bonus) {
   const key = `${shape}|${color}|${size}|${bonus || ''}`;
@@ -1501,7 +1511,7 @@ function showWissenTopicStreakPop(streak) {
 }
 
 /* Challenge Round visual (Plan 12 feature 4) */
-function showStroopChallengeRound() {
+function showStroopChallengeRound(runId = _gameRunId) {
   let el = $('#stroopChallenge');
   if (!el) {
     el = document.createElement('div');
@@ -1513,6 +1523,7 @@ function showStroopChallengeRound() {
   el.classList.add('challenge-active');
   const duration = CONFIG.STROOP_CHALLENGE_DURATION || 5000;
   setTimeout(() => {
+    if (runId !== _gameRunId) return;
     el.classList.remove('challenge-active');
     if (app.mastery) app.mastery.set('stroop', '_inChallenge', false);
   }, duration);
@@ -1757,6 +1768,7 @@ function cleanupChaosHUD() {
     const el = $(`#${id}`);
     if (el) el.remove();
   });
+  document.querySelectorAll('.chaos-rule-banner').forEach(el => el.remove());
 }
 
 function cleanupModeHuds() {
@@ -1923,7 +1935,7 @@ function updateModeMasteryAfterAnswer(game, result) {
       ensureStroopHUD();
       updateStroopInterference(app.mastery);
       updateStroopGhostRacer(game);
-      if (stroopResult.challengeTriggered) showStroopChallengeRound();
+      if (stroopResult.challengeTriggered) showStroopChallengeRound(runId);
     } else {
       updateStroopInterference(app.mastery);
     }
@@ -1959,7 +1971,11 @@ function cleanupGameClasses() {
   const g = $('#game');
   g?.classList.remove('intensity-low','intensity-mid','intensity-high','intensity-max','edge-glow-warm','edge-glow-hot','edge-glow-fire','action-climax','action-climax-peak');
   /* Remove memo-covered from corners */
-  $$('.corner-shape').forEach(el => el.classList.remove('memo-covered', 'memo-revealing'));
+  $$('.corner-shape').forEach(el => el.classList.remove(
+    'memo-covered', 'memo-revealing', 'sequenz-flash', 'corner-correct',
+    'corner-tapped', 'corner-wrong', 'corner-matched', 'corner-destination-flash',
+    'near-miss-hint', 'shuffle-warn', 'shuffle-done'
+  ));
   /* Remove mode class from body */
   document.body.className = document.body.className.replace(/\bmode-\w+/g, '').trim();
   invalidateHudCache();
@@ -1967,6 +1983,28 @@ function cleanupGameClasses() {
   for (const k in _prevCornerState) delete _prevCornerState[k];
   _lastPlatformColor = '';
   _svgCache.clear();
+}
+
+function cleanupActiveGame({ stopEngine = true } = {}) {
+  const { game, audio, effects, swipe } = app;
+  document.body.style.overflow = '';
+  document.documentElement.style.overflow = '';
+  if (window.__gameScrollBlocker) {
+    window.__gameScrollBlocker.el?.removeEventListener('touchmove', window.__gameScrollBlocker.fn);
+    window.__gameScrollBlocker = null;
+  }
+  if (stopEngine) game.stop();
+  audio.stopMusic();
+  audio.stopTension?.();
+  swipe?.unbind();
+  effects?.resetMultiplierBg();
+  effects?.stopAmbient();
+  effects?.stopFever?.();
+  effects?.dangerZone?.(false);
+  effects?.cleanup();
+  cleanupGameClasses();
+  cleanupModeHuds();
+  $('#game')?.classList.remove('game-over-freeze');
 }
 
 function restoreDailySelection() {
@@ -1984,6 +2022,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
   if (app.gameStarting) return;
   app.gameStarting = true;
   setTimeout(() => { app.gameStarting = false; }, 1500);
+  beginGameRun();
 
   if (daily && !app.dailyPreviousSelection) {
     app.dailyPreviousSelection = { mode: app.selectedMode, playType: app.selectedPlayType };
@@ -2125,6 +2164,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
 /* ═══════ Begin game (after countdown) ═══════ */
 export function beginGame(practice, daily, showResults, showHome, showContinuePrompt) {
   const { audio, game, save, effects, swipe } = app;
+  const runId = _gameRunId;
 
   if (typeof audio.setMusicMode === 'function') {
     audio.setMusicMode(practice ? 'classic' : app.selectedPlayType, {
@@ -2232,6 +2272,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   /* ── Memo (hidden corners) callbacks ── */
   game.onMemoPreview = (cornerMap, durationMs) => {
+    if (runId !== _gameRunId) return;
     renderCorners(cornerMap, true);
     /* Corners are already visible from renderCorners — add a pulse to draw attention */
     $$('.corner-shape').forEach(el => {
@@ -2240,11 +2281,13 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       el.classList.add('memo-revealing');
     });
     setTimeout(() => {
+      if (runId !== _gameRunId) return;
       $$('.corner-shape').forEach(el => el.classList.remove('memo-revealing'));
     }, 500);
   };
 
   game.onMemoCover = () => {
+    if (runId !== _gameRunId) return;
     $$('.corner-shape').forEach(el => {
       if (el.style.display === 'none') return;
       el.classList.remove('memo-revealing');
@@ -2253,6 +2296,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   };
 
   game.onMemoReveal = (cornerMap, durationMs) => {
+    if (runId !== _gameRunId) return;
     renderCorners(cornerMap, true);
     $$('.corner-shape').forEach(el => {
       if (el.style.display === 'none') return;
@@ -2260,6 +2304,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       el.classList.add('memo-revealing');
     });
     setTimeout(() => {
+      if (runId !== _gameRunId) return;
       $$('.corner-shape').forEach(el => el.classList.remove('memo-revealing'));
     }, 500);
     haptic('rush', save);
@@ -2622,21 +2667,10 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   game.onContinuePrompt = (stats) => { showContinuePrompt(stats); };
 
   game.onGameOver = (stats) => {
-    document.body.style.overflow = '';
-    document.documentElement.style.overflow = '';
-    if (window.__gameScrollBlocker) { window.__gameScrollBlocker.el?.removeEventListener('touchmove', window.__gameScrollBlocker.fn); window.__gameScrollBlocker = null; }
-    audio.stopMusic();
-    if (typeof audio.stopTension === 'function') audio.stopTension();
+    if (runId !== _gameRunId) return;
+    cleanupActiveGame({ stopEngine: false });
     if (!stats.competitionWon) audio.gameOver();
     haptic('gameOver', save);
-    swipe?.unbind();
-    effects.resetMultiplierBg();
-    effects.stopFever();
-    effects.stopAmbient();
-    if (typeof effects.dangerZone === 'function') effects.dangerZone(false);
-    effects.cleanup();
-    cleanupGameClasses();
-    cleanupModeHuds();
     finishModeMastery(game.mode, app.mastery, stats, app.save);
 
     const g = $('#game');
@@ -2645,6 +2679,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       effects.gameOverFlash(t('game_over'));
     }
     setTimeout(() => {
+      if (runId !== _gameRunId) return;
       g?.classList.remove('game-over-freeze');
       restoreDailySelection();
       showResults(stats);
@@ -2653,20 +2688,21 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   /* ── Sequenz (Simon Says) callbacks ── */
   game.onSequenzRoundStart = (round, seqLen) => {
+    if (runId !== _gameRunId) return;
     /* Show "MERKEN!" watch overlay */
     const comboEl = $('#comboText');
     if (comboEl) {
       comboEl.textContent = t('sequenz_watch');
       comboEl.classList.remove('active');
-      requestAnimationFrame(() => comboEl.classList.add('active'));
+      requestAnimationFrame(() => { if (runId === _gameRunId) comboEl.classList.add('active'); });
     }
     /* Show round badge */
     const rushEl = $('#rushText');
     if (rushEl) {
       rushEl.textContent = t('sequenz_round', { n: round + 1 });
       rushEl.classList.remove('active');
-      requestAnimationFrame(() => rushEl.classList.add('active'));
-      setTimeout(() => rushEl.classList.remove('active'), 1500);
+      requestAnimationFrame(() => { if (runId === _gameRunId) rushEl.classList.add('active'); });
+      setTimeout(() => { if (runId === _gameRunId) rushEl.classList.remove('active'); }, 1500);
     }
     /* Show round + sequence length in center platform */
     const center = $('#centerShape');
@@ -2678,33 +2714,39 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   };
 
   game.onSequenzFlash = (dir, index, total, flashMs) => {
+    if (runId !== _gameRunId) return;
     const corner = $(`.corner-shape[data-dir="${dir}"]`);
     if (!corner) return;
     /* Bright pulse on the flashed corner */
     corner.classList.remove('sequenz-flash');
     requestAnimationFrame(() => {
+      if (runId !== _gameRunId) return;
       corner.classList.add('sequenz-flash');
       corner.style.setProperty('--seq-flash-ms', `${flashMs}ms`);
     });
-    setTimeout(() => corner.classList.remove('sequenz-flash'), flashMs);
+    setTimeout(() => {
+      if (runId === _gameRunId) corner.classList.remove('sequenz-flash');
+    }, flashMs);
     /* Play a tone for each step */
     audio.correct(index);
     haptic('hover', save);
   };
 
   game.onSequenzReady = (seqLen) => {
+    if (runId !== _gameRunId) return;
     /* Switch from WATCH to GO overlay */
     const comboEl = $('#comboText');
     if (comboEl) {
       comboEl.textContent = t('sequenz_go');
       comboEl.classList.remove('active');
-      requestAnimationFrame(() => comboEl.classList.add('active'));
-      setTimeout(() => comboEl.classList.remove('active'), 1200);
+      requestAnimationFrame(() => { if (runId === _gameRunId) comboEl.classList.add('active'); });
+      setTimeout(() => { if (runId === _gameRunId) comboEl.classList.remove('active'); }, 1200);
     }
     haptic('correct', save);
   };
 
   game.onSequenzResult = (result) => {
+    if (runId !== _gameRunId) return;
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
     if (result.correct && result.sequenzComplete) {
@@ -2863,51 +2905,24 @@ export function resumeGame() {
 
 export function restartGame(showTutorial, showResults, showHome, showContinuePrompt) {
   const { game, audio } = app;
+  invalidateGameRun();
   _cancelPreGame();
   closeModal($('#pauseOverlay'), { restoreFocus: false });
-  game.stop();
-  audio.stopMusic();
-  if (typeof audio.stopTension === 'function') audio.stopTension();
-  app.swipe?.unbind();
-  app.effects?.cleanup();
-  cleanupGameClasses();
+  cleanupActiveGame();
   startGame(false, app.pendingDaily, showTutorial, showResults, showHome, showContinuePrompt);
 }
 
 export function quitGame(showHome) {
-  const { game, audio, effects } = app;
+  invalidateGameRun();
   _cancelPreGame();
-  document.body.style.overflow = '';
-  document.documentElement.style.overflow = '';
-  if (window.__gameScrollBlocker) { window.__gameScrollBlocker.el?.removeEventListener('touchmove', window.__gameScrollBlocker.fn); window.__gameScrollBlocker = null; }
   closeModal($('#pauseOverlay'), { restoreFocus: false });
-  game.stop();
-  audio.stopMusic();
-  if (typeof audio.stopTension === 'function') audio.stopTension();
-  app.swipe?.unbind();
-  effects?.resetMultiplierBg();
-  effects?.stopAmbient();
-  if (typeof effects?.dangerZone === 'function') effects.dangerZone(false);
-  effects?.cleanup();
-  cleanupGameClasses();
+  cleanupActiveGame();
   restoreDailySelection();
   showHome();
 }
 
 export function stopPractice(showHome) {
-  const { game, audio, effects, swipe } = app;
-  document.body.style.overflow = '';
-  document.documentElement.style.overflow = '';
-  if (window.__gameScrollBlocker) { window.__gameScrollBlocker.el?.removeEventListener('touchmove', window.__gameScrollBlocker.fn); window.__gameScrollBlocker = null; }
-  game.stop();
-  audio.stopMusic();
-  audio.stopTension?.();
-  swipe?.unbind();
-  effects?.resetMultiplierBg();
-  effects?.stopAmbient();
-  effects?.stopFever?.();
-  effects?.dangerZone?.(false);
-  effects?.cleanup();
-  cleanupGameClasses();
+  invalidateGameRun();
+  cleanupActiveGame();
   showHome();
 }

@@ -159,6 +159,33 @@ assert.equal(sequenzResults, 1);
 assert.equal(genericResults, 0, 'Completed sequences must not emit duplicate generic feedback');
 sequenzCallbacks.stop();
 
+const originalSetTimeout = globalThis.setTimeout;
+const scheduledSequenzCallbacks = [];
+globalThis.setTimeout = callback => {
+  scheduledSequenzCallbacks.push(callback);
+  return scheduledSequenzCallbacks.length;
+};
+try {
+  const stoppedSequenz = new GameEngine();
+  stoppedSequenz.start('sequenz', 'blitz');
+  stoppedSequenz.stop();
+  scheduledSequenzCallbacks.at(-1)();
+  assert.equal(stoppedSequenz._seqRound, 0, 'Stopping must cancel a queued Sequenz round');
+
+  const completedSequenz = new GameEngine();
+  completedSequenz.running = true;
+  completedSequenz.mode = 'sequenz';
+  completedSequenz._seqPhase = 'go';
+  completedSequenz._seqPattern = ['ul'];
+  completedSequenz.lastSpawnTime = performance.now() - 100;
+  completedSequenz.handleSequenzInput('ul');
+  completedSequenz.stop();
+  scheduledSequenzCallbacks.at(-1)();
+  assert.equal(completedSequenz._seqRound, 1, 'Stopping must cancel a queued next Sequenz round');
+} finally {
+  globalThis.setTimeout = originalSetTimeout;
+}
+
 const continued = new GameEngine();
 continued.running = false;
 continued.feverActive = true;

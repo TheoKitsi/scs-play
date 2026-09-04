@@ -17,6 +17,13 @@ export function bindQaHooks() {
         setContinued(value = true) {
           if (app.game) app.game.continued = value;
         },
+        setGameSelection(mode, playType = 'blitz') {
+          app.selectedMode = mode;
+          app.selectedPlayType = playType;
+        },
+        triggerChaosRuleSwitch(rule = 'color') {
+          app.game?.onChaosRuleSwitch?.(rule);
+        },
       };
     }
   } catch {}

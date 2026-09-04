@@ -133,6 +133,8 @@ export class GameEngine {
     this._seqFlashTimeouts = [];
     clearTimeout(this._seqInputTimeout);
     this._seqInputTimeout = null;
+    clearTimeout(this._seqStartTimeout);
+    this._seqStartTimeout = null;
 
     this.elapsed = 0;
 
@@ -338,7 +340,7 @@ export class GameEngine {
       this.playType = 'endless';
       this.endlessLives = CONFIG.ENDLESS_MAX_MISSES;
       this._startElapsedTimer();
-      setTimeout(() => this._startSequenzRound(), 1000);
+      this._scheduleSequenzRound(1000);
       return this.cornerMap;
     }
 
@@ -567,6 +569,8 @@ export class GameEngine {
     this._seqFlashTimeouts = [];
     clearTimeout(this._seqInputTimeout);
     this._seqInputTimeout = null;
+    clearTimeout(this._seqStartTimeout);
+    this._seqStartTimeout = null;
     /* Fever: save remaining duration so it can resume later */
     if (this._feverTimeout && this.feverActive) {
       const feverElapsed = performance.now() - (this._feverStartedAt || 0);
@@ -596,7 +600,7 @@ export class GameEngine {
     /* Sequenz: restart current round from scratch if interrupted during watch */
     if (this.isSequenzMode) {
       this._seqPhase = 'idle';
-      setTimeout(() => this._startSequenzRound(), 600);
+      this._scheduleSequenzRound(600);
       return;
     }
     /* Restart countdown tick if we have an active timer */
@@ -1914,6 +1918,14 @@ export class GameEngine {
     return Math.max(min, base - Math.floor(this._seqRound / every) * (CONFIG.SEQUENZ_SPEED_STEP || 50));
   }
 
+  _scheduleSequenzRound(delay) {
+    clearTimeout(this._seqStartTimeout);
+    this._seqStartTimeout = setTimeout(() => {
+      this._seqStartTimeout = null;
+      this._startSequenzRound();
+    }, delay);
+  }
+
   _startSequenzRound() {
     if (!this.running || this.paused) return;
     const dirs = this.directions;
@@ -2061,7 +2073,7 @@ export class GameEngine {
         /* Next round */
         this._seqRound++;
         this._seqPhase = 'idle';
-        setTimeout(() => this._startSequenzRound(), 1200);
+        this._scheduleSequenzRound(1200);
         return result;
       }
 
@@ -2103,7 +2115,7 @@ export class GameEngine {
 
     /* Retry same round */
     this._seqPhase = 'idle';
-    setTimeout(() => this._startSequenzRound(), 1500);
+    this._scheduleSequenzRound(1500);
     return fail;
   }
 
