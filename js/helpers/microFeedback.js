@@ -29,6 +29,8 @@ export function maybeShowFeedback(trigger, context) {
   el.dataset.context = JSON.stringify(context);
 
   // Show
+  el.hidden = false;
+  el.inert = false;
   el.classList.add('active');
   el.classList.remove('dismissed');
 
@@ -54,6 +56,8 @@ function dismissFeedback(rating) {
 
   el.classList.remove('active');
   el.classList.add('dismissed');
+  el.hidden = true;
+  el.inert = true;
 
   const { engagement } = app;
   if (engagement) {

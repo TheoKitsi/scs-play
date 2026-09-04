@@ -2046,13 +2046,11 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
 
   const modeIndicator = $('#modeIndicator');
   if (modeIndicator) {
-    const modeIcons = { beginner:'🟢', klassik:'🔵', expert:'🔷', ultra:'💎', mathe:'🧮', worte:'📝', memo:'🧠', sequenz:'🔔', stroop:'🎨', fokus:'🎯', chaos:'🌀', hauptstaedte:'🌍', algebra:'📐', wissen:'💡' };
     const modeLabels = { klassik: t('mode_klassik'), beginner: t('mode_beginner'), mathe: t('mode_mathe'), worte: t('mode_worte'), memo: t('mode_memo'), sequenz: t('mode_sequenz'), stroop: t('mode_stroop'), fokus: t('mode_fokus'), chaos: t('mode_chaos'), hauptstaedte: t('mode_hauptstaedte'), algebra: t('mode_algebra'), wissen: t('mode_wissen') };
-    const icon = modeIcons[app.selectedMode] || '';
-    if (modeLabels[app.selectedMode]) modeIndicator.textContent = `${icon} ${modeLabels[app.selectedMode]}`;
+    if (modeLabels[app.selectedMode]) modeIndicator.textContent = modeLabels[app.selectedMode];
     else {
       const dirCount = app.selectedMode === 'ultra' ? 12 : app.selectedMode === 'expert' ? 8 : 4;
-      modeIndicator.textContent = `${icon} ${dirCount}-DIR`;
+      modeIndicator.textContent = `${dirCount}-DIR`;
     }
   }
 

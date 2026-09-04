@@ -68,7 +68,11 @@ function renderHeader(done, total) {
 // ──────────────────────────────────────────────────────────────
 function bindTabs() {
   // Sync selected state on every show
-  $$('.ach-tab').forEach(btn => btn.classList.toggle('selected', btn.dataset.filter === _filter));
+  $$('.ach-tab').forEach(btn => {
+    const selected = btn.dataset.filter === _filter;
+    btn.classList.toggle('selected', selected);
+    btn.setAttribute('aria-pressed', String(selected));
+  });
 
   if (_tabsBound) return;
   _tabsBound = true;
@@ -77,7 +81,11 @@ function bindTabs() {
     tab.addEventListener('click', () => {
       if (tab.dataset.filter === _filter) return;
       _filter = tab.dataset.filter;
-      $$('.ach-tab').forEach(b => b.classList.toggle('selected', b.dataset.filter === _filter));
+      $$('.ach-tab').forEach(b => {
+        const selected = b.dataset.filter === _filter;
+        b.classList.toggle('selected', selected);
+        b.setAttribute('aria-pressed', String(selected));
+      });
       if (app.audio) app.audio.tap();
       _rerender(true);
     });

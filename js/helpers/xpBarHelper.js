@@ -23,4 +23,6 @@ export function updateXPBar() {
     numbers.textContent = `${cur.toLocaleString()} / ${need.toLocaleString()} XP`;
   }
   if (percent) percent.textContent = `${Math.round(pct * 100)}%`;
+  const progress = $('#homeXpProgress');
+  if (progress) progress.setAttribute('aria-valuenow', String(Math.round(pct * 100)));
 }

@@ -36,7 +36,7 @@ function renderLeaderboard() {
   if (scores.length === 0) {
     list.innerHTML = `
       <div class="lb-empty-state">
-        <span class="lb-empty-icon">\uD83C\uDFC6</span>
+        <span class="lb-empty-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-trophy"></use></svg></span>
         <p>${t('lb_no_scores')}</p>
         <p class="lb-empty-hint">${t('lb_play_hint')}</p>
         <button class="btn btn-primary btn-sm lb-play-now" id="btnLbPlayNow">${t('lb_play_now')}</button>
@@ -82,12 +82,14 @@ export function showLeaderboard() {
 
   $$('.lb-mode-btn').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.mode === lbMode);
-    btn.onclick = () => { lbMode = btn.dataset.mode; $$('.lb-mode-btn').forEach(b => b.classList.toggle('selected', b === btn)); renderLeaderboard(); audio.tap(); };
+    btn.setAttribute('aria-pressed', String(btn.dataset.mode === lbMode));
+    btn.onclick = () => { lbMode = btn.dataset.mode; $$('.lb-mode-btn').forEach(b => { b.classList.toggle('selected', b === btn); b.setAttribute('aria-pressed', String(b === btn)); }); renderLeaderboard(); audio.tap(); };
   });
 
   $$('.lb-filter-btn').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.filter === lbFilter);
-    btn.onclick = () => { lbFilter = btn.dataset.filter; $$('.lb-filter-btn').forEach(b => b.classList.toggle('selected', b === btn)); renderLeaderboard(); audio.tap(); };
+    btn.setAttribute('aria-pressed', String(btn.dataset.filter === lbFilter));
+    btn.onclick = () => { lbFilter = btn.dataset.filter; $$('.lb-filter-btn').forEach(b => { b.classList.toggle('selected', b === btn); b.setAttribute('aria-pressed', String(b === btn)); }); renderLeaderboard(); audio.tap(); };
   });
 
   renderLeaderboard();

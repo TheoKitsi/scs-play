@@ -40,6 +40,7 @@ function labelText(label) {
 export function showEngagementReport() {
   const { engagement } = app;
   showScreen('engagementReport', app);
+  $('#engagementReport')?.classList.remove('no-data');
 
   if (!engagement) {
     renderNoData(t('er_not_init'));
@@ -59,17 +60,20 @@ export function showEngagementReport() {
   renderSignals(signals, subscores);
   renderFeedback(signals);
   renderDailyChart(engagement);
+  $('#erExportButtons')?.removeAttribute('hidden');
   bindExport(engagement);
 }
 
 /* ─── No data state ─── */
 function renderNoData(msg) {
+  $('#engagementReport')?.classList.add('no-data');
   const el = $('#erScoreCircle');
-  if (el) el.innerHTML = `<div class="er-no-data"><span class="er-no-data-icon">&#x1F4CA;</span>${escHTML(msg)}<br><small>${t('er_play_more')}</small></div>`;
+  if (el) el.innerHTML = `<div class="er-no-data"><span class="er-no-data-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="6" y="25" width="8" height="17" rx="3"/><rect x="20" y="15" width="8" height="27" rx="3"/><rect x="34" y="6" width="8" height="36" rx="3"/></svg></span>${escHTML(msg)}<br><small>${t('er_play_more')}</small></div>`;
   ['erSummary', 'erSignals', 'erFeedback', 'erDailyChart'].forEach(id => {
     const e = $(`#${id}`);
     if (e) e.innerHTML = '';
   });
+  $('#erExportButtons')?.setAttribute('hidden', '');
 }
 
 /* ─── Summary header ─── */
@@ -145,7 +149,7 @@ function renderSignals(signals, subscores) {
     },
     {
       title: t('er_modes'),
-      value: `${signals.modesPlayed} / 14`,
+      value: `${signals.modesPlayed} / 10`,
       pct: subscores.exploration
     }
   ];

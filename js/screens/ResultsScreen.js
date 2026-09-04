@@ -386,7 +386,7 @@ export async function showResults(stats, canContinue = false) {
   }
 
   setText('#resSession', t('session_games', { n: app.sessionGames }));
-  setText('#resBestToday', t('best_today', { n: app.sessionBest }));
+  setText('#resBestToday', t('best_session', { n: app.sessionBest }));
 
   const compEl = $('#resCompResult');
   if (compEl) {

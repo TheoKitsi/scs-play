@@ -9,6 +9,13 @@ import app                  from '../appState.js';
 export function bindAuth(showHome) {
   const { auth } = app;
 
+  const setBusy = busy => {
+    ['btnGoogle', 'btnApple', 'btnEmail', 'btnGuest'].forEach(id => {
+      const button = $(`#${id}`);
+      if (button) button.disabled = busy;
+    });
+  };
+
   // When Firebase isn't configured, hide cloud-auth UI once auth init completes
   auth.onAuthStateChanged(() => {
     if (!auth.fbReady) {
@@ -32,13 +39,19 @@ export function bindAuth(showHome) {
   $('#btnEmail')?.addEventListener('click', async () => {
     const email = $('#inputEmail')?.value;
     const pw    = $('#inputPassword')?.value;
-    if (!email || !pw) return;
+    if (!email || !pw) {
+      setText('#authError', t('auth_required'));
+      return;
+    }
+    setBusy(true);
     try {
       await auth.signInWithEmail?.(email, pw);
       await showHome();
     } catch {
       try { await auth.registerWithEmail?.(email, pw, email.split('@')[0]); await showHome(); }
       catch { setText('#authError', t('auth_error')); }
+    } finally {
+      setBusy(false);
     }
   });
 

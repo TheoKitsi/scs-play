@@ -275,7 +275,7 @@ body.ad-free #game .game-ad-banner{display:none}
   padding-top:8px;
   padding-bottom:8px;
   overflow-x:hidden;
-  overflow-y:auto;
+  overflow-y:hidden;
   overscroll-behavior:contain;
   touch-action:pan-y;
 }
@@ -342,7 +342,7 @@ body.ad-free #game .game-ad-banner{display:none}
   background:rgba(108,92,231,0.08);
   box-shadow:0 4px 16px rgba(108,92,231,0.12), inset 0 1px 1px rgba(255,255,255,0.06);
 }
-.unlock-item.locked-item{opacity:.5}
+.unlock-item.locked-item{opacity:.82}
 .unlock-preview{
   width:40px;height:40px;border-radius:10px;
   display:flex;align-items:center;justify-content:center;

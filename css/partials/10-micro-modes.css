@@ -131,7 +131,7 @@
 }
 .unlock-item.locked-item::after{
   content:'';position:absolute;inset:0;
-  background:rgba(10,10,26,.35);
+  background:rgba(10,10,26,.12);
   border-radius:inherit;pointer-events:none;
 }
 

@@ -96,6 +96,14 @@ async function run() {
   for (const sel of homeChecks) {
     assert(await visible(sel, 1000), `${sel} visible`);
   }
+  const homeA11y = await page.evaluate(() => ({
+    selectedPlayType: document.querySelector('.play-type-btn.selected')?.getAttribute('aria-pressed'),
+    inactiveScreensInert: [...document.querySelectorAll('.screen:not(.active)')].every(screen => screen.inert),
+    historyScreen: history.state?.scsScreen,
+  }));
+  assert(homeA11y.selectedPlayType === 'true', 'Selected play type exposes its state');
+  assert(homeA11y.inactiveScreensInert, 'Inactive screens are removed from keyboard navigation');
+  assert(homeA11y.historyScreen === 'home', 'Browser history tracks the active screen');
 
   // ─── 4) Start Game (default mode) ───
   console.log('\n4. Start Game');
@@ -116,6 +124,10 @@ async function run() {
   const hudTimer = await page.evaluate(() => !!document.querySelector('#hudTimer'));
   assert(hudScore, 'HUD score element exists');
   assert(hudTimer, 'HUD timer element exists');
+  const gameControlsAccessible = await page.evaluate(() =>
+    [...document.querySelectorAll('#game .corner-shape')].every(corner => corner.tagName === 'BUTTON' && corner.getAttribute('aria-label'))
+  );
+  assert(gameControlsAccessible, 'Game targets are labelled keyboard controls');
 
   const centerBeforeClimax = await page.locator('#centerPlatform').boundingBox();
   await page.evaluate(() => document.querySelector('#game')?.classList.add('action-climax', 'action-climax-peak'));
@@ -284,6 +296,17 @@ async function run() {
   }
   await clickSel('#btnSettings', 1000);
   assert(await visible('#settings', 3000), 'Settings screen visible');
+  await clickSel('#btnEngagementReport', 1000);
+  const reportState = await page.evaluate(() => {
+    const report = document.querySelector('#engagementReport');
+    const exports = document.querySelector('#erExportButtons');
+    return {
+      active: report?.classList.contains('active'),
+      validEmptyState: !report?.classList.contains('no-data') || (exports?.hidden && getComputedStyle(exports).display === 'none'),
+    };
+  });
+  assert(reportState.active, 'Engagement report opens');
+  assert(reportState.validEmptyState, 'Empty report hides unavailable export actions');
   await clickSel('.btn-back-bottom', 800);
 
   // ─── 11) Store Screen ───
@@ -297,6 +320,12 @@ async function run() {
   }
   await clickSel('#btnStore', 1000);
   assert(await visible('#store', 3000), 'Store screen visible');
+  const storeSemantics = await page.evaluate(() => ({
+    selectedTab: document.querySelector('.shop-tab.selected')?.getAttribute('aria-selected'),
+    activeControlIsButton: document.querySelector('.unlock-item.active-item .btn-active')?.tagName === 'BUTTON',
+  }));
+  assert(storeSemantics.selectedTab === 'true', 'Store tab exposes its selected state');
+  assert(!storeSemantics.activeControlIsButton, 'Active store item is status, not a dead button');
   await clickSel('.btn-back-bottom', 800);
 
   // ─── 12) Wheel Screen ───

@@ -229,6 +229,12 @@ function positionSlides() {
 
   // Update selected mode
   const currentMode = CONFIG.MODE_ORDER[carouselIdx];
+  const currentSlide = slides[carouselIdx];
+  const status = $('#heroCarouselStatus');
+  if (status && currentSlide) {
+    const name = currentSlide.querySelector('.hero-slide-name')?.textContent?.trim() || currentMode;
+    status.textContent = `${name}, ${carouselIdx + 1} / ${total}`;
+  }
   if (currentMode && app.save.isModeUnlocked(currentMode)) {
     if (app.selectedMode !== currentMode) {
       app.selectedMode = currentMode;
@@ -253,6 +259,7 @@ function navigateCarousel(direction) {
     app.selectedPlayType = prevPlayType;
     $$('.play-type-btn').forEach(btn => {
       btn.classList.toggle('selected', btn.dataset.play === prevPlayType);
+      btn.setAttribute('aria-pressed', String(btn.dataset.play === prevPlayType));
     });
   }
   setTimeout(() => { carouselAnimating = false; }, 360);
@@ -349,6 +356,7 @@ export function updatePlayTypeSelector() {
     btn.hidden = shouldHide;
     btn.setAttribute('aria-hidden', shouldHide ? 'true' : 'false');
     btn.classList.toggle('selected', play === app.selectedPlayType);
+    btn.setAttribute('aria-pressed', String(play === app.selectedPlayType));
     if (play === 'competition') {
       btn.classList.toggle('locked', !competitionUnlocked);
     }

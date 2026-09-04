@@ -36,7 +36,7 @@
 </head>
 <body>
 <!-- Skip to main content (a11y) -->
-<a href="#home" class="sr-skip-link">Zum Inhalt springen</a>
+<a href="#appMain" class="sr-skip-link">Zum Inhalt springen</a>
 <!-- Live region for screen reader announcements -->
 <div id="a11yLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 <div class="ambient-bg-orbs" aria-hidden="true"></div>
@@ -100,6 +100,7 @@
   </symbol>
 </svg>
 
+<main id="appMain" tabindex="-1">
 <!-- ═══════ BOOT ═══════ -->
 <div id="boot" class="screen active">
   <div class="boot-bg">
@@ -170,11 +171,13 @@
       <button id="btnShowEmail" class="btn btn-ghost btn-email-toggle" data-i18n="email_login">Mit E-Mail anmelden</button>
     </div>
     <div id="authEmailForm" class="auth-form" style="display:none">
-      <input id="inputEmail"    type="email"    class="auth-input" data-i18n-placeholder="email_placeholder" placeholder="E-Mail">
-      <input id="inputPassword" type="password" class="auth-input" data-i18n-placeholder="password_placeholder" placeholder="Passwort">
+      <label class="sr-only" for="inputEmail" data-i18n="email_placeholder">E-Mail-Adresse</label>
+      <input id="inputEmail" type="email" class="auth-input" data-i18n-placeholder="email_placeholder" placeholder="E-Mail" autocomplete="email" required>
+      <label class="sr-only" for="inputPassword" data-i18n="password_placeholder">Passwort</label>
+      <input id="inputPassword" type="password" class="auth-input" data-i18n-placeholder="password_placeholder" placeholder="Passwort" autocomplete="current-password" required>
       <button id="btnEmail" class="btn btn-secondary" data-i18n="login">Anmelden</button>
     </div>
-    <p id="authError" class="auth-error"></p>
+    <p id="authError" class="auth-error" role="alert" aria-live="assertive"></p>
   </div>
 </div>
 
@@ -197,11 +200,11 @@
           </div>
         </div>
         <div class="htb-right">
-          <div class="resource-pill" id="homeLivesBadge">
+          <button type="button" class="resource-pill" id="homeLivesBadge" data-i18n-aria="lives_balance" aria-label="Leben">
             <svg class="ui-icon" viewBox="0 0 24 24" style="color:var(--color-heart);width:16px;height:16px"><use href="#icon-heart"></use></svg>
             <span id="homeLivesCount">3</span>
-          </div>
-          <div class="resource-pill" id="homeFireBadge">
+          </button>
+          <div class="resource-pill" id="homeFireBadge" data-i18n-aria="fire_balance" aria-label="Fire-Punkte">
             <svg class="ui-icon" viewBox="0 0 24 24" style="color:var(--color-fire);width:16px;height:16px"><use href="#icon-fire"></use></svg>
             <span id="homeFireCount">0</span>
           </div>
@@ -209,7 +212,7 @@
       </div>
 
       <!-- Thin XP bar below identity -->
-      <div class="hero-xp-bar">
+      <div class="hero-xp-bar" id="homeXpProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-i18n-aria="xp_progress">
         <span id="xpLevelNum" class="xp-level-num"></span>
         <div class="xp-bar-mini"><div id="xpBarFill" class="xp-bar-mini-fill"></div></div>
         <span id="xpPercent" class="xp-percent"></span>
@@ -219,23 +222,24 @@
       </div>
 
       <!-- Swipeable mode slides — JS renders one .hero-slide per mode -->
-      <div class="hero-slider" id="heroSlider" role="group" aria-label="Spielmodus wählen"></div>
+      <div class="hero-slider" id="heroSlider" role="group" aria-label="Spielmodus wählen" aria-describedby="heroCarouselStatus"></div>
+      <div id="heroCarouselStatus" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
       <div class="home-play-command" id="homePlayCommand">
         <div class="play-type-selector play-type-selector--primary">
-          <button class="play-type-btn selected" data-play="blitz">
+          <button class="play-type-btn selected" data-play="blitz" aria-pressed="true">
             <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg></span>
             <span class="play-type-name" data-i18n="play_blitz">BLITZ</span>
           </button>
-          <button class="play-type-btn" data-play="classic">
+          <button class="play-type-btn" data-play="classic" aria-pressed="false">
             <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-clock"></use></svg></span>
             <span class="play-type-name" data-i18n="play_classic">MARATHON</span>
           </button>
-          <button class="play-type-btn" data-play="endless">
+          <button class="play-type-btn" data-play="endless" aria-pressed="false">
             <span class="play-type-icon play-type-icon--text">&#x221E;</span>
             <span class="play-type-name" data-i18n="play_endless">ENDLOS</span>
           </button>
-          <button class="play-type-btn" data-play="competition">
+          <button class="play-type-btn" data-play="competition" aria-pressed="false">
             <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-trophy"></use></svg></span>
             <span class="play-type-name" data-i18n="play_competition">WETTKAMPF</span>
             <span class="play-type-comp-badge" id="compBadge"></span>
@@ -526,9 +530,9 @@
 </div>
 
 <!-- ═══════ GAME ═══════ -->
-<div id="game" class="screen" role="application" aria-label="Spielfeld">
+<div id="game" class="screen" aria-label="Spielfeld">
   <!-- Timer progress bar (v14) -->
-  <div class="timer-bar" role="progressbar" aria-label="Time remaining"><div id="timerBarFill" class="timer-bar-fill"></div></div>
+  <div class="timer-bar" role="progressbar" data-i18n-aria="timer_bar" aria-label="Verbleibende Zeit"><div id="timerBarFill" class="timer-bar-fill"></div></div>
 
   <canvas id="trailCanvas" class="trail-canvas"></canvas>
 
@@ -549,15 +553,15 @@
     <div class="hud-scores">
       <div class="hud-score-group">
         <span class="hud-label" data-i18n="score">Punkte</span>
-        <span id="hudScore" class="hud-value" role="status" aria-live="polite" aria-label="Score">0</span>
+        <span id="hudScore" class="hud-value">0</span>
       </div>
       <div class="hud-score-group">
         <span class="hud-label" data-i18n="multiplier">Multiplikator</span>
-        <span id="hudMultiplier" class="hud-multiplier" role="status" aria-live="polite" aria-label="Multiplier">x1</span>
+        <span id="hudMultiplier" class="hud-multiplier">x1</span>
       </div>
       <div class="hud-score-group">
         <span class="hud-label" data-i18n="streak_label">Streak</span>
-        <span id="hudStreak" class="hud-value" role="status" aria-live="polite" aria-label="Streak">0</span>
+        <span id="hudStreak" class="hud-value">0</span>
       </div>
     </div>
     <div id="hudFever" class="hud-fever"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:currentColor;width:14px;height:14px;vertical-align:middle"><use href="#icon-fire"></use></svg> FEVER</div>
@@ -587,27 +591,27 @@
   <button id="btnStopPractice" class="btn btn-stop-practice" style="display:none" data-i18n="stop_practice">Beenden</button>
 
   <!-- Corner shapes — 4 corners (always) -->
-  <div class="corner-shape" data-dir="ur" role="img" aria-label="Upper right corner"></div>
-  <div class="corner-shape" data-dir="ul" role="img" aria-label="Upper left corner"></div>
-  <div class="corner-shape" data-dir="dr" role="img" aria-label="Lower right corner"></div>
-  <div class="corner-shape" data-dir="dl" role="img" aria-label="Lower left corner"></div>
+  <button type="button" class="corner-shape" data-dir="ur" data-i18n-aria="direction_ur" aria-label="Oben rechts"></button>
+  <button type="button" class="corner-shape" data-dir="ul" data-i18n-aria="direction_ul" aria-label="Oben links"></button>
+  <button type="button" class="corner-shape" data-dir="dr" data-i18n-aria="direction_dr" aria-label="Unten rechts"></button>
+  <button type="button" class="corner-shape" data-dir="dl" data-i18n-aria="direction_dl" aria-label="Unten links"></button>
 
   <!-- 4 edge slots (Expert + Ultra) -->
-  <div class="corner-shape edge-only" data-dir="up" role="img" aria-label="Top edge"></div>
-  <div class="corner-shape edge-only" data-dir="down" role="img" aria-label="Bottom edge"></div>
-  <div class="corner-shape edge-only" data-dir="left" role="img" aria-label="Left edge"></div>
-  <div class="corner-shape edge-only" data-dir="right" role="img" aria-label="Right edge"></div>
+  <button type="button" class="corner-shape edge-only" data-dir="up" data-i18n-aria="direction_up" aria-label="Oben"></button>
+  <button type="button" class="corner-shape edge-only" data-dir="down" data-i18n-aria="direction_down" aria-label="Unten"></button>
+  <button type="button" class="corner-shape edge-only" data-dir="left" data-i18n-aria="direction_left" aria-label="Links"></button>
+  <button type="button" class="corner-shape edge-only" data-dir="right" data-i18n-aria="direction_right" aria-label="Rechts"></button>
 
   <!-- 4 Ultra-only slots -->
-  <div class="corner-shape ultra-only" data-dir="ene" role="img" aria-label="East-northeast"></div>
-  <div class="corner-shape ultra-only" data-dir="nnw" role="img" aria-label="North-northwest"></div>
-  <div class="corner-shape ultra-only" data-dir="wsw" role="img" aria-label="West-southwest"></div>
-  <div class="corner-shape ultra-only" data-dir="sse" role="img" aria-label="South-southeast"></div>
+  <button type="button" class="corner-shape ultra-only" data-dir="ene" data-i18n-aria="direction_ene" aria-label="Ost-Nordost"></button>
+  <button type="button" class="corner-shape ultra-only" data-dir="nnw" data-i18n-aria="direction_nnw" aria-label="Nord-Nordwest"></button>
+  <button type="button" class="corner-shape ultra-only" data-dir="wsw" data-i18n-aria="direction_wsw" aria-label="West-Südwest"></button>
+  <button type="button" class="corner-shape ultra-only" data-dir="sse" data-i18n-aria="direction_sse" aria-label="Süd-Südost"></button>
 
   <!-- Center shape -->
-  <div id="centerPlatform" class="center-platform" role="img" aria-label="Shape to sort">
-    <div id="centerShape" class="center-shape" aria-live="assertive"></div>
-  </div>
+  <button type="button" id="centerPlatform" class="center-platform" data-i18n-aria="center_stimulus" aria-label="Zu sortierendes Element">
+    <span id="centerShape" class="center-shape"></span>
+  </button>
 
   <!-- Countdown -->
   <div id="countdownOverlay" class="countdown-overlay" role="alert" aria-live="assertive">
@@ -722,7 +726,7 @@
   <div class="screen-content">
     <div class="screen-header"><h2 data-i18n="leaderboard">Bestleistungen</h2></div>
     <!-- Mode filter -->
-    <div id="lbModeFilters" class="lb-mode-tabs">
+    <div id="lbModeFilters" class="lb-mode-tabs" role="group" aria-label="Spielmodus">
       <button class="lb-mode-btn selected" data-mode="klassik" data-i18n="mode_klassik">KLASSIK</button>
       <button class="lb-mode-btn" data-mode="beginner" data-i18n="mode_beginner">FORMEN</button>
       <button class="lb-mode-btn" data-mode="expert" data-i18n="mode_expert">EXPERT</button>
@@ -735,7 +739,7 @@
       <button class="lb-mode-btn" data-mode="chaos" data-i18n="mode_chaos">CHAOS</button>
     </div>
     <!-- Play type filter -->
-    <div id="lbFilters" class="lb-filter-tabs">
+    <div id="lbFilters" class="lb-filter-tabs" role="group" aria-label="Spielart">
       <button class="lb-filter-btn selected" data-filter="blitz" data-i18n="play_blitz">Blitz</button>
       <button class="lb-filter-btn" data-filter="classic" data-i18n="play_classic">Marathon</button>
       <button class="lb-filter-btn" data-filter="endless" data-i18n="play_endless">Endlos</button>
@@ -754,7 +758,7 @@
     <div class="screen-header"><h2 data-i18n="achievements">Erfolge</h2></div>
     <div id="achProgress" class="ach-progress"></div>
     <!-- Filter tabs — Shop-style -->
-    <div id="achTabs" class="ach-tabs">
+    <div id="achTabs" class="ach-tabs" role="group" aria-label="Erfolge filtern">
       <button class="ach-tab selected" data-filter="close" data-i18n="ach_filter_focus">Für dich</button>
       <button class="ach-tab" data-filter="earned" data-i18n="ach_filter_earned">Erreicht</button>
       <button class="ach-tab" data-filter="all" data-i18n="ach_filter_all">Alle</button>
@@ -828,16 +832,17 @@
 <!-- ═══════ STORE ═══════ -->
 <div id="store" class="screen">
   <div class="screen-content">
-    <div class="screen-header"><h2 data-i18n="store">Sammlung</h2></div>
+    <div class="screen-header"><div><h2 data-i18n="store">Design-Shop</h2><p class="screen-subtitle" data-i18n="store_sub">Spiele Fire frei und gestalte dein Spiel.</p></div></div>
     <!-- Shop Tabs -->
-    <div id="shopTabs" class="shop-tabs">
-      <button class="shop-tab selected" data-tab="themes" data-i18n="shop_tab_themes">Themen</button>
-      <button class="shop-tab" data-tab="trails" data-i18n="shop_tab_trails">Trails</button>
+    <div id="shopTabs" class="shop-tabs" role="tablist" aria-label="Shop-Kategorien">
+      <button class="shop-tab selected" role="tab" aria-selected="true" data-tab="themes" data-i18n="shop_tab_themes">Themen</button>
+      <button class="shop-tab" role="tab" aria-selected="false" data-tab="trails" data-i18n="shop_tab_trails">Trails</button>
     </div>
     <!-- Earned currency balance -->
-    <div id="shopLivesBar" class="shop-lives-bar">
+    <div id="shopLivesBar" class="shop-lives-bar" aria-live="polite">
       <svg class="ui-icon" viewBox="0 0 24 24" style="color:var(--color-fire);width:18px;height:18px"><use href="#icon-fire"></use></svg>
       <span id="shopFireCount">0</span>
+      <span class="shop-lives-label" data-i18n="fire_shop_help">Fire durch Spielen verdienen</span>
     </div>
     <!-- Tab content -->
     <div id="shopTabContent">
@@ -865,13 +870,13 @@
       <!-- Daily games chart -->
       <div id="erDailyChart" class="er-chart-section"></div>
       <!-- Export buttons -->
-      <div class="er-export-buttons">
+      <div class="er-export-buttons" id="erExportButtons">
         <button id="btnErCopyText" class="btn btn-secondary er-export-btn">
-          <span class="er-export-icon">&#x1F4CB;</span>
+          <svg class="ui-icon er-export-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M9 5h10v16H9zM5 3h10v2M5 3v14h4"/></svg>
           <span data-i18n="er_copy_text">Als Text kopieren</span>
         </button>
         <button id="btnErExportJSON" class="btn btn-secondary er-export-btn">
-          <span class="er-export-icon">&#x1F4C1;</span>
+          <svg class="ui-icon er-export-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m-5-5 5 5 5-5M5 20h14"/></svg>
           <span data-i18n="er_export_json">Als JSON exportieren</span>
         </button>
       </div>
@@ -881,16 +886,17 @@
     </div>
   </div>
 </div>
+</main>
 
 <!-- ═══════ MICRO FEEDBACK PROMPT ═══════ -->
-<div id="microFeedback" class="micro-feedback" role="dialog" aria-label="Feedback">
+<div id="microFeedback" class="micro-feedback" role="dialog" aria-label="Feedback" hidden inert>
   <div class="mf-inner">
     <span class="mf-title" data-i18n="mf_how_was_that">Wie war das?</span>
     <div class="mf-buttons">
-      <button class="mf-btn" data-rating="1" aria-label="Meh">&#x1F610;</button>
-      <button class="mf-btn" data-rating="2" aria-label="Ok">&#x1F642;</button>
-      <button class="mf-btn" data-rating="3" aria-label="Good">&#x1F60A;</button>
-      <button class="mf-btn" data-rating="4" aria-label="Great">&#x1F60D;</button>
+      <button class="mf-btn" data-rating="1" data-i18n-aria="mf_rating_1" aria-label="Nicht gut"><span aria-hidden="true">&#x1F610;</span></button>
+      <button class="mf-btn" data-rating="2" data-i18n-aria="mf_rating_2" aria-label="Okay"><span aria-hidden="true">&#x1F642;</span></button>
+      <button class="mf-btn" data-rating="3" data-i18n-aria="mf_rating_3" aria-label="Gut"><span aria-hidden="true">&#x1F60A;</span></button>
+      <button class="mf-btn" data-rating="4" data-i18n-aria="mf_rating_4" aria-label="Großartig"><span aria-hidden="true">&#x1F60D;</span></button>
     </div>
     <button class="mf-skip" data-i18n="mf_skip">&#xDC;berspringen</button>
   </div>

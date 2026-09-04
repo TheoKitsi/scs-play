@@ -19,7 +19,12 @@ function updateShopLives() {
 }
 
 function renderShopTabs() {
-  $$('.shop-tab').forEach(btn => btn.classList.toggle('selected', btn.dataset.tab === shopTab));
+  $$('.shop-tab').forEach(btn => {
+    const selected = btn.dataset.tab === shopTab;
+    btn.classList.toggle('selected', selected);
+    btn.setAttribute('aria-selected', String(selected));
+    btn.tabIndex = selected ? 0 : -1;
+  });
 }
 
 function renderUnlockItems(type) {
@@ -46,11 +51,11 @@ function renderUnlockItems(type) {
 
     let btnHTML = '';
     if (isActive) {
-      btnHTML = `<button class="btn-unlock btn-active"><svg class="ui-icon" viewBox="0 0 24 24" style="width:14px;height:14px"><use href="#icon-eye"></use></svg> ${t('unlockable_active')}</button>`;
+      btnHTML = `<span class="btn-unlock btn-active" aria-label="${t('unlockable_active')}"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px"><use href="#icon-eye"></use></svg> ${t('unlockable_active')}</span>`;
     } else if (isOwned) {
       btnHTML = `<button class="btn-unlock btn-activate" data-id="${item.id}" data-type="${type}">${t('unlockable_activate')}</button>`;
     } else {
-      btnHTML = `<button class="btn-unlock btn-fire-buy ${canAfford ? '' : 'btn-locked'}" data-id="${item.id}" data-type="${type}" data-cost="${cost}" ${canAfford ? '' : 'disabled'}>\uD83D\uDD25 ${cost}</button>`;
+      btnHTML = `<button class="btn-unlock btn-fire-buy ${canAfford ? '' : 'btn-locked'}" data-id="${item.id}" data-type="${type}" data-cost="${cost}" ${canAfford ? '' : 'disabled'} aria-label="${cost} Fire"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px"><use href="#icon-fire"></use></svg> ${cost}</button>`;
     }
 
     return `

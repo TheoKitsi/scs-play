@@ -62,11 +62,27 @@ export function showScreen(id, app) {
       s.classList.remove('active');
       setTimeout(() => s.classList.remove('screen-exit'), 350);
     }
+    const isTarget = s.id === id;
+    s.inert = !isTarget;
+    s.setAttribute('aria-hidden', String(!isTarget));
   });
   const el = $(`#${id}`);
   if (el) {
     el.classList.add('active', 'screen-enter');
     setTimeout(() => el.classList.remove('screen-enter'), 350);
+
+    const currentState = history.state?.scsScreen;
+    const replace = !prevScreen || ['boot', 'auth', 'home', 'results'].includes(id) || currentState === id;
+    const method = replace ? 'replaceState' : 'pushState';
+    history[method]({ ...(history.state || {}), scsScreen: id }, '', location.href);
+
+    requestAnimationFrame(() => {
+      const target = el.querySelector('h1, h2, [data-screen-focus]') || el;
+      const addedTabIndex = !target.hasAttribute('tabindex');
+      if (addedTabIndex) target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
+      if (addedTabIndex) target.addEventListener('blur', () => target.removeAttribute('tabindex'), { once: true });
+    });
   }
   app.currentScreen = id;
   window.dispatchEvent(new CustomEvent('scs:screenchange', { detail: { id, prevScreen } }));

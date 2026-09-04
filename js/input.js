@@ -32,6 +32,7 @@ export class SwipeHandler {
     this._onEnd   = this._end.bind(this);
     this._onCancel = this._cancel.bind(this);
     this._onKeyDown = this._keyDown.bind(this);
+    this._onAccessibleClick = this._accessibleClick.bind(this);
   }
 
   setMode(m) { this.mode = m; }
@@ -46,6 +47,7 @@ export class SwipeHandler {
     this.el.addEventListener('mousemove',  this._onMove,  { passive: true });
     this.el.addEventListener('mouseup',    this._onEnd,   { passive: true });
     window.addEventListener('keydown', this._onKeyDown);
+    this.el.addEventListener('click', this._onAccessibleClick);
     this._bound = true;
   }
 
@@ -58,6 +60,7 @@ export class SwipeHandler {
     this.el.removeEventListener('mousemove',  this._onMove);
     this.el.removeEventListener('mouseup',    this._onEnd);
     window.removeEventListener('keydown', this._onKeyDown);
+    this.el.removeEventListener('click', this._onAccessibleClick);
     this._bound = false;
     this._active = false;
   }
@@ -82,6 +85,17 @@ export class SwipeHandler {
     e.preventDefault();
     const stimulusId = this.onGestureStart ? this.onGestureStart() : undefined;
     if (this.onSwipe) this.onSwipe(direction, performance.now(), stimulusId);
+  }
+
+  _accessibleClick(e) {
+    if (e.detail !== 0) return;
+    const corner = e.target.closest('.corner-shape');
+    const stimulusId = this.onGestureStart ? this.onGestureStart() : undefined;
+    if (corner && this.onCornerTap) {
+      this.onCornerTap(corner.dataset.dir, performance.now(), stimulusId);
+    } else if (e.target.closest('#centerPlatform') && this.onCenterTap) {
+      this.onCenterTap();
+    }
   }
 
   _start(e) {
