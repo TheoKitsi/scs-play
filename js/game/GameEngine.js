@@ -6,6 +6,15 @@
    ═══════════════════════════════════════════════ */
 import { CONFIG } from '../config.js';
 
+const COLORBLIND_PATTERNS = ['diagonal-stripes', 'dots', 'crosshatch', 'horizontal-stripes'];
+
+function colorblindMetadata(index) {
+  return {
+    colorblind: CONFIG.COLORS.colorblind[index % CONFIG.COLORS.colorblind.length],
+    colorblindPattern: COLORBLIND_PATTERNS[index % COLORBLIND_PATTERNS.length]
+  };
+}
+
 /* ─── Mulberry32 seeded PRNG ─── */
 function mulberry32(seed) {
   return function () {
@@ -135,8 +144,6 @@ export class GameEngine {
     this._seqFlashTimeouts = [];
     clearTimeout(this._seqInputTimeout);
     this._seqInputTimeout = null;
-    clearTimeout(this._seqStartTimeout);
-    this._seqStartTimeout = null;
 
     this.elapsed = 0;
 
@@ -220,7 +227,7 @@ export class GameEngine {
   }
 
   get refreshCornersEachSpawn() {
-    return this.mode === 'beginner';
+    return false;
   }
 
   get difficultyProgress() {
@@ -469,7 +476,7 @@ export class GameEngine {
         this.cornerMap[d] = {
           display: c[`name_${lang}`] || c.name_en,
           value: c.hex, type: 'stroop',
-          color: c.hex, colorblind: c.hex, colorIndex: i
+          color: c.hex, ...colorblindMetadata(i), colorIndex: i
         };
       });
       return;
@@ -505,7 +512,7 @@ export class GameEngine {
         this.cornerMap[d] = {
           shape: chaosShapes[i % chaosShapes.length],
           color: chaosColors[i % chaosColors.length],
-          colorblind: chaosColors[i % chaosColors.length],
+          ...colorblindMetadata(i),
           size: chaosSizes[i % chaosSizes.length],
           type: 'chaos', colorIndex: i
         };
@@ -556,7 +563,8 @@ export class GameEngine {
     this._elapsedInterval = setInterval(() => {
       if (this.paused) return;
       this.elapsed++;
-      if (this.onTick) this.onTick(this.elapsed);
+      /* Timed games emit from the drift-corrected countdown only. */
+      if (!this._timerWallStart && this.onTick) this.onTick(this.elapsed);
     }, 1000);
   }
 
@@ -582,10 +590,10 @@ export class GameEngine {
     /* Sequenz: clear queued flashes + input timeout */
     this._seqFlashTimeouts.forEach(t => clearTimeout(t));
     this._seqFlashTimeouts = [];
-    clearTimeout(this._seqInputTimeout);
-    this._seqInputTimeout = null;
     clearTimeout(this._seqStartTimeout);
     this._seqStartTimeout = null;
+    clearTimeout(this._seqInputTimeout);
+    this._seqInputTimeout = null;
     /* Fever: save remaining duration so it can resume later */
     if (this._feverTimeout && this.feverActive) {
       const feverElapsed = performance.now() - (this._feverStartedAt || 0);
@@ -714,7 +722,7 @@ export class GameEngine {
   }
 
   _scheduleSpawn(delay) {
-    if (!this.running || this.paused) return;
+    if (!this.running || this.paused || this.inRush) return;
     clearTimeout(this._spawnTimeout);
     let d = delay != null ? delay : (this.practice ? CONFIG.PRACTICE_INTERVAL : this.spawnInterval);
     if (this._isFirstSpawn && delay == null) {
@@ -1285,6 +1293,24 @@ export class GameEngine {
   }
 
   /* ═══ STROOP spawn ═══ */
+  _getStroopCongruentRate() {
+    const curve = CONFIG.STROOP_CONGRUENT_CURVE || [];
+    if (curve.length === 0) return CONFIG.STROOP_CONGRUENT_RATE ?? 0.2;
+
+    const progress = this.difficultyProgress;
+    if (progress <= curve[0].threshold) return curve[0].rate;
+    for (let i = 1; i < curve.length; i++) {
+      const previous = curve[i - 1];
+      const current = curve[i];
+      if (progress <= current.threshold) {
+        const range = current.threshold - previous.threshold;
+        const ratio = range > 0 ? (progress - previous.threshold) / range : 1;
+        return previous.rate + (current.rate - previous.rate) * ratio;
+      }
+    }
+    return curve[curve.length - 1].rate;
+  }
+
   _spawnStroop() {
     const dirs = this.directions;
     const lang = this._lang || 'de';
@@ -1300,7 +1326,7 @@ export class GameEngine {
     /* During challenge rounds, force all-incongruent */
     const inChallenge = performance.now() < this._stroopChallengeUntil;
     let wordIdx;
-    if (!inChallenge && this.rng() < (CONFIG.STROOP_CONGRUENT_RATE || 0.2)) {
+    if (!inChallenge && this.rng() < this._getStroopCongruentRate()) {
       wordIdx = inkIdx; /* congruent: word matches ink */
     } else {
       do { wordIdx = Math.floor(this.rng() * colors.length); } while (wordIdx === inkIdx);
@@ -1319,9 +1345,11 @@ export class GameEngine {
       direction: correctDir,
       display: displayWord,        /* The text word (e.g., "ROT") */
       inkColor: inkColor.hex,       /* The actual ink color the word is drawn in */
+      isCongruent: wordIdx === inkIdx,
       type: 'stroop',
       color: inkColor.hex,
-      colorblind: inkColor.hex,
+      ...colorblindMetadata(inkIdx),
+      inkColorblind: colorblindMetadata(inkIdx).colorblind,
       bonus
     };
     this.bonusType = bonus;
@@ -1343,9 +1371,8 @@ export class GameEngine {
     /* Pick flanker arrows */
     const focusLevels = CONFIG.FOKUS_DISTRACTION_LEVELS || [];
     let focusLevel = 1;
-    const stageOffset = this.difficultyProgress - this.correct;
     for (const level of focusLevels) {
-      if (this.total + stageOffset >= level.threshold) focusLevel = level.level;
+      if (this.difficultyProgress >= level.threshold) focusLevel = level.level;
     }
     const flankerCount = Math.max(2, focusLevel * 2);
     const isCongruent = this.rng() < (CONFIG.FOKUS_CONGRUENT_RATE || 0.3);
@@ -1398,10 +1425,10 @@ export class GameEngine {
       dirs.forEach((d, i) => {
         if (i === correctIdx) {
           this.cornerMap[d] = { display: String(answer), value: answer, type: 'math',
-            color: CONFIG.COLORS.normal[i], colorblind: CONFIG.COLORS.colorblind[i], colorIndex: i };
+            color: CONFIG.COLORS.normal[i], ...colorblindMetadata(i), colorIndex: i };
         } else {
           this.cornerMap[d] = { display: String(distractors[dIdx]), value: distractors[dIdx], type: 'math',
-            color: CONFIG.COLORS.normal[i], colorblind: CONFIG.COLORS.colorblind[i], colorIndex: i };
+            color: CONFIG.COLORS.normal[i], ...colorblindMetadata(i), colorIndex: i };
           dIdx++;
         }
       });
@@ -1414,7 +1441,8 @@ export class GameEngine {
       this.currentShape = {
         direction: correctDir, display: equation, type: 'math', chaosRule: rule,
         color: this.cornerMap[correctDir].color,
-        colorblind: this.cornerMap[correctDir].colorblind, bonus
+        colorblind: this.cornerMap[correctDir].colorblind,
+        colorblindPattern: this.cornerMap[correctDir].colorblindPattern, bonus
       };
       this.bonusType = bonus;
 
@@ -1434,7 +1462,7 @@ export class GameEngine {
         this.cornerMap[d] = {
           display: c[`name_${lang}`] || c.name_en,
           value: c.hex, type: 'stroop',
-          color: c.hex, colorblind: c.hex, colorIndex: i
+          color: c.hex, ...colorblindMetadata(i), colorIndex: i
         };
       });
       const inkIdx = Math.floor(this.rng() * colors.length);
@@ -1454,7 +1482,8 @@ export class GameEngine {
       this.currentShape = {
         direction: correctDir, display: displayWord,
         inkColor: inkColor.hex, type: 'stroop', chaosRule: rule,
-        color: inkColor.hex, colorblind: inkColor.hex, bonus
+        color: inkColor.hex, ...colorblindMetadata(inkIdx),
+        inkColorblind: colorblindMetadata(inkIdx).colorblind, bonus
       };
       this.bonusType = bonus;
 
@@ -1475,9 +1504,10 @@ export class GameEngine {
     const sColors = shuffle(chaosColors.slice(0, dirs.length), this.rng);
     const sSizes  = shuffle(chaosSizes.slice(0, dirs.length), this.rng);
     dirs.forEach((d, i) => {
+      const colorIndex = chaosColors.indexOf(sColors[i]);
       this.cornerMap[d] = {
-        shape: sShapes[i], color: sColors[i], colorblind: sColors[i],
-        size: sSizes[i], type: 'chaos', colorIndex: i
+        shape: sShapes[i], color: sColors[i], ...colorblindMetadata(colorIndex),
+        size: sSizes[i], type: 'chaos', colorIndex
       };
     });
 
@@ -1516,7 +1546,8 @@ export class GameEngine {
       chaosRule: rule,
       type: 'chaos',
       color: stimColor,
-      colorblind: stimColor,
+      ...colorblindMetadata(chaosColors.indexOf(stimColor)),
+      stimColorblind: colorblindMetadata(chaosColors.indexOf(stimColor)).colorblind,
       bonus
     };
     this.bonusType = bonus;
@@ -1562,6 +1593,7 @@ export class GameEngine {
     let pointsEarned = 0;
 
     const prevStreak = this.streak;
+    let shouldEndGame = false;
 
     if (isCorrect) {
       this.correct++;
@@ -1764,7 +1796,7 @@ export class GameEngine {
             this._timerTarget - (Date.now() - this._timerWallStart - this._timerPausedAccum) / 1000
           ));
           if (this.onTimerPenalty) this.onTimerPenalty(wrongPenalty);
-          if (this.timer <= 0) { this._endGame(); return null; }
+          if (this.timer <= 0) shouldEndGame = true;
         }
 
         /* ── Speed recovery on wrong ── */
@@ -1781,8 +1813,7 @@ export class GameEngine {
         this.endlessLives = CONFIG.ENDLESS_MAX_MISSES - this.endlessTotalMisses;
         if (this.onEndlessMiss) this.onEndlessMiss(this.endlessLives);
         if (this.endlessLives <= 0) {
-          this._endGame();
-          return null;
+          shouldEndGame = true;
         }
       }
     }
@@ -1822,8 +1853,12 @@ export class GameEngine {
     } else {
       postAnswerDelay = this.practice ? CONFIG.PRACTICE_INTERVAL : Math.max(80, this.spawnInterval * 0.15);
     }
-    if (this._memoPhase !== 'reveal' && !this.inRush) this._scheduleSpawn(postAnswerDelay);
+    if (!shouldEndGame && this._memoPhase !== 'reveal' && !this.inRush) this._scheduleSpawn(postAnswerDelay);
     if (this.onResult) this.onResult(result);
+    if (shouldEndGame) {
+      this._endGame();
+      return result;
+    }
 
     /* ── Gentle Start (v22): suppress rush/shuffle during opening seconds ── */
     const gentleActive = this.elapsed < (CONFIG.GENTLE_START_NO_RUSH_SEC || 10);
@@ -1899,6 +1934,7 @@ export class GameEngine {
     this.multiplier = Math.max(1, this.multiplier - CONFIG.MISS_PENALTY);
     if (this.onMultiplierChange) this.onMultiplierChange(this.multiplier);
     this._addRecentResult(false, 9999);
+    let shouldEndGame = false;
 
     /* ── Auto-miss time penalty & speed recovery ── */
     const autoMissPenalty = (this.isBrainMode || this.isReflexMode)
@@ -1910,7 +1946,7 @@ export class GameEngine {
         this._timerTarget - (Date.now() - this._timerWallStart - this._timerPausedAccum) / 1000
       ));
       if (this.onTimerPenalty) this.onTimerPenalty(autoMissPenalty);
-      if (this.timer <= 0) { this._endGame(); return; }
+      if (this.timer <= 0) shouldEndGame = true;
     }
     this.spawnInterval = Math.min(this._spawnMax, this.spawnInterval + this._speedStep * CONFIG.SPEED_WRONG_RECOVERY_MULT);
 
@@ -1933,8 +1969,10 @@ export class GameEngine {
     if (this.onResult) this.onResult(result);
 
     if (this.playType === 'endless' && this.endlessLives <= 0) {
-      this._endGame();
+      shouldEndGame = true;
     }
+
+    if (shouldEndGame) this._endGame();
 
     return result;
   }
@@ -2005,7 +2043,7 @@ export class GameEngine {
     let ms = CONFIG.SEQUENZ_INPUT_TIMEOUT_MS || 4000;
     /* After difficulty plateau, progressively reduce input timeout */
     const maxLen = CONFIG.SEQUENZ_MAX_LENGTH || 20;
-    const plateauRound = maxLen - (CONFIG.SEQUENZ_START_LENGTH || 4);
+    const plateauRound = maxLen - (CONFIG.SEQUENZ_START_LENGTH || 3);
     if (this._seqRound > plateauRound) {
       const extra = this._seqRound - plateauRound;
       ms = Math.max(
@@ -2249,6 +2287,7 @@ export class GameEngine {
         if (!this.running || this.paused) return;
         this._rushIndex = i + 1;
         this._spawn();
+        if (!this.running) return;
         if (this._rushIndex >= totalShapes) {
           this._rushTimeout = setTimeout(() => {
             this._rushTimeout = null;
@@ -2311,6 +2350,8 @@ export class GameEngine {
     this.inRush = false;
     this._seqFlashTimeouts.forEach(t => clearTimeout(t));
     this._seqFlashTimeouts = [];
+    clearTimeout(this._seqStartTimeout);
+    this._seqStartTimeout = null;
     clearTimeout(this._seqInputTimeout);
     this._seqInputTimeout = null;
 
@@ -2406,6 +2447,8 @@ export class GameEngine {
     this._rushQueue = [];
     this._seqFlashTimeouts.forEach(t => clearTimeout(t));
     this._seqFlashTimeouts = [];
+    clearTimeout(this._seqStartTimeout);
+    this._seqStartTimeout = null;
     clearTimeout(this._seqInputTimeout);
     this._seqInputTimeout = null;
   }

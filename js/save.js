@@ -397,7 +397,7 @@ export class SaveService {
       }
     }
     await this.save();
-    return { isNewPB, leveledUp, newLevel: this.data.level, fireEarned: fireEarned + levelUpFire, modeLeveledUp, modeLevel: this.data[modeLevelKey] || 0 };
+    return { isNewPB, leveledUp, newLevel: this.data.level, xpEarned: effectiveXP, fireEarned: fireEarned + levelUpFire, modeLeveledUp, modeLevel: this.data[modeLevelKey] || 0 };
   }
 
   /* ── Per-mode level getters ── */
@@ -428,6 +428,7 @@ export class SaveService {
 
   /* v12: Apply daily diminishing returns to XP */
   _applyDailyDiminish(rawXP) {
+    if (rawXP <= 0) return 0;
     const brackets = CONFIG.DAILY_XP_BRACKETS;
     if (!brackets || !brackets.length) return rawXP;
     const earned = this.data.dailyXPEarned || 0;

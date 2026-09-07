@@ -3,14 +3,11 @@
   .corner-shape svg{width:40px;height:40px}
   .center-platform{width:120px;height:120px}
   .hud-timer{font-size:1.3rem}
-  .mode-chip{padding:3px 1px}
   .btn-play{padding:8px 20px;font-size:.9rem}
   .auth-logo-letter{width:28px;height:36px;font-size:1rem}
   .daily-card{padding:6px 10px;gap:6px}
   .daily-title{font-size:0.55rem}
   .daily-reward{font-size:0.5rem}
-  .mode-section-header{gap:4px}
-  .mode-section-label{font-size:0.5rem}
   .play-type-btn{padding:3px 2px}
   .play-type-icon svg{width:18px;height:18px}
 }
@@ -649,31 +646,6 @@ button:focus-visible{border-radius:var(--radius-sm)}
   max-width:140px;
 }
 
-/* Mode cards — SVG visual */
-.mode-chip .mode-dots-svg{
-  filter:drop-shadow(0 0 3px rgba(255,255,255,.15));
-  transition: transform .3s var(--ease-out-expo), filter .3s;
-}
-.mode-chip:hover {
-  transform: translateY(-2px) scale(1.03);
-}
-.mode-chip.selected {
-  background: rgba(124, 58, 237, 0.15);
-  border-color: rgba(124, 58, 237, 0.6);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
-}
-.mode-chip.selected .mode-chip-visual{
-  animation:modeVisualPulse 2s var(--ease-out-soft) infinite;
-}
-.mode-chip.selected .mode-dots-svg{
-  filter:drop-shadow(0 0 12px rgba(255,255,255,.8));
-  transform: scale(1.1);
-}
-@keyframes modeVisualPulse{
-  0%,100%{transform:scale(1)}
-  50%{transform:scale(1.15) rotate(3deg)}
-}
-
 /* ═══════════════════════════════════════════
    IMPROVED BACK BUTTON
    ═══════════════════════════════════════════ */
@@ -744,14 +716,6 @@ button:focus-visible{border-radius:var(--radius-sm)}
    ═══════════════════════════════════════════ */
 /* Samsung S25 Ultra non-fullscreen (~750px) & similar */
 @media(max-height:790px){
-  .mode-section{gap:2px}
-  .mode-section-header{gap:4px;padding:0 1px}
-  .mode-section-label{font-size:.5rem;letter-spacing:1.5px}
-  .mode-chip{padding:6px 5px;gap:6px}
-  .mode-chip-visual{width:clamp(16px,2.4vh,22px);height:clamp(16px,2.4vh,22px)}
-  .mode-chip-name{font-size:clamp(.55rem,1.2vh,.7rem)}
-  .mode-picker-grid{gap:4px}
-  .mode-grid{gap:3px}
   .daily-card{padding:6px 10px}
   .home-header{gap:4px;padding-bottom:4px}
 }
@@ -759,18 +723,10 @@ button:focus-visible{border-radius:var(--radius-sm)}
   .brand-cell{width:32px;height:40px;font-size:1rem}
   .auth-brand{gap:4px;margin-bottom:16px}
   .hero-visual{width:36px;height:36px}
-  .mode-chip{padding:6px 3px}
-  .mode-chip-visual{width:14px;height:14px}
-  .mode-chip-name{font-size:.52rem}
   .mode-row-label{font-size:.5rem;width:18px}
   .hero-mode-name{font-size:.95rem}
   .btn-play{font-size:.9rem !important;padding:8px 16px !important}
   /* Galaxy A54 non-fullscreen (~650px) */
-  .mode-section{gap:1px}
-  .mode-section-header{gap:3px}
-  .mode-section-label{font-size:.45rem;letter-spacing:1px}
-  .mode-picker-grid{gap:2px}
-  .mode-grid{gap:2px}
   .play-type-selector{padding:2px 4px;gap:3px}
   .play-type-btn{padding:3px 3px}
   .play-type-icon{min-height:16px;font-size:.8rem}
@@ -791,17 +747,12 @@ button:focus-visible{border-radius:var(--radius-sm)}
   .auth-brand{gap:3px;margin-bottom:10px}
   .hero-visual{width:32px;height:32px}
   .hero-mode-desc{display:none}
-  .mode-chip{padding:5px 3px}
-  .mode-chip-visual{width:12px;height:12px}
-  .mode-chip-name{font-size:.46rem}
   .mode-row-label{font-size:.4rem;width:12px}
-  .mode-picker-grid{gap:3px}
   /* footer rules consolidated in 05-game.css + 09-extensions.css */
 }
 @media(min-width:500px){
   .brand-cell{width:48px;height:56px;font-size:1.5rem}
   .hero-visual{width:52px;height:52px}
-  .mode-chip-visual{width:18px;height:18px}
 }
 
 /* ═══════════════════════════════════════════

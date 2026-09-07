@@ -19,11 +19,15 @@ export class AudioManager {
     this._musicTimeout = null;
     this._musicBeat = 0;
     this._feverMode = false;
+    this._musicIntensity = 0;
+    this._lastIntensityUpdate = -Infinity;
+    this._intensityThrottleMs = 450;
 
     /* music variety state */
     this._musicMode = 'classic';
     this._requestedMusicMode = 'classic';
     this._musicContext = {};
+    this._musicFamily = 'sort';
     this._baseTempo = 120;
     this._melodyIndex = 0;
     this._chordIndex = 0;
@@ -57,6 +61,8 @@ export class AudioManager {
     this._musicFileAttempt = 0;
     this._musicRequested = false;
     this._pageHidden = false;
+    this._sfxTimers = new Set();
+    this._sfxGeneration = 0;
 
     this._initMusicData();
     this._loadMusicManifest();
@@ -184,6 +190,7 @@ export class AudioManager {
   }
 
   _ensure() {
+    if (this._pageHidden) return false;
     if (!this.ctx) {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -238,6 +245,31 @@ export class AudioManager {
       this._padGain.connect(this._reverbGain); // send pads to reverb
     }
     if (this.ctx.state === 'suspended') this.ctx.resume();
+    return true;
+  }
+
+  _scheduleSfx(callback, delay) {
+    if (!this.enabled || this._pageHidden) return null;
+    const generation = this._sfxGeneration;
+    const timer = setTimeout(() => {
+      this._sfxTimers.delete(timer);
+      if (generation === this._sfxGeneration && this.enabled && !this._pageHidden) callback();
+    }, delay);
+    this._sfxTimers.add(timer);
+    return timer;
+  }
+
+  cancelSfx() {
+    this._sfxGeneration++;
+    this._sfxTimers.forEach(clearTimeout);
+    this._sfxTimers.clear();
+    this.stopTension();
+    if (this.ctx && this._sfxGain) {
+      try { this._sfxGain.disconnect(); } catch (e) {}
+      this._sfxGain = this.ctx.createGain();
+      this._sfxGain.gain.value = this.enabled && !this._pageHidden ? this._sfxVolume : 0;
+      this._sfxGain.connect(this.ctx.destination);
+    }
   }
 
   /* ─────────────────────────────────────────
@@ -254,8 +286,7 @@ export class AudioManager {
    * @param {number} pan    - stereo position (-1 left, 0 centre, +1 right)
    */
   _play(freq, type, dur, vol = 0.15, detune = 0, pan = 0) {
-    if (!this.enabled) return;
-    this._ensure();
+    if (!this.enabled || !this._ensure()) return;
 
     const t = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
@@ -286,8 +317,7 @@ export class AudioManager {
    * @param {number} pan       - stereo position
    */
   _playNoise(dur, vol = 0.05, filterHz = 4000, pan = 0) {
-    if (!this.enabled) return;
-    this._ensure();
+    if (!this.enabled || !this._ensure()) return;
 
     const t = this.ctx.currentTime;
     const bufLen = Math.ceil(this.ctx.sampleRate * dur);
@@ -339,12 +369,24 @@ export class AudioManager {
 
     // Milestone chime every 5 streak
     if (streak > 0 && streak % 5 === 0) {
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(660, 'sine', 0.15, 0.12, 0, pan);
         this._play(880, 'sine', 0.15, 0.10, 0, pan);
         this._play(1100, 'sine', 0.2, 0.08, 0, pan);
       }, 50);
     }
+  }
+
+  /** Stable spatial cue for each corner in Sequenz watch phases. */
+  sequenceStep(direction) {
+    const cues = {
+      ul: { frequency: 392.00, pan: -0.65 },
+      ur: { frequency: 523.25, pan: 0.65 },
+      dl: { frequency: 329.63, pan: -0.65 },
+      dr: { frequency: 440.00, pan: 0.65 },
+    };
+    const cue = cues[direction] || { frequency: 440, pan: 0 };
+    this._play(cue.frequency, 'sine', 0.18, 0.11, 0, cue.pan);
   }
 
   /** Wrong sort — centred buzzy impact. */
@@ -357,21 +399,21 @@ export class AudioManager {
   /** Perfect timing bonus. */
   perfect() {
     this._play(880, 'sine', 0.1, 0.1);
-    setTimeout(() => this._play(1320, 'sine', 0.15, 0.12), 60);
-    setTimeout(() => this._play(1760, 'sine', 0.2, 0.08), 120);
+    this._scheduleSfx(() => this._play(1320, 'sine', 0.15, 0.12), 60);
+    this._scheduleSfx(() => this._play(1760, 'sine', 0.2, 0.08), 120);
   }
 
   /** Multiplier level up chime. */
   multiplierUp(level) {
     const base = 440 + level * 80;
     this._play(base, 'triangle', 0.1, 0.1);
-    setTimeout(() => this._play(base * 1.25, 'triangle', 0.15, 0.12), 70);
+    this._scheduleSfx(() => this._play(base * 1.25, 'triangle', 0.15, 0.12), 70);
   }
 
   /** Rush event — rapid triple chirp. */
   rush() {
     for (let i = 0; i < 3; i++) {
-      setTimeout(() => this._play(600 + i * 100, 'square', 0.06, 0.08), i * 60);
+      this._scheduleSfx(() => this._play(600 + i * 100, 'square', 0.06, 0.08), i * 60);
     }
   }
 
@@ -383,7 +425,7 @@ export class AudioManager {
     this._play(n === 0 ? 110 : 80, 'sine', 0.1, 0.08);
     // Chord on GO
     if (n === 0) {
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(523, 'sine', 0.2, 0.1);
         this._play(659, 'sine', 0.2, 0.08);
         this._play(784, 'sine', 0.25, 0.06);
@@ -399,14 +441,14 @@ export class AudioManager {
     // Ascending resolution sequence ending on C5
     const notes = [392, 440, 523, 494, 523];
     notes.forEach((f, i) => {
-      setTimeout(() => this._play(f, 'sine', 0.3, 0.12), i * 150);
+      this._scheduleSfx(() => this._play(f, 'sine', 0.3, 0.12), i * 150);
     });
 
     // Warm major pad chord follows the melody
     const padDelay = notes.length * 150 + 80;
-    setTimeout(() => {
+    this._scheduleSfx(() => {
       if (!this.enabled) return;
-      this._ensure();
+      if (!this._ensure()) return;
       const t = this.ctx.currentTime;
 
       // C4-E4-G4-C5 with chorus detune for warmth
@@ -432,7 +474,7 @@ export class AudioManager {
   /** New personal best fanfare. */
   newPB() {
     [523, 659, 784, 1047].forEach((f, i) => {
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(f, 'sine', 0.25, 0.12);
         this._play(f * 0.5, 'triangle', 0.3, 0.06);
       }, i * 120);
@@ -448,7 +490,7 @@ export class AudioManager {
       this.newPB();
     } else {
       [523, 659, 784].forEach((f, i) => {
-        setTimeout(() => this._play(f, 'sine', 0.2, 0.08), i * 110);
+        this._scheduleSfx(() => this._play(f, 'sine', 0.2, 0.08), i * 110);
       });
     }
   }
@@ -460,14 +502,14 @@ export class AudioManager {
   /** Golden shape found — shimmering arpeggio. */
   goldenFound() {
     [660, 880, 1100, 1320].forEach((f, i) => {
-      setTimeout(() => this._play(f, 'sine', 0.15, 0.1), i * 40);
+      this._scheduleSfx(() => this._play(f, 'sine', 0.15, 0.1), i * 40);
     });
   }
 
   /** Diamond shape found — crystalline sparkle. */
   diamondFound() {
     [1047, 1319, 1568, 2093].forEach((f, i) => {
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(f, 'sine', 0.2, 0.1);
         this._play(f * 1.01, 'sine', 0.2, 0.08); // detune shimmer
       }, i * 50);
@@ -478,43 +520,55 @@ export class AudioManager {
   feverStart() {
     this._feverMode = true;
     [262, 330, 392, 523, 659, 784].forEach((f, i) => {
-      setTimeout(() => this._play(f, 'sawtooth', 0.12, 0.08), i * 40);
+      this._scheduleSfx(() => this._play(f, 'sawtooth', 0.12, 0.08), i * 40);
     });
-    this._musicTempo = 180;
-    if (this._musicAudio) this._musicAudio.playbackRate = 1.18;
+    this._musicTempo = this._baseTempo + 18;
+    if (this._musicAudio) this._musicAudio.playbackRate = 1.04;
+    this._applyMusicMix();
   }
 
   /** Fever mode ended — gentle descending resolve. */
   feverEnd() {
     this._feverMode = false;
-    this._musicTempo = this._baseTempo;
-    if (this._musicAudio) this._musicAudio.playbackRate = 1;
+    this._applyMusicIntensity();
     this._play(400, 'sine', 0.3, 0.08);
     this._play(300, 'sine', 0.4, 0.06);
   }
 
   setPerformanceIntensity(streak = 0) {
-    if (this._feverMode) return;
-    const cleanStreak = Math.max(0, Math.min(40, Number(streak) || 0));
-    const tempoLift = Math.floor(cleanStreak / 4) * 5;
-    const targetTempo = Math.min(this._baseTempo + 48, this._baseTempo + tempoLift);
-    this._musicTempo = targetTempo;
-    if (this._musicAudio) {
-      this._musicAudio.playbackRate = Math.min(1.22, 1 + (targetTempo - this._baseTempo) / 220);
-    }
+    if (this._feverMode) return this._musicIntensity;
+    const cleanStreak = Math.max(0, Math.min(60, Number(streak) || 0));
+    const thresholds = {
+      sort:   { up: [5, 12, 24], down: [3, 9, 19] },
+      think:  { up: [8, 20, 36], down: [5, 15, 29] },
+      memory: { up: [4, 10, 20], down: [2, 7, 16] },
+      reflex: { up: [3, 8, 16],  down: [1, 5, 12] },
+    }[this._musicFamily] || { up: [5, 12, 24], down: [3, 9, 19] };
+
+    let next = this._musicIntensity;
+    while (next < 3 && cleanStreak >= thresholds.up[next]) next++;
+    while (next > 0 && cleanStreak <= thresholds.down[next - 1]) next--;
+    if (next === this._musicIntensity) return next;
+
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - this._lastIntensityUpdate < this._intensityThrottleMs) return this._musicIntensity;
+    this._musicIntensity = next;
+    this._lastIntensityUpdate = now;
+    this._applyMusicIntensity();
+    return next;
   }
 
   /** Corner shuffle warning — swirling descending whoosh. */
   cornerShuffleWarn() {
     [800, 700, 600, 500].forEach((f, i) => {
-      setTimeout(() => this._play(f, 'triangle', 0.08, 0.1, i * 4), i * 50);
+      this._scheduleSfx(() => this._play(f, 'triangle', 0.08, 0.1, i * 4), i * 50);
     });
   }
 
   /** Corner shuffle done — snappy chord confirming new layout. */
   cornerShuffleDone() {
     this._play(523, 'sine', 0.15, 0.1);
-    setTimeout(() => {
+    this._scheduleSfx(() => {
       this._play(659, 'sine', 0.15, 0.08);
       this._play(784, 'sine', 0.15, 0.06);
     }, 60);
@@ -523,7 +577,7 @@ export class AudioManager {
   /** Level up — grand ascending sequence with undertones. */
   levelUp() {
     [523, 659, 784, 1047, 1319].forEach((f, i) => {
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(f, 'sine', 0.2, 0.12);
         this._play(f * 0.75, 'triangle', 0.25, 0.06);
       }, i * 100);
@@ -532,9 +586,9 @@ export class AudioManager {
 
   /** Achievement unlocked — delayed bright arpeggio. */
   achievementUnlock() {
-    setTimeout(() => {
+    this._scheduleSfx(() => {
       [880, 1100, 1320, 1760].forEach((f, i) => {
-        setTimeout(() => this._play(f, 'sine', 0.2, 0.1, i * 5), i * 80);
+        this._scheduleSfx(() => this._play(f, 'sine', 0.2, 0.1, i * 5), i * 80);
       });
     }, 200);
   }
@@ -542,7 +596,7 @@ export class AudioManager {
   /** Near personal best — subtle double pulse. */
   nearPB() {
     this._play(880, 'sine', 0.08, 0.06);
-    setTimeout(() => this._play(880, 'sine', 0.08, 0.06), 120);
+    this._scheduleSfx(() => this._play(880, 'sine', 0.08, 0.06), 120);
   }
 
   /** Last seconds tick. */
@@ -565,7 +619,7 @@ export class AudioManager {
    */
   comboMilestone(streak) {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
 
     let notes, vol, dur, spacing;
 
@@ -587,7 +641,7 @@ export class AudioManager {
     }
 
     notes.forEach((f, i) => {
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(f, 'sine', dur, vol);
         this._play(f * 1.5, 'sine', dur * 0.7, vol * 0.4);
         this._play(f * 0.5, 'triangle', dur * 1.2, vol * 0.3);
@@ -596,7 +650,7 @@ export class AudioManager {
 
     if (streak >= 30) {
       const totalTime = notes.length * spacing;
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(2093, 'sine', 0.4, vol * 0.35);
         this._play(2093 * 1.005, 'sine', 0.4, vol * 0.3);
         this._playNoise(0.08, 0.03);
@@ -610,7 +664,7 @@ export class AudioManager {
    */
   endlessMiss(livesLeft) {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
 
     const depthFactor = Math.max(1, 4 - livesLeft);
     const baseFreq    = 220 / depthFactor;
@@ -636,10 +690,10 @@ export class AudioManager {
 
     // Warning descending tone on last life
     if (livesLeft <= 1) {
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(440, 'sine', 0.3, 0.1);
-        setTimeout(() => this._play(330, 'sine', 0.35, 0.08), 120);
-        setTimeout(() => this._play(220, 'sine', 0.45, 0.06), 260);
+        this._scheduleSfx(() => this._play(330, 'sine', 0.35, 0.08), 120);
+        this._scheduleSfx(() => this._play(220, 'sine', 0.45, 0.06), 260);
       }, 150);
     }
   }
@@ -647,7 +701,7 @@ export class AudioManager {
   /** Competition win — triumphant brass-like fanfare with sustain chord. */
   competitionWin() {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
 
     const fanfare = [
       { f: 392, delay: 0 },
@@ -659,7 +713,7 @@ export class AudioManager {
     ];
 
     fanfare.forEach(({ f, delay }) => {
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(f, 'sawtooth', 0.35, 0.1);
         this._play(f * 0.5, 'triangle', 0.4, 0.06);
         this._play(f * 0.75, 'sine', 0.3, 0.05);
@@ -667,7 +721,7 @@ export class AudioManager {
     });
 
     // Finale sustain chord
-    setTimeout(() => {
+    this._scheduleSfx(() => {
       [523, 659, 784, 1047].forEach(f => {
         this._play(f, 'sine', 0.8, 0.07);
         this._play(f * 1.003, 'sine', 0.8, 0.05);
@@ -683,7 +737,7 @@ export class AudioManager {
    */
   bootJingle() {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
 
     // Five rising notes: C5-E5-G5-B5-C6
     const notes   = [523, 659, 784, 988, 1047];
@@ -693,7 +747,7 @@ export class AudioManager {
       const isLast = i === notes.length - 1;
       const dur = isLast ? 0.4 : 0.15;
       const vol = isLast ? 0.13 : 0.1;
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(f, 'sine', dur, vol);
         this._play(f * 2, 'sine', dur * 0.6, vol * 0.2);
       }, i * spacing);
@@ -701,16 +755,16 @@ export class AudioManager {
 
     // Soft pad on final note
     const padStart = (notes.length - 1) * spacing + 20;
-    setTimeout(() => {
+    this._scheduleSfx(() => {
       this._play(523, 'triangle', 0.5, 0.04);
       this._play(784, 'triangle', 0.5, 0.03);
     }, padStart);
 
     // Enhanced: sustained pad chord [262,330,392] with +/-3 detune
     const chordDelay = notes.length * spacing + 80;
-    setTimeout(() => {
+    this._scheduleSfx(() => {
       if (!this.enabled) return;
-      this._ensure();
+      if (!this._ensure()) return;
       const t = this.ctx.currentTime;
 
       [262, 330, 392].forEach(f => {
@@ -738,7 +792,7 @@ export class AudioManager {
   /** Screen transition — filtered noise whoosh with tonal sweep. */
   screenTransition() {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
 
     const t   = this.ctx.currentTime;
     const dur = 0.18;
@@ -794,7 +848,7 @@ export class AudioManager {
   /** Streak break — descending shatter when streak>=5 lost. */
   streakBreak(lostStreak = 5) {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
     const intensity = Math.min(lostStreak / 30, 1);
     const baseFreq = 600 - intensity * 200;
     const t = this.ctx.currentTime;
@@ -814,11 +868,11 @@ export class AudioManager {
   /** Streak protection shield — warm descending chime (v22) */
   streakProtected() {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
     const t = this.ctx.currentTime;
     /* Shield activation: ascending 2-note "save" chime */
     this._play(660, 'triangle', 0.15, 0.06);
-    setTimeout(() => this._play(880, 'sine', 0.2, 0.05), 80);
+    this._scheduleSfx(() => this._play(880, 'sine', 0.2, 0.05), 80);
     /* Subtle sub impact */
     const osc = this.ctx.createOscillator();
     const eg = this.ctx.createGain();
@@ -835,20 +889,20 @@ export class AudioManager {
   /** Rush warning — tense double tick before rush starts (v22) */
   rushWarning() {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
     this._play(700, 'square', 0.06, 0.04);
-    setTimeout(() => this._play(800, 'square', 0.06, 0.05), 150);
-    setTimeout(() => this._play(900, 'square', 0.08, 0.06), 300);
+    this._scheduleSfx(() => this._play(800, 'square', 0.06, 0.05), 150);
+    this._scheduleSfx(() => this._play(900, 'square', 0.08, 0.06), 300);
   }
 
   /** Wissen level-up — bright ascending arpeggio (v22) */
   wissenLevelUp(level = 1) {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
     const baseNotes = [523.25, 659.26, 783.99, 1046.50, 1318.51];
     const count = Math.min(3 + level, baseNotes.length);
     for (let i = 0; i < count; i++) {
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(baseNotes[i], 'triangle', 0.18, 0.04 + i * 0.005);
       }, i * 70);
     }
@@ -860,7 +914,7 @@ export class AudioManager {
    */
   scoreMilestone(tier = 0) {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
     const patterns = [
       [523, 659, 784],
       [523, 659, 784, 880],
@@ -872,14 +926,14 @@ export class AudioManager {
     const vol = 0.09 + tier * 0.015;
     const spacing = 65 - tier * 3;
     notes.forEach((f, i) => {
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(f, 'sine', 0.2, vol);
         if (tier >= 2) this._play(f * 1.5, 'sine', 0.15, vol * 0.35);
       }, i * spacing);
     });
     if (tier >= 2) {
       const tailDelay = notes.length * spacing;
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(notes[notes.length - 1] * 2, 'sine', 0.3, vol * 0.3);
         this._playNoise(0.06, 0.02, 6000);
       }, tailDelay);
@@ -895,7 +949,7 @@ export class AudioManager {
   /** Heartbeat for continue prompt. */
   continueHeartbeat() {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
     const t = this.ctx.currentTime;
     const osc1 = this.ctx.createOscillator();
     const eg1 = this.ctx.createGain();
@@ -919,7 +973,7 @@ export class AudioManager {
    */
   victoryJingle(tier = 'bronze') {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
     const tiers = {
       bronze:   { notes: [392, 440, 523],              vol: 0.08, dur: 0.2, spacing: 100 },
       silver:   { notes: [392, 523, 659, 784],         vol: 0.10, dur: 0.22, spacing: 90 },
@@ -928,7 +982,7 @@ export class AudioManager {
     };
     const cfg = tiers[tier] || tiers.bronze;
     cfg.notes.forEach((f, i) => {
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         this._play(f, 'sine', cfg.dur, cfg.vol);
         this._play(f * 0.5, 'triangle', cfg.dur * 1.3, cfg.vol * 0.4);
         if (tier === 'platinum' || tier === 'gold') {
@@ -938,7 +992,7 @@ export class AudioManager {
     });
     if (tier === 'gold' || tier === 'platinum') {
       const padDelay = cfg.notes.length * cfg.spacing + 50;
-      setTimeout(() => {
+      this._scheduleSfx(() => {
         [523, 659, 784].forEach(f => {
           this._play(f, 'sine', 0.6, 0.04);
           this._play(f * 1.003, 'sine', 0.6, 0.03);
@@ -950,7 +1004,7 @@ export class AudioManager {
   /** Swipe start whoosh — short directional air sound. */
   swipeStart(pan = 0) {
     if (!this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
     const t = this.ctx.currentTime;
     const dur = 0.06;
     const bufLen = Math.ceil(this.ctx.sampleRate * dur);
@@ -998,6 +1052,61 @@ export class AudioManager {
     }
   }
 
+  _resolveMusicFamily(modeId = '') {
+    if (['mathe', 'worte', 'hauptstaedte', 'algebra', 'wissen'].includes(modeId)) return 'think';
+    if (['memo', 'sequenz'].includes(modeId)) return 'memory';
+    if (['stroop', 'fokus', 'chaos'].includes(modeId)) return 'reflex';
+    return 'sort';
+  }
+
+  _getMusicArrangement() {
+    const level = this._feverMode ? 3 : this._musicIntensity;
+    if (this._musicMode === 'menu') {
+      return { kick: false, hatEvery: null, melodyInterval: 4, padCycle: 16, repeatMotif: false, extraPercussion: false, offbeatBass: false };
+    }
+    if (this._musicFamily === 'think') {
+      return { kick: level >= 2, hatEvery: level >= 3 ? 4 : null, melodyInterval: level >= 2 ? 4 : 8, padCycle: 16, repeatMotif: false, extraPercussion: false, offbeatBass: false };
+    }
+    if (this._musicFamily === 'memory') {
+      return { kick: level >= 1, hatEvery: level >= 3 ? 4 : null, melodyInterval: 4, padCycle: 16, repeatMotif: true, extraPercussion: level >= 3, offbeatBass: false };
+    }
+    if (this._musicFamily === 'reflex') {
+      return { kick: true, hatEvery: level >= 1 ? 2 : 4, melodyInterval: level >= 1 ? 2 : 4, padCycle: 32, repeatMotif: false, extraPercussion: level >= 1, offbeatBass: level >= 2 };
+    }
+    return { kick: true, hatEvery: level >= 1 ? 2 : 4, melodyInterval: level >= 2 ? 2 : 4, padCycle: 32, repeatMotif: false, extraPercussion: level >= 2, offbeatBass: level >= 3 };
+  }
+
+  _applyMusicIntensity() {
+    const tempoStep = { sort: 3, think: 1, memory: 2, reflex: 4 }[this._musicFamily] || 3;
+    this._musicTempo = this._baseTempo + this._musicIntensity * tempoStep;
+    if (this._musicAudio) this._musicAudio.playbackRate = 1 + this._musicIntensity * 0.01;
+    this._applyMusicMix();
+  }
+
+  _applyMusicMix() {
+    const level = this._feverMode ? 3 : this._musicIntensity;
+    const familyMix = {
+      sort:   { rhythm: 1 + level * 0.08, melody: 0.95 + level * 0.08, pad: 1 - level * 0.08 },
+      think:  { rhythm: 0.62 + level * 0.04, melody: 0.82 + level * 0.05, pad: 1.18 - level * 0.04 },
+      memory: { rhythm: 0.72 + level * 0.07, melody: 0.9 + level * 0.06, pad: 1.12 - level * 0.03 },
+      reflex: { rhythm: 1.05 + level * 0.12, melody: 0.9 + level * 0.09, pad: 0.82 - level * 0.05 },
+    }[this._musicFamily] || { rhythm: 1, melody: 1, pad: 1 };
+    const setGain = (node, value) => {
+      if (!node) return;
+      const t = this.ctx?.currentTime || 0;
+      if (typeof node.gain.setTargetAtTime === 'function') node.gain.setTargetAtTime(value, t, 0.12);
+      else node.gain.value = value;
+    };
+    setGain(this._musicGain, 0.18 * this._musicVolume * familyMix.rhythm);
+    setGain(this._melodyGain, 0.12 * this._musicVolume * familyMix.melody);
+    setGain(this._padGain, 0.08 * this._musicVolume * familyMix.pad);
+    this._musicFileVolume = Math.min(1, this._musicVolume * 0.55 * (0.9 + level * 0.045));
+    if (this._musicAudio) {
+      if (this._musicFilePlaying) this._fadeMusicFileTo(this._musicFileVolume, 300);
+      else this._musicAudio.volume = this._musicFileVolume;
+    }
+  }
+
   _resolveMusicMode(requestedMode, context = {}) {
     const playType = requestedMode || 'classic';
     const modeId = context.modeId || '';
@@ -1017,17 +1126,20 @@ export class AudioManager {
 
   setMusicMode(mode, context = {}) {
     const previousMode = this._musicMode;
+    const previousFamily = this._musicFamily;
     this._requestedMusicMode = mode || 'classic';
     this._musicContext = { ...context };
+    this._musicFamily = this._resolveMusicFamily(this._musicContext.modeId);
     this._musicMode = this._resolveMusicMode(this._requestedMusicMode, this._musicContext);
     this._baseTempo = this._getBaseTempoForMode(this._musicMode);
     this._modeData = this._modeConfig[this._musicMode] || this._modeConfig.classic;
     if (!this._feverMode) {
-      this._musicTempo = this._baseTempo;
-      if (this._musicAudio) this._musicAudio.playbackRate = 1;
+      this._musicIntensity = 0;
+      this._lastIntensityUpdate = -Infinity;
+      this._applyMusicIntensity();
     }
     this._loadMusicManifest();
-    if (this._musicRunning && previousMode !== this._musicMode) {
+    if (this._musicRunning && (previousMode !== this._musicMode || previousFamily !== this._musicFamily)) {
       this.stopMusic();
       this.startMusic();
     }
@@ -1149,7 +1261,7 @@ export class AudioManager {
    */
   startTension() {
     if (this._tensionActive || !this.enabled) return;
-    this._ensure();
+    if (!this._ensure()) return;
     this._tensionActive = true;
     this._tensionStartTime = this.ctx.currentTime;
     this._tensionNodes = [];
@@ -1329,6 +1441,7 @@ export class AudioManager {
         const mode = this._musicMode;
         const isMenu = mode === 'menu';
         const isEndless = mode === 'endless';
+        const arrangement = this._getMusicArrangement();
 
         /* Swing: offset even beats slightly for groove (in seconds) */
         const swingAmt = isMenu ? 0.018 : (isEndless ? 0.012 : 0.008);
@@ -1340,7 +1453,7 @@ export class AudioManager {
         const velR = () => 0.88 + Math.random() * 0.24;
 
         /* ────────── KICK on beats 1 and 3 (not menu) ────────── */
-        if (!isMenu) {
+        if (!isMenu && arrangement.kick) {
           const playKick = (this._musicBeat % 8 === 1 || this._musicBeat % 8 === 5);
           if (playKick) {
             const osc = this.ctx.createOscillator();
@@ -1358,7 +1471,7 @@ export class AudioManager {
         }
 
         /* ────────── HI-HAT on every beat ────────── */
-        if (!isMenu && this._musicBeat % 2 === 0) {
+        if (!isMenu && arrangement.hatEvery && this._musicBeat % arrangement.hatEvery === 0) {
           if (!isEndless || this._musicBeat % 4 === 0) {
             const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.03, this.ctx.sampleRate);
             const d = buf.getChannelData(0);
@@ -1560,12 +1673,12 @@ export class AudioManager {
         }
 
         /* ────────── MELODY LINE (phrase-based with motif development) ────────── */
-        const melodyInterval = isMenu ? 4 : (mode === 'blitz' || mode === 'competition' ? 2 : 4);
+        const melodyInterval = arrangement.melodyInterval;
         if (this._musicBeat % melodyInterval === 1) {
           // Pick a new phrase if needed — sometimes develop the previous one
           if (!this._currentPhrase || this._phrasePos >= this._currentPhrase.length) {
             const phrases = md.phrases;
-            if (this._currentPhrase && Math.random() < 0.35) {
+            if (this._currentPhrase && !arrangement.repeatMotif && Math.random() < 0.35) {
               // Motif development: transpose last phrase up/down by scale step
               const shift = (Math.random() < 0.5) ? 1.125 : 0.889; // ~major 2nd up or down
               this._currentPhrase = this._currentPhrase.map(f => f > 0 ? f * shift : 0);
@@ -1615,7 +1728,7 @@ export class AudioManager {
         }
 
         /* ────────── PAD / CHORD with filter sweep ────────── */
-        const padCycleLen = isMenu ? 16 : 32;
+        const padCycleLen = arrangement.padCycle;
         if (this._musicBeat % padCycleLen === 1) {
           // Fade out previous pad oscillators
           this._padOscillators.forEach(o => {
@@ -1672,7 +1785,7 @@ export class AudioManager {
         }
 
         /* ────────── COMPETITION MODE extra percussion ────────── */
-        if (mode === 'competition') {
+        if (mode === 'competition' && arrangement.extraPercussion) {
           // Snare on beat 3
           if (this._musicBeat % 8 === 5) {
             const bufLen = Math.ceil(this.ctx.sampleRate * 0.06);
@@ -1712,7 +1825,7 @@ export class AudioManager {
         }
 
         /* ────────── BLITZ MODE driving bass eighths ────────── */
-        if (mode === 'blitz' && this._musicBeat % 4 === 3) {
+        if (mode === 'blitz' && arrangement.offbeatBass && this._musicBeat % 4 === 3) {
           const chord = md.chords[this._chordIndex % md.chords.length];
           const root  = chord[0];
           const osc = this.ctx.createOscillator();
@@ -1748,8 +1861,9 @@ export class AudioManager {
       this._musicTimeout = null;
     }
     this._feverMode = false;
-    this._musicTempo = this._baseTempo;
-    if (this._musicAudio) this._musicAudio.playbackRate = 1;
+    this._musicIntensity = 0;
+    this._lastIntensityUpdate = -Infinity;
+    this._applyMusicIntensity();
     this._currentPhrase = null;
     this._phrasePos = 0;
 
@@ -1776,7 +1890,11 @@ export class AudioManager {
     this.stopTension();
   }
 
-  toggle(on)      { this.enabled = on; }
+  toggle(on) {
+    this.enabled = Boolean(on);
+    if (!this.enabled) this.cancelSfx();
+    if (this._sfxGain) this._sfxGain.gain.value = this.enabled && !this._pageHidden ? this._sfxVolume : 0;
+  }
   toggleMusic(on) {
     this.musicEnabled = on;
     if (!on) this.stopMusic({ preserveRequest: true });
@@ -1785,21 +1903,23 @@ export class AudioManager {
 
   setVisibility(hidden) {
     this._pageHidden = Boolean(hidden);
-    if (this._pageHidden) this.stopMusic({ preserveRequest: true });
-    else if (this._musicRequested) this.startMusic();
+    if (this._pageHidden) {
+      this.cancelSfx();
+      if (this._sfxGain) this._sfxGain.gain.value = 0;
+      this.stopMusic({ preserveRequest: true });
+    } else {
+      if (this._sfxGain) this._sfxGain.gain.value = this.enabled ? this._sfxVolume : 0;
+      if (this._musicRequested) this.startMusic();
+    }
   }
 
   setMusicVolume(v) {
     this._musicVolume = Math.max(0, Math.min(1, Number(v)));
-    if (this._musicGain) this._musicGain.gain.value = 0.18 * this._musicVolume;
-    if (this._melodyGain) this._melodyGain.gain.value = 0.12 * this._musicVolume;
-    if (this._padGain) this._padGain.gain.value = 0.08 * this._musicVolume;
-    this._musicFileVolume = Math.min(1, this._musicVolume * 0.55);
-    if (this._musicAudio) this._musicAudio.volume = this._musicFileVolume;
+    this._applyMusicMix();
   }
 
   setSfxVolume(v) {
     this._sfxVolume = Math.max(0, Math.min(1, Number(v)));
-    if (this._sfxGain) this._sfxGain.gain.value = this._sfxVolume;
+    if (this._sfxGain) this._sfxGain.gain.value = this.enabled && !this._pageHidden ? this._sfxVolume : 0;
   }
 }

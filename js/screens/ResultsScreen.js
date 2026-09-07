@@ -14,7 +14,7 @@ import { maybeShowFeedback } from '../helpers/microFeedback.js';
 import { generateAchievements, getProgress } from '../achievements/AchievementSystem.js';
 import { getKlassikInsights, getFormenInsights, getExpertInsights, getUltraInsights, getMatheInsights, getAlgebraInsights, getWorteInsights, getHauptstaedteInsights, getWissenInsights, getMemoInsights, getSequenzInsights, getStroopInsights, getFokusInsights, getChaosInsights } from '../game/ModeMastery.js';
 import { recordGameResult as recordQuestProgress, autoClaim as autoClaimQuests } from '../services/DailyQuestService.js';
-import { recordGamePoint as recordPassGamePoint, addBonusPoints as addPassBonusPoints } from '../services/SeasonPass.js';
+import { recordGamePoint as recordPassGamePoint, addBonusPoints as addPassBonusPoints, collectReachedRewards as collectPassRewards } from '../services/SeasonPass.js';
 
 let _lastRetryKey = '';
 let _resultGeneration = 0;
@@ -55,60 +55,6 @@ window.addEventListener('scs:screenchange', ({ detail }) => {
   if (detail?.prevScreen === 'results' && detail.id !== 'results') cancelResultWork();
 });
 
-function ensureReplayHook() {
-  let el = $('#resNextHook');
-  if (el) return el;
-  const buttons = $('#resNormalBtns');
-  if (!buttons || !buttons.parentElement) return null;
-  el = document.createElement('div');
-  el.id = 'resNextHook';
-  el.className = 'results-next-hook';
-  buttons.parentElement.insertBefore(el, buttons);
-  return el;
-}
-
-/**
- * Ensure a Near-Miss pill exists in the results panel.
- * Sits just above the action buttons in #resPhase3 so it
- * lands inside the player's eye-line when the buttons reveal.
- */
-function ensureNearMissPill() {
-  let el = $('#resNearMiss');
-  if (el) return el;
-  const buttons = $('#resNormalBtns');
-  if (!buttons || !buttons.parentElement) return null;
-  el = document.createElement('div');
-  el.id = 'resNearMiss';
-  el.className = 'results-near-miss';
-  el.setAttribute('role', 'status');
-  el.style.display = 'none';
-  buttons.parentElement.insertBefore(el, buttons);
-  return el;
-}
-
-/**
- * Compute near-miss state. Returns null when not close enough,
- * otherwise { gap, target, kind } where kind ∈ {pb, session}.
- */
-function computeNearMiss(score, sessionBest, allTimePB) {
-  if (!score || score <= 0) return null;
-  const candidates = [];
-  if (allTimePB > score) {
-    const gap = allTimePB - score;
-    const threshold = Math.max(50, Math.round(allTimePB * 0.10));
-    if (gap <= threshold) candidates.push({ gap, target: allTimePB, kind: 'pb' });
-  }
-  if (sessionBest > score) {
-    const gap = sessionBest - score;
-    const threshold = Math.max(50, Math.round(sessionBest * 0.10));
-    if (gap <= threshold) candidates.push({ gap, target: sessionBest, kind: 'session' });
-  }
-  if (!candidates.length) return null;
-  /* Prefer the smaller gap so the player sees the most achievable target. */
-  candidates.sort((a, b) => a.gap - b.gap);
-  return candidates[0];
-}
-
 function getRemainingToNextLevel(xp, level) {
   const thresholds = CONFIG.LEVEL_THRESHOLDS;
   const current = thresholds[level] || 0;
@@ -125,6 +71,19 @@ function getReplayHook(save, stats, modeLabel) {
       return {
         text: t('next_goal_competition_push', { n: target - rankedScore }),
         tone: 'competition',
+      };
+    }
+  }
+
+  const pbRuleset = stats.isDaily ? `daily_${new Date().toISOString().slice(0, 10)}` : stats.playType;
+  const personalBest = save.getPB(stats.mode || app.selectedMode, pbRuleset);
+  if (personalBest > stats.score && stats.score > 0) {
+    const gap = personalBest - stats.score;
+    const threshold = Math.max(100, Math.round(personalBest * 0.15));
+    if (gap <= threshold) {
+      return {
+        text: t('close_to_pb', { n: gap }),
+        tone: 'flow',
       };
     }
   }
@@ -155,7 +114,22 @@ function getReplayHook(save, stats, modeLabel) {
     };
   }
 
-  return null;
+  return {
+    text: t('next_goal_retry'),
+    tone: 'flow',
+  };
+}
+
+function setResultValue(selector, value, hasData = true) {
+  const el = $(selector);
+  if (!el) return;
+  el.textContent = hasData ? value : '\u2014';
+  el.classList.toggle('is-no-data', !hasData);
+  if (hasData) {
+    el.removeAttribute('aria-label');
+  } else {
+    el.setAttribute('aria-label', t('er_no_data'));
+  }
 }
 
 /* Determine if the last game was "good" (score above mode average) */
@@ -197,9 +171,9 @@ export async function showResults(stats, canContinue = false) {
     audio.victoryJingle(tier);
   }
 
-  let isNewPB = false, leveledUp = false, unlocked = [], fireEarned = 0;
+  let isNewPB = false, leveledUp = false, unlocked = [], fireEarned = 0, gameXPEarned = 0;
   if (!canContinue) {
-    ({ isNewPB, leveledUp, fireEarned } = await save.addScore(stats));
+    ({ isNewPB, leveledUp, fireEarned, xpEarned: gameXPEarned } = await save.addScore(stats));
     fireEarned = fireEarned || 0;
 
     if (stats.playType === 'competition' && stats.competitionWon) {
@@ -219,12 +193,19 @@ export async function showResults(stats, canContinue = false) {
     /* v60 Welle 4: Daily quest progress + Season Pass points */
     try {
       const completed = recordQuestProgress(save, stats);
-      recordPassGamePoint(save);
+      if (recordPassGamePoint(save)) {
+        const passClaim = await collectPassRewards(save);
+        leveledUp = leveledUp || passClaim.leveledUp;
+        fireEarned += passClaim.fire;
+      }
+      const claim = await autoClaimQuests(save);
+      leveledUp = leveledUp || claim.leveledUp;
+      fireEarned += claim.fire;
       if (completed && completed.length) {
-        const claim = autoClaimQuests(save);
-        if (claim.xp)   { save.data.totalXP = (save.data.totalXP || 0) + claim.xp; }
-        if (claim.fire) { save.data.fire    = (save.data.fire    || 0) + claim.fire; }
         addPassBonusPoints(save, completed.length);
+        const passClaim = await collectPassRewards(save);
+        leveledUp = leveledUp || passClaim.leveledUp;
+        fireEarned += passClaim.fire;
         const fx = getBodyFx();
         const lang = getLanguage();
         completed.forEach((q, i) => {
@@ -326,7 +307,10 @@ export async function showResults(stats, canContinue = false) {
 
   setText('#resBestStreak', stats.streak);
   setText('#resAccuracy', stats.accuracy + '%');
-  setText('#resAvgReaction', stats.avgReaction + t('ms'));
+  const hasReactionData = Number(stats.correct) > 0
+    && Number.isFinite(Number(stats.avgReaction))
+    && Number(stats.avgReaction) > 0;
+  setResultValue('#resAvgReaction', `${stats.avgReaction}${t('ms')}`, hasReactionData);
   setText('#resCorrect', `${stats.correct} / ${stats.total}`);
   setText('#resStreakBonus', '+' + stats.streakBonus);
   setText('#resAccBonus', '+' + stats.accBonus);
@@ -346,15 +330,14 @@ export async function showResults(stats, canContinue = false) {
     perfectEl.style.display = stats.isPerfectRound ? 'block' : 'none';
     if (stats.isPerfectRound) perfectEl.textContent = t('perfect_round');
   }
-  const bestReactEl = $('#resBestReaction');
-  if (bestReactEl && stats.bestReactionTime > 0) {
-    bestReactEl.textContent = stats.bestReactionTime + t('ms');
-  }
+  setResultValue('#resBestReaction', `${stats.bestReactionTime}${t('ms')}`,
+    Number(stats.correct) > 0 && Number(stats.bestReactionTime) > 0);
 
-  const modeLabel = t(app.selectedMode) || app.selectedMode;
+  const resultMode = stats.mode || app.selectedMode;
+  const modeLabel = t(`mode_${resultMode}`) || resultMode;
   const playLabel = t(`play_${stats.playType || app.selectedPlayType}`) || '';
   setText('#resMode', `${modeLabel} \u2022 ${playLabel}`);
-  setText('#resXP', t('xp_earned', { n: stats.xp }));
+  setText('#resXP', t('xp_earned', { n: gameXPEarned }));
 
   /* Fire earned display */
   const fireEl = $('#resFireEarned');
@@ -467,40 +450,7 @@ export async function showResults(stats, canContinue = false) {
     scheduleResult(resultGeneration, () => { bodyFx.achievementToast(t('more_achievements', { n: extra })); }, achBaseDelay + maxToasts * 1500);
   }
 
-  /* Close-to-PB motivator */
-  const closePBEl = $('#resCloseToePB');
-  const pbRuleset = stats.isDaily ? `daily_${new Date().toISOString().slice(0, 10)}` : stats.playType;
-  if (!canContinue && !isNewPB) {
-    const currentPB = save.getPB(stats.mode || app.selectedMode, pbRuleset);
-    if (currentPB > 0 && stats.score > 0) {
-      const diff = currentPB - stats.score;
-      const threshold = Math.max(currentPB * 0.15, 100);
-      if (diff > 0 && diff <= threshold) {
-        const motivEl = closePBEl || (() => {
-          const el = document.createElement('div');
-          el.id = 'resCloseToePB';
-          el.className = 'results-close-pb';
-          const pbContainer = $('#resPB');
-          if (pbContainer && pbContainer.parentElement) {
-            pbContainer.parentElement.insertBefore(el, pbContainer.nextSibling);
-          }
-          return el;
-        })();
-        if (motivEl) {
-          motivEl.textContent = t('close_to_pb', { n: diff }) || `Nur ${diff} Punkte von deinem PB!`;
-          motivEl.style.display = '';
-        }
-      } else if (closePBEl) {
-        closePBEl.style.display = 'none';
-      }
-    } else if (closePBEl) {
-      closePBEl.style.display = 'none';
-    }
-  } else if (closePBEl) {
-    closePBEl.style.display = 'none';
-  }
-
-  const replayHookEl = ensureReplayHook();
+  const replayHookEl = $('#resNextHook');
   const replayHook = !canContinue ? getReplayHook(save, stats, modeLabel) : null;
   if (replayHookEl) {
     if (replayHook?.text) {
@@ -511,33 +461,6 @@ export async function showResults(stats, canContinue = false) {
       replayHookEl.textContent = '';
       replayHookEl.className = 'results-next-hook';
       replayHookEl.style.display = 'none';
-    }
-  }
-
-  /* ── Near-Miss pill — strong dopamine "one more game" hook ──
-     Only when not in continue prompt and not a new PB (the new PB
-     celebration owns the spotlight in that case). */
-  const nearMissEl = ensureNearMissPill();
-  if (nearMissEl) {
-    if (!canContinue && !isNewPB) {
-      const allTimePB = save.getPB(stats.mode || app.selectedMode, pbRuleset) || 0;
-      const nm = computeNearMiss(stats.score, app.sessionBest, allTimePB);
-      if (nm) {
-        const labelKey = nm.kind === 'pb' ? 'near_miss_pb' : 'near_miss_session';
-        const fallback = nm.kind === 'pb'
-          ? `Nur noch <span class="nm-num">${nm.gap}</span> bis zum neuen Rekord!`
-          : `Nur noch <span class="nm-num">${nm.gap}</span> bis zum Tagesbest!`;
-        let label = t(labelKey, { n: nm.gap });
-        if (!label || label === labelKey) label = fallback;
-        nearMissEl.innerHTML = `<span class="nm-spark" aria-hidden="true">⚡</span><span>${label}</span>`;
-        nearMissEl.style.display = '';
-      } else {
-        nearMissEl.style.display = 'none';
-        nearMissEl.innerHTML = '';
-      }
-    } else {
-      nearMissEl.style.display = 'none';
-      nearMissEl.innerHTML = '';
     }
   }
 

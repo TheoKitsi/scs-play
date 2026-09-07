@@ -222,7 +222,7 @@
       </div>
 
       <!-- Swipeable mode slides — JS renders one .hero-slide per mode -->
-      <div class="hero-slider" id="heroSlider" role="group" aria-label="Spielmodus wählen" aria-describedby="heroCarouselStatus"></div>
+      <div class="hero-slider" id="heroSlider" role="region" aria-roledescription="carousel" data-i18n-aria="select_mode" aria-label="Spielmodus wählen" aria-describedby="heroCarouselStatus"></div>
       <div id="heroCarouselStatus" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
       <div class="home-play-command" id="homePlayCommand">
@@ -255,10 +255,10 @@
       </div>
 
       <!-- Prev / Next nav arrows -->
-      <button class="hero-nav-arrow hero-nav-prev" id="heroNavPrev" aria-label="Vorheriger Modus">
+      <button type="button" class="hero-nav-arrow hero-nav-prev" id="heroNavPrev" aria-label="Vorheriger Modus">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <button class="hero-nav-arrow hero-nav-next" id="heroNavNext" aria-label="Nächster Modus">
+      <button type="button" class="hero-nav-arrow hero-nav-next" id="heroNavNext" aria-label="Nächster Modus">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
 
@@ -542,6 +542,16 @@
   <!-- Speed lines overlay -->
   <div id="speedLines" class="speed-lines"></div>
 
+  <!-- Klassik reference art: the active route becomes part of the stage. -->
+  <div id="resonanceStage" class="resonance-stage" aria-hidden="true">
+    <span class="resonance-orbit resonance-orbit--inner"></span>
+    <span class="resonance-path resonance-path--ul" data-resonance-dir="ul"></span>
+    <span class="resonance-path resonance-path--ur" data-resonance-dir="ur"></span>
+    <span class="resonance-path resonance-path--dl" data-resonance-dir="dl"></span>
+    <span class="resonance-path resonance-path--dr" data-resonance-dir="dr"></span>
+    <span class="resonance-core"></span>
+  </div>
+
   <!-- HUD -->
   <div class="hud">
     <div class="hud-top">
@@ -619,7 +629,7 @@
   </div>
 
   <!-- Pre-game Mode Instruction Overlay (brain/reflex modes) -->
-  <div id="modeInstructionOverlay" class="mode-instruction-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modeInstructionTitle">
+  <div id="modeInstructionOverlay" class="mode-instruction-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modeInstructionTitle" hidden inert>
     <div class="mode-instruction-panel">
       <span id="modeInstructionIcon" class="mode-instruction-icon"></span>
       <h2 id="modeInstructionTitle" class="mode-instruction-title"></h2>
@@ -629,7 +639,7 @@
   </div>
 
   <!-- PAUSE Overlay -->
-  <div id="pauseOverlay" class="pause-overlay" role="dialog" aria-label="Pause" aria-modal="true" aria-hidden="true">
+  <div id="pauseOverlay" class="pause-overlay" role="dialog" aria-label="Pause" aria-modal="true" aria-hidden="true" hidden inert>
     <div class="pause-panel">
       <div id="pauseGameInfo" class="pause-game-info"></div>
       <h2 data-i18n="paused"><svg class="ui-icon" viewBox="0 0 24 24" style="vertical-align:middle"><use href="#icon-pause"></use></svg> PAUSE</h2>
@@ -654,6 +664,7 @@
 
     <!-- Phase 1: Score (counts up immediately) -->
     <div class="results-phase" id="resPhase1">
+      <span class="results-score-label" data-i18n="score">Punkte</span>
       <div class="results-xp-ring">
         <svg viewBox="0 0 140 140">
           <circle class="ring-bg" cx="70" cy="70" r="65"/>
@@ -680,7 +691,7 @@
       <div id="resPerfectRound" class="results-pb" style="display:none;background:rgba(124,58,237,0.12);border-color:rgba(124,58,237,0.3);color:var(--primary-glow)"></div>
       <div id="resBonusExtra" class="results-bonus" style="display:none;color:var(--gold);font-weight:700"></div>
 
-      <div class="results-xp">
+      <div class="results-xp" role="status" aria-live="polite">
         <div id="resXP" class="xp-earned"></div>
         <div id="resFireEarned" class="xp-earned" style="color:var(--color-fire)"></div>
         <div class="xp-bar"><div id="resXPBar" class="xp-bar-fill"></div></div>
@@ -711,6 +722,7 @@
         </div>
       </div>
       <!-- Normal result buttons (hidden during continue prompt) -->
+      <div id="resNextHook" class="results-next-hook" role="status" aria-live="polite"></div>
       <div id="resNormalBtns" class="results-buttons">
         <button id="btnOneMore" class="btn btn-primary"><span id="oneMoreText" data-i18n="retry">Nochmal</span></button>
         <button id="btnShare" class="btn btn-secondary btn-share" data-i18n="share_score"><svg class="ui-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:4px"><path fill="currentColor" d="M18 16a3 3 0 00-2.12.88l-7.17-4.18A3 3 0 009 12a3 3 0 00-.29-.7l7.17-4.18A3 3 0 0018 8a3 3 0 100-6 3 3 0 00-2.71 1.7L8.12 7.88A3 3 0 006 7a3 3 0 100 6c.77 0 1.47-.3 2.01-.78l7.17 4.18A3 3 0 0018 22a3 3 0 100-6z"/></svg> Teilen</button>
@@ -811,11 +823,11 @@
     <!-- Custom photo upload -->
     <div id="avatarUploadSection" class="avatar-upload-section">
       <div id="avatarUploadUnlocked" class="avatar-upload-unlocked">
-        <label id="avatarUploadLabel" class="avatar-upload-btn">
-          <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
+        <input type="file" id="avatarFileInput" class="avatar-file-input" accept="image/*" aria-labelledby="avatarUploadLabel">
+        <label id="avatarUploadLabel" class="avatar-upload-btn" for="avatarFileInput">
           <span data-i18n="avatar_upload_choose">Bild w&#228;hlen</span>
         </label>
-        <button id="btnAvatarRemovePhoto" class="btn btn-ghost btn-sm" style="display:none" data-i18n="avatar_upload_remove">Foto entfernen</button>
+        <button id="btnAvatarRemovePhoto" class="btn btn-ghost btn-sm" data-i18n="avatar_upload_remove" hidden>Foto entfernen</button>
       </div>
     </div>
     <h3 class="avatar-section-title" data-i18n="avatar_icon">Symbol w&#228;hlen</h3>
@@ -835,8 +847,8 @@
     <div class="screen-header"><div><h2 data-i18n="store">Design-Shop</h2><p class="screen-subtitle" data-i18n="store_sub">Spiele Fire frei und gestalte dein Spiel.</p></div></div>
     <!-- Shop Tabs -->
     <div id="shopTabs" class="shop-tabs" role="tablist" aria-label="Shop-Kategorien">
-      <button class="shop-tab selected" role="tab" aria-selected="true" data-tab="themes" data-i18n="shop_tab_themes">Themen</button>
-      <button class="shop-tab" role="tab" aria-selected="false" data-tab="trails" data-i18n="shop_tab_trails">Trails</button>
+      <button id="shopTabThemes" class="shop-tab selected" role="tab" aria-selected="true" aria-controls="shopTabContent" data-tab="themes" data-i18n="shop_tab_themes">Themen</button>
+      <button id="shopTabTrails" class="shop-tab" role="tab" aria-selected="false" aria-controls="shopTabContent" data-tab="trails" data-i18n="shop_tab_trails" tabindex="-1">Trails</button>
     </div>
     <!-- Earned currency balance -->
     <div id="shopLivesBar" class="shop-lives-bar" aria-live="polite">
@@ -845,7 +857,7 @@
       <span class="shop-lives-label" data-i18n="fire_shop_help">Fire durch Spielen verdienen</span>
     </div>
     <!-- Tab content -->
-    <div id="shopTabContent">
+    <div id="shopTabContent" role="tabpanel" aria-labelledby="shopTabThemes" tabindex="0">
       <div id="storeList" class="store-list"></div>
     </div>
     <div class="bottom-back-bar">
@@ -909,7 +921,7 @@
 </div>
 
 <!-- ═══════ WHEEL OF FORTUNE OVERLAY ═══════ -->
-<div id="wheelOverlay" class="wheel-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="wheelHeading">
+<div id="wheelOverlay" class="wheel-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="wheelHeading" hidden inert>
   <div class="wheel-panel">
     <button class="wheel-close" id="btnWheelClose" aria-label="Gl&uuml;cksrad schlie&szlig;en">&times;</button>
     <h2 class="wheel-heading" id="wheelHeading" data-i18n="wheel_title">GL&Uuml;CKSRAD</h2>

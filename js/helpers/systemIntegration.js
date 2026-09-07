@@ -20,6 +20,8 @@ export function bindQaHooks() {
         setGameSelection(mode, playType = 'blitz') {
           app.selectedMode = mode;
           app.selectedPlayType = playType;
+          const playButton = $('#btnPlay');
+          if (playButton) playButton.disabled = false;
         },
         triggerChaosRuleSwitch(rule = 'color') {
           app.game?.onChaosRuleSwitch?.(rule);

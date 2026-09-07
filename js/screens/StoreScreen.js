@@ -25,9 +25,12 @@ function renderShopTabs() {
     btn.setAttribute('aria-selected', String(selected));
     btn.tabIndex = selected ? 0 : -1;
   });
+  const panel = $('#shopTabContent');
+  const activeTab = $(`.shop-tab[data-tab="${shopTab}"]`);
+  if (panel && activeTab) panel.setAttribute('aria-labelledby', activeTab.id);
 }
 
-function renderUnlockItems(type) {
+function renderUnlockItems(type, focusItemId = null) {
   const { save, audio } = app;
   const list = $('#storeList');
   if (!list) return;
@@ -59,7 +62,7 @@ function renderUnlockItems(type) {
     }
 
     return `
-      <div class="unlock-item ${isActive ? 'active-item' : ''} ${!isOwned && !isDefault ? 'locked-item' : ''} ${isActive ? 'premium-glow-item' : ''}">
+      <div class="unlock-item ${isActive ? 'active-item' : ''} ${!isOwned && !isDefault ? 'locked-item' : ''} ${isActive ? 'premium-glow-item' : ''}" data-item-id="${item.id}" tabindex="-1">
         <div class="unlock-preview ${previewClass}${type === 'trails' ? ' trail-anim' : ''}"></div>
         <div class="unlock-info">
           <span class="unlock-name">${t(prefix + '_' + item.id)}</span>
@@ -76,7 +79,7 @@ function renderUnlockItems(type) {
       const itemType = btn.dataset.type;
       if (itemType === 'themes') { await save.setActiveTheme(id); applyTheme(id); app.engagement?.trackThemeChange(); }
       else { await save.setActiveTrail(id); }
-      renderShopContent();
+      renderShopContent(id);
       audio.tap();
     });
   });
@@ -104,16 +107,22 @@ function renderUnlockItems(type) {
       bodyFx.achievementToast(t('fire_purchase_success', { item: itemName }));
       bodyFx.confetti(80, 2000);
       haptic('purchase', save);
-      renderShopContent();
+      renderShopContent(id);
       updateShopLives();
       audio.tap();
     });
   });
+
+  if (focusItemId) {
+    const item = [...list.querySelectorAll('.unlock-item')]
+      .find(candidate => candidate.dataset.itemId === focusItemId);
+    item?.focus();
+  }
 }
 
-function renderShopContent() {
-  if (shopTab === 'themes') renderUnlockItems('themes');
-  else if (shopTab === 'trails') renderUnlockItems('trails');
+function renderShopContent(focusItemId = null) {
+  if (shopTab === 'themes') renderUnlockItems('themes', focusItemId);
+  else if (shopTab === 'trails') renderUnlockItems('trails', focusItemId);
 }
 
 export function showStore(showHome) {
@@ -132,18 +141,33 @@ export function showStore(showHome) {
 
 export function bindShopTabs() {
   const { audio, save } = app;
-  $$('.shop-tab').forEach(tab => {
-    tab.addEventListener('click', (e) => {
-      shopTab = tab.dataset.tab;
-      renderShopTabs();
-      renderShopContent();
-      updateShopLives();
-      audio.tap();
-      haptic('tap', save);
-      const bodyFx = getBodyFx();
-      if (e.clientX && e.clientY && bodyFx) {
-        bodyFx.ripple(e.clientX, e.clientY, '#00ffff');
-      }
+  const tabs = $$('.shop-tab');
+  const selectTab = (tab, event) => {
+    shopTab = tab.dataset.tab;
+    renderShopTabs();
+    renderShopContent();
+    updateShopLives();
+    audio.tap();
+    haptic('tap', save);
+    const bodyFx = getBodyFx();
+    if (event?.clientX && event?.clientY && bodyFx) {
+      bodyFx.ripple(event.clientX, event.clientY, '#00ffff');
+    }
+  };
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', (event) => selectTab(tab, event));
+    tab.addEventListener('keydown', (event) => {
+      let nextIndex;
+      if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
+      else if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length;
+      else if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = tabs.length - 1;
+      else return;
+
+      event.preventDefault();
+      tabs[nextIndex].focus();
+      selectTab(tabs[nextIndex]);
     });
   });
 }

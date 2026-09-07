@@ -80,13 +80,16 @@ writeFileSync(resolve(out, 'index.html'), html);
 
 // ── 5. Rewrite sw.js to cache bundles instead of individual modules ──
 let sw = readFileSync(resolve(out, 'sw.js'), 'utf8');
+const bundledJsAssets = Object.keys(jsResult.metafile.outputs)
+  .filter(path => path.endsWith('.js'))
+  .map(path => `  './${path.replace(/^docs[\\/]/, '').replaceAll('\\', '/')}'`);
 const bundledAssets = `const ASSETS = [
   './',
   './index.html',
   './privacy-policy.html',
   './terms-of-service.html',
   './css/style.bundle.css',
-  './js/app.bundle.js',
+${bundledJsAssets.join(',\n')},
   './manifest.json',
   './img/icon-192.svg',
   './img/icon-512.svg',

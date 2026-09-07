@@ -44,9 +44,39 @@ export class EffectsManager {
 
     /* Danger zone overlay */
     this._dangerVignetteEl = null;
+
+    /* Nodes and container animations owned by this manager */
+    this._ownedNodes = new Set();
+    this._shakeRafId = null;
+    this._screenPulseRafId = null;
+    this._radialZoomTimeouts = [];
   }
 
   setReduced(on) { this.reduced = on; }
+
+  _appendNode(parent, el) {
+    parent.appendChild(el);
+    this._ownedNodes.add(el);
+    return el;
+  }
+
+  _removeNode(el) {
+    if (!el) return;
+    this._ownedNodes.delete(el);
+    el.remove();
+  }
+
+  _cancelContainerTransform() {
+    if (this._shakeRafId !== null) cancelAnimationFrame(this._shakeRafId);
+    if (this._screenPulseRafId !== null) cancelAnimationFrame(this._screenPulseRafId);
+    this._radialZoomTimeouts.forEach(clearTimeout);
+    this._shakeRafId = null;
+    this._screenPulseRafId = null;
+    this._radialZoomTimeouts = [];
+    this.c.style.transform = '';
+    this.c.style.transition = '';
+    this.c.style.willChange = '';
+  }
 
   /** Append alpha to a color — works for both hex (#rrggbb) and hsl() */
   _alphaColor(color, hexAlpha) {
@@ -333,8 +363,8 @@ export class EffectsManager {
     el.style.left = x + 'px';
     el.style.top = y + 'px';
     el.style.borderColor = color;
-    this.c.appendChild(el);
-    el.addEventListener('animationend', () => el.remove());
+    this._appendNode(this.c, el);
+    el.addEventListener('animationend', () => this._removeNode(el));
   }
 
   /* ══════════════════════════════════════
@@ -356,14 +386,14 @@ export class EffectsManager {
       p.style.setProperty('--drift-y', (Math.random() * 60 - 30) + 'px');
       p.style.animationDuration = (7 + Math.random() * 10) + 's';
       p.style.animationDelay = (Math.random() * 6) + 's';
-      this.c.appendChild(p);
+      this._appendNode(this.c, p);
       this._ambientEls.push(p);
     }
   }
 
   stopAmbient() {
     this._ambientOn = false;
-    this._ambientEls.forEach(el => el.remove());
+    this._ambientEls.forEach(el => this._removeNode(el));
     this._ambientEls = [];
   }
 
@@ -378,17 +408,22 @@ export class EffectsManager {
      ══════════════════════════════════════ */
   shake(dur = 300, mag = 6) {
     if (this.reduced) return;
+    this._cancelContainerTransform();
     this.c.style.transition = 'none';
     const start = performance.now();
     const step = () => {
       const t = performance.now() - start;
-      if (t > dur) { this.c.style.transform = ''; return; }
+      if (t > dur) {
+        this.c.style.transform = '';
+        this._shakeRafId = null;
+        return;
+      }
       const x = (Math.random() - 0.5) * mag * (1 - t / dur);
       const y = (Math.random() - 0.5) * mag * (1 - t / dur);
       this.c.style.transform = `translate(${x}px,${y}px)`;
-      requestAnimationFrame(step);
+      this._shakeRafId = requestAnimationFrame(step);
     };
-    requestAnimationFrame(step);
+    this._shakeRafId = requestAnimationFrame(step);
   }
   shakeHit() { this.shake(200, 4); }
   shakeMiss() { this.shake(350, 8); }
@@ -399,11 +434,7 @@ export class EffectsManager {
   advancedShake(duration = 400, intensity = 10, isDirectional = false, angle = 0, style = 'decay') {
     if (this.reduced || !this.c) return;
     
-    // Stop any existing shake
-    if (this._shakeRafId) {
-      cancelAnimationFrame(this._shakeRafId);
-      this._shakeRafId = null;
-    }
+    this._cancelContainerTransform();
 
     this.c.style.transition = 'none';
     this.c.style.willChange = 'transform';
@@ -529,7 +560,7 @@ export class EffectsManager {
         pointerEvents: "none", zIndex: "300",
         willChange: "transform, opacity"
       });
-      this.c.appendChild(el);
+      this._appendNode(this.c, el);
 
       const angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.8;
       const force = isHeavy ? (8 + Math.random() * 12) : (3 + Math.random() * 6);
@@ -556,7 +587,7 @@ export class EffectsManager {
       const el = document.createElement("div");
       el.className = "particle";
       el.style.display = "none";
-      this.c.appendChild(el);
+      this._appendNode(this.c, el);
       this._simplePool.push(el);
     }
   }
@@ -567,12 +598,16 @@ export class EffectsManager {
     for (let i = 0; i < count; i++) {
       const el = pool[this._simplePoolIdx % pool.length];
       this._simplePoolIdx++;
+      if (el._showRafId) cancelAnimationFrame(el._showRafId);
+      if (el._hideTimeout) clearTimeout(el._hideTimeout);
       const angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.4;
       const dist = 40 + Math.random() * 50;
       el.style.cssText = `left:${x}px;top:${y}px;background:${color};--px:${Math.cos(angle)*dist}px;--py:${Math.sin(angle)*dist}px;`;
-      if (el._hideTimeout) clearTimeout(el._hideTimeout);
       el.classList.remove('particle');
-      requestAnimationFrame(() => { el.classList.add('particle'); });
+      el._showRafId = requestAnimationFrame(() => {
+        el._showRafId = null;
+        el.classList.add('particle');
+      });
       el._hideTimeout = setTimeout(() => { el.style.display = 'none'; el._hideTimeout = null; }, 600);
       el.style.display = '';
     }
@@ -607,7 +642,7 @@ export class EffectsManager {
         }
         
         if (p.life <= 0) { 
-          p.el.remove(); 
+          this._removeNode(p.el);
           this._activeParticles.splice(i, 1); 
           continue; 
         }
@@ -664,14 +699,20 @@ export class EffectsManager {
      ══════════════════════════════════════ */
   radialZoom(duration = 300) {
     if (this.reduced) return;
+    this._cancelContainerTransform();
     const half = duration / 2;
     this.c.style.transition = `transform ${half}ms ease-out`;
     this.c.style.transform = 'scale(1.03)';
-    setTimeout(() => {
+    const resetTimer = setTimeout(() => {
       this.c.style.transition = `transform ${half}ms ease-in`;
       this.c.style.transform = '';
-      setTimeout(() => { this.c.style.transition = ''; }, half);
+      const transitionTimer = setTimeout(() => {
+        this.c.style.transition = '';
+        this._radialZoomTimeouts = [];
+      }, half);
+      this._radialZoomTimeouts = [transitionTimer];
     }, half);
+    this._radialZoomTimeouts = [resetTimer];
   }
 
   /* ══════════════════════════════════════
@@ -686,7 +727,7 @@ export class EffectsManager {
       const el = document.createElement('div');
       el.className = 'score-pop';
       el.style.display = 'none';
-      this.c.appendChild(el);
+      this._appendNode(this.c, el);
       this._scorePopPool.push(el);
     }
   }
@@ -697,6 +738,9 @@ export class EffectsManager {
     const el = pool[this._scorePopIdx % pool.length];
     this._scorePopIdx++;
 
+    if (el._showRafId) cancelAnimationFrame(el._showRafId);
+    if (el._hideTimeout) clearTimeout(el._hideTimeout);
+
     el.textContent = text;
     el.style.left = x + 'px';
     el.style.top = y + 'px';
@@ -704,10 +748,15 @@ export class EffectsManager {
     el.style.display = '';
     el.className = big ? 'score-pop big' : 'score-pop';
     /* Use rAF for animation re-trigger instead of forced reflow */
-    requestAnimationFrame(() => {
+    el._showRafId = requestAnimationFrame(() => {
+      el._showRafId = null;
       el.classList.add('score-pop-go');
     });
-    setTimeout(() => { el.style.display = 'none'; el.classList.remove('score-pop-go'); }, big ? 1300 : 800);
+    el._hideTimeout = setTimeout(() => {
+      el.style.display = 'none';
+      el.classList.remove('score-pop-go');
+      el._hideTimeout = null;
+    }, big ? 1300 : 800);
   }
 
   /* ══════════════════════════════════════
@@ -721,7 +770,7 @@ export class EffectsManager {
       const el = document.createElement('div');
       el.className = 'flash-overlay';
       el.style.display = 'none';
-      this.c.appendChild(el);
+      this._appendNode(this.c, el);
       this._flashPool.push(el);
     }
   }
@@ -732,12 +781,20 @@ export class EffectsManager {
     const pool = this._flashPool;
     const el = pool[this._flashIdx % pool.length];
     this._flashIdx++;
+    if (el._showRafId) cancelAnimationFrame(el._showRafId);
+    if (el._hideTimeout) clearTimeout(el._hideTimeout);
     el.style.background = color;
     el.style.setProperty('--flash-dur', dur + 'ms');
     el.style.display = '';
     el.classList.remove('flash-overlay');
-    requestAnimationFrame(() => { el.classList.add('flash-overlay'); });
-    setTimeout(() => { el.style.display = 'none'; }, dur + 100);
+    el._showRafId = requestAnimationFrame(() => {
+      el._showRafId = null;
+      el.classList.add('flash-overlay');
+    });
+    el._hideTimeout = setTimeout(() => {
+      el.style.display = 'none';
+      el._hideTimeout = null;
+    }, dur + 100);
   }
   perfectFlash() { this.flash('#2ED57340', 200); }
   goldenFlash()  { this.flash('#FFD70030', 280); }
@@ -754,7 +811,7 @@ export class EffectsManager {
       const el = document.createElement('div');
       el.className = 'absorb-dot';
       el.style.display = 'none';
-      this.c.appendChild(el);
+      this._appendNode(this.c, el);
       this._absorbPool.push(el);
     }
   }
@@ -765,6 +822,8 @@ export class EffectsManager {
     const pool = this._absorbPool;
     const el = pool[this._absorbIdx % pool.length];
     this._absorbIdx++;
+    if (el._showRafId) cancelAnimationFrame(el._showRafId);
+    if (el._hideTimeout) clearTimeout(el._hideTimeout);
     el.style.background = color;
     el.style.left = fromX + 'px';
     el.style.top = fromY + 'px';
@@ -772,8 +831,14 @@ export class EffectsManager {
     el.style.setProperty('--ay', (toY - fromY) + 'px');
     el.style.display = '';
     el.classList.remove('absorb-dot');
-    requestAnimationFrame(() => { el.classList.add('absorb-dot'); });
-    setTimeout(() => { el.style.display = 'none'; }, 500);
+    el._showRafId = requestAnimationFrame(() => {
+      el._showRafId = null;
+      el.classList.add('absorb-dot');
+    });
+    el._hideTimeout = setTimeout(() => {
+      el.style.display = 'none';
+      el._hideTimeout = null;
+    }, 500);
   }
 
   /* ══════════════════════════════════════
@@ -808,12 +873,12 @@ export class EffectsManager {
       el.style.animationDuration = (1 + Math.random() * 1.5) + 's';
       el.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
       el.style.setProperty('--drift', (Math.random() * 80 - 40) + 'px');
-      ct.appendChild(el);
+      this._appendNode(ct, el);
       pieces.push(el);
-      el.addEventListener('animationend', () => el.remove());
+      el.addEventListener('animationend', () => this._removeNode(el));
     }
     /* Safety cleanup in case animationend doesn't fire */
-    setTimeout(() => { pieces.forEach(p => { if (p.parentNode) p.remove(); }); }, dur);
+    setTimeout(() => { pieces.forEach(p => this._removeNode(p)); }, dur);
   }
 
   /* ══════════════════════════════════════
@@ -823,10 +888,10 @@ export class EffectsManager {
     if (this._feverEl) return;
     this._feverEl = document.createElement('div');
     this._feverEl.className = 'fever-overlay active';
-    this.c.appendChild(this._feverEl);
+    this._appendNode(this.c, this._feverEl);
   }
   stopFever() {
-    if (this._feverEl) { this._feverEl.remove(); this._feverEl = null; }
+    if (this._feverEl) { this._removeNode(this._feverEl); this._feverEl = null; }
   }
 
   /* ══════════════════════════════════════
@@ -864,14 +929,14 @@ export class EffectsManager {
     el.style.setProperty('--toast-dur', dur + 'ms');
     el.style.animationDuration = dur + 'ms';
     el.innerHTML = `<span class="toast-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-trophy"></use></svg></span><span class="toast-text">${text}</span>`;
-    container.appendChild(el);
+    this._appendNode(container, el);
 
     // Tap to dismiss
     el.addEventListener('click', () => {
       el.style.transition = 'opacity 0.25s, transform 0.25s';
       el.style.opacity = '0';
       el.style.transform = 'translateX(100px)';
-      setTimeout(() => { if (el.parentNode) el.remove(); }, 300);
+      setTimeout(() => this._removeNode(el), 300);
     });
 
     // keep at most 3 toasts stacked
@@ -880,10 +945,10 @@ export class EffectsManager {
     // If reduced-motion is enabled, avoid animation reliance and remove by timeout
     if (this.reduced || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       el.classList.add('reduced');
-      setTimeout(() => { if (el.parentNode) el.remove(); }, Math.max(1200, dur));
+      setTimeout(() => this._removeNode(el), Math.max(1200, dur));
     } else {
       // remove after animation completes
-      el.addEventListener('animationend', () => { if (el.parentNode) el.remove(); });
+      el.addEventListener('animationend', () => this._removeNode(el));
     }
   }
 
@@ -917,13 +982,13 @@ export class EffectsManager {
     this._injectLevelUpStyles();
     const burst = document.createElement('div');
     burst.className = 'levelup-burst';
-    document.body.appendChild(burst);
+    this._appendNode(document.body, burst);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         burst.classList.add('levelup-burst--expand');
       });
     });
-    setTimeout(() => burst.remove(), 900);
+    setTimeout(() => this._removeNode(burst), 900);
 
     /* Star particles — golden */
     const cx = window.innerWidth / 2;
@@ -937,7 +1002,7 @@ export class EffectsManager {
       el.style.width = size + 'px';
       el.style.height = size + 'px';
       el.style.setProperty('--star-color', `hsl(${hue}, 100%, 55%)`);
-      document.body.appendChild(el);
+      this._appendNode(document.body, el);
       const angle = (Math.PI * 2 / 16) * i;
       const speed = 4 + Math.random() * 5;
       this._activeParticles.push({
@@ -982,9 +1047,9 @@ export class EffectsManager {
       container.setAttribute('aria-live', 'polite');
       document.body.appendChild(container);
     }
-    container.appendChild(el);
+    this._appendNode(container, el);
     while (container.children.length > 3) container.removeChild(container.firstChild);
-    el.addEventListener('animationend', () => { if (el.parentNode) el.remove(); });
+    el.addEventListener('animationend', () => this._removeNode(el));
   }
 
   /* ══════════════════════════════════════
@@ -1017,7 +1082,7 @@ export class EffectsManager {
     el.textContent = label;
 
     this._injectComboMilestoneKeyframes();
-    this.c.appendChild(el);
+    this._appendNode(this.c, el);
 
     /* Confetti burst */
     if (!this.lowPerf) {
@@ -1027,7 +1092,7 @@ export class EffectsManager {
       this.confetti(count, 2000);
     }
 
-    el.addEventListener('animationend', () => el.remove());
+    el.addEventListener('animationend', () => this._removeNode(el));
   }
 
   _injectComboMilestoneKeyframes() {
@@ -1169,11 +1234,11 @@ export class EffectsManager {
         pointerEvents: 'none',
         zIndex: '15'  /* below HUD (z:20) and particles (z:300), above trail (z:2) */
       });
-      this.c.appendChild(el);
+      this._appendNode(this.c, el);
       this._dangerVignetteEl = el;
     } else {
       if (this._dangerVignetteEl) {
-        this._dangerVignetteEl.remove();
+        this._removeNode(this._dangerVignetteEl);
         this._dangerVignetteEl = null;
       }
     }
@@ -1225,11 +1290,11 @@ export class EffectsManager {
       });
       line.style.setProperty('--angle', angle + 'deg');
       line.style.setProperty('--sl-opacity', opacity);
-      container.appendChild(line);
+      this._appendNode(container, line);
       lines.push(line);
     }
 
-    setTimeout(() => { lines.forEach(l => l.remove()); }, duration + 50);
+    setTimeout(() => { lines.forEach(l => this._removeNode(l)); }, duration + 50);
   }
 
   /* ══════════════════════════════════════
@@ -1250,12 +1315,12 @@ export class EffectsManager {
       opacity: '1',
       transition: 'opacity 300ms ease-out'
     });
-    this.c.appendChild(el);
+    this._appendNode(this.c, el);
     /* Double-rAF to ensure the browser paints at opacity 1 first */
     requestAnimationFrame(() => {
       requestAnimationFrame(() => { el.style.opacity = '0'; });
     });
-    setTimeout(() => el.remove(), 350);
+    setTimeout(() => this._removeNode(el), 350);
   }
 
   /* ══════════════════════════════════════
@@ -1263,6 +1328,8 @@ export class EffectsManager {
      ══════════════════════════════════════ */
   screenPulse() {
     if (this.reduced) return;
+
+    this._cancelContainerTransform();
 
     const el = this.c;
     const start = performance.now();
@@ -1273,6 +1340,7 @@ export class EffectsManager {
       const t = performance.now() - start;
       if (t >= duration) {
         el.style.transform = '';
+        this._screenPulseRafId = null;
         return;
       }
       const progress = t / duration;
@@ -1280,9 +1348,9 @@ export class EffectsManager {
         ? 1 + (maxScale - 1) * (progress / 0.5)
         : 1 + (maxScale - 1) * ((1 - progress) / 0.5);
       el.style.transform = `scale(${scale})`;
-      requestAnimationFrame(step);
+      this._screenPulseRafId = requestAnimationFrame(step);
     };
-    requestAnimationFrame(step);
+    this._screenPulseRafId = requestAnimationFrame(step);
   }
 
   /* ══════════════════════════════════════
@@ -1364,11 +1432,11 @@ export class EffectsManager {
         animation: `streakFireParticle ${400 + Math.random() * 300}ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards`,
         animationDelay: (Math.random() * 150) + 'ms'
       });
-      this.c.appendChild(p);
+      this._appendNode(this.c, p);
       pieces.push(p);
     }
 
-    setTimeout(() => { pieces.forEach(p => p.remove()); }, 850);
+    setTimeout(() => { pieces.forEach(p => this._removeNode(p)); }, 850);
   }
 
   /* ══════════════════════════════════════
@@ -1504,8 +1572,8 @@ export class EffectsManager {
       pointerEvents: 'none', zIndex: '9998',
       animation: 'shockwaveExpand 700ms ease-out forwards'
     });
-    this.c.appendChild(wave);
-    wave.addEventListener('animationend', () => wave.remove());
+    this._appendNode(this.c, wave);
+    wave.addEventListener('animationend', () => this._removeNode(wave));
     // Screen pulse
     if (typeof this.screenPulse === 'function') this.screenPulse();
   }
@@ -1525,11 +1593,11 @@ export class EffectsManager {
       opacity: '1',
       transition: 'opacity 300ms ease-out'
     });
-    this.c.appendChild(el);
+    this._appendNode(this.c, el);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => { el.style.opacity = '0'; });
     });
-    setTimeout(() => el.remove(), 350);
+    setTimeout(() => this._removeNode(el), 350);
   }
 
   /* ══════════════════════════════════════
@@ -1575,17 +1643,15 @@ export class EffectsManager {
     this.stopFever();
 
     /* Shake & hitStop cleanup */
-    if (this._shakeRafId) {
-      cancelAnimationFrame(this._shakeRafId);
-      this._shakeRafId = null;
-    }
+    this._cancelContainerTransform();
     if (this._hitStopId) {
       clearTimeout(this._hitStopId);
       this._hitStopId = null;
     }
+    this.c.classList.remove('hit-stop-active');
 
     /* Physics particles */
-    for (const p of this._activeParticles) p.el.remove();
+    for (const p of this._activeParticles) this._removeNode(p.el);
     this._activeParticles = [];
     if (this._particleLoopId) {
       cancelAnimationFrame(this._particleLoopId);
@@ -1594,7 +1660,7 @@ export class EffectsManager {
 
     /* Danger zone */
     if (this._dangerVignetteEl) {
-      this._dangerVignetteEl.remove();
+      this._removeNode(this._dangerVignetteEl);
       this._dangerVignetteEl = null;
     }
 
@@ -1615,8 +1681,23 @@ export class EffectsManager {
     this._resizeBound = null;
     this._canvas = null;
     this._ctx = null;
-    this.c.style.transform = '';
-    this.c.style.willChange = '';
+
+    /* Pooled slots own both their retrigger rAF and hide timer. */
+    for (const pool of [this._simplePool, this._scorePopPool, this._flashPool, this._absorbPool]) {
+      for (const el of pool || []) {
+        if (el._showRafId) cancelAnimationFrame(el._showRafId);
+        if (el._hideTimeout) clearTimeout(el._hideTimeout);
+        el._showRafId = null;
+        el._hideTimeout = null;
+      }
+    }
+
+    this._ownedNodes.forEach(el => el.remove());
+    this._ownedNodes.clear();
+    this._simplePool = null;
+    this._scorePopPool = null;
+    this._flashPool = null;
+    this._absorbPool = null;
   }
 
   /* ══════════════════════════════════════
@@ -1627,8 +1708,8 @@ export class EffectsManager {
     /* Red flash overlay */
     const flash = document.createElement('div');
     flash.className = 'game-over-flash';
-    document.body.appendChild(flash);
-    setTimeout(() => flash.remove(), 650);
+    this._appendNode(document.body, flash);
+    setTimeout(() => this._removeNode(flash), 650);
 
     /* Large text overlay */
     if (labelText) {
@@ -1637,8 +1718,8 @@ export class EffectsManager {
       const span = document.createElement('span');
       span.textContent = labelText;
       txt.appendChild(span);
-      document.body.appendChild(txt);
-      setTimeout(() => txt.remove(), 800);
+      this._appendNode(document.body, txt);
+      setTimeout(() => this._removeNode(txt), 800);
     }
   }
 }

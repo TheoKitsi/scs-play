@@ -104,7 +104,7 @@ function setupAvatarUpload() {
   if (unlocked) unlocked.style.display = '';
 
   const avatar = save.getAvatar();
-  if (removeBtn) removeBtn.style.display = avatar.photo ? '' : 'none';
+  if (removeBtn) removeBtn.hidden = !avatar.photo;
 
 
   if (fileInput) {
@@ -117,7 +117,7 @@ function setupAvatarUpload() {
         await save.setAvatarPhoto(base64);
         app.engagement?.trackAvatarChange();
         renderAvatarPreview(null, null, base64);
-        if (removeBtn) removeBtn.style.display = '';
+        if (removeBtn) removeBtn.hidden = false;
         audio.tap();
       } catch {}
     };
@@ -128,7 +128,7 @@ function setupAvatarUpload() {
       await save.removeAvatarPhoto();
       const av = save.getAvatar();
       renderAvatarPreview(av.icon, av.colorIndex);
-      removeBtn.style.display = 'none';
+      removeBtn.hidden = true;
       audio.tap();
     };
   }

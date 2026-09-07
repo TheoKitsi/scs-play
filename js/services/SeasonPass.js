@@ -5,26 +5,28 @@
    and (capped) raw games played per day.
    Persistence: save.data.seasonPass = {
      startDate:      'YYYY-MM-DD',
-     points:         number,
-     dailyGameCount: { 'YYYY-MM-DD': n },
+      points:         number,
+      dailyGameCount: { 'YYYY-MM-DD': n },
+      dailyQuestCount:{ 'YYYY-MM-DD': n },
      claimedStages:  [stage indices already redeemed]
    }
    ═══════════════════════════════════════ */
 
 export const PASS_STAGES = [
-  { at: 5,   xp: 50,  fire: 5  },
-  { at: 12,  xp: 75,  fire: 8  },
-  { at: 20,  xp: 100, fire: 10 },
-  { at: 30,  xp: 130, fire: 12 },
-  { at: 45,  xp: 160, fire: 15 },
-  { at: 60,  xp: 200, fire: 18 },
-  { at: 80,  xp: 240, fire: 22 },
-  { at: 100, xp: 300, fire: 28 },
-  { at: 130, xp: 380, fire: 35 },
-  { at: 170, xp: 500, fire: 50, freeze: 1 }
+  { at: 4,  xp: 50,  fire: 5  },
+  { at: 8,  xp: 75,  fire: 8  },
+  { at: 14, xp: 100, fire: 10 },
+  { at: 20, xp: 130, fire: 12 },
+  { at: 28, xp: 160, fire: 15 },
+  { at: 36, xp: 200, fire: 18 },
+  { at: 45, xp: 240, fire: 22 },
+  { at: 55, xp: 300, fire: 28 },
+  { at: 67, xp: 380, fire: 35 },
+  { at: 80, xp: 500, fire: 50, freeze: 1 }
 ];
 const PASS_DURATION_DAYS = 14;
 const DAILY_GAME_POINTS_CAP = 5;
+const DAILY_QUEST_POINTS_CAP = 3;
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -35,7 +37,7 @@ function ensureState(save) {
   let s = save.data.seasonPass;
   const today = todayKey();
   if (!s || !s.startDate) {
-    s = { startDate: today, points: 0, dailyGameCount: {}, claimedStages: [] };
+    s = { startDate: today, points: 0, dailyGameCount: {}, dailyQuestCount: {}, claimedStages: [] };
     save.data.seasonPass = s;
     return s;
   }
@@ -44,10 +46,11 @@ function ensureState(save) {
   const now   = new Date(today      + 'T00:00:00');
   const days  = Math.floor((now - start) / 86400000);
   if (days >= PASS_DURATION_DAYS) {
-    s = { startDate: today, points: 0, dailyGameCount: {}, claimedStages: [] };
+    s = { startDate: today, points: 0, dailyGameCount: {}, dailyQuestCount: {}, claimedStages: [] };
     save.data.seasonPass = s;
   }
   if (!s.dailyGameCount) s.dailyGameCount = {};
+  if (!s.dailyQuestCount) s.dailyQuestCount = {};
   if (!Array.isArray(s.claimedStages)) s.claimedStages = [];
   return s;
 }
@@ -68,8 +71,40 @@ export function recordGamePoint(save) {
 export function addBonusPoints(save, n) {
   const s = ensureState(save);
   if (!s || !n) return 0;
-  s.points = (s.points || 0) + n;
-  return n;
+  const today = todayKey();
+  const cur = s.dailyQuestCount[today] || 0;
+  const added = Math.min(Math.max(0, Math.floor(n)), Math.max(0, DAILY_QUEST_POINTS_CAP - cur));
+  if (!added) return 0;
+  s.dailyQuestCount[today] = cur + added;
+  s.points = (s.points || 0) + added;
+  return added;
+}
+
+/* Pay every newly reached stage exactly once, including skipped stages. */
+export async function collectReachedRewards(save) {
+  const s = ensureState(save);
+  if (!s) return { stages: [], xp: 0, fire: 0, freeze: 0, leveledUp: false };
+
+  const claimed = new Set(s.claimedStages.map(Number));
+  const stages = [];
+  let xp = 0, fire = 0, freeze = 0;
+  for (let i = 0; i < PASS_STAGES.length; i++) {
+    const reward = PASS_STAGES[i];
+    if ((s.points || 0) < reward.at || claimed.has(i)) continue;
+    claimed.add(i);
+    stages.push(i);
+    xp += reward.xp || 0;
+    fire += reward.fire || 0;
+    freeze += reward.freeze || 0;
+  }
+  if (!stages.length) return { stages, xp, fire, freeze, leveledUp: false };
+
+  s.claimedStages = [...claimed].filter(Number.isInteger).sort((a, b) => a - b);
+  if (fire) save.data.fire = (save.data.fire || 0) + fire;
+  if (freeze) save.data.streakFreezes = Math.min(2, (save.data.streakFreezes || 0) + freeze);
+  const xpResult = xp ? await save.grantXP(xp) : { leveledUp: false };
+  if (!xp) await save.save();
+  return { stages, xp, fire, freeze, leveledUp: !!xpResult.leveledUp };
 }
 
 export function getProgress(save) {

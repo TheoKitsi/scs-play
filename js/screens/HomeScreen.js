@@ -125,6 +125,15 @@ const MODE_AURA = {
   wissen:   'rgba(251,191,36,0.22)',
 };
 
+const MODE_SKILL_KEYS = {
+  klassik: 'skill_reaction', beginner: 'skill_reaction',
+  expert: 'skill_reaction', ultra: 'skill_reaction',
+  mathe: 'skill_thinking', algebra: 'skill_thinking', worte: 'skill_thinking',
+  hauptstaedte: 'skill_knowledge', wissen: 'skill_knowledge',
+  memo: 'skill_memory', sequenz: 'skill_memory',
+  stroop: 'skill_focus', fokus: 'skill_focus', chaos: 'skill_focus',
+};
+
 /* ═══════ Carousel Engine ═══════ */
 
 /** Get the SVG HTML for a mode from the hidden template cards */
@@ -152,12 +161,17 @@ function buildSlide(mode) {
     const lvProgress = save.getModeLevelProgress ? save.getModeLevelProgress(mode) : 0;
     const lvPct = Math.round(Math.min(1, Math.max(0, lvProgress)) * 100);
     const modeName = t(`mode_${mode}`);
+    const skillName = t(MODE_SKILL_KEYS[mode] || 'skill_reaction');
     slide.innerHTML = `
+      <span class="hero-slide-kicker"><span>${t('hero_selected')}</span><span aria-hidden="true">·</span>${skillName}</span>
       <div class="hero-slide-visual" style="--slide-aura:${aura}">${getModeSVG(mode)}</div>
       <span class="hero-slide-name">${modeName}</span>
       <span class="hero-slide-desc">${t(MODE_DESC_KEYS[mode] || 'mode_klassik_desc')}</span>
-      <div class="hero-slide-badges">
-        <span class="hero-slide-badge hero-slide-badge--pb">${pb > 0 ? `PB ${pb.toLocaleString()}` : t('hero_first_record')}</span>
+      <div class="hero-slide-personal">
+        <span class="hero-slide-personal-label">${pb > 0 ? t('personal_best') : t('hero_next_step')}</span>
+        <strong>${pb > 0 ? pb.toLocaleString() : t('hero_first_record')}</strong>
+      </div>
+      <div class="hero-slide-badges" aria-label="${t('hero_progress')}">
         ${lv > 0 ? `<span class="hero-slide-badge hero-slide-badge--level">Lv.${lv} ${lvName}</span>` : ''}
         ${(() => {
           if (app.mastery) {
@@ -172,8 +186,10 @@ function buildSlide(mode) {
       <div class="hero-slide-level-bar"><div class="hero-slide-level-fill" style="width:${lvPct}%"></div></div>`;
   } else {
     const unlockLv = getUnlockLevel(mode);
+    const skillName = t(MODE_SKILL_KEYS[mode] || 'skill_reaction');
     slide.innerHTML = `
       <div class="hero-slide-locked">
+        <span class="hero-slide-kicker">${skillName}</span>
         <div class="hero-slide-visual" style="filter:grayscale(1) brightness(0.5)">${getModeSVG(mode)}</div>
         <span class="hero-slide-name" style="opacity:0.5">${t(`mode_${mode}`)}</span>
         <span class="hero-slide-lock-label">Level ${unlockLv} ${t('required')}</span>
@@ -235,12 +251,37 @@ function positionSlides() {
     const name = currentSlide.querySelector('.hero-slide-name')?.textContent?.trim() || currentMode;
     status.textContent = `${name}, ${carouselIdx + 1} / ${total}`;
   }
+  updatePlayCTA(currentMode);
   if (currentMode && app.save.isModeUnlocked(currentMode)) {
     if (app.selectedMode !== currentMode) {
       app.selectedMode = currentMode;
       app.save.setSetting('gameMode', currentMode);
     }
   }
+}
+
+/** Keep the primary action aligned with the visible slide, not the last selected mode. */
+function updatePlayCTA(currentMode) {
+  const btn = $('#btnPlay');
+  if (!btn || !currentMode) return;
+
+  const unlocked = app.save.isModeUnlocked(currentMode);
+  const label = btn.querySelector('[data-i18n="play"]');
+  btn.disabled = !unlocked;
+  btn.setAttribute('aria-disabled', String(!unlocked));
+
+  if (unlocked) {
+    if (label) label.textContent = t('play');
+    btn.removeAttribute('aria-label');
+    btn.removeAttribute('title');
+    return;
+  }
+
+  const lockedLabel = t('unlockable_locked');
+  const requirement = t('mode_locked', { n: getUnlockLevel(currentMode) });
+  if (label) label.textContent = lockedLabel;
+  btn.setAttribute('aria-label', `${lockedLabel}: ${requirement}`);
+  btn.title = requirement;
 }
 
 /** Navigate carousel: direction = -1 (prev) or +1 (next) */

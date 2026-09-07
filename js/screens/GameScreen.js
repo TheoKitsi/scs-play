@@ -31,7 +31,6 @@ import { trackChaosAnswer, getChaosGhostDelta } from '../game/ModeMastery.js';
 
 /* ═══════ SVG Cache — avoid regenerating & parsing identical SVGs ═══════ */
 const _svgCache = new Map();
-const SPEED_REACTIVE_MUSIC_MODES = new Set(['klassik', 'beginner', 'expert', 'ultra', 'stroop', 'fokus', 'chaos']);
 let _gameRunId = 0;
 
 function beginGameRun() {
@@ -56,7 +55,7 @@ function getCachedSVGNode(shape, color, size, bonus) {
 }
 
 function syncGameplayMusicIntensity(game, result) {
-  if (!SPEED_REACTIVE_MUSIC_MODES.has(game.mode)) return;
+  if (game.practice) return;
   if (typeof app.audio?.setPerformanceIntensity !== 'function') return;
   app.audio.setPerformanceIntensity(result.correct ? game.streak : 0);
 }
@@ -97,6 +96,71 @@ function getCornerStyles(color) {
 /* ═══════ Render corners (with diffing — only touch changed DOM) ═══════ */
 const _prevCornerState = {};
 
+export function getCornerRenderKey(info, color, isText) {
+  return JSON.stringify([
+    isText,
+    info.type ?? null,
+    info.display ?? null,
+    info.shape ?? null,
+    info.value ?? null,
+    info.size ?? null,
+    color ?? null,
+  ]);
+}
+
+export function getMemoCornerLabel(dir, info, covered = false) {
+  const direction = t(`direction_${dir}`);
+  if (covered) return t('memo_corner_hidden', { direction });
+  const symbolKey = `memo_symbol_${info?.shape || info?.value || ''}`;
+  const translated = t(symbolKey);
+  const symbol = translated === symbolKey ? (info?.display || info?.shape || info?.value || '') : translated;
+  return t('memo_corner_visible', { direction, symbol });
+}
+
+export function isCurrentSequenzGesture(token, game) {
+  return token?.phase === 'go' && token.round === game._seqRound && game._seqPhase === 'go';
+}
+
+const CHAOS_SIZE_MAP = { tiny: '0.7rem', small: '1.2rem', medium: '2rem', large: '2.8rem' };
+const COLORBLIND_MARKS = {
+  'diagonal-stripes': '///', dots: '•••', crosshatch: '+++', 'horizontal-stripes': '===',
+};
+
+function getColorName(hex) {
+  const color = CONFIG.STROOP_COLORS_4?.find(entry => entry.hex === hex);
+  return color?.[`name_${getLanguage()}`] || color?.name_en || hex;
+}
+
+export function getGameplayCornerLabel(dir, info) {
+  const direction = t(`direction_${dir}`);
+  if (info.type === 'stroop') return `${direction}: ${info.display || getColorName(info.value)}`;
+  if (info.type === 'chaos') {
+    return t('chaos_corner_label', {
+      direction,
+      color: getColorName(info.color),
+      shape: t(`memo_symbol_${info.shape}`),
+      size: t(`chaos_size_${info.size}`),
+    });
+  }
+  return String(info.display ?? info.value ?? info.shape ?? direction);
+}
+
+function appendColorblindMark(element, pattern) {
+  if (!app.colorblind || !pattern) return;
+  const mark = document.createElement('span');
+  mark.className = 'colorblind-pattern-mark';
+  mark.setAttribute('aria-hidden', 'true');
+  mark.textContent = COLORBLIND_MARKS[pattern] || '///';
+  element.appendChild(mark);
+}
+
+function announceStimulus(label) {
+  const platform = $('#centerPlatform');
+  const live = $('#a11yLive');
+  platform?.setAttribute('aria-label', label);
+  if (live) live.textContent = label;
+}
+
 function renderCorners(cornerMap, forceAll = false) {
   const { game } = app;
   const isText = game.contentType !== 'shape';
@@ -114,7 +178,7 @@ function renderCorners(cornerMap, forceAll = false) {
   Object.entries(cornerMap).forEach(([dir, info]) => {
     const color = app.colorblind ? info.colorblind : info.color;
     const display = isText ? info.display : info.shape;
-    const prevKey = `${display}|${color}|${isText ? info.value : ''}|${info.size || ''}`;
+    const prevKey = getCornerRenderKey(info, color, isText);
 
     /* Skip DOM update if this corner hasn't changed */
     if (!forceAll && _prevCornerState[dir] === prevKey) return;
@@ -122,11 +186,12 @@ function renderCorners(cornerMap, forceAll = false) {
 
     const el = $(`.corner-shape[data-dir="${dir}"]`);
     if (!el) return;
-    el.setAttribute('aria-label', String(display ?? info.value ?? info.shape ?? dir));
+    el.setAttribute('aria-label', getGameplayCornerLabel(dir, info));
 
     /* ── STROOP corners: solid color swatch (no text — pure Stroop effect) ── */
     if (info.type === 'stroop') {
       el.innerHTML = '';
+      appendColorblindMark(el, info.colorblindPattern);
       el.dataset.value = info.value;
       el.dataset.color = color;
       if (!el.classList.contains(`dir-${dir}`)) el.classList.add(`dir-${dir}`);
@@ -140,9 +205,9 @@ function renderCorners(cornerMap, forceAll = false) {
     if (info.type === 'chaos') {
       const shapeMap = { circle: '●', square: '■', triangle: '▲', star: '★' };
       const sym = shapeMap[info.shape] || info.shape;
-      const szMap = { tiny: '0.7rem', small: '1.2rem', medium: '2.0rem', large: '2.8rem' };
-      const sz = szMap[info.size] || '1.1rem';
+      const sz = CHAOS_SIZE_MAP[info.size] || '1.1rem';
       el.innerHTML = `<span class="corner-text chaos-corner-shape" style="color:${color};font-size:${sz}">${sym}</span>`;
+      appendColorblindMark(el, info.colorblindPattern);
       el.dataset.color = color;
       if (!el.classList.contains(`dir-${dir}`)) el.classList.add(`dir-${dir}`);
       const cs = getCornerStyles(color);
@@ -182,7 +247,7 @@ function renderCenter(shapeData) {
   const color = app.colorblind ? shapeData.colorblind : shapeData.color;
   const inRush = app.game.inRush;
   const inFever = app.game.feverActive;
-  platform?.setAttribute('aria-label', String(shapeData.display ?? shapeData.shape ?? shapeData.value ?? t('game_shape')));
+  announceStimulus(String(shapeData.display ?? shapeData.shape ?? shapeData.value ?? t('game_shape')));
 
   /* Brain & reflex modes: use neutral platform glow so it doesn't reveal the answer */
   const isBrainLike = shapeData.type === 'math' || shapeData.type === 'word'
@@ -258,8 +323,13 @@ function renderCenter(shapeData) {
     const span = document.createElement('span');
     span.className = 'center-text stroop-display';
     span.textContent = shapeData.display;
-    span.style.color = shapeData.inkColor;
+    span.style.color = app.colorblind ? shapeData.inkColorblind : shapeData.inkColor;
     center.appendChild(span);
+    appendColorblindMark(center, shapeData.colorblindPattern);
+    announceStimulus(t('stroop_stimulus_label', {
+      word: shapeData.display,
+      color: app.game.cornerMap[shapeData.direction]?.display || getColorName(shapeData.inkColor),
+    }));
     center.className = 'center-shape pop-in spawn-pop';
     if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
     if (platform) { applyPlatformColor(platform, platformColor); platform.classList.add('platform-active'); }
@@ -294,13 +364,13 @@ function renderCenter(shapeData) {
     const wrap = document.createElement('div');
     wrap.className = 'chaos-stimulus';
     const shapeMap = { circle: '●', square: '■', triangle: '▲', star: '★' };
-    const sizeMap = { tiny: '1.0rem', small: '1.8rem', medium: '3.0rem', large: '4.2rem' };
     const sym = document.createElement('span');
     sym.className = 'chaos-shape';
     sym.textContent = shapeMap[shapeData.display] || shapeData.display;
-    sym.style.color = shapeData.stimColor;
-    sym.style.fontSize = sizeMap[shapeData.stimSize] || '2.4rem';
+    sym.style.color = app.colorblind ? shapeData.stimColorblind : shapeData.stimColor;
+    sym.style.fontSize = CHAOS_SIZE_MAP[shapeData.stimSize] || '2rem';
     wrap.appendChild(sym);
+    appendColorblindMark(wrap, shapeData.colorblindPattern);
     /* Rule indicator — emoji + text label, color-coded by dimension */
     const rule = document.createElement('span');
     rule.className = 'chaos-rule-badge';
@@ -310,6 +380,12 @@ function renderCenter(shapeData) {
     rule.style.borderColor = ruleColors[shapeData.chaosRule] || 'rgba(255,255,255,0.1)';
     rule.style.color = ruleColors[shapeData.chaosRule] || 'rgba(255,255,255,0.6)';
     wrap.appendChild(rule);
+    announceStimulus(t('chaos_stimulus_label', {
+      rule: t(`chaos_rule_${shapeData.chaosRule}`),
+      color: getColorName(shapeData.stimColor),
+      shape: t(`memo_symbol_${shapeData.display}`),
+      size: t(`chaos_size_${shapeData.stimSize}`),
+    }));
     center.appendChild(wrap);
     center.className = 'center-shape pop-in spawn-pop';
     if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
@@ -336,6 +412,7 @@ function renderCenter(shapeData) {
 const _spawnPool = [];
 const _POOL_SIZE = 6;
 let _poolInited = false;
+let _spawnCleanupTimeout = null;
 
 function _initPool() {
   if (_poolInited) return;
@@ -380,8 +457,10 @@ function spawnBurstParticles(color) {
     p.classList.add('spawn-particle');
   }
   /* Single timeout for cleanup */
-  setTimeout(() => {
+  clearTimeout(_spawnCleanupTimeout);
+  _spawnCleanupTimeout = setTimeout(() => {
     for (let i = 0; i < _spawnPool.length; i++) _spawnPool[i].style.display = 'none';
+    _spawnCleanupTimeout = null;
   }, 500);
 }
 
@@ -455,6 +534,23 @@ function updateIntensity() {
     if (game.timer <= 8) g.classList.add('action-climax');
     if (game.timer <= 3) g.classList.add('action-climax-peak');
   }
+
+  if (game.mode === 'klassik') {
+    g.style.setProperty('--resonance-level', String(Math.min(1, Math.max(0, game.streak / 20))));
+  }
+}
+
+function updateKlassikResonance(direction, color, pulse = false) {
+  const gameEl = $('#game');
+  if (!gameEl || app.selectedMode !== 'klassik') return;
+  if (direction) gameEl.dataset.resonanceTarget = direction;
+  if (color) gameEl.style.setProperty('--resonance-color', color);
+  if (!pulse) return;
+
+  const stage = $('#resonanceStage');
+  if (!stage) return;
+  stage.classList.remove('resonance-hit');
+  requestAnimationFrame(() => stage.classList.add('resonance-hit'));
 }
 
 function updateTimerBar() {
@@ -1611,11 +1707,13 @@ function updateSequenzRecord(mastery) {
 }
 
 function showSequenzNewRecord(seqLen) {
+  document.querySelectorAll('.sequenz-record-pop').forEach(el => el.remove());
   const pop = document.createElement('div');
   pop.className = 'sequenz-record-pop';
   pop.textContent = t('mastery_new_record', { n: seqLen });
   $('#game')?.appendChild(pop);
   pop.addEventListener('animationend', () => pop.remove());
+  setTimeout(() => pop.remove(), 1800);
 }
 
 function cleanupSequenzHUD() {
@@ -1970,6 +2068,13 @@ function updateModeMasteryAfterAnswer(game, result) {
 function cleanupGameClasses() {
   const g = $('#game');
   g?.classList.remove('intensity-low','intensity-mid','intensity-high','intensity-max','edge-glow-warm','edge-glow-hot','edge-glow-fire','action-climax','action-climax-peak');
+  if (g) {
+    delete g.dataset.resonanceTarget;
+    delete g.dataset.modeWorld;
+    g.style.removeProperty('--resonance-color');
+    g.style.removeProperty('--resonance-level');
+  }
+  $('#resonanceStage')?.classList.remove('resonance-hit');
   /* Remove memo-covered from corners */
   $$('.corner-shape').forEach(el => el.classList.remove(
     'memo-covered', 'memo-revealing', 'sequenz-flash', 'corner-correct',
@@ -1983,6 +2088,9 @@ function cleanupGameClasses() {
   for (const k in _prevCornerState) delete _prevCornerState[k];
   _lastPlatformColor = '';
   _svgCache.clear();
+  clearTimeout(_spawnCleanupTimeout);
+  _spawnCleanupTimeout = null;
+  _spawnPool.forEach(particle => { particle.style.display = 'none'; });
 }
 
 function cleanupActiveGame({ stopEngine = true } = {}) {
@@ -1994,6 +2102,7 @@ function cleanupActiveGame({ stopEngine = true } = {}) {
     window.__gameScrollBlocker = null;
   }
   if (stopEngine) game.stop();
+  audio.cancelSfx?.();
   audio.stopMusic();
   audio.stopTension?.();
   swipe?.unbind();
@@ -2033,6 +2142,9 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
   app.pendingDaily = daily;
   const gameScreen = $('#game');
   if (!gameScreen) return;
+  const modeWorld = ({ beginner:'sort', expert:'sort', mathe:'think', wissen:'think', memo:'memory', sequenz:'memory', stroop:'reflex', fokus:'reflex', chaos:'reflex' })[app.selectedMode];
+  if (modeWorld) gameScreen.dataset.modeWorld = modeWorld;
+  else delete gameScreen.dataset.modeWorld;
 
   app.swipe?.unbind();
   app.effects?.cleanup();
@@ -2277,6 +2389,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       if (el.style.display === 'none') return;
       el.classList.remove('memo-covered', 'memo-revealing');
       el.classList.add('memo-revealing');
+      el.setAttribute('aria-label', getMemoCornerLabel(el.dataset.dir, cornerMap[el.dataset.dir]));
     });
     setTimeout(() => {
       if (runId !== _gameRunId) return;
@@ -2290,6 +2403,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       if (el.style.display === 'none') return;
       el.classList.remove('memo-revealing');
       el.classList.add('memo-covered');
+      el.setAttribute('aria-label', getMemoCornerLabel(el.dataset.dir, game.cornerMap[el.dataset.dir], true));
     });
   };
 
@@ -2300,6 +2414,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       if (el.style.display === 'none') return;
       el.classList.remove('memo-covered');
       el.classList.add('memo-revealing');
+      el.setAttribute('aria-label', getMemoCornerLabel(el.dataset.dir, cornerMap[el.dataset.dir]));
     });
     setTimeout(() => {
       if (runId !== _gameRunId) return;
@@ -2307,6 +2422,10 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     }, 500);
     haptic('rush', save);
   };
+
+  if (game.isMemoMode && game._memoPhase === 'initialPreview') {
+    game.onMemoPreview(corners, CONFIG.MEMO_PREVIEW_MS);
+  }
 
   /* ── Chaos mode: rule-switch banner ── */
   game.onChaosRuleSwitch = (newRule) => {
@@ -2330,6 +2449,10 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   game.onSpawn = (shape) => {
     renderCenter(shape);
 
+    if (app.selectedMode === 'klassik') {
+      updateKlassikResonance(shape.direction, shape.color);
+    }
+
     if (shape.bonus === 'golden') audio.goldenFound();
     if (shape.bonus === 'diamond') audio.diamondFound();
   };
@@ -2344,6 +2467,10 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
     if (result.correct) {
       audio.correct(result.streak);
+
+      if (app.selectedMode === 'klassik') {
+        updateKlassikResonance(result.expected, game.cornerMap[result.expected]?.color, true);
+      }
 
       /* ── Rush fast-path: minimal FX for maximum frame budget ── */
       if (isRush) {
@@ -2726,7 +2853,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       if (runId === _gameRunId) corner.classList.remove('sequenz-flash');
     }, flashMs);
     /* Play a tone for each step */
-    audio.correct(index);
+    if (typeof audio.sequenceStep === 'function') audio.sequenceStep(dir);
     haptic('hover', save);
   };
 
@@ -2745,6 +2872,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   game.onSequenzResult = (result) => {
     if (runId !== _gameRunId) return;
+    syncGameplayMusicIntensity(game, result);
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
     if (result.correct && result.sequenzComplete) {
@@ -2785,13 +2913,20 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     updateHUD();
   };
 
-  swipe.onGestureStart = () => game.currentShape?.stimulusId ?? null;
+  swipe.onGestureStart = () => game.isSequenzMode
+    ? { phase: game._seqPhase, round: game._seqRound }
+    : game.currentShape?.stimulusId ?? null;
 
   swipe.onSwipe = (dir, ts, stimulusId) => {
     if (game.paused) return;
     /* Sequenz mode: route to sequence input handler */
     if (game.isSequenzMode) {
+      if (!isCurrentSequenzGesture(stimulusId, game)) {
+        effects.trailEnd();
+        return;
+      }
       game.handleSequenzInput(dir);
+      effects.trailEnd();
       return;
     }
     const result = game.handleSwipe(dir, ts, stimulusId);
@@ -2803,6 +2938,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     if (game.paused) return;
     /* Sequenz mode: route to sequence input handler */
     if (game.isSequenzMode) {
+      if (!isCurrentSequenzGesture(stimulusId, game)) return;
       /* Visual feedback */
       const corner = $(`.corner-shape[data-dir="${dir}"]`);
       if (corner) {
@@ -2874,6 +3010,7 @@ export function pauseGame() {
   const { game, audio } = app;
   if (!game.running || game.paused) return;
   game.pause();
+  audio.cancelSfx?.();
   audio.stopMusic();
   if (typeof audio.stopTension === 'function') audio.stopTension();
   const info = $('#pauseGameInfo');
