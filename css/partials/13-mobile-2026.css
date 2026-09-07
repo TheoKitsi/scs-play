@@ -248,22 +248,54 @@ button:focus-visible,.btn:focus-visible{
 #home .sheet-handle{width:34px;height:3px;background:rgba(255,255,255,.2)}
 #home .today-actions{height:auto;min-height:62px;grid-template-columns:1fr 1fr;gap:8px}
 #home .today-actions .daily-card,#home .today-actions .wheel-card{
-  height:68px;
-  min-height:68px;
-  padding:7px 8px;
+  height:60px;
+  min-height:60px;
+  padding:8px 11px;
   border-radius:16px;
   background:#10141c;
   border:1px solid rgba(255,255,255,.08);
+  flex-direction:row;
+  justify-content:space-between;
+  gap:8px;
 }
-#home .today-actions .daily-title{font-family:inherit;font-size:.62rem;line-height:1.25;letter-spacing:0;color:var(--text-dim)}
+#home .today-actions .daily-left{width:auto;min-width:0;justify-content:flex-start}
+#home .today-actions .daily-info{width:auto;text-align:left}
+#home .today-actions .daily-title{font-family:inherit;font-size:.64rem;line-height:1.2;letter-spacing:.02em;color:var(--text-dim)}
+#home .today-actions .daily-right{width:auto;flex:0 0 auto;align-items:flex-end}
 #home .today-actions .btn-daily-cta,#home .today-actions .btn-wheel-cta{
-  min-height:44px;
+  width:auto;
+  min-width:0;
+  min-height:42px;
+  padding:0 2px;
   font-family:inherit;
-  font-size:.72rem;
+  font-size:.68rem;
+  font-weight:800;
   text-transform:none;
-  color:var(--text-dim);
-  background:#1a202b;
-  border:1px solid rgba(255,255,255,.1);
+  color:#c4b5fd;
+  background:none;
+  border:0;
+  box-shadow:none;
+}
+#home .today-actions .btn-wheel-cta{color:#f8c86b}
+#home .today-actions .btn-daily-cta::after,#home .today-actions .btn-wheel-cta::after{
+  content:'›';
+  margin-left:4px;
+  font-size:1rem;
+  line-height:1;
+}
+@media(max-width:380px){
+  #home .today-actions .daily-card,#home .today-actions .wheel-card{
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+    gap:1px;
+  }
+  #home .today-actions .daily-right{width:100%;align-items:flex-start}
+  #home .today-actions .btn-daily-cta,#home .today-actions .btn-wheel-cta{
+    min-height:22px;
+    padding:0;
+    font-size:.63rem;
+  }
 }
 
 /* Bottom dock: clean, reachable and visually quiet. */
@@ -722,8 +754,8 @@ body.mode-chaos .mode-rule-label{
   #home .play-type-btn{min-height:42px}
   #home .btn-play-fab{min-height:54px}
   #home .home-bottom-sheet{padding-top:7px;padding-bottom:calc(75px + var(--bottom-inset))}
-  #home .today-actions{min-height:68px;height:68px}
-  #home .today-actions .daily-card,#home .today-actions .wheel-card{min-height:68px;height:68px}
+  #home .today-actions{min-height:60px;height:60px}
+  #home .today-actions .daily-card,#home .today-actions .wheel-card{min-height:60px;height:60px}
   .wheel-panel{padding:14px 14px 12px}
   .wheel-heading{font-size:1.1rem;margin-bottom:3px}
   .wheel-subtitle,.wheel-prize-strip{display:none}
