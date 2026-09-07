@@ -93,8 +93,8 @@ export function recordGameResult(save, stats) {
         q.progress = Math.max(q.progress || 0, stats.streak || 0);
         break;
       case 'accuracy':
-        /* require ≥ target accuracy in any single game */
-        if ((stats.accuracy || 0) >= q.target) q.progress = q.target;
+        /* A high percentage is only meaningful with a minimum sample. */
+        if ((stats.total || 0) >= 5 && (stats.accuracy || 0) >= q.target) q.progress = q.target;
         break;
       case 'modes': {
         const mode = stats.mode || '';
@@ -110,8 +110,8 @@ export function recordGameResult(save, stats) {
   return justCompleted;
 }
 
-/* Auto-claim rewards when ready. Returns total {xp, fire} awarded. */
-export function autoClaim(save) {
+/* Auto-claim and pay rewards when ready. */
+export async function autoClaim(save) {
   const quests = getOrSeedQuests(save);
   let xp = 0, fire = 0;
   for (const q of quests) {
@@ -121,7 +121,10 @@ export function autoClaim(save) {
       fire += q.rewardFire || 0;
     }
   }
-  return { xp, fire };
+  if (fire) save.data.fire = (save.data.fire || 0) + fire;
+  const xpResult = xp ? await save.grantXP(xp) : { leveledUp: false };
+  if (!xp && fire) await save.save();
+  return { xp, fire, leveledUp: !!xpResult.leveledUp };
 }
 
 export function countCompleted(save) {

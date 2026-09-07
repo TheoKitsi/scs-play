@@ -1,0 +1,21 @@
+/* Shared decorative stage; Klassik keeps its live resonance unchanged. */
+#game.active[data-mode-world] .resonance-stage{opacity:1}
+#game[data-mode-world] .resonance-stage>*{display:none}
+#game[data-mode-world] .resonance-stage::before{content:"";position:absolute;pointer-events:none}
+
+/* Sortieren: measured axes and orbital geometry. */
+#game[data-mode-world="sort"] .resonance-stage::before{inset:14% 7%;opacity:.2;background:linear-gradient(90deg,transparent 49.8%,#96beff 50%,transparent 50.2%),linear-gradient(transparent 53.8%,#96beff 54%,transparent 54.2%),repeating-conic-gradient(from 45deg at 50% 54%,#96beff 0 1deg,transparent 1deg 45deg);border:1px solid #96beff;border-radius:50%}
+
+/* Denken: quiet editorial grid with a protected reading field. */
+#game[data-mode-world="think"] .resonance-stage::before{inset:0;opacity:.2;background:linear-gradient(#809eb4 1px,transparent 1px),linear-gradient(90deg,#809eb4 1px,transparent 1px),radial-gradient(ellipse 34% 29% at 50% 54%,#06080d 18%,transparent 100%);background-size:clamp(30px,5vw,52px) clamp(30px,5vw,52px),clamp(30px,5vw,52px) clamp(30px,5vw,52px),auto}
+
+/* Merken: concentric echoes around the recall locus. */
+#game[data-mode-world="memory"] .resonance-stage::before{inset:-15%;opacity:.22;background:repeating-radial-gradient(circle at 50% 54%,transparent 0 8vmin,#b9afd7 calc(8vmin + 1px),transparent calc(8vmin + 3px))}
+
+/* Reflex stays achromatic so decoration cannot imply an answer color. */
+#game[data-mode-world="reflex"] .resonance-stage::before{inset:-25%;opacity:.13;background:repeating-linear-gradient(112deg,transparent 0 7vmin,#d4dce3 calc(7vmin + 1px),transparent calc(7vmin + 4px));animation:world-drift 4s linear infinite;will-change:transform}
+@keyframes world-drift{to{transform:translate3d(4%,-3%,0)}}
+
+@media(max-width:600px){#game[data-mode-world] .resonance-stage::before{opacity:.14}}
+@media(prefers-reduced-motion:reduce){#game[data-mode-world] .resonance-stage::before{animation:none}}
+body[data-reduced-motion] #game[data-mode-world] .resonance-stage::before,body[data-perf-mode="low"] #game[data-mode-world] .resonance-stage::before{animation:none;will-change:auto;opacity:.1}

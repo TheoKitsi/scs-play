@@ -375,7 +375,7 @@ export const CONFIG = {
   SHAPES_MEMO: ['circle','square','triangle','star'],
 
   /* Sequenz (Simon Says) mode */
-  SEQUENZ_START_LENGTH: 4,
+  SEQUENZ_START_LENGTH: 3,
   SEQUENZ_FLASH_MS: 500,
   SEQUENZ_PAUSE_MS: 300,
   SEQUENZ_MAX_LENGTH: 20,
@@ -1292,7 +1292,11 @@ export const CONFIG = {
   /* ── Stroop Challenge Round (Plan 12 feature 4) ── */
   STROOP_CHALLENGE_EVERY: 15,          // trigger challenge after N consecutive correct
   STROOP_CHALLENGE_DURATION: 5000,     // ms — all-incongruent burst duration
-  STROOP_CONGRUENT_RATE: 0.2,         // base congruent trial rate
+  STROOP_CONGRUENT_CURVE: [
+    { threshold: 0,  rate: 0.55 },
+    { threshold: 8,  rate: 0.35 },
+    { threshold: 20, rate: 0.20 },
+  ],
 
   /* ── Wissen Expert Badge threshold (Plan 9 feature 5) ── */
   WISSEN_EXPERT_BADGE_THRESHOLD: 10,   // correct per topic to earn Specialist badge

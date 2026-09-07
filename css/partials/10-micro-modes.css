@@ -416,18 +416,46 @@
   animation: sequenzCornerFlash var(--seq-flash-ms, 500ms) cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index:5;
 }
+
+.colorblind-pattern-mark{
+  position:absolute;
+  right:5px;
+  bottom:3px;
+  color:#fff;
+  font:800 10px/1 var(--font-mono,'SF Mono','Menlo','Consolas',monospace);
+  letter-spacing:-1px;
+  padding:2px 3px;
+  border-radius:4px;
+  background:rgba(0,0,0,.72);
+  text-shadow:none;
+  pointer-events:none;
+}
+.chaos-stimulus .colorblind-pattern-mark{
+  right:50%;
+  bottom:24px;
+  transform:translateX(50%);
+}
+@media (prefers-reduced-motion: reduce){
+  .corner-shape.sequenz-flash{
+    animation:none !important;
+    filter:brightness(1.55) !important;
+    outline:4px solid rgba(255,255,255,.9);
+    outline-offset:3px;
+    box-shadow:0 0 28px 8px rgba(255,255,255,.4) !important;
+  }
+}
+body[data-reduced-motion] .corner-shape.sequenz-flash{
+  animation:none !important;
+  filter:brightness(1.55) !important;
+  outline:4px solid rgba(255,255,255,.9);
+  outline-offset:3px;
+  box-shadow:0 0 28px 8px rgba(255,255,255,.4) !important;
+}
 @keyframes sequenzCornerFlash{
   0%{transform:scale(1);filter:brightness(1);box-shadow:none}
   15%{transform:scale(1.22);filter:brightness(1.5);box-shadow:0 0 28px 8px rgba(255,255,255,.4)}
   70%{transform:scale(1.12);filter:brightness(1.3);box-shadow:0 0 20px 4px rgba(255,255,255,.25)}
   100%{transform:scale(1);filter:brightness(1);box-shadow:none}
-}
-
-/* ─── Mode selector grid layout (replaces old horizontal scroll) ─── */
-.mode-grid-4 .mode-chip,
-.mode-grid-3 .mode-chip,
-.mode-grid-2x2 .mode-chip{
-  min-width:0;
 }
 
 /* ─── Dynamic background intensity (applied via JS) ─── */
@@ -615,23 +643,6 @@
 .footer-item:hover .footer-icon{
   color:var(--primary-glow);
   filter:drop-shadow(0 0 6px rgba(108,92,231,.35));
-}
-
-/* Mode chip hover lift */
-.mode-chip:not(.locked):hover{
-  transform:translateY(-2px);
-  box-shadow:0 4px 14px rgba(0,0,0,.25);
-}
-.mode-chip:not(.locked):active{
-  transform:translateY(0) scale(.96);
-}
-
-/* Section glow pulse on sort/brain labels */
-.mode-section--sort .mode-section-label{
-  text-shadow:0 0 12px rgba(108,92,231,.3);
-}
-.mode-section--brain .mode-section-label{
-  text-shadow:0 0 12px rgba(253,121,168,.3);
 }
 
 /* Daily card inner shimmer */

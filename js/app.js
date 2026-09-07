@@ -30,9 +30,6 @@ import { showHome, updateModeSelector, updatePlayTypeSelector }
 import { getBodyFx }        from './services/EffectsService.js';
 import { showTutorial, tutorialNext, tutorialPrev, tutorialFinish }
                             from './screens/TutorialScreen.js';
-import { startGame, beginGame, doCountdown, pauseGame, resumeGame,
-         reopenPauseMenu, restartGame, quitGame, stopPractice }
-                            from './screens/GameScreen.js';
 import { showResults, showContinuePrompt, doContinue, declineContinue,
          wasLastGameGood }
                             from './screens/ResultsScreen.js';
@@ -87,15 +84,24 @@ const navShowResults        = (stats, cc) => showResults(stats, cc);
 const navShowContinuePrompt = (stats) => showContinuePrompt(stats);
 const navShowTutorial       = () => showTutorial();
 
-const navStartGame = (practice = false, daily = false) => {
-  startGame(practice, daily, navShowTutorial, navShowResults, navShowHome, navShowContinuePrompt);
+let gameScreenPromise;
+const loadGameScreen = () => gameScreenPromise ||= import('./screens/GameScreen.js');
+
+const navStartGame = async (practice = false, daily = false) => {
+  const gameScreen = await loadGameScreen();
+  gameScreen.startGame(practice, daily, navShowTutorial, navShowResults, navShowHome, navShowContinuePrompt);
 };
 
-const navTutorialFinish = () => {
-  tutorialFinish(doCountdown, (practice, daily) => {
-    beginGame(practice, daily, navShowResults, navShowHome, navShowContinuePrompt);
+const navTutorialFinish = async () => {
+  const gameScreen = await loadGameScreen();
+  tutorialFinish(gameScreen.doCountdown, (practice, daily) => {
+    gameScreen.beginGame(practice, daily, navShowResults, navShowHome, navShowContinuePrompt);
   });
 };
+
+const withGameScreen = (action) => loadGameScreen().then(action);
+const pauseLoadedGame = () => gameScreenPromise?.then(m => m.pauseGame());
+const quitLoadedGame = () => gameScreenPromise?.then(m => m.quitGame(navShowHome));
 
 /* ═══════ Bind all events ═══════ */
 function bindEvents() {
@@ -186,18 +192,18 @@ function bindEvents() {
   $('#btnShare')?.addEventListener('click',   () => { app.engagement?.trackPostGameAction('share', wasLastGameGood()); shareScore(app.lastResultStats, getBodyFx); });
 
   /* ─ Game controls ─ */
-  $('#btnStopPractice')?.addEventListener('click', () => stopPractice(navShowHome));
-  $('#btnPause')?.addEventListener('click',        (e) => { e.stopPropagation(); pauseGame(); });
-  $('#btnResume')?.addEventListener('click',        () => resumeGame());
-  $('#btnPauseRestart')?.addEventListener('click',  () => restartGame(navShowTutorial, navShowResults, navShowHome, navShowContinuePrompt));
+  $('#btnStopPractice')?.addEventListener('click', () => withGameScreen(m => m.stopPractice(navShowHome)));
+  $('#btnPause')?.addEventListener('click',        (e) => { e.stopPropagation(); withGameScreen(m => m.pauseGame()); });
+  $('#btnResume')?.addEventListener('click',        () => withGameScreen(m => m.resumeGame()));
+  $('#btnPauseRestart')?.addEventListener('click',  () => withGameScreen(m => m.restartGame(navShowTutorial, navShowResults, navShowHome, navShowContinuePrompt)));
   $('#btnPauseSettings')?.addEventListener('click', () => {
     closeModal($('#pauseOverlay'), { restoreFocus: false });
     showSettings(true, navShowHome, () => {
       showScreen('game', app);
-      reopenPauseMenu();
+      withGameScreen(m => m.reopenPauseMenu());
     });
   });
-  $('#btnPauseQuit')?.addEventListener('click', () => { app.engagement?.trackPauseToQuit(); quitGame(navShowHome); });
+  $('#btnPauseQuit')?.addEventListener('click', () => { app.engagement?.trackPauseToQuit(); withGameScreen(m => m.quitGame(navShowHome)); });
 
   /* ─ Continue prompt ─ */
   $('#btnResContinueUse')?.addEventListener('click', () => doContinue());
@@ -244,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bindEvents();
   boot(navShowHome, navShowAuth);
   initOfflineIndicator();
-  initVisibilityPause(pauseGame);
-  initBackButton({ pauseGame, quitGame: () => quitGame(navShowHome), showHome: navShowHome, backFromSettings });
+  initVisibilityPause(pauseLoadedGame);
+  initBackButton({ pauseGame: pauseLoadedGame, quitGame: quitLoadedGame, showHome: navShowHome, backFromSettings });
   checkOrientation();
 });

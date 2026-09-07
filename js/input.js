@@ -215,7 +215,7 @@ export class SwipeHandler {
     if (this.mode === 'ultra') {
       /* 12 directions — 30° sectors; keep a tiny boundary guard */
       const DEAD = 2;
-      const norm = ((angle % 30) + 30) % 30;
+      const norm = (((angle + 15) % 30) + 30) % 30;
       if (norm < DEAD || norm > (30 - DEAD)) return null;
       if (angle >= -15    && angle < 15)     return 'right';
       if (angle >= 15     && angle < 45)     return 'ene';
@@ -235,7 +235,7 @@ export class SwipeHandler {
     if (this.mode === 'expert') {
       /* 8 directions — 45° sectors; minimal dead zone for reliable input */
       const DEAD = 1;
-      const norm = ((angle % 45) + 45) % 45;
+      const norm = (((angle + 22.5) % 45) + 45) % 45;
       if (norm < DEAD || norm > (45 - DEAD)) return null;
       if (angle >= -22.5  && angle <  22.5)  return 'right';
       if (angle >=  22.5  && angle <  67.5)  return 'ur';

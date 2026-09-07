@@ -57,12 +57,16 @@ export function openModal(element, options = {}) {
   const existing = stack.find(entry => entry.element === element);
   if (existing) return true;
 
+  const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   const previous = topEntry();
-  if (previous) previous.element.setAttribute('aria-hidden', 'true');
+  if (previous) {
+    previous.element.inert = true;
+    previous.element.setAttribute('aria-hidden', 'true');
+  }
 
   const entry = {
     element,
-    returnFocus: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+    returnFocus,
     onDismiss: options.onDismiss,
     canDismiss: options.canDismiss,
     addedTabIndex: !element.hasAttribute('tabindex'),
@@ -70,6 +74,8 @@ export function openModal(element, options = {}) {
   };
   stack.push(entry);
 
+  element.hidden = false;
+  element.inert = false;
   element.setAttribute('role', 'dialog');
   element.setAttribute('aria-modal', 'true');
   element.setAttribute('aria-hidden', 'false');
@@ -91,24 +97,35 @@ export function closeModal(element, { restoreFocus = true } = {}) {
   const index = stack.findIndex(entry => entry.element === element);
   if (index < 0) {
     element?.classList.remove('active');
-    element?.setAttribute('aria-hidden', 'true');
+    if (element) {
+      element.inert = true;
+      element.hidden = true;
+      element.setAttribute('aria-hidden', 'true');
+    }
     return false;
   }
 
+  const wasTop = index === stack.length - 1;
   const [entry] = stack.splice(index, 1);
   element.classList.remove('active');
+  element.inert = true;
+  element.hidden = true;
   element.setAttribute('aria-hidden', 'true');
   entry.inerted.forEach(sibling => { sibling.inert = false; });
   if (entry.addedTabIndex) element.removeAttribute('tabindex');
 
   const top = topEntry();
-  if (top) top.element.setAttribute('aria-hidden', 'false');
+  if (wasTop && top) {
+    top.element.hidden = false;
+    top.element.inert = false;
+    top.element.setAttribute('aria-hidden', 'false');
+  }
   if (restoreFocus) {
     requestAnimationFrame(() => {
-      if (top) {
+      if (wasTop && top) {
         if (top.element.contains(entry.returnFocus)) entry.returnFocus.focus();
         else (getFocusable(top.element)[0] || top.element).focus();
-      } else if (entry.returnFocus?.isConnected) {
+      } else if (!top && entry.returnFocus?.isConnected) {
         entry.returnFocus.focus();
       }
     });

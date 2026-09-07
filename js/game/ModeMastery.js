@@ -5,6 +5,7 @@
    into a mode-specific mastery profile.
    ═══════════════════════════════════════════════ */
 import { CONFIG } from '../config.js';
+import { getLanguage } from '../i18n.js';
 
 /**
  * Generic per-mode mastery tracker.
@@ -120,6 +121,19 @@ export class ModeMastery {
   getMasteryScore(mode) {
     const def = CONFIG.MODE_MASTERY_DEFS?.[mode];
     if (!def || !def.scoreCalc) return 0;
+    if (mode === 'stroop') {
+      const minSamples = 3;
+      const congruentCorrect = this.get(mode, 'congruentCorrect', 0);
+      const incongruentCorrect = this.get(mode, 'incongruentCorrect', 0);
+      if (congruentCorrect < minSamples || incongruentCorrect < minSamples) return 0;
+
+      const bestInterference = this.get(mode, '_bestInterferenceSamples', 0) >= minSamples
+        ? this.get(mode, 'bestInterference', 100)
+        : 100;
+      const totalGames = this.get(mode, 'totalGames', 0);
+      return Math.min(congruentCorrect, 200) + (incongruentCorrect * 2)
+        + Math.max(0, Math.floor((100 - bestInterference) * 3)) + totalGames;
+    }
     return def.scoreCalc(this, mode);
   }
 
@@ -141,16 +155,20 @@ export function trackKlassikAnswer(mastery, result, engine) {
   const mode = 'klassik';
   const reaction = result.reaction;
 
-  /* Speed zone tracking */
-  if (reaction < 200)      mastery.inc(mode, 'zone200', 1);
-  else if (reaction < 300) mastery.inc(mode, 'zone300', 1);
-  else if (reaction < 500) mastery.inc(mode, 'zone500', 1);
-
-  /* Perfect (flawless) run tracking */
   if (result.correct) {
+    /* Speed zone tracking */
+    if (reaction < 200)      mastery.inc(mode, 'zone200', 1);
+    else if (reaction < 300) mastery.inc(mode, 'zone300', 1);
+    else if (reaction < 500) mastery.inc(mode, 'zone500', 1);
+
+    /* Perfect (flawless) run tracking */
     mastery.inc(mode, 'currentFlawless', 1);
     const current = mastery.get(mode, 'currentFlawless');
     mastery.max(mode, 'bestFlawless', current);
+  } else {
+    mastery.set(mode, 'currentFlawless', 0);
+    mastery.set(mode, '_lastColor', -1);
+    mastery.set(mode, '_colorCombo', 0);
   }
 
   /* Color combo tracking */
@@ -671,7 +689,7 @@ export function startUltraGame(mastery) {
  */
 export function trackUltraAnswer(mastery, result, engine) {
   const mode = 'ultra';
-  const dir = result.direction;
+  const dir = result.expected ?? result.direction;
 
   if (result.correct) {
     mastery.mapInc(mode, 'dirCorrect', dir);
@@ -733,7 +751,7 @@ export function endUltraGame(mastery, stats, isNewPB) {
     mastery.push(mode, 'reactionHistory', stats.avgReaction, 50);
   }
   if (stats.elapsed) {
-    mastery.max(mode, 'bestSurvivorTime', stats.elapsed);
+    mastery.max(mode, 'bestSurvivorTime', stats.elapsed * 1000);
   }
 }
 
@@ -848,7 +866,7 @@ export function getUltraInsights(mastery, stats) {
 }
 
 /* ═══════════════════════════════════════════════
-   MATHE MODE — Operation Mastery & Brain Age
+   MATHE MODE — Operation Mastery
    ═══════════════════════════════════════════════ */
 
 const MATH_OPS = ['+', '\u2212', '\u00D7', '\u00F7']; // +, −, ×, ÷
@@ -962,28 +980,6 @@ export function getMatheGhostDelta(mastery, currentScore, elapsed) {
   return currentScore - ghostScore;
 }
 
-/**
- * Calculate a "Brain Age" from Math performance.
- * Lower = better. Scale: 20 (genius) to 80 (slow).
- * Based on average reaction time, accuracy, and phase reached.
- */
-function _calcBrainAge(mastery) {
-  const mode = 'mathe';
-  const hist = mastery.getArray(mode, 'reactionHistory');
-  if (hist.length < 2) return null;
-  const avgRt = hist.slice(-5).reduce((a, b) => a + b, 0) / Math.min(hist.length, 5);
-  const totalCorrect = mastery.get(mode, 'totalCorrect', 0);
-  const totalGames = mastery.get(mode, 'totalGames', 1);
-  const bestPhase = mastery.get(mode, 'bestPhase', 0);
-
-  /* Formula: base 60, subtract for speed + accuracy + phase */
-  let age = 60;
-  age -= Math.max(0, (1000 - avgRt) / 40);   // faster = younger (max -25)
-  age -= bestPhase * 2;                        // higher phase = younger (max -12)
-  age -= Math.min(10, totalCorrect / totalGames / 5); // more correct/game = younger
-  return Math.max(20, Math.min(80, Math.round(age)));
-}
-
 /** Build Mathe mastery insights for the ResultsScreen. */
 export function getMatheInsights(mastery, stats) {
   const mode = 'mathe';
@@ -1001,12 +997,6 @@ export function getMatheInsights(mastery, stats) {
   }
   if (hasOps) {
     insights.push({ type: 'math-ops', label: 'Operation Mastery', data: opData });
-  }
-
-  /* Brain Age */
-  const brainAge = _calcBrainAge(mastery);
-  if (brainAge !== null) {
-    insights.push({ type: 'brain-age', label: 'Brain Age', data: { age: brainAge } });
   }
 
   /* Best phase reached */
@@ -1040,22 +1030,11 @@ export function getMatheInsights(mastery, stats) {
     insights.push({ type: 'math-facts', label: 'Math Facts', data: { facts } });
   }
 
-  /* Community Speed comparison (Plan 5 feature 5) */
-  if (rHistory.length >= 2) {
-    const myAvg = rHistory.slice(-5).reduce((a, b) => a + b, 0) / Math.min(rHistory.length, 5);
-    const table = CONFIG.COMMUNITY_PERCENTILES?.mathe_rt || [2000,1500,1200,1000,800,600,500,400,300];
-    let pct = 50;
-    for (let i = table.length - 1; i >= 0; i--) {
-      if (myAvg <= table[i]) { pct = Math.round(((i + 1) / table.length) * 100); break; }
-    }
-    insights.push({ type: 'community-speed', label: 'Community Ranking', data: { avgRt: Math.round(myAvg), percentile: pct } });
-  }
-
   return insights;
 }
 
 /* ═══════════════════════════════════════════════
-   ALGEBRA MODE — Equation Type Mastery & IQ
+   ALGEBRA MODE — Equation Type Mastery
    ═══════════════════════════════════════════════ */
 
 const ALGEBRA_TYPES = ['linear_add', 'linear_sub', 'two_step', 'square', 'sqrt', 'power', 'fraction_add'];
@@ -1068,11 +1047,6 @@ const ALGEBRA_TYPE_LABELS = {
   power: 'a\u207F',
   fraction_add: 'a/b+c/d'
 };
-const ALGEBRA_TYPE_WEIGHT = {
-  linear_add: 1, linear_sub: 1.2, two_step: 1.5,
-  square: 2, sqrt: 2, power: 2.5, fraction_add: 3
-};
-
 /** Derive current algebra equation type from engine state. */
 function _getAlgType(engine) {
   const phases = CONFIG.ALGEBRA_PHASES || [];
@@ -1092,8 +1066,6 @@ export function startAlgebraGame(mastery) {
   m._highestPhase = 0;
   m._roundTypeCount = {};
   m._roundTypeCorrect = {};
-  m._roundWeightedScore = 0;
-  m._roundTotal = 0;
 }
 
 /**
@@ -1111,7 +1083,6 @@ export function trackAlgebraAnswer(mastery, result, engine) {
   if (phaseIdx > (m._highestPhase || 0)) m._highestPhase = phaseIdx;
 
   /* Round counters */
-  m._roundTotal = (m._roundTotal || 0) + 1;
   if (!m._roundTypeCount) m._roundTypeCount = {};
   m._roundTypeCount[eqType] = (m._roundTypeCount[eqType] || 0) + 1;
 
@@ -1123,9 +1094,6 @@ export function trackAlgebraAnswer(mastery, result, engine) {
     const prevBest = mastery.get(mode, `bestRt_${eqType}`, 9999);
     if (result.reaction < prevBest) mastery.set(mode, `bestRt_${eqType}`, result.reaction);
 
-    /* Weighted IQ score tracking */
-    const weight = ALGEBRA_TYPE_WEIGHT[eqType] || 1;
-    m._roundWeightedScore = (m._roundWeightedScore || 0) + (weight * (1200 - Math.min(result.reaction, 1200)) / 1200);
     if (!m._roundTypeCorrect) m._roundTypeCorrect = {};
     m._roundTypeCorrect[eqType] = (m._roundTypeCorrect[eqType] || 0) + 1;
 
@@ -1159,12 +1127,6 @@ export function endAlgebraGame(mastery, stats, isNewPB) {
   const m = mastery._ensure(mode);
   mastery.max(mode, 'bestPhase', m._highestPhase || 0);
 
-  /* Calculate Algebra IQ: weighted score normalized to 80-160 scale */
-  const total = m._roundTotal || 1;
-  const ws = m._roundWeightedScore || 0;
-  const rawIQ = 80 + (ws / total) * 80;
-  const iq = Math.max(80, Math.min(160, Math.round(rawIQ)));
-  mastery.max(mode, 'algebraIQ', iq);
 }
 
 /** Ghost racer delta for Algebra. */
@@ -1197,12 +1159,6 @@ export function getAlgebraInsights(mastery, stats) {
   }
   if (hasTypes) {
     insights.push({ type: 'algebra-types', label: 'Equation Gallery', data: typeData });
-  }
-
-  /* Algebra IQ */
-  const iq = mastery.get(mode, 'algebraIQ', 0);
-  if (iq > 0) {
-    insights.push({ type: 'algebra-iq', label: 'Algebra IQ', data: { iq } });
   }
 
   /* Best phase reached */
@@ -1241,8 +1197,28 @@ export function getAlgebraInsights(mastery, stats) {
 /** Initialise per-round Worte tracking. */
 export function startWorteGame(mastery) {
   const m = mastery._ensure('worte');
+  const lang = getLanguage();
   m._currentPace = [];
   m._roundNewWords = 0;
+  m._language = lang;
+
+  const collectionKey = `wordCollection_${lang}`;
+  if (!Array.isArray(m[collectionKey])) {
+    const activeWords = new Set(Object.values(CONFIG.WORD_BANKS?.[lang] || {}).flat().map(word => word.toLowerCase()));
+    m[collectionKey] = mastery.getArray('worte', 'wordCollection')
+      .map(word => String(word).toLowerCase())
+      .filter(word => activeWords.has(word));
+  }
+  for (const metric of ['catCorrect', 'catTotal']) {
+    const scopedKey = `${metric}_${lang}`;
+    if (!m[scopedKey] || typeof m[scopedKey] !== 'object') {
+      m[scopedKey] = {};
+      for (const cat of CONFIG.WORD_CATEGORIES?.[lang] || []) {
+        const legacyValue = mastery.mapGet('worte', metric, cat, 0);
+        if (legacyValue > 0) m[scopedKey][cat] = legacyValue;
+      }
+    }
+  }
 }
 
 /**
@@ -1254,19 +1230,22 @@ export function trackWorteAnswer(mastery, result, engine) {
   const cat = result.item?.category || null;
   const word = result.item?.display || '';
   const m = mastery._ensure(mode);
+  const lang = m._language || getLanguage();
 
   let isNew = false;
   if (result.correct && cat) {
-    mastery.mapInc(mode, 'catCorrect', cat);
-    mastery.mapInc(mode, 'catTotal', cat);
+    mastery.mapInc(mode, `catCorrect_${lang}`, cat);
+    mastery.mapInc(mode, `catTotal_${lang}`, cat);
 
     /* Add word to collection (if text, not emoji) */
     if (word && word.length > 1) {
-      const collection = mastery.getArray(mode, 'wordCollection');
+      const collectionKey = `wordCollection_${lang}`;
+      const collection = mastery.getArray(mode, collectionKey);
       const lc = word.toLowerCase();
       if (!collection.includes(lc)) {
         collection.push(lc);
-        m.wordCollection = collection;
+        m[collectionKey] = collection;
+        mastery.addToSet(mode, 'wordCollection', lc);
         isNew = true;
         m._roundNewWords = (m._roundNewWords || 0) + 1;
       }
@@ -1276,7 +1255,7 @@ export function trackWorteAnswer(mastery, result, engine) {
     const elapsed = engine?.elapsed ?? 0;
     m._currentPace.push({ t: Math.round(elapsed), s: engine?.score ?? 0 });
   } else if (cat) {
-    mastery.mapInc(mode, 'catTotal', cat);
+    mastery.mapInc(mode, `catTotal_${lang}`, cat);
   }
 
   return { category: cat, isNew };
@@ -1311,16 +1290,12 @@ export function getWorteGhostDelta(mastery, currentScore, elapsed) {
 export function getWorteInsights(mastery, stats) {
   const mode = 'worte';
   const insights = [];
+  const lang = getLanguage();
 
   /* Word collection progress */
-  const collection = mastery.getArray(mode, 'wordCollection');
+  const collection = mastery.getArray(mode, `wordCollection_${lang}`);
   if (collection.length > 0) {
-    /* Count total words across all banks for comparison */
-    const banks = CONFIG.WORD_BANKS || {};
-    let totalAvail = 0;
-    for (const lang of Object.values(banks)) {
-      for (const words of Object.values(lang)) totalAvail += words.length;
-    }
+    const totalAvail = Object.values(CONFIG.WORD_BANKS?.[lang] || {}).reduce((sum, words) => sum + words.length, 0);
     insights.push({ type: 'word-collection', label: 'Word Collection', data: { collected: collection.length, total: totalAvail } });
   }
 
@@ -1328,14 +1303,12 @@ export function getWorteInsights(mastery, stats) {
   const cats = CONFIG.WORD_CATEGORIES || {};
   const catData = {};
   let hasCats = false;
-  for (const lang of Object.values(cats)) {
-    for (const cat of lang) {
-      const correct = mastery.mapGet(mode, 'catCorrect', cat, 0);
-      const total = mastery.mapGet(mode, 'catTotal', cat, 0);
-      if (total > 0) {
-        catData[cat] = { correct, total };
-        hasCats = true;
-      }
+  for (const cat of cats[lang] || []) {
+    const correct = mastery.mapGet(mode, `catCorrect_${lang}`, cat, 0);
+    const total = mastery.mapGet(mode, `catTotal_${lang}`, cat, 0);
+    if (total > 0) {
+      catData[cat] = { correct, total };
+      hasCats = true;
     }
   }
   if (hasCats) {
@@ -1356,12 +1329,7 @@ export function getWorteInsights(mastery, stats) {
   /* Word of the Day (Plan 7 feature 3) — deterministic daily word */
   const deSeed = new Date();
   const dayNum = deSeed.getFullYear() * 10000 + (deSeed.getMonth() + 1) * 100 + deSeed.getDate();
-  const allWords = collection.length > 0 ? collection : [];
-  const banks = CONFIG.WORD_BANKS || {};
-  let fullPool = [];
-  for (const lang of Object.values(banks)) {
-    for (const words of Object.values(lang)) fullPool = fullPool.concat(words);
-  }
+  const fullPool = Object.values(CONFIG.WORD_BANKS?.[lang] || {}).flat();
   if (fullPool.length > 0) {
     const wotdIdx = dayNum % fullPool.length;
     const wordOfDay = fullPool[wotdIdx];
@@ -1374,8 +1342,8 @@ export function getWorteInsights(mastery, stats) {
   const enCats = CONFIG.WORD_CATEGORIES?.en || [];
   if (deCats.length > 0 && enCats.length > 0) {
     let deCorrect = 0, enCorrect = 0;
-    for (const c of deCats) deCorrect += mastery.mapGet(mode, 'catCorrect', c, 0);
-    for (const c of enCats) enCorrect += mastery.mapGet(mode, 'catCorrect', c, 0);
+    for (const c of deCats) deCorrect += mastery.mapGet(mode, 'catCorrect_de', c, 0);
+    for (const c of enCats) enCorrect += mastery.mapGet(mode, 'catCorrect_en', c, 0);
     if (deCorrect > 0 || enCorrect > 0) {
       insights.push({ type: 'bilingual', label: 'Bilingual', data: { de: deCorrect, en: enCorrect } });
     }
@@ -1395,11 +1363,25 @@ function _lookupCapEntry(displayName) {
   return bank.find(e => e.country_de === displayName || e.country_en === displayName) || null;
 }
 
+function _countryKey(entry) {
+  return (entry?.country_en || entry?.country_de || '').toLowerCase();
+}
+
 export function startHauptstaedteGame(mastery) {
   const mode = 'hauptstaedte';
   mastery.set(mode, '_sessionCorrect', 0);
   mastery.set(mode, '_sessionStreak', 0);
   mastery.set(mode, '_bestSessionStreak', 0);
+  mastery.set(mode, '_sessionPace', []);
+  const bank = CONFIG.CAPITALS_BANK || [];
+  const existing = mastery.getArray(mode, 'countryCollection');
+  const canonical = existing.map(value => {
+    const normalized = String(value).toLowerCase();
+    const entry = bank.find(country => country.country_de?.toLowerCase() === normalized
+      || country.country_en?.toLowerCase() === normalized);
+    return entry ? _countryKey(entry) : normalized;
+  });
+  mastery.set(mode, 'countryCollection', [...new Set(canonical)]);
   const pbArr = mastery.getArray(mode, 'pbPace');
   mastery.set(mode, '_pbPace', pbArr);
   mastery.set(mode, '_pbIdx', 0);
@@ -1407,6 +1389,7 @@ export function startHauptstaedteGame(mastery) {
 
 export function trackHauptstaedteAnswer(mastery, result, game) {
   const mode = 'hauptstaedte';
+  mastery.push(mode, '_sessionPace', { t: game.elapsed, s: game.score }, 500);
   const entry = _lookupCapEntry(result.item?.display);
   const region = entry?.region || 'unknown';
 
@@ -1419,7 +1402,7 @@ export function trackHauptstaedteAnswer(mastery, result, game) {
     if (result.reaction > 0) mastery.push(mode, 'reactionHistory', result.reaction, 50);
 
     /* Country collection */
-    const countryKey = (result.item?.display || '').toLowerCase();
+    const countryKey = _countryKey(entry) || (result.item?.display || '').toLowerCase();
     const isNew = mastery.addToSet(mode, 'countryCollection', countryKey);
 
     return { region, isNew, streak: mastery.get(mode, '_sessionStreak') };
@@ -1436,11 +1419,7 @@ export function endHauptstaedteGame(mastery, stats, isPB) {
   mastery.inc(mode, 'totalCorrect', stats.correct);
   mastery.max(mode, 'bestCountryStreak', mastery.get(mode, '_bestSessionStreak'));
   if (isPB) {
-    const pace = [];
-    const hist = mastery.getArray(mode, 'reactionHistory').slice(-stats.correct);
-    let cumScore = 0;
-    hist.forEach((rt, i) => { cumScore += (1000 - Math.min(rt, 1000)); pace.push({ t: i, s: cumScore }); });
-    mastery.set(mode, 'pbPace', pace);
+    mastery.set(mode, 'pbPace', [...mastery.getArray(mode, '_sessionPace')]);
   }
 }
 
@@ -1491,7 +1470,7 @@ export function getHauptstaedteInsights(mastery, stats) {
   const bank = CONFIG.CAPITALS_BANK || [];
   const mapData = {};
   for (const entry of bank) {
-    const key = (entry.country_de || entry.country_en || '').toLowerCase();
+    const key = _countryKey(entry);
     mapData[key] = { region: entry.region || 'unknown', known: countrySet.includes(key) };
   }
   if (Object.keys(mapData).length > 0) {
@@ -1526,7 +1505,7 @@ export function getHauptstaedteInsights(mastery, stats) {
 
 /* ═══════════════════════════════════════════════
    WISSEN (Knowledge) Mastery
-   Topic mastery, knowledge IQ, difficulty tracking.
+   Topic mastery and difficulty tracking.
    ═══════════════════════════════════════════════ */
 const WISSEN_CATS = ['geo', 'sci', 'hist', 'sport', 'nature', 'cult'];
 const WISSEN_CAT_LABELS = { geo: 'Geography', sci: 'Science', hist: 'History', sport: 'Sport', nature: 'Nature', cult: 'Culture' };
@@ -1540,16 +1519,16 @@ export function startWissenGame(mastery) {
   const mode = 'wissen';
   mastery.set(mode, '_sessionCorrect', 0);
   mastery.set(mode, '_sessionWrong', 0);
-  mastery.set(mode, '_sessionTierSum', 0);
-  mastery.set(mode, '_sessionTierCount', 0);
   mastery.set(mode, '_topicStreak', 0);
   mastery.set(mode, '_lastCat', '');
+  mastery.set(mode, '_sessionPace', []);
   const pbArr = mastery.getArray(mode, 'pbPace');
   mastery.set(mode, '_pbPace', pbArr);
 }
 
 export function trackWissenAnswer(mastery, result, game) {
   const mode = 'wissen';
+  mastery.push(mode, '_sessionPace', { t: game.elapsed, s: game.score }, 500);
   const entry = _lookupWissenEntry(result.item?.display);
   const cat = result.item?.category || entry?.cat || 'misc';
   const tier = result.item?.tier ?? entry?.tier ?? 0;
@@ -1558,8 +1537,6 @@ export function trackWissenAnswer(mastery, result, game) {
     mastery.inc(mode, '_sessionCorrect');
     mastery.mapInc(mode, 'catCorrect', cat);
     mastery.mapInc(mode, 'catTotal', cat);
-    mastery.inc(mode, '_sessionTierSum', tier + 1);
-    mastery.inc(mode, '_sessionTierCount');
     if (result.reaction > 0) mastery.push(mode, 'reactionHistory', result.reaction, 50);
 
     /* Topic Streak (Plan 9 feature 4) — consecutive correct in same topic */
@@ -1587,23 +1564,8 @@ export function endWissenGame(mastery, stats, isPB) {
   mastery.inc(mode, 'totalGames');
   mastery.inc(mode, 'totalCorrect', stats.correct);
 
-  /* Knowledge IQ — weighted by question tier difficulty */
-  const tierSum = mastery.get(mode, '_sessionTierSum', 0);
-  const tierCount = mastery.get(mode, '_sessionTierCount', 0);
-  const avgDiff = tierCount > 0 ? tierSum / tierCount : 0;
-  const acc = stats.total > 0 ? stats.correct / stats.total : 0;
-  const rawIQ = 80 + (acc * 40) + (avgDiff * 15);
-  const newIQ = Math.round(Math.min(160, Math.max(80, rawIQ)));
-  const oldIQ = mastery.get(mode, 'wissenIQ', 0);
-  if (oldIQ === 0) mastery.set(mode, 'wissenIQ', newIQ);
-  else mastery.set(mode, 'wissenIQ', Math.round(oldIQ * 0.7 + newIQ * 0.3));
-
   if (isPB) {
-    const pace = [];
-    const hist = mastery.getArray(mode, 'reactionHistory').slice(-stats.correct);
-    let cum = 0;
-    hist.forEach((rt, i) => { cum += (1000 - Math.min(rt, 1000)); pace.push({ t: i, s: cum }); });
-    mastery.set(mode, 'pbPace', pace);
+    mastery.set(mode, 'pbPace', [...mastery.getArray(mode, '_sessionPace')]);
   }
 }
 
@@ -1644,10 +1606,6 @@ export function getWissenInsights(mastery, stats) {
   const bestTopicStreak = mastery.get(mode, 'bestTopicStreak', 0);
   if (bestTopicStreak >= 3) insights.push({ type: 'topic-streak', label: 'Topic Streak', data: { best: bestTopicStreak } });
 
-  /* Knowledge IQ */
-  const iq = mastery.get(mode, 'wissenIQ', 0);
-  if (iq > 0) insights.push({ type: 'wissen-iq', label: 'Knowledge IQ', data: { iq } });
-
   /* Speed trend */
   const wkHistory = mastery.getArray(mode, 'reactionHistory');
   if (wkHistory.length >= 3) {
@@ -1671,12 +1629,14 @@ export function startMemoGame(mastery) {
   mastery.set(mode, '_reveals', 0);
   mastery.set(mode, '_perfectRecallRun', 0);
   mastery.set(mode, '_bestSpanThisGame', 0);
+  mastery.set(mode, '_sessionPace', []);
   const pbArr = mastery.getArray(mode, 'pbPace');
   mastery.set(mode, '_pbPace', pbArr);
 }
 
 export function trackMemoAnswer(mastery, result, game) {
   const mode = 'memo';
+  mastery.push(mode, '_sessionPace', { t: game.elapsed, s: game.score }, 500);
   if (result.correct) {
     mastery.inc(mode, '_correctSinceReveal');
     mastery.inc(mode, '_perfectRecallRun');
@@ -1727,11 +1687,7 @@ export function endMemoGame(mastery, stats, isPB) {
   mastery.push(mode, 'spanHistory', bestSpan, 30);
 
   if (isPB) {
-    const pace = [];
-    const hist = mastery.getArray(mode, 'reactionHistory').slice(-stats.correct);
-    let cum = 0;
-    hist.forEach((rt, i) => { cum += (1000 - Math.min(rt, 1000)); pace.push({ t: i, s: cum }); });
-    mastery.set(mode, 'pbPace', pace);
+    mastery.set(mode, 'pbPace', [...mastery.getArray(mode, '_sessionPace')]);
   }
 }
 
@@ -1766,7 +1722,7 @@ export function getMemoInsights(mastery, stats) {
   if (reveals > 0) {
     const previewBase = CONFIG.MEMO_PREVIEW_MS || 3000;
     const shrink = CONFIG.MEMO_PREVIEW_SHRINK || 200;
-    const currentPreview = Math.max(500, previewBase - reveals * shrink);
+    const currentPreview = Math.max(CONFIG.MEMO_PREVIEW_MIN_MS || 1800, previewBase - reveals * shrink);
     insights.push({ type: 'preview-milestone', label: 'Preview Time', data: { currentMs: currentPreview, baseMs: previewBase, reveals } });
   }
 
@@ -1853,7 +1809,7 @@ export function getSequenzInsights(mastery, stats) {
 
   /* Sequence length record */
   const bestLen = mastery.get(mode, 'bestSeqLength', 0);
-  if (bestLen > 0) insights.push({ type: 'seq-record', label: 'Sequence Record', data: { best: bestLen, target: 100 } });
+  if (bestLen > 0) insights.push({ type: 'seq-record', label: 'Sequence Record', data: { best: bestLen, target: CONFIG.SEQUENZ_MAX_LENGTH || 20 } });
 
   /* Round stats */
   const totalRounds = mastery.get(mode, 'totalRounds', 0);
@@ -1911,12 +1867,14 @@ export function startStroopGame(mastery) {
   mastery.set(mode, '_consecutiveCorrect', 0);
   mastery.set(mode, '_challengeRoundsThisGame', 0);
   mastery.set(mode, '_inChallenge', false);
+  mastery.set(mode, '_sessionPace', []);
   const pbArr = mastery.getArray(mode, 'pbPace');
   mastery.set(mode, '_pbPace', pbArr);
 }
 
 export function trackStroopAnswer(mastery, result, game) {
   const mode = 'stroop';
+  mastery.push(mode, '_sessionPace', { t: game.elapsed, s: game.score }, 500);
   const congruent = result.item?.isCongruent ?? _isStroopCongruent(result.item);
 
   if (mastery.get(mode, '_inChallenge')
@@ -1969,33 +1927,35 @@ export function endStroopGame(mastery, stats, isPB) {
   /* Calculate interference: difference in accuracy between congruent and incongruent */
   const congTotal = mastery.get(mode, '_congTotal', 0);
   const incongTotal = mastery.get(mode, '_incongTotal', 0);
-  const congAcc = congTotal > 0 ? mastery.get(mode, '_congCorrect') / congTotal : 1;
-  const incongAcc = incongTotal > 0 ? mastery.get(mode, '_incongCorrect') / incongTotal : 1;
-  const interference = Math.round(Math.max(0, (congAcc - incongAcc) * 100));
   const congCorrect = mastery.get(mode, '_congCorrect', 0);
   const incongCorrect = mastery.get(mode, '_incongCorrect', 0);
+  const minSamples = 3;
+  const hasEnoughSamples = congCorrect >= minSamples && incongCorrect >= minSamples;
+  const congAcc = congTotal > 0 ? congCorrect / congTotal : 0;
+  const incongAcc = incongTotal > 0 ? incongCorrect / incongTotal : 0;
+  const interference = hasEnoughSamples
+    ? Math.round(Math.max(0, (congAcc - incongAcc) * 100))
+    : -1;
   const congRt = congCorrect > 0 ? Math.round(mastery.get(mode, '_congRtSum') / congCorrect) : 0;
   const incongRt = incongCorrect > 0 ? Math.round(mastery.get(mode, '_incongRtSum') / incongCorrect) : 0;
 
   mastery.set(mode, 'lastInterference', interference);
   mastery.set(mode, 'lastCongRt', congRt);
   mastery.set(mode, 'lastIncongRt', incongRt);
-  if (mastery.get(mode, 'bestInterference', 100) > interference || mastery.get(mode, 'bestInterference', 100) === 100) {
+  if (hasEnoughSamples && (mastery.get(mode, '_bestInterferenceSamples', 0) < minSamples
+      || mastery.get(mode, 'bestInterference', 100) > interference)) {
     mastery.set(mode, 'bestInterference', interference);
+    mastery.set(mode, '_bestInterferenceSamples', Math.min(congCorrect, incongCorrect));
   }
 
   /* Interference history for chart (Plan 12 feature 5) */
-  mastery.push(mode, 'interferenceHistory', interference, 30);
+  if (hasEnoughSamples) mastery.push(mode, 'interferenceHistory', interference, 30);
 
   /* Challenge round tracking (Plan 12 feature 4) */
   mastery.inc(mode, 'challengeRoundsPlayed', mastery.get(mode, '_challengeRoundsThisGame', 0));
 
   if (isPB) {
-    const pace = [];
-    const hist = mastery.getArray(mode, 'reactionHistory').slice(-stats.correct);
-    let cum = 0;
-    hist.forEach((rt, i) => { cum += (1000 - Math.min(rt, 1000)); pace.push({ t: i, s: cum }); });
-    mastery.set(mode, 'pbPace', pace);
+    mastery.set(mode, 'pbPace', [...mastery.getArray(mode, '_sessionPace')]);
   }
 }
 
@@ -2015,7 +1975,8 @@ export function getStroopInsights(mastery, stats) {
   /* Interference score */
   const interference = mastery.get(mode, 'lastInterference', -1);
   const bestInterference = mastery.get(mode, 'bestInterference', 100);
-  if (interference >= 0) insights.push({ type: 'interference', label: 'Interference', data: { current: interference, best: bestInterference } });
+  const hasQualifiedBest = mastery.get(mode, '_bestInterferenceSamples', 0) >= 3;
+  if (interference >= 0 && hasQualifiedBest) insights.push({ type: 'interference', label: 'Interference', data: { current: interference, best: bestInterference } });
 
   /* Congruent vs Incongruent split */
   const congRt = mastery.get(mode, 'lastCongRt', 0);
@@ -2024,7 +1985,7 @@ export function getStroopInsights(mastery, stats) {
 
   /* Brain Control Level (Plan 12 feature 3) */
   const levels = CONFIG.STROOP_BRAIN_LEVELS || [];
-  if (interference >= 0 && levels.length > 0) {
+  if (interference >= 0 && hasQualifiedBest && levels.length > 0) {
     let brainLevel = levels[0];
     for (const l of levels) {
       if (interference <= l.maxInterference) brainLevel = l;
@@ -2068,12 +2029,15 @@ export function startFokusGame(mastery) {
   mastery.set(mode, '_congRtSum', 0);
   mastery.set(mode, '_incongRtSum', 0);
   mastery.set(mode, '_incongPerfectRun', 0);
+  mastery.set(mode, '_highestDistractionLevel', 1);
+  mastery.set(mode, '_sessionPace', []);
   const pbArr = mastery.getArray(mode, 'pbPace');
   mastery.set(mode, '_pbPace', pbArr);
 }
 
 export function trackFokusAnswer(mastery, result, game) {
   const mode = 'fokus';
+  mastery.push(mode, '_sessionPace', { t: game.elapsed, s: game.score }, 500);
   const congruent = result.item?.isCongruent ?? true;
 
   if (congruent) {
@@ -2099,9 +2063,10 @@ export function trackFokusAnswer(mastery, result, game) {
 
   /* Distraction Intensity level (Plan 13 feature 2) */
   const levels = CONFIG.FOKUS_DISTRACTION_LEVELS || [];
-  const totalAnswered = mastery.get(mode, '_congTotal', 0) + mastery.get(mode, '_incongTotal', 0);
+  const progress = game?.difficultyProgress ?? game?.correct ?? 0;
   let distractionLevel = levels[0] || { level: 1 };
-  for (const l of levels) { if (totalAnswered >= l.threshold) distractionLevel = l; }
+  for (const l of levels) { if (progress >= l.threshold) distractionLevel = l; }
+  mastery.max(mode, '_highestDistractionLevel', distractionLevel.level || 1);
 
   return { congruent, distractionLevel };
 }
@@ -2142,11 +2107,7 @@ export function endFokusGame(mastery, stats, isPB) {
   }
 
   if (isPB) {
-    const pace = [];
-    const hist = mastery.getArray(mode, 'reactionHistory').slice(-stats.correct);
-    let cum = 0;
-    hist.forEach((rt, i) => { cum += (1000 - Math.min(rt, 1000)); pace.push({ t: i, s: cum }); });
-    mastery.set(mode, 'pbPace', pace);
+    mastery.set(mode, 'pbPace', [...mastery.getArray(mode, '_sessionPace')]);
   }
 }
 
@@ -2179,9 +2140,8 @@ export function getFokusInsights(mastery, stats) {
 
   /* Distraction Intensity Level (Plan 13 feature 2) */
   const levels = CONFIG.FOKUS_DISTRACTION_LEVELS || [];
-  const totalCorrectFokus = mastery.get(mode, 'totalCorrect', 0);
-  let currentLevel = levels[0] || { level: 1 };
-  for (const l of levels) { if (totalCorrectFokus >= l.threshold) currentLevel = l; }
+  const highestLevel = mastery.get(mode, '_highestDistractionLevel', 1);
+  const currentLevel = levels.find(level => level.level === highestLevel) || levels[0] || { level: 1 };
   insights.push({ type: 'distraction-level', label: 'Distraction Level', data: currentLevel });
 
   /* Tunnel Vision Achievement (Plan 13 feature 3) */
@@ -2224,12 +2184,14 @@ export function startChaosGame(mastery) {
   mastery.set(mode, '_lastRule', '');
   mastery.set(mode, '_inAdaptation', false);
   mastery.set(mode, '_adaptSteps', []);
+  mastery.set(mode, '_sessionPace', []);
   const pbArr = mastery.getArray(mode, 'pbPace');
   mastery.set(mode, '_pbPace', pbArr);
 }
 
 export function trackChaosAnswer(mastery, result, game) {
   const mode = 'chaos';
+  mastery.push(mode, '_sessionPace', { t: game.elapsed, s: game.score }, 500);
   const rule = result.item?.chaosRule || 'color';
 
   /* Detect rule switch */
@@ -2283,11 +2245,7 @@ export function endChaosGame(mastery, stats, isPB) {
   mastery.max(mode, 'bestFlexScore', flexScore);
 
   if (isPB) {
-    const pace = [];
-    const hist = mastery.getArray(mode, 'reactionHistory').slice(-stats.correct);
-    let cum = 0;
-    hist.forEach((rt, i) => { cum += (1000 - Math.min(rt, 1000)); pace.push({ t: i, s: cum }); });
-    mastery.set(mode, 'pbPace', pace);
+    mastery.set(mode, 'pbPace', [...mastery.getArray(mode, '_sessionPace')]);
   }
 }
 

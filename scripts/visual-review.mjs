@@ -260,10 +260,14 @@ async function screenshotAll(deviceName, deviceConfig, baseUrl) {
       await page.locator('#heroNavNext').click();
       await page.waitForTimeout(420);
     }
+    for (let i = 0; i < 4; i++) {
+      await page.locator('#heroNavPrev').click();
+      await page.waitForTimeout(420);
+    }
 
     const played = await page.evaluate(() => {
       const btn = document.querySelector('#btnPlay');
-      if (btn) { btn.click(); return true; }
+      if (btn && !btn.disabled) { btn.click(); return true; }
       return false;
     });
     if (played) {
