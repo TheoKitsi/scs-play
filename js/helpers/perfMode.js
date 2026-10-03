@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════
+﻿/* ═══════════════════════════════════════
    perfMode — single source of truth for
    device-class hints & user motion prefs.
 
@@ -31,7 +31,9 @@ function reducedMotionActive() {
 
 export function initPerfMode() {
   if (typeof document === 'undefined' || !document.body) return;
-  document.body.dataset.perfMode = detectClass();
+  document.body.dataset.perfMode = restoreTier(detectClass());
+  if (document.body.dataset.perfMode === 'low') document.body.classList.add('low-perf');
+  startGovernor();
   if (reducedMotionActive()) {
     document.body.dataset.reducedMotion = 'true';
   }
@@ -48,4 +50,57 @@ export function initPerfMode() {
       mql.addListener(apply);
     }
   } catch { /* matchMedia not available — ignore */ }
+}
+
+/* Runtime FPS governor: steps the tier down when frames stay slow.
+   Never steps back up, so effects don't flicker mid-session. */
+const TIERS = ['high', 'mid', 'low'];
+const TIER_KEY = 'scs_perf_tier';
+
+/* A tier the governor measured earlier can only lower the detected one */
+function restoreTier(detected) {
+  try {
+    const saved = localStorage.getItem(TIER_KEY);
+    if (TIERS.includes(saved) && TIERS.indexOf(saved) > TIERS.indexOf(detected)) return saved;
+  } catch { /* storage unavailable */ }
+  return detected;
+}
+let govRaf = 0;
+
+function stepDown() {
+  const cur = document.body.dataset.perfMode || 'high';
+  const next = TIERS[Math.min(TIERS.indexOf(cur) + 1, TIERS.length - 1)];
+  if (next === cur) return false;
+  document.body.dataset.perfMode = next;
+  try { localStorage.setItem(TIER_KEY, next); } catch { /* storage unavailable */ }
+  if (next === 'low') document.body.classList.add('low-perf');
+  window.dispatchEvent(new CustomEvent('scs:perftier', { detail: { tier: next } }));
+  return true;
+}
+
+function startGovernor() {
+  if (govRaf || typeof requestAnimationFrame !== 'function') return;
+  let last = 0;
+  let slow = 0;
+  let frames = 0;
+  const tick = (now) => {
+    if (document.hidden) { last = 0; slow = 0; frames = 0; govRaf = requestAnimationFrame(tick); return; }
+    if (last) {
+      const dt = now - last;
+      /* ignore stalls from tab switches / app resume */
+      if (dt < 250) {
+        frames++;
+        if (dt > 24) slow++;
+        if (frames >= 90) {
+          if (slow / frames > 0.25 && !stepDown()) { /* already at floor */ }
+          slow = 0; frames = 0;
+        }
+      }
+    }
+    last = now;
+    const tier = document.body.dataset.perfMode;
+    if (tier === 'low' && frames === 0) { govRaf = 0; return; }
+    govRaf = requestAnimationFrame(tick);
+  };
+  govRaf = requestAnimationFrame(tick);
 }

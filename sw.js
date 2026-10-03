@@ -1,7 +1,7 @@
-/* ═══════════════════════════════════════
-   SCS Play — Service Worker
-   ═══════════════════════════════════════ */
-const CACHE = 'scs-v59';
+﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCS Play â€” Service Worker
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+const CACHE = 'scs-v60';
 const ASSETS = [
   './',
   './index.html',
@@ -31,7 +31,7 @@ const ASSETS = [
   './audio/music/endless.mp3',
   './audio/music/blitz.mp3',
   './audio/music/competition.mp3',
-  /* ─── Core JS ─── */
+  /* â”€â”€â”€ Core JS â”€â”€â”€ */
   './js/app.js',
   './js/appState.js',
   './js/config.js',
@@ -41,22 +41,22 @@ const ASSETS = [
   './js/effects.js',
   './js/auth.js',
   './js/save.js',
-  /* ─── Helpers ─── */
+  /* â”€â”€â”€ Helpers â”€â”€â”€ */
   './js/helpers/dom.js',
   './js/helpers/haptics.js',
   './js/helpers/microFeedback.js',
   './js/helpers/engagementTracker.js',
   './js/helpers/onboardingHints.js',
-  /* ─── Renderers ─── */
+  /* â”€â”€â”€ Renderers â”€â”€â”€ */
   './js/renderers/shapes.js',
   './js/renderers/avatars.js',
-  /* ─── Game ─── */
+  /* â”€â”€â”€ Game â”€â”€â”€ */
   './js/game/GameEngine.js',
   './js/game/ModeMastery.js',
-  /* ─── Services ─── */
+  /* â”€â”€â”€ Services â”€â”€â”€ */
   './js/services/ThemeService.js',
   './js/services/ShareService.js',
-  /* ─── Screens ─── */
+  /* â”€â”€â”€ Screens â”€â”€â”€ */
   './js/screens/BootScreen.js',
   './js/screens/AuthScreen.js',
   './js/screens/HomeScreen.js',
@@ -70,7 +70,7 @@ const ASSETS = [
   './js/screens/AvatarScreen.js',
   './js/screens/EngagementReportScreen.js',
   './js/screens/WheelScreen.js',
-  /* ─── Achievements ─── */
+  /* â”€â”€â”€ Achievements â”€â”€â”€ */
   './js/achievements/AchievementSystem.js'
 ];
 
@@ -119,12 +119,12 @@ self.addEventListener('fetch', e => {
   })());
 });
 
-/* ═══════ Push Notification Handlers ═══════ */
+/* â•â•â•â•â•â•â• Push Notification Handlers â•â•â•â•â•â•â• */
 self.addEventListener('push', e => {
   const data = e.data ? e.data.json() : {};
   const title = data.title || 'SCS Play';
   const options = {
-    body: data.body || 'Komm zurück und schlage deinen Rekord!',
+    body: data.body || 'Komm zurÃ¼ck und schlage deinen Rekord!',
     icon: './img/icon-192.svg',
     badge: './img/icon-192.svg',
     vibrate: [100, 50, 100],

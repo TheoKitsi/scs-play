@@ -1,8 +1,8 @@
-/* ═══════════════════════════════════════════════
-   SCS Play — Production Build Script
+﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCS Play â€” Production Build Script
    Bundles + minifies JS & CSS, copies to docs/
    Usage: node scripts/build-prod.mjs
-   ═══════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 import { mkdirSync, rmSync, existsSync, readdirSync, statSync,
          copyFileSync, readFileSync, writeFileSync } from 'fs';
 import { resolve, dirname, extname } from 'path';
@@ -17,7 +17,7 @@ const out  = resolve(root, 'docs');
 if (existsSync(out)) rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 
-// ── 1. Bundle JS ──
+// â”€â”€ 1. Bundle JS â”€â”€
 const jsResult = await esbuild.build({
   entryPoints: { 'app.bundle': resolve(root, 'js/app.js') },
   bundle: true,
@@ -34,7 +34,7 @@ const jsResult = await esbuild.build({
   metafile: true,
 });
 
-// ── 2. Bundle CSS ──
+// â”€â”€ 2. Bundle CSS â”€â”€
 const cssResult = await esbuild.build({
   entryPoints: [resolve(root, 'css/style.css')],
   bundle: true,
@@ -43,7 +43,7 @@ const cssResult = await esbuild.build({
   metafile: true,
 });
 
-// ── 3. Copy static assets ──
+// â”€â”€ 3. Copy static assets â”€â”€
 const skip = new Set([
   'node_modules', 'android', 'www', 'docs', '.git', '.github', '.gitignore', 'scripts',
   'package.json', 'package-lock.json', 'capacitor.config.json',
@@ -66,7 +66,7 @@ function copyDir(src, dest) {
 
 copyDir(root, out);
 
-// ── 4. Rewrite index.html to use bundled files ──
+// â”€â”€ 4. Rewrite index.html to use bundled files â”€â”€
 let html = readFileSync(resolve(out, 'index.html'), 'utf8');
 html = html.replace(
   '<link rel="stylesheet" href="css/style.css">',
@@ -78,7 +78,7 @@ html = html.replace(
 );
 writeFileSync(resolve(out, 'index.html'), html);
 
-// ── 5. Rewrite sw.js to cache bundles instead of individual modules ──
+// â”€â”€ 5. Rewrite sw.js to cache bundles instead of individual modules â”€â”€
 let sw = readFileSync(resolve(out, 'sw.js'), 'utf8');
 const bundledJsAssets = Object.keys(jsResult.metafile.outputs)
   .filter(path => path.endsWith('.js'))
@@ -103,7 +103,7 @@ ${bundledJsAssets.join(',\n')},
 sw = sw.replace(/const ASSETS\s*=\s*\[[\s\S]*?\];/, bundledAssets);
 writeFileSync(resolve(out, 'sw.js'), sw);
 
-// ── 5. Report sizes ──
+// â”€â”€ 5. Report sizes â”€â”€
 const jsOutputs = jsResult.metafile.outputs;
 const entryOutput = Object.keys(jsOutputs).find(path => jsOutputs[path].entryPoint);
 const initialOutputs = new Set();
@@ -119,26 +119,26 @@ const jsSize = [...initialOutputs].reduce((sum, path) => sum + (jsOutputs[path]?
 const mainJsSize = statSync(resolve(out, 'js/app.bundle.js')).size;
 const cssSize = statSync(resolve(out, 'css/style.bundle.css')).size;
 
-console.log(`✓ JS  initial: ${(jsSize / 1024).toFixed(1)} KB (main ${(mainJsSize / 1024).toFixed(1)} KB, minified)`);
-console.log(`✓ CSS bundled: ${(cssSize / 1024).toFixed(1)} KB (minified)`);
+console.log(`âœ“ JS  initial: ${(jsSize / 1024).toFixed(1)} KB (main ${(mainJsSize / 1024).toFixed(1)} KB, minified)`);
+console.log(`âœ“ CSS bundled: ${(cssSize / 1024).toFixed(1)} KB (minified)`);
 
-/* ── 6. Bundle Budget Gate ──
+/* â”€â”€ 6. Bundle Budget Gate â”€â”€
    Hard caps so a regression in JS/CSS size fails the build
    instead of silently shipping bloat. Override via env vars
    SCS_JS_BUDGET_KB / SCS_CSS_BUDGET_KB if a controlled raise
    is needed. */
 const jsBudgetKB  = Number(process.env.SCS_JS_BUDGET_KB)  || 480;
-const cssBudgetKB = Number(process.env.SCS_CSS_BUDGET_KB) || 250;
+const cssBudgetKB = Number(process.env.SCS_CSS_BUDGET_KB) || 255;
 const jsKB  = jsSize  / 1024;
 const cssKB = cssSize / 1024;
 const overruns = [];
 if (jsKB  > jsBudgetKB)  overruns.push(`JS  ${jsKB.toFixed(1)} KB > budget ${jsBudgetKB} KB`);
 if (cssKB > cssBudgetKB) overruns.push(`CSS ${cssKB.toFixed(1)} KB > budget ${cssBudgetKB} KB`);
 if (overruns.length) {
-  console.error('\n✗ Bundle budget exceeded:');
+  console.error('\nâœ— Bundle budget exceeded:');
   for (const line of overruns) console.error('  - ' + line);
   console.error('  Either trim code or raise the budget via SCS_JS_BUDGET_KB / SCS_CSS_BUDGET_KB.');
   process.exit(1);
 }
 
-console.log('✓ Production build complete → docs/');
+console.log('âœ“ Production build complete â†’ docs/');

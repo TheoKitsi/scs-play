@@ -15,6 +15,9 @@ export class EffectsManager {
 
     /* Auto-detect device capability */
     this._detectPerformance();
+    if (document.body.dataset.perfMode === 'low') this.lowPerf = true;
+    this._onPerfTier = (e) => { if (e.detail && e.detail.tier === 'low') this.lowPerf = true; };
+    window.addEventListener('scs:perftier', this._onPerfTier);
 
     /* Canvas trail state */
     this._canvas = null;
@@ -542,7 +545,8 @@ export class EffectsManager {
     if (this.lowPerf) { this._particlesSimple(x, y, color, Math.min(count, 4)); return; }
 
     // Optimization check depending on intensity
-    if (this._activeParticles.length >= (isHeavy ? 30 : 20)) return;
+    const hi = document.body.dataset.perfMode === 'high';
+    if (this._activeParticles.length >= (isHeavy ? (hi ? 60 : 30) : (hi ? 40 : 20))) return;
 
     for (let i = 0; i < count; i++) {
       const size = (isHeavy ? 5 : 3) + Math.random() * (isHeavy ? 8 : 5);
@@ -557,6 +561,7 @@ export class EffectsManager {
         position: "absolute", left: "0px", top: "0px",
         width: size + "px", height: size + "px", borderRadius: "50%",
         background: pColor,
+        boxShadow: hi ? `0 0 ${size * 2}px ${bColor}` : '',
         pointerEvents: "none", zIndex: "300",
         willChange: "transform, opacity"
       });
