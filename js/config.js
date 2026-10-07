@@ -259,7 +259,7 @@ export const CONFIG = {
   GAME_OVER_TRANSITION_MS: 550,
 
   /* ─── Boot screen (ms) ─── */
-  BOOT_MIN_DISPLAY: 2800,
+  BOOT_MIN_DISPLAY: 900,
 
   /* ─── Avatars ─── */
   AVATAR_ICONS: [

@@ -614,6 +614,7 @@
   transition:opacity 0.35s ease;
 }
 .onboarding-overlay.active{opacity:1;pointer-events:auto}
+.onboarding-overlay.has-spotlight{background:transparent}
 .onboarding-spotlight{
   position:absolute;
   box-shadow:0 0 0 9999px rgba(0,0,0,0.7);

@@ -602,7 +602,7 @@ button:focus-visible{border-radius:var(--radius-sm)}
 }
 
 /* Auth content — tighter max-width */
-#auth .auth-content{max-width:360px;gap:18px}
+#auth .auth-content{max-width:360px;gap:18px;margin-block:auto}
 
 /* Auth guest hint */
 .auth-guest-hint{

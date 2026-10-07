@@ -117,7 +117,8 @@
   transition:transform .15s ease;
 }
 .tut-try-hint{
-  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  /* Sits under the target dot instead of running across the corner tiles */
+  position:absolute;top:calc(50% + 46px);left:50%;transform:translateX(-50%);
   display:flex;align-items:center;gap:6px;
   font-size:.7rem;color:var(--text-dim);letter-spacing:1px;
   animation:tutHintPulse 2s ease-in-out infinite alternate;
@@ -125,8 +126,9 @@
 }
 @keyframes tutHintPulse{0%{opacity:.4}100%{opacity:1}}
 .tut-try-feedback{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  font-family:'Space Grotesk';font-size:1.6rem;font-weight:900;
+  /* Above the target dot so the feedback never covers what it refers to */
+  position:absolute;top:24%;left:50%;transform:translate(-50%,-50%);
+  font-family:'Space Grotesk';font-size:1.15rem;font-weight:900;white-space:nowrap;
   pointer-events:none;opacity:0;
   transition:opacity .3s ease;
 }
@@ -148,14 +150,14 @@
   50% { transform: scale(1.15) translateY(-2px); } 
 }
 
-.tut-streak-demo { display: flex; align-items: center; gap: 10px; }
+.tut-streak-demo { display: flex; align-items: center; justify-content: center; gap: 6px; max-width: 100%; }
 .tut-x { font-family: 'Space Grotesk'; font-weight: 900; font-size: 1.4rem; color: var(--text-dim); }
 .tut-x-big { 
   font-family: 'Space Grotesk'; font-size: 1.8rem; color: var(--primary-glow); font-weight: 900; 
   text-shadow: 0 0 20px rgba(124,58,237,0.6), 0 4px 8px rgba(0,0,0,0.5);
 }
 .tut-x-fire { 
-  font-family: 'Space Grotesk'; font-weight: 900; font-size: 2rem; color: var(--danger); 
+  font-family: 'Space Grotesk'; font-weight: 900; font-size: 1.6rem; color: var(--danger); white-space: nowrap;
   text-shadow: 0 0 24px rgba(239, 68, 68, 0.8), 0 4px 8px rgba(0,0,0,0.5);
 }
 .tut-arrow-r { color: var(--text-muted); font-size: 1.2rem; }

@@ -86,7 +86,7 @@ export async function boot(showHome, showAuth) {
   const bootEl = $('#boot');
   if (bootEl) {
     bootEl.classList.add('fade-out');
-    await new Promise(r => setTimeout(r, 700));
+    await new Promise(r => setTimeout(r, 450));
   }
 
   if (auth.user) {
