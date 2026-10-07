@@ -27,6 +27,7 @@ export class EffectsManager {
     this._trailColor = '#FFD700';
     this._trailOpacity = 1;
     this._trailFadeId = null;
+    this._trailDrawRaf = null;
     this._completeFadeTimeout = null;
     this._trailStyle = 'default';
     this._trailHueOffset = 0;
@@ -40,7 +41,9 @@ export class EffectsManager {
 
     /* Physics particle system */
     this._activeParticles = [];
+    this._particlePool = [];
     this._particleLoopId = null;
+    this._size = null;
 
     /* Chromatic aberration SVG filter (cached) */
     this._chromaticFilterInjected = false;
@@ -147,6 +150,7 @@ export class EffectsManager {
   }
 
   _resizeCanvas() {
+    this._size = null;
     if (!this._canvas) return;
     const dpr = window.devicePixelRatio || 1;
     const w = this._canvas.parentElement?.clientWidth || window.innerWidth;
@@ -163,14 +167,11 @@ export class EffectsManager {
 
   trailStart(x, y, color) {
     if (this.reduced || !this._canvas) return;
-    if (this._trailFadeId) {
-      cancelAnimationFrame(this._trailFadeId);
-      this._trailFadeId = null;
-    }
     if (this._completeFadeTimeout) {
       clearTimeout(this._completeFadeTimeout);
       this._completeFadeTimeout = null;
     }
+    this._cancelTrailFade();
     this._trailPoints = [{ x, y }];
     this._trailActive = true;
     this._trailColor = color || '#FFD700';
@@ -182,7 +183,13 @@ export class EffectsManager {
     if (!this._trailActive || !this._canvas) return;
     this._trailPoints.push({ x, y });
     if (this._trailPoints.length > 60) this._trailPoints.shift();
-    this._drawTrail();
+    /* Touch can report faster than the display refreshes; draw once per frame */
+    if (!this._trailDrawRaf) {
+      this._trailDrawRaf = requestAnimationFrame(() => {
+        this._trailDrawRaf = null;
+        this._drawTrail();
+      });
+    }
   }
 
   /** Called by game result handler — flashes green/red then fades */
@@ -191,6 +198,7 @@ export class EffectsManager {
     if (!this._trailPoints.length || !this._canvas) return;
     this._trailColor = correct ? '#2ED573' : '#FF4757';
     this._trailOpacity = 1;
+    this._cancelTrailDraw();
     this._drawTrail();
     this._completeFadeTimeout = setTimeout(() => {
       this._completeFadeTimeout = null;
@@ -333,27 +341,45 @@ export class EffectsManager {
     ctx.restore();
   }
 
+  /* Fade the finished trail with a compositor opacity transition instead of
+     redrawing the full-screen canvas on every frame of the fade-out. */
   _fadeTrail() {
-    if (this._trailFadeId) cancelAnimationFrame(this._trailFadeId);
-    const dpr = window.devicePixelRatio || 1;
-    const step = () => {
-      this._trailOpacity -= 0.08;
-      if (this._trailOpacity <= 0) {
-        if (this._ctx) {
-          this._ctx.save();
-          this._ctx.setTransform(1, 0, 0, 1, 0, 0);
-          this._ctx.clearRect(0, 0, this._canvas?.width || 0, this._canvas?.height || 0);
-          this._ctx.restore();
-        }
-        this._trailPoints = [];
-        this._trailOpacity = 1;
-        this._trailFadeId = null;
-        return;
-      }
-      this._drawTrail();
-      this._trailFadeId = requestAnimationFrame(step);
-    };
-    this._trailFadeId = requestAnimationFrame(step);
+    this._cancelTrailDraw();
+    if (!this._canvas || this._trailFadeId) return;
+    const canvas = this._canvas;
+    canvas.style.transition = 'opacity 200ms linear';
+    canvas.style.opacity = '0';
+    this._trailFadeId = setTimeout(() => {
+      this._trailFadeId = null;
+      this._clearTrailCanvas();
+      this._trailPoints = [];
+      canvas.style.transition = 'none';
+      canvas.style.opacity = '';
+    }, 210);
+  }
+
+  _cancelTrailFade() {
+    if (!this._trailFadeId) return;
+    clearTimeout(this._trailFadeId);
+    this._trailFadeId = null;
+    this._clearTrailCanvas();
+    if (this._canvas) {
+      this._canvas.style.transition = 'none';
+      this._canvas.style.opacity = '';
+    }
+  }
+
+  _cancelTrailDraw() {
+    if (this._trailDrawRaf) cancelAnimationFrame(this._trailDrawRaf);
+    this._trailDrawRaf = null;
+  }
+
+  _clearTrailCanvas() {
+    if (!this._ctx) return;
+    this._ctx.save();
+    this._ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this._ctx.clearRect(0, 0, this._canvas?.width || 0, this._canvas?.height || 0);
+    this._ctx.restore();
   }
 
   /* ══════════════════════════════════════
@@ -387,7 +413,9 @@ export class EffectsManager {
       p.style.opacity = (0.06 + Math.random() * 0.12).toString();
       p.style.setProperty('--drift-x', (Math.random() * 60 - 30) + 'px');
       p.style.setProperty('--drift-y', (Math.random() * 60 - 30) + 'px');
-      p.style.animationDuration = (7 + Math.random() * 10) + 's';
+      const duration = 7 + Math.random() * 10;
+      p.dataset.baseDuration = String(duration);
+      p.style.animationDuration = duration + 's';
       p.style.animationDelay = (Math.random() * 6) + 's';
       this._appendNode(this.c, p);
       this._ambientEls.push(p);
@@ -423,7 +451,7 @@ export class EffectsManager {
       }
       const x = (Math.random() - 0.5) * mag * (1 - t / dur);
       const y = (Math.random() - 0.5) * mag * (1 - t / dur);
-      this.c.style.transform = `translate(${x}px,${y}px)`;
+      this.c.style.transform = `translate3d(${x}px,${y}px,0)`;
       this._shakeRafId = requestAnimationFrame(step);
     };
     this._shakeRafId = requestAnimationFrame(step);
@@ -546,26 +574,21 @@ export class EffectsManager {
 
     // Optimization check depending on intensity
     const hi = document.body.dataset.perfMode === 'high';
-    if (this._activeParticles.length >= (isHeavy ? (hi ? 60 : 30) : (hi ? 40 : 20))) return;
+    const cap = isHeavy ? (hi ? 60 : 30) : (hi ? 40 : 20);
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < count && this._activeParticles.length < cap; i++) {
       const size = (isHeavy ? 5 : 3) + Math.random() * (isHeavy ? 8 : 5);
-      const el = document.createElement("div");
-      
-      const isSpark = Math.random() > 0.7;
-      let pColor = color;
-      let bColor = color;
-      if (isSpark) { pColor = "#ffffff"; bColor = color; }
+      const el = this._acquireParticle();
 
-      Object.assign(el.style, {
-        position: "absolute", left: "0px", top: "0px",
-        width: size + "px", height: size + "px", borderRadius: "50%",
-        background: pColor,
-        boxShadow: hi ? `0 0 ${size * 2}px ${bColor}` : '',
-        pointerEvents: "none", zIndex: "300",
-        willChange: "transform, opacity"
-      });
-      this._appendNode(this.c, el);
+      const isSpark = Math.random() > 0.7;
+      const pColor = isSpark ? "#ffffff" : color;
+      el.style.width = size + "px";
+      el.style.height = size + "px";
+      el.style.background = pColor;
+      el.style.boxShadow = hi ? `0 0 ${size * 2}px ${color}` : '';
+      el.style.opacity = '1';
+      el.style.transform = `translate3d(${x}px,${y}px,0)`;
+      el.style.display = '';
 
       const angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.8;
       const force = isHeavy ? (8 + Math.random() * 12) : (3 + Math.random() * 6);
@@ -580,7 +603,29 @@ export class EffectsManager {
       });
     }
 
-    if (!this._particleLoopId) this._startParticleLoop();
+    if (!this._particleLoopId && this._activeParticles.length) this._startParticleLoop();
+  }
+
+  /* Physics particles are recycled: creating and removing composited
+     nodes on every answer churns layers exactly when the game is fastest. */
+  _acquireParticle() {
+    const pooled = this._particlePool.pop();
+    if (pooled) return pooled;
+    const el = document.createElement("div");
+    el.style.cssText = 'position:absolute;left:0;top:0;border-radius:50%;pointer-events:none;z-index:300;will-change:transform,opacity;display:none';
+    return this._appendNode(this.c, el);
+  }
+
+  _releaseParticle(el) {
+    el.style.display = 'none';
+    this._particlePool.push(el);
+  }
+
+  /* Container size is read once per resize instead of every animation frame,
+     which would force a synchronous layout after the other rAF style writes. */
+  _containerSize() {
+    if (!this._size) this._size = { w: this.c.clientWidth, h: this.c.clientHeight };
+    return this._size;
   }
 
   _initSimpleParticlePool() {
@@ -621,7 +666,7 @@ export class EffectsManager {
   _startParticleLoop() {
     const loop = () => {
       if (document.hidden) { this._particleLoopId = requestAnimationFrame(loop); return; }
-      const cH = this.c.clientHeight; const cW = this.c.clientWidth;
+      const { w: cW, h: cH } = this._containerSize();
       
       for (let i = this._activeParticles.length - 1; i >= 0; i--) {
         const p = this._activeParticles[i];
@@ -647,7 +692,7 @@ export class EffectsManager {
         }
         
         if (p.life <= 0) { 
-          this._removeNode(p.el);
+          this._releaseParticle(p.el);
           this._activeParticles.splice(i, 1); 
           continue; 
         }
@@ -897,19 +942,6 @@ export class EffectsManager {
   }
   stopFever() {
     if (this._feverEl) { this._removeNode(this._feverEl); this._feverEl = null; }
-  }
-
-  /* ══════════════════════════════════════
-     MULTIPLIER BACKGROUND SHIFT
-     ══════════════════════════════════════ */
-  setMultiplierBg(level) {
-    if (level < 1) { this.resetMultiplierBg(); return; }
-    const hues = [220, 260, 290, 320, 0, 30, 50, 60];
-    const hue = hues[Math.min(level - 1, hues.length - 1)];
-    document.documentElement.style.setProperty('--bg-hue', hue);
-  }
-  resetMultiplierBg() {
-    document.documentElement.style.setProperty('--bg-hue', 220);
   }
 
   /* ══════════════════════════════════════
@@ -1337,6 +1369,7 @@ export class EffectsManager {
     this._cancelContainerTransform();
 
     const el = this.c;
+    el.style.transition = 'none';
     const start = performance.now();
     const duration = 200;
     const maxScale = 1.02;
@@ -1352,7 +1385,7 @@ export class EffectsManager {
       const scale = progress < 0.5
         ? 1 + (maxScale - 1) * (progress / 0.5)
         : 1 + (maxScale - 1) * ((1 - progress) / 0.5);
-      el.style.transform = `scale(${scale})`;
+      el.style.transform = `scale3d(${scale},${scale},1)`;
       this._screenPulseRafId = requestAnimationFrame(step);
     };
     this._screenPulseRafId = requestAnimationFrame(step);
@@ -1512,37 +1545,22 @@ export class EffectsManager {
   }
 
   /* ══════════════════════════════════════
-     SCORE ZONE (subtle bg-hue shift)
-     ══════════════════════════════════════ */
-  setScoreZone(score) {
-    let hue = 220; /* default: blue */
-    if (score >= 15000)      hue = 45;  /* gold   */
-    else if (score >= 10000) hue = 30;  /* orange */
-    else if (score >= 5000)  hue = 280; /* purple */
-    else if (score >= 2000)  hue = 260; /* violet */
-    document.documentElement.style.setProperty('--bg-hue', hue);
-  }
-
-  /* ══════════════════════════════════════
      v19 — BACKGROUND INTENSITY
      Reactive ambient based on game state
      ══════════════════════════════════════ */
   setBackgroundIntensity(level) {
-    if (this.reduced || this.lowPerf) return;
+    if (this.reduced || this.lowPerf || level === this._bgIntensity) return;
     // level: 0=calm, 1=low, 2=mid, 3=high, 4=fever
-    const root = document.documentElement;
-    root.style.setProperty('--bg-intensity', level);
-    // Adjust ambient particle speed via CSS custom prop
+    this._bgIntensity = level;
+    // Speed ambient particles up from their own base duration. Runs only on
+    // level changes: it is called every timer tick, and re-dividing the live
+    // duration each second compounded the speed-up and made the dots jump.
     const speedMult = 1 + level * 0.5;
-    root.style.setProperty('--ambient-speed', speedMult);
-    // Ambient particle count adjustment
-    if (this._ambientOn) {
-      this._ambientEls.forEach(p => {
-        const baseDur = parseFloat(p.style.animationDuration) || 10;
-        p.style.animationDuration = Math.max(3, baseDur / speedMult) + 's';
-        p.style.opacity = Math.min(0.25, 0.06 + level * 0.04).toString();
-      });
-    }
+    this._ambientEls.forEach(p => {
+      const baseDur = Number(p.dataset.baseDuration) || 10;
+      p.style.animationDuration = Math.max(3, baseDur / speedMult) + 's';
+      p.style.opacity = Math.min(0.25, 0.06 + level * 0.04).toString();
+    });
   }
 
   /* ══════════════════════════════════════
@@ -1551,8 +1569,9 @@ export class EffectsManager {
      ══════════════════════════════════════ */
   scoreMilestoneBurst(tier = 0) {
     if (this.reduced || this.lowPerf) return;
-    const cx = this.c.clientWidth / 2;
-    const cy = this.c.clientHeight / 2;
+    const { w, h } = this._containerSize();
+    const cx = w / 2;
+    const cy = h / 2;
     const colors = [
       ['#C0C0C0', '#E8E8E8', '#A0A0A0'],                   // 1K silver
       ['#C0C0C0', '#E8E8E8', '#87CEEB'],                    // 2.5K silver-blue
@@ -1656,8 +1675,8 @@ export class EffectsManager {
     this.c.classList.remove('hit-stop-active');
 
     /* Physics particles */
-    for (const p of this._activeParticles) this._removeNode(p.el);
     this._activeParticles = [];
+    this._particlePool = [];
     if (this._particleLoopId) {
       cancelAnimationFrame(this._particleLoopId);
       this._particleLoopId = null;
@@ -1670,17 +1689,18 @@ export class EffectsManager {
     }
 
     /* Trail */
-    if (this._trailFadeId) cancelAnimationFrame(this._trailFadeId);
+    if (this._trailFadeId) clearTimeout(this._trailFadeId);
+    this._cancelTrailDraw();
     if (this._completeFadeTimeout) clearTimeout(this._completeFadeTimeout);
-    if (this._ctx) {
-      this._ctx.save();
-      this._ctx.setTransform(1, 0, 0, 1, 0, 0);
-      this._ctx.clearRect(0, 0, this._canvas?.width || 0, this._canvas?.height || 0);
-      this._ctx.restore();
+    this._clearTrailCanvas();
+    if (this._canvas) {
+      this._canvas.style.transition = '';
+      this._canvas.style.opacity = '';
     }
     this._trailPoints = [];
     this._trailActive = false;
     this._trailFadeId = null;
+    this._trailDrawRaf = null;
     this._completeFadeTimeout = null;
     if (this._resizeBound) window.removeEventListener('resize', this._resizeBound);
     this._resizeBound = null;
