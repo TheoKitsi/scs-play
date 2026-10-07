@@ -135,14 +135,16 @@ position:fixed;inset:0;z-index:9999;
 }
 .fever-overlay.active{
   opacity:1;
-  border-color:var(--accent);
-  box-shadow:
-    inset 0 0 40px rgba(236,72,153,.1);
+  border-color:rgba(236,72,153,.7);
+  box-shadow:inset 0 0 50px rgba(236,72,153,.12);
+  /* Opacity-only pulse stays on the compositor; animating the full-screen
+     border/box-shadow repainted the whole viewport every frame of fever. */
+  will-change:opacity;
   animation:feverBorder 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
 }
 @keyframes feverBorder{
-  0%{border-color:rgba(236,72,153,.35);box-shadow:inset 0 0 30px rgba(236,72,153,.06);transform:scale(1)}
-  100%{border-color:rgba(236,72,153,.7);box-shadow:inset 0 0 50px rgba(236,72,153,.12);transform:scale(1.003)}
+  0%{opacity:.55}
+  100%{opacity:1}
 }
 
 /* XP pulse (level up effect) */

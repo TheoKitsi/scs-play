@@ -30,9 +30,11 @@
 .center-shape.spawn-pop{
   animation:spawnPop .35s var(--ease-bounce);
 }
+/* No blur keyframes: an animated filter re-rasterizes the stimulus on every
+   frame of every spawn, and spawns get more frequent as the round speeds up. */
 @keyframes spawnPop{
-  0%{transform:scale(0) rotate(-12deg);opacity:0;filter:blur(4px)}
-  50%{transform:scale(1.15) rotate(3deg);opacity:1;filter:blur(0)}
+  0%{transform:scale(0) rotate(-12deg);opacity:0}
+  50%{transform:scale(1.15) rotate(3deg);opacity:1}
   75%{transform:scale(0.97) rotate(-1deg);opacity:1}
   100%{transform:scale(1) rotate(0);opacity:1}
 }
@@ -173,19 +175,22 @@
   text-shadow:0 0 8px rgba(255,71,87,.5);
   animation:streakFireGlow .6s ease-in-out infinite alternate;
 }
+/* transform-only pulse: animating text-shadow repaints the HUD every frame
+   for as long as the streak lasts, i.e. exactly when the game is fastest. */
 @keyframes streakFireGlow{
-  0%{text-shadow:0 0 6px rgba(255,71,87,.3)}
-  100%{text-shadow:0 0 14px rgba(255,71,87,.6)}
+  0%{transform:scale(1)}
+  100%{transform:scale(1.06)}
 }
 
 /* ─── Multiplier high glow ─── */
 .hud-multiplier.mult-ultra{
   color:var(--gold);
+  text-shadow:0 0 14px rgba(255,215,0,.55);
   animation:multUltraGlow .4s ease-in-out infinite alternate;
 }
 @keyframes multUltraGlow{
-  0%{text-shadow:0 0 8px rgba(255,215,0,.4);transform:scale(1)}
-  100%{text-shadow:0 0 20px rgba(255,215,0,.7);transform:scale(1.08)}
+  0%{transform:scale(1)}
+  100%{transform:scale(1.08)}
 }
 
 /* ─── Back button hover arrow nudge ─── */
@@ -519,7 +524,7 @@ body[data-reduced-motion] .corner-shape.sequenz-flash{
   pointer-events:none;z-index:1;
   opacity:0;transition:opacity .5s;
   border-radius:inherit;
-  will-change:box-shadow,opacity;
+  will-change:opacity;
 }
 #game.edge-glow-warm::after{
   opacity:1;

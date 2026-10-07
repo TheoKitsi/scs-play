@@ -50,6 +50,23 @@ body[data-perf-mode="low"] *::after{
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
+/* ── Hidden screens don't animate ──────────
+   Inactive screens are only visibility:hidden, so their infinite
+   animations (boot logo ring, tutorial dots, results aura …) kept
+   forcing a style recalc every frame during gameplay. They resume
+   automatically when the screen becomes active again. */
+.screen:not(.active) *,
+.screen:not(.active) *::before,
+.screen:not(.active) *::after{
+  animation-play-state: paused !important;
+}
+/* Same for the rotate-device hint, except where the CSS-only landscape
+   fallback in 09-extensions.css shows it without the .active class. */
+@media (orientation: portrait), (min-height: 501px), (min-width: 901px){
+  .landscape-warning:not(.active) *{
+    animation-play-state: paused !important;
+  }
+}
 body[data-perf-mode="low"] .ambient-bg-orbs,
 body[data-perf-mode="low"] .hero-particles,
 body[data-perf-mode="low"] .auth-bg,
