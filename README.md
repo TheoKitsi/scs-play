@@ -42,6 +42,7 @@ npm run visual-review
 | `npm run contrast-audit:dom` | Playwright scan of rendered app screens for text/background contrast. |
 | `npm run smoke-test` | Critical boot -> guest -> home -> game -> results flow. |
 | `npm run visual-review` | Capture mobile screenshots for manual review. |
+| `npm run perf-benchmark` | Play a round with a scripted fast player under CPU throttling and report frame times, long tasks and style/layout cost per pace bucket (see flags in the script header). |
 | `npm run verify` | Full local gate: contrast, build, DOM contrast, smoke. |
 | `npm run cap:sync` | Build production web assets and sync Android. |
 | `npm run cap:run` | Build and run through Capacitor Android. |

@@ -29,11 +29,22 @@ function reducedMotionActive() {
   }
 }
 
+/* QA builds (localStorage scsQa=1) can pin a tier so benchmarks compare
+   like with like instead of racing the governor's step-downs. */
+function pinnedQaTier() {
+  try {
+    if (localStorage.getItem('scsQa') !== '1') return null;
+    const tier = localStorage.getItem('scsQaPerfTier');
+    return TIERS.includes(tier) ? tier : null;
+  } catch { return null; }
+}
+
 export function initPerfMode() {
   if (typeof document === 'undefined' || !document.body) return;
-  document.body.dataset.perfMode = restoreTier(detectClass());
+  const pinned = pinnedQaTier();
+  document.body.dataset.perfMode = pinned || restoreTier(detectClass());
   if (document.body.dataset.perfMode === 'low') document.body.classList.add('low-perf');
-  startGovernor();
+  if (!pinned) startGovernor();
   if (reducedMotionActive()) {
     document.body.dataset.reducedMotion = 'true';
   }

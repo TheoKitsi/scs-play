@@ -10,6 +10,7 @@
     "music:generate": "node scripts/generate-music.mjs",
     "smoke-test": "node scripts/smoke-test.mjs",
     "visual-review": "node scripts/visual-review.mjs",
+    "perf-benchmark": "node scripts/perf-benchmark.mjs",
     "store-assets": "node scripts/generate-store-assets.mjs",
     "contrast-audit": "node scripts/contrast-audit.mjs",
     "contrast-audit:dom": "node scripts/dom-contrast-audit.mjs",
