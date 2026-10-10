@@ -408,6 +408,24 @@ function renderCenter(shapeData) {
   if (!inRush) spawnBurstParticles(color);
 }
 
+/* Corner and platform geometry doesn't move during a round. Caching their
+   rects keeps per-answer effects from forcing a synchronous layout right
+   after the style writes of the same answer. */
+const _rectCache = new Map();
+function stableRect(el) {
+  let rect = _rectCache.get(el);
+  if (!rect) {
+    rect = el.getBoundingClientRect();
+    _rectCache.set(el, rect);
+  }
+  return rect;
+}
+function invalidateRects() { _rectCache.clear(); }
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', invalidateRects, { passive: true });
+  window.addEventListener('orientationchange', invalidateRects, { passive: true });
+}
+
 /* Particle pool for spawn burst — avoids creating/removing DOM nodes every spawn */
 const _spawnPool = [];
 const _POOL_SIZE = 6;
@@ -437,24 +455,20 @@ function spawnBurstParticles(color) {
   _initPool();
   if (!_spawnPool.length) return;
 
-  const rect = platform.getBoundingClientRect();
+  const rect = stableRect(platform);
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
 
-  /* Batch all style writes, then trigger ONE reflow, then add class */
+  /* Web Animations restart without the forced reflow a class re-trigger needs */
   for (let i = 0; i < _spawnPool.length; i++) {
     const p = _spawnPool[i];
     const angle = (i / _spawnPool.length) * Math.PI * 2;
     const dist = 20 + Math.random() * 15;
-    p.style.cssText = `left:${cx}px;top:${cy}px;width:4px;height:4px;background:${color};--dx:${Math.cos(angle)*dist}px;--dy:${Math.sin(angle)*dist}px;`;
-    p.style.display = '';
-    p.classList.remove('spawn-particle');
-  }
-  /* Single forced reflow for the whole batch */
-  _spawnPool[0].offsetWidth;
-  for (let i = 0; i < _spawnPool.length; i++) {
-    const p = _spawnPool[i];
-    p.classList.add('spawn-particle');
+    p.style.cssText = `left:${cx}px;top:${cy}px;width:4px;height:4px;background:${color};animation:none;`;
+    p.animate([
+      { opacity: 1, transform: 'translate(0,0) scale(1)' },
+      { opacity: 0, transform: `translate(${Math.cos(angle) * dist}px,${Math.sin(angle) * dist}px) scale(0)` },
+    ], { duration: 500, easing: 'ease-out', fill: 'forwards' });
   }
   /* Single timeout for cleanup */
   clearTimeout(_spawnCleanupTimeout);
@@ -507,36 +521,52 @@ function _getHudEls() {
 /** Call when leaving game screen to drop cached refs */
 function invalidateHudCache() { _hudCache = null; }
 
+const INTENSITY_CLASSES = ['intensity-low','intensity-mid','intensity-high','intensity-max',
+  'edge-glow-warm','edge-glow-hot','edge-glow-fire','action-climax','action-climax-peak'];
+let _intensityKey = '';
+let _resonanceLevel = '';
+
 function updateIntensity() {
   const { game } = app;
   const g = _getHudEls().game;
   if (!g) return;
   const textHeavy = isTextHeavyMode();
-  g.classList.remove('intensity-low','intensity-mid','intensity-high','intensity-max',
-                       'edge-glow-warm','edge-glow-hot','edge-glow-fire',
-                       'action-climax','action-climax-peak');
+  const next = [];
   if (game.feverActive) {
-    if (textHeavy) g.classList.add('intensity-mid');
-    else g.classList.add('intensity-max','edge-glow-fire');
+    if (textHeavy) next.push('intensity-mid');
+    else next.push('intensity-max','edge-glow-fire');
   } else if (game.streak >= 30) {
-    if (textHeavy) g.classList.add('intensity-mid');
-    else g.classList.add('intensity-high','edge-glow-fire');
+    if (textHeavy) next.push('intensity-mid');
+    else next.push('intensity-high','edge-glow-fire');
   } else if (game.streak >= 20) {
-    if (textHeavy) g.classList.add('intensity-low');
-    else g.classList.add('intensity-high','edge-glow-hot');
+    if (textHeavy) next.push('intensity-low');
+    else next.push('intensity-high','edge-glow-hot');
   } else if (game.streak >= 10) {
-    g.classList.add('intensity-mid','edge-glow-warm');
+    next.push('intensity-mid','edge-glow-warm');
   } else if (game.streak >= 5) {
-    g.classList.add('intensity-low');
+    next.push('intensity-low');
   }
 
   if (!textHeavy && !game.practice && game.playType !== 'endless' && game.timer > 0) {
-    if (game.timer <= 8) g.classList.add('action-climax');
-    if (game.timer <= 3) g.classList.add('action-climax-peak');
+    if (game.timer <= 8) next.push('action-climax');
+    if (game.timer <= 3) next.push('action-climax-peak');
+  }
+
+  /* Only touch #game when the set changes: class churn on the screen root
+     invalidates style for the whole game subtree on every answer. */
+  const key = next.join(' ');
+  if (key !== _intensityKey) {
+    _intensityKey = key;
+    g.classList.remove(...INTENSITY_CLASSES);
+    if (next.length) g.classList.add(...next);
   }
 
   if (game.mode === 'klassik') {
-    g.style.setProperty('--resonance-level', String(Math.min(1, Math.max(0, game.streak / 20))));
+    const level = String(Math.min(1, Math.max(0, game.streak / 20)));
+    if (level !== _resonanceLevel) {
+      _resonanceLevel = level;
+      g.style.setProperty('--resonance-level', level);
+    }
   }
 }
 
@@ -716,7 +746,7 @@ function cornerScorePop(dir, text) {
   const el = _cornerPopPool[_cornerPopIdx % _CORNER_POP_POOL];
   _cornerPopIdx++;
 
-  const r = corner.getBoundingClientRect();
+  const r = stableRect(corner);
   el.textContent = text;
   el.style.left = (r.left + r.width / 2) + 'px';
   el.style.top = r.top + 'px';
@@ -2067,7 +2097,9 @@ function updateModeMasteryAfterAnswer(game, result) {
 
 function cleanupGameClasses() {
   const g = $('#game');
-  g?.classList.remove('intensity-low','intensity-mid','intensity-high','intensity-max','edge-glow-warm','edge-glow-hot','edge-glow-fire','action-climax','action-climax-peak');
+  g?.classList.remove(...INTENSITY_CLASSES);
+  _intensityKey = '';
+  _resonanceLevel = '';
   if (g) {
     delete g.dataset.resonanceTarget;
     delete g.dataset.modeWorld;
@@ -2084,6 +2116,7 @@ function cleanupGameClasses() {
   /* Remove mode class from body */
   document.body.className = document.body.className.replace(/\bmode-\w+/g, '').trim();
   invalidateHudCache();
+  invalidateRects();
   /* Reset corner diff state so next game does full render */
   for (const k in _prevCornerState) delete _prevCornerState[k];
   _lastPlatformColor = '';
@@ -2106,7 +2139,6 @@ function cleanupActiveGame({ stopEngine = true } = {}) {
   audio.stopMusic();
   audio.stopTension?.();
   swipe?.unbind();
-  effects?.resetMultiplierBg();
   effects?.stopAmbient();
   effects?.stopFever?.();
   effects?.dangerZone?.(false);
@@ -2306,6 +2338,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   }
 
   effects.initTrailCanvas($('#trailCanvas'));
+  invalidateRects();
   renderCorners(corners, true);  /* forceAll on first render */
   effects.startAmbient();
 
@@ -2484,12 +2517,10 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
           corner.classList.add('corner-correct');
           setTimeout(() => corner.classList.remove('corner-correct'), 300);
         }
-        effects.setMultiplierBg(result.multiplier);
         haptic('correct', save);
       } else {
         /* ── Normal path: full FX ── */
         effects.shakeHit();
-        if (result.streak > 5) effects.hitStop(20);
         const particleFxCount = Math.min(10, 4 + Math.floor(result.streak / 10));
         const pColor = app.colorblind ? "#fff" : (game.cornerMap[result.expected]?.color || "#fff");
         effects.particles(cx, cy, pColor, particleFxCount, false);
@@ -2505,7 +2536,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
             corner.classList.add('corner-matched','corner-destination-flash','corner-correct');
           });
           setTimeout(() => corner.classList.remove('corner-matched','corner-destination-flash','corner-correct'), 500);
-          const r = corner.getBoundingClientRect();
+          const r = stableRect(corner);
           effects.absorb(cx, cy, r.left + r.width/2, r.top + r.height/2, game.cornerMap[result.expected]?.color || '#fff');
         }
 
@@ -2523,12 +2554,10 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
             audio.achievementUnlock();
           }
         }
-        effects.setMultiplierBg(result.multiplier);
         if (result.streak > 0 && result.streak % 20 === 0 && typeof effects.screenPulse === 'function') {
           effects.screenPulse();
         }
         if (typeof effects.animateStreakCounter === 'function') effects.animateStreakCounter($('#hudStreak'));
-        if (typeof effects.setScoreZone === 'function') effects.setScoreZone(game.score);
         haptic('correct', save);
       }
     } else {
@@ -2550,7 +2579,6 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
           }
         }
       }
-      effects.resetMultiplierBg();
     }
 
     updateModeMasteryAfterAnswer(game, result);
@@ -2942,7 +2970,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       /* Visual feedback */
       const corner = $(`.corner-shape[data-dir="${dir}"]`);
       if (corner) {
-        const r = corner.getBoundingClientRect();
+        const r = stableRect(corner);
         effects.ripple(r.left + r.width / 2, r.top + r.height / 2,
           game.cornerMap[dir]?.color || '#fff');
         corner.classList.remove('corner-tapped');
@@ -2956,7 +2984,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     /* Visual feedback: pulse the tapped corner */
     const corner = $(`.corner-shape[data-dir="${dir}"]`);
     if (corner) {
-      const r = corner.getBoundingClientRect();
+      const r = stableRect(corner);
       effects.ripple(r.left + r.width / 2, r.top + r.height / 2,
         game.cornerMap[dir]?.color || '#fff');
       corner.classList.remove('corner-tapped');

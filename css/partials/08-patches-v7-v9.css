@@ -424,14 +424,16 @@ button:focus-visible{border-radius:var(--radius-sm)}
   background:radial-gradient(ellipse at center,transparent 50%,rgba(239,68,68,0.2) 100%);
   opacity:0;transition:opacity .4s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: inset 0 0 60px rgba(239,68,68,0.2);
+  will-change:opacity;
 }
 .danger-vignette.active{
   opacity:1;
   animation:dangerPulse 1s ease-in-out infinite alternate;
 }
+/* Opacity-only so the full-screen vignette pulses on the compositor */
 @keyframes dangerPulse{
-  0%{opacity:.4; box-shadow: inset 0 0 60px rgba(239,68,68,0.1);}
-  100%{opacity:1; box-shadow: inset 0 0 120px rgba(239,68,68,0.3);}
+  0%{opacity:.4}
+  100%{opacity:1}
 }
 
 /* ═══════════════════════════════════════════

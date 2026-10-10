@@ -180,6 +180,10 @@
   overflow:hidden !important;
   overscroll-behavior:none;
 }
+/* Keep the running game screen on its own compositor layer. Shake and
+   screen-pulse move it every frame on each answer; without a layer every one
+   of those frames repaints the whole screen. */
+#game.active{will-change:transform}
 .trail-canvas{position:absolute;inset:0;z-index:2;pointer-events:none;will-change:contents}
 
 /* ─── HUD ─── */
@@ -586,6 +590,10 @@
   overflow:hidden;
 }
 .speed-lines.active{opacity:1; animation: speedThrob 1.5s ease-in-out infinite alternate;}
+/* The two oversized conic layers only exist while the effect is on; at
+   opacity 0 they kept spinning (and compositing) through every round. */
+.speed-lines:not(.active)::before,
+.speed-lines:not(.active)::after{display:none}
 .speed-lines::before,
 .speed-lines::after{
   content:'';position:absolute;

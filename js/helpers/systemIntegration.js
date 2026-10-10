@@ -26,6 +26,21 @@ export function bindQaHooks() {
         triggerChaosRuleSwitch(rule = 'color') {
           app.game?.onChaosRuleSwitch?.(rule);
         },
+        /* Read-only snapshot for scripts/perf-benchmark.mjs */
+        gameState() {
+          const game = app.game;
+          if (!game) return null;
+          return {
+            running: game.running,
+            paused: game.paused,
+            stimulusId: game.currentShape?.stimulusId ?? null,
+            direction: game.currentShape?.direction ?? null,
+            streak: game.streak,
+            correct: game.correct,
+            spawnInterval: game.spawnInterval,
+            feverActive: game.feverActive,
+          };
+        },
       };
     }
   } catch {}
