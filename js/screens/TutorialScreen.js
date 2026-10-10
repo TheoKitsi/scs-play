@@ -105,7 +105,7 @@ function _showTryFeedback(correct, dir) {
   }
 
   if (feedback) {
-    feedback.textContent = correct ? '✅ ' + (t('correct') || 'Richtig!') : '↖ ' + (t('tutorial_try_again') || 'Versuche oben links!');
+    feedback.textContent = correct ? '✅ ' + (t('correct') || 'Richtig!') : (t('tutorial_try_again') || '↖ Oben links!');
     feedback.style.color = correct ? 'var(--success)' : 'var(--warning)';
     feedback.classList.remove('show');
     requestAnimationFrame(() => feedback.classList.add('show'));
@@ -142,6 +142,9 @@ function renderStep() {
 
   if (prevBtn) prevBtn.style.visibility = _step === 0 ? 'hidden' : 'visible';
   if (nextBtn) nextBtn.textContent = _step >= slides.length - 1 ? t('lets_go') : t('tutorial_next');
+  /* On the last step "Los geht's!" already does what skip would do */
+  const skipBtn = $('#btnTutorialSkip');
+  if (skipBtn) skipBtn.style.visibility = _step >= slides.length - 1 ? 'hidden' : 'visible';
 
   /* Bind interactive swipe when step 2 is shown */
   if (_step === 1) _bindTrySwipe();

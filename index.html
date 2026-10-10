@@ -36,7 +36,7 @@
 </head>
 <body>
 <!-- Skip to main content (a11y) -->
-<a href="#appMain" class="sr-skip-link">Zum Inhalt springen</a>
+<a href="#appMain" class="sr-skip-link" data-i18n="skip_to_content">Zum Inhalt springen</a>
 <!-- Live region for screen reader announcements -->
 <div id="a11yLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 <div class="ambient-bg-orbs" aria-hidden="true"></div>
@@ -120,7 +120,7 @@
         <div class="logo-cell c6"><span>A</span></div>
         <div class="logo-cell c7"><span>Y</span></div>
       </div>
-      <div class="logo-subtitle">Swipe &bull; Sort &bull; Score</div>
+      <div class="logo-subtitle" data-i18n="app_sub">Sortieren · Denken · Reagieren</div>
       <div class="logo-version">v2.0</div>
       <div class="logo-ring"></div>
     </div>
@@ -230,18 +230,22 @@
           <button class="play-type-btn selected" data-play="blitz" aria-pressed="true">
             <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg></span>
             <span class="play-type-name" data-i18n="play_blitz">BLITZ</span>
+            <span class="play-type-sub" data-i18n="play_blitz_sub">Kurze Runde</span>
           </button>
           <button class="play-type-btn" data-play="classic" aria-pressed="false">
             <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-clock"></use></svg></span>
             <span class="play-type-name" data-i18n="play_classic">MARATHON</span>
+            <span class="play-type-sub" data-i18n="play_classic_sub">Lange Runde</span>
           </button>
           <button class="play-type-btn" data-play="endless" aria-pressed="false">
             <span class="play-type-icon play-type-icon--text">&#x221E;</span>
             <span class="play-type-name" data-i18n="play_endless">ENDLOS</span>
+            <span class="play-type-sub" data-i18n="play_endless_sub">3 Leben</span>
           </button>
           <button class="play-type-btn" data-play="competition" aria-pressed="false">
             <span class="play-type-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-trophy"></use></svg></span>
             <span class="play-type-name" data-i18n="play_competition">WETTKAMPF</span>
+            <span class="play-type-sub" data-i18n="play_competition_sub">10 Level</span>
             <span class="play-type-comp-badge" id="compBadge"></span>
           </button>
         </div>
@@ -255,10 +259,10 @@
       </div>
 
       <!-- Prev / Next nav arrows -->
-      <button type="button" class="hero-nav-arrow hero-nav-prev" id="heroNavPrev" aria-label="Vorheriger Modus">
+      <button type="button" class="hero-nav-arrow hero-nav-prev" id="heroNavPrev" aria-label="Vorheriger Modus" data-i18n-aria="mode_prev">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <button type="button" class="hero-nav-arrow hero-nav-next" id="heroNavNext" aria-label="Nächster Modus">
+      <button type="button" class="hero-nav-arrow hero-nav-next" id="heroNavNext" aria-label="Nächster Modus" data-i18n-aria="mode_next">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
 
@@ -356,7 +360,7 @@
         </button>
       </div>
 
-      <div class="today-actions" aria-label="Heute">
+      <div class="today-actions" aria-label="Heute" data-i18n-aria="today_label">
         <!-- Daily Challenge -->
         <div class="daily-card" id="dailyCard">
         <div class="daily-left">
@@ -447,11 +451,11 @@
       </button>
       <button id="btnStore" class="footer-item">
         <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-cart"></use></svg></span>
-        <span class="footer-label" data-i18n="store">Sammlung</span>
+        <span class="footer-label" data-i18n="store_short">Shop</span>
       </button>
       <button id="btnSettings" class="footer-item">
         <span class="footer-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-gear"></use></svg></span>
-        <span class="footer-label" data-i18n="settings_footer">Settings</span>
+        <span class="footer-label" data-i18n="settings_footer">Mehr</span>
       </button>
 
     </nav>
@@ -480,7 +484,7 @@
             <span class="tut-shape-dot tut-dot-red"></span>
           </div>
         </div>
-        <p data-i18n="tutorial_step1">Jede Ecke zeigt eine Farbe. In der Mitte erscheint eine Form.</p>
+        <p data-i18n="tutorial_step1">In der Mitte erscheint ein Symbol. Jede Ecke hat eine eigene Farbe oder Form.</p>
       </div>
       <div class="tutorial-slide" data-step="1">
         <div class="tut-visual tut-try-area" id="tutTryArea">
@@ -499,7 +503,7 @@
           </div>
           <div class="tut-try-feedback" id="tutTryFeedback"></div>
         </div>
-        <p data-i18n="tutorial_step2">Wische in die Richtung der passenden Ecke!</p>
+        <p data-i18n="tutorial_step2">Wische das Symbol zur passenden Ecke – oder tippe die Ecke an!</p>
       </div>
       <div class="tutorial-slide" data-step="2">
         <div class="tut-visual">
@@ -759,7 +763,7 @@
     </div>
     <div id="scoreList" class="score-list"></div>
     <div class="bottom-back-bar">
-      <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
+      <button class="btn btn-ghost btn-back-bottom" data-i18n="nav_back_home">&#8592; Menü</button>
     </div>
   </div>
 </div>
@@ -777,7 +781,7 @@
     </div>
     <div id="achList" class="ach-list"></div>
     <div class="bottom-back-bar">
-      <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
+      <button class="btn btn-ghost btn-back-bottom" data-i18n="nav_back_home">&#8592; Menü</button>
     </div>
   </div>
 </div>
@@ -808,7 +812,7 @@
     </div>
     <button id="btnLogout" class="btn btn-ghost btn-logout" data-i18n="logout" style="margin-top:16px">Abmelden</button>
     <div class="bottom-back-bar">
-      <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
+      <button class="btn btn-ghost btn-back-bottom" data-i18n="nav_back_home">&#8592; Menü</button>
     </div>
   </div>
 </div>
@@ -836,7 +840,7 @@
     <div id="avatarColorGrid" class="avatar-color-grid"></div>
     <button id="btnAvatarSave" class="btn btn-primary" style="margin-top:8px;padding:10px 20px;font-size:.85rem" data-i18n="avatar_save">Speichern</button>
     <div class="bottom-back-bar">
-      <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
+      <button class="btn btn-ghost btn-back-bottom" data-i18n="nav_back_home">&#8592; Menü</button>
     </div>
   </div>
 </div>
@@ -861,7 +865,7 @@
       <div id="storeList" class="store-list"></div>
     </div>
     <div class="bottom-back-bar">
-      <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
+      <button class="btn btn-ghost btn-back-bottom" data-i18n="nav_back_home">&#8592; Menü</button>
     </div>
   </div>
 </div>
@@ -894,7 +898,7 @@
       </div>
     </div>
     <div class="bottom-back-bar">
-      <button class="btn btn-ghost btn-back-bottom" aria-label="Zurück">&#8592; Home</button>
+      <button class="btn btn-ghost btn-back-bottom" data-i18n="nav_back_home">&#8592; Menü</button>
     </div>
   </div>
 </div>

@@ -212,6 +212,9 @@ button:focus-visible,.btn:focus-visible{
   box-shadow:inset 0 0 0 1px rgba(167,139,250,.35);
 }
 #home .play-type-icon,#home .play-type-icon--text{min-height:17px;font-size:1rem}
+/* One-line hint so the play types are not just names */
+#home .play-type-sub{font-size:.6rem;font-weight:600;line-height:1.1;color:var(--text-muted);white-space:nowrap}
+#home .play-type-btn.selected .play-type-sub{color:#c4b5fd}
 #home .play-type-name,#home .play-type-selector--primary .play-type-name{
   font-family:inherit;
   font-size:.68rem;
@@ -293,6 +296,22 @@ button:focus-visible,.btn:focus-visible{
   white-space:nowrap;
 }
 #home .today-actions .btn-wheel-cta{color:#f8c86b}
+/* The CTA text is only 22px tall; stretch its hit area over the whole card */
+#home .today-actions .daily-card,#home .today-actions .wheel-card{position:relative}
+#home .today-actions .btn-daily-cta,#home .today-actions .btn-wheel-cta{position:static}
+#home .today-actions .btn-daily-cta::before,#home .today-actions .btn-wheel-cta::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  width:auto;
+  padding:0;
+  border-radius:16px;
+  background:none;
+  opacity:1;
+  transform:none;
+  transition:none;
+  pointer-events:auto;
+}
 #home .today-actions .btn-daily-cta::after,#home .today-actions .btn-wheel-cta::after{
   content:'›';
   margin-left:4px;
@@ -349,7 +368,9 @@ button:focus-visible,.btn:focus-visible{
   margin:16px 0 4px;
   font-size:.78rem;
 }
-.legal-links a{color:var(--text-muted);text-decoration:underline;text-underline-offset:3px}
+.legal-links a{display:inline-block;padding:12px 6px;color:var(--text-muted);text-decoration:underline;text-underline-offset:3px}
+/* Keep the way back reachable without scrolling to the end of the list */
+#settings .bottom-back-bar{position:sticky;bottom:0;z-index:2;background:var(--bg,#07090f)}
 .legal-links a:focus-visible{outline:2px solid #c4b5fd;outline-offset:4px;border-radius:4px}
 
 /* Gameplay: information stays peripheral, the stimulus owns the stage. */
@@ -438,12 +459,12 @@ body.mode-chaos .mode-rule-label{
 .hud-score-group{min-width:58px;gap:0}
 .hud-label{
   font-family:inherit;
-  font-size:.56rem;
+  font-size:.64rem;
   font-weight:600;
   letter-spacing:.04em;
   color:var(--text-muted);
 }
-.hud-value,.hud-multiplier{font-family:inherit;font-size:1rem;font-weight:700;letter-spacing:-.02em}
+.hud-value,.hud-multiplier{font-family:inherit;font-size:1.18rem;font-weight:700;letter-spacing:-.02em}
 .hud-fever{padding:5px;font-size:.68rem}
 .corner-shape{
   width:88px;
@@ -466,7 +487,15 @@ body.mode-chaos .mode-rule-label{
   box-shadow:0 20px 50px rgba(0,0,0,.4),0 0 48px hsla(var(--mode-hue,250),70%,50%,.1);
 }
 .center-shape svg{width:92px;height:92px}
-.pb-proximity{font-size:.7rem;opacity:.78}
+.pb-proximity{font-size:.7rem}
+/* Only dim the pill while it is shown; the base rule keeps it hidden until
+   checkPBProximity() adds .visible, so no empty capsule sits under the HUD. */
+.pb-proximity.visible{opacity:.78}
+.pb-proximity:empty{display:none}
+/* Math answers are the thing to read under time pressure: size them like the
+   equation, not like a caption. Scoped to Mathe so long word answers keep
+   their own sizing. */
+body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px)}
 .rush-text,.fever-text,.combo-text,.shuffle-text{
   font-family:inherit;
   max-width:80vw;
@@ -781,6 +810,7 @@ body.mode-chaos .mode-rule-label{
   #home .home-play-command{gap:7px}
   #home .play-type-selector--primary{min-height:50px}
   #home .play-type-btn{min-height:42px}
+  #home .play-type-sub{display:none}
   #home .btn-play-fab{min-height:54px}
   #home .home-bottom-sheet{padding-top:7px;padding-bottom:calc(75px + var(--bottom-inset))}
   #home .today-actions{min-height:60px;height:60px}

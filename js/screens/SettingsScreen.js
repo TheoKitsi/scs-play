@@ -7,6 +7,12 @@ import { $, $$, localise, showScreen } from '../helpers/dom.js';
 import app                   from '../appState.js';
 
 let _settingsBack = null;
+let _backLabelKey = 'nav_back_home';
+
+/* The bottom back button says where it actually goes (menu or paused game) */
+function applyBackLabel() {
+  $$('.btn-back-bottom', $('#settings')).forEach(btn => { btn.textContent = t(_backLabelKey); });
+}
 
 export function backFromSettings() {
   if (app.currentScreen !== 'settings' || !_settingsBack) return false;
@@ -19,6 +25,7 @@ export function backFromSettings() {
 export function showSettings(fromPause, showHome, showPausedGame) {
   const { save } = app;
   _settingsBack = fromPause && showPausedGame ? showPausedGame : showHome;
+  _backLabelKey = fromPause && showPausedGame ? 'nav_back_game' : 'nav_back_home';
   showScreen('settings', app);
   $('#toggleColorblind').checked = save.getSetting('colorblind');
   $('#toggleMotion').checked     = save.getSetting('reducedMotion');
@@ -33,6 +40,12 @@ export function showSettings(fromPause, showHome, showPausedGame) {
   $('#musicVolumeValue').textContent = `${musicVolume}%`;
   $('#selectLang').value         = save.getSetting('language') || 'auto';
 
+  /* Guests have no account to sign out of; the button only bounced them to
+     the start screen. */
+  const logout = $('#btnLogout');
+  if (logout) logout.style.display = app.auth?.isGuest === false ? '' : 'none';
+
+  applyBackLabel();
   $$('.btn-back, .btn-back-bottom', $('#settings')).forEach(btn => {
     btn._customBack = true;
     btn.onclick = () => {
@@ -93,6 +106,7 @@ export function bindSettings(showHome) {
         setLanguage(val);
       }
       localise(t);
+      applyBackLabel();
     });
   }
 }

@@ -89,6 +89,9 @@ function positionSpotlight(overlay, hint) {
   const targetEl = $(hint.target);
   const spotlight = overlay.querySelector('.onboarding-spotlight');
   const bubble = overlay.querySelector('.onboarding-bubble');
+  /* The spotlight's own shadow dims the rest; the overlay tint would also
+     darken the element being pointed at. */
+  overlay.classList.toggle('has-spotlight', Boolean(targetEl));
   if (targetEl) {
     const rect = targetEl.getBoundingClientRect();
     const pad = 8;
