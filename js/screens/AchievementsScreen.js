@@ -161,6 +161,32 @@ function renderCategories(lang, earned, saveData, animate) {
 
   list.innerHTML = html;
 
+  if (_filter === 'earned' || _filter === 'all') {
+    const activeIds = new Set(_allAchs.map(achievement => achievement.id));
+    const legacyIds = [...new Set([...earned].map(id => getAchById(id)?.id || id))].filter(id => !activeIds.has(id));
+    if (legacyIds.length) {
+      const archive = document.createElement('details');
+      archive.className = 'ach-legacy-archive';
+      const summary = document.createElement('summary');
+      summary.textContent = t('ach_legacy_archive', { n: legacyIds.length });
+      archive.appendChild(summary);
+      let rendered = false;
+      archive.addEventListener('toggle', () => {
+        if (!archive.open || rendered) return;
+        rendered = true;
+        const items = document.createElement('ul');
+        items.className = 'ach-legacy-list';
+        for (const id of legacyIds) {
+          const item = document.createElement('li');
+          item.textContent = app.save.getAchievementName(id, lang);
+          items.appendChild(item);
+        }
+        archive.appendChild(items);
+      });
+      list.appendChild(archive);
+    }
+  }
+
   // Bind accordion click — exclusive: only one category open at a time
   list.querySelectorAll('.ach-cat-header').forEach(header => {
     header.addEventListener('click', () => {

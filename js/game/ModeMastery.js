@@ -6,6 +6,7 @@
    ═══════════════════════════════════════════════ */
 import { CONFIG } from '../config.js';
 import { getLanguage } from '../i18n.js';
+import { ensureProgression } from '../services/ProgressionService.js';
 
 /**
  * Generic per-mode mastery tracker.
@@ -105,7 +106,7 @@ export class ModeMastery {
   }
 
   /* ── Mastery tier calculation ── */
-  getMasteryTier(mode) {
+  _rawMasteryTier(mode) {
     const def = CONFIG.MODE_MASTERY_DEFS?.[mode];
     if (!def || !def.tiers) return { tier: 0, name: '', next: null };
     const score = this.getMasteryScore(mode);
@@ -116,6 +117,28 @@ export class ModeMastery {
     const current = def.tiers[tier];
     const next = def.tiers[tier + 1] || null;
     return { tier, name: current.name, score, next };
+  }
+
+  migrateRanks() {
+    const p = ensureProgression(this.save.data);
+    if (!p.migrateMastery) return;
+    for (const [mode, metrics] of Object.entries(this.save.data.modeMastery || {})) {
+      if (metrics.totalGames > 0) p.masteryFloors[mode] = this._rawMasteryTier(mode).tier;
+    }
+    p.migrateMastery = false;
+  }
+
+  getMasteryTier(mode) {
+    const raw = this._rawMasteryTier(mode);
+    const def = CONFIG.MODE_MASTERY_DEFS?.[mode];
+    if (!def?.tiers) return raw;
+    const p = ensureProgression(this.save.data);
+    let qualified = (p.modeRounds[mode] || 0) >= 5 && (p.modeAnswers[mode] || 0) >= 50;
+    if (mode === 'stroop') qualified &&= this.get(mode, 'congruentCorrect') >= 10 && this.get(mode, 'incongruentCorrect') >= 10;
+    if (mode === 'fokus') qualified &&= this.get(mode, 'congruentCorrect') >= 10 && this.get(mode, 'incongruentCorrect') >= 10;
+    if (qualified) p.masteryFloors[mode] = Math.max(p.masteryFloors[mode] || 0, raw.tier);
+    const tier = Math.max(p.masteryFloors[mode] || 0, qualified ? raw.tier : 0);
+    return { ...raw, tier, name: def.tiers[tier].name, next: def.tiers[tier + 1] || null, qualified };
   }
 
   getMasteryScore(mode) {

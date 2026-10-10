@@ -1,133 +1,72 @@
-/* ═══════════════════════════════════════
-   SCS Play — Daily Quest Service
-   3 deterministic quests per local day.
-   Quests draw from a fixed pool seeded by date,
-   so the same day shows the same quests for
-   every player on the device.
-   Persistence: save.data.dailyQuests = {
-     date:   'YYYY-MM-DD',
-     quests: [{ id, type, target, progress, claimed }]
-   }
-   ═══════════════════════════════════════ */
+/* One deterministic daily goal, requiring three genuinely played rounds. */
+import { isQualifiedRound, ensureProgression } from './ProgressionService.js';
 
-const QUEST_POOL = [
-  { id: 'play3',     type: 'games',    target: 3,    rewardXP: 80,  rewardFire: 5 },
-  { id: 'play5',     type: 'games',    target: 5,    rewardXP: 140, rewardFire: 8 },
-  { id: 'score1500', type: 'score',    target: 1500, rewardXP: 100, rewardFire: 6 },
-  { id: 'score3000', type: 'score',    target: 3000, rewardXP: 160, rewardFire: 10 },
-  { id: 'streak8',   type: 'streak',   target: 8,    rewardXP: 90,  rewardFire: 6 },
-  { id: 'streak15',  type: 'streak',   target: 15,   rewardXP: 180, rewardFire: 12 },
-  { id: 'acc80',     type: 'accuracy', target: 80,   rewardXP: 110, rewardFire: 7 },
-  { id: 'modes2',    type: 'modes',    target: 2,    rewardXP: 130, rewardFire: 8 }
-];
-
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-/* Mulberry32 PRNG seeded by date string for deterministic quest selection */
-function dateSeed(dateStr) {
-  let h = 0;
-  for (let i = 0; i < dateStr.length; i++) {
-    h = (h * 31 + dateStr.charCodeAt(i)) >>> 0;
-  }
-  return h;
-}
-function mulberry32(seed) {
-  let a = seed >>> 0;
-  return function () {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function pickQuests(dateStr) {
-  const rng = mulberry32(dateSeed(dateStr));
-  const pool = QUEST_POOL.slice();
-  /* Fisher-Yates with seeded RNG */
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  return pool.slice(0, 3).map(q => ({
-    id: q.id,
-    type: q.type,
-    target: q.target,
-    rewardXP: q.rewardXP,
-    rewardFire: q.rewardFire,
-    progress: 0,
-    claimed: false,
-    /* For 'modes' quest we track set of mode names */
-    modesSeen: q.type === 'modes' ? [] : undefined
-  }));
-}
+const QUEST_VERSION = 1;
+function todayKey() { return new Date().toISOString().slice(0, 10); }
 
 export function getOrSeedQuests(save) {
-  if (!save || !save.data) return [];
+  if (!save?.data) return [];
   const today = todayKey();
-  const cur = save.data.dailyQuests;
-  if (!cur || cur.date !== today || !Array.isArray(cur.quests) || cur.quests.length === 0) {
-    save.data.dailyQuests = { date: today, quests: pickQuests(today) };
+  const current = save.data.dailyQuests;
+  const currentGoals = Array.isArray(current?.quests) ? current.quests : [];
+  if (current?.date === today && current.version === QUEST_VERSION && currentGoals.length === 1 && currentGoals[0]) {
+    const goal = currentGoals[0];
+    goal.type = 'games';
+    goal.target = 3;
+    goal.progress = goal.claimed ? 3 : Math.min(3, Math.max(0, Number(goal.progress) || 0));
+    goal.rewardXP = 15;
+    goal.rewardFire = 2;
+    if (goal.labelKey !== 'quest_legacy_completed') goal.labelKey = 'quest_lean_games';
+    return currentGoals;
   }
+  const goal = { id: 'play3', type: 'games', labelKey: 'quest_lean_games', target: 3, progress: 0, claimed: false, rewardXP: 15, rewardFire: 2 };
+  if (current?.date === today) {
+    ensureProgression(save.data).legacyDailyQuests = current;
+    if (currentGoals.some(quest => quest?.claimed)) {
+      goal.progress = goal.target;
+      goal.claimed = true;
+      goal.labelKey = 'quest_legacy_completed';
+    } else {
+      const rounds = currentGoals.filter(quest => quest?.type === 'games').map(quest => Number(quest.progress) || 0);
+      goal.type = 'games';
+      goal.labelKey = 'quest_lean_games';
+      goal.progress = Math.min(2, Math.max(0, ...rounds));
+    }
+  }
+  save.data.dailyQuests = { date: today, version: QUEST_VERSION, quests: [goal] };
   return save.data.dailyQuests.quests;
 }
 
-/* Returns array of quests that just transitioned to completed (target reached) */
 export function recordGameResult(save, stats) {
-  if (!save || !stats) return [];
-  const quests = getOrSeedQuests(save);
-  const justCompleted = [];
-  for (const q of quests) {
-    if (q.claimed) continue;
-    const wasComplete = q.progress >= q.target;
-    switch (q.type) {
-      case 'games':
-        q.progress = Math.min(q.target, (q.progress || 0) + 1);
-        break;
-      case 'score':
-        q.progress = Math.min(q.target, (q.progress || 0) + (stats.score || 0));
-        break;
-      case 'streak':
-        q.progress = Math.max(q.progress || 0, stats.streak || 0);
-        break;
-      case 'accuracy':
-        /* A high percentage is only meaningful with a minimum sample. */
-        if ((stats.total || 0) >= 5 && (stats.accuracy || 0) >= q.target) q.progress = q.target;
-        break;
-      case 'modes': {
-        const mode = stats.mode || '';
-        if (!q.modesSeen) q.modesSeen = [];
-        if (mode && !q.modesSeen.includes(mode)) q.modesSeen.push(mode);
-        q.progress = Math.min(q.target, q.modesSeen.length);
-        break;
-      }
-      default: break;
-    }
-    if (!wasComplete && q.progress >= q.target) justCompleted.push(q);
+  const goals = getOrSeedQuests(save);
+  if (!isQualifiedRound(stats)) return [];
+  const completed = [];
+  for (const goal of goals) {
+    if (goal.claimed || goal.progress >= goal.target) continue;
+    if (stats.roundId && goal.lastRoundId === stats.roundId) continue;
+    if (stats.roundId) goal.lastRoundId = stats.roundId;
+    goal.progress = Math.min(goal.target, goal.progress + 1);
+    if (goal.progress >= goal.target) completed.push(goal);
   }
-  return justCompleted;
+  return completed;
 }
 
-/* Auto-claim and pay rewards when ready. */
 export async function autoClaim(save) {
-  const quests = getOrSeedQuests(save);
+  const goals = getOrSeedQuests(save);
   let xp = 0, fire = 0;
-  for (const q of quests) {
-    if (!q.claimed && q.progress >= q.target) {
-      q.claimed = true;
-      xp  += q.rewardXP  || 0;
-      fire += q.rewardFire || 0;
+  for (const goal of goals) {
+    if (!goal.claimed && goal.progress >= goal.target) {
+      goal.claimed = true;
+      xp += goal.rewardXP;
+      fire += goal.rewardFire;
     }
   }
   if (fire) save.data.fire = (save.data.fire || 0) + fire;
-  const xpResult = xp ? await save.grantXP(xp) : { leveledUp: false };
+  const result = xp ? await save.grantXP(xp) : { leveledUp: false };
   if (!xp && fire) await save.save();
-  return { xp, fire, leveledUp: !!xpResult.leveledUp };
+  return { xp, fire, leveledUp: !!result.leveledUp };
 }
 
 export function countCompleted(save) {
-  const quests = getOrSeedQuests(save);
-  return quests.filter(q => q.progress >= q.target).length;
+  return getOrSeedQuests(save).filter(goal => goal.progress >= goal.target).length;
 }

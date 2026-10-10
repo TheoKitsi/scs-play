@@ -7,6 +7,8 @@
 import { CONFIG } from './config.js';
 import { getLanguage } from './i18n.js';
 import { isModeUnlocked as isModeUnlockedByData } from './helpers/modeUnlockHelper.js';
+import { ensureProgression, getRoundRewards, isQualifiedRound, recordRoundProgress, DAILY_REWARD } from './services/ProgressionService.js';
+import { ModeMastery } from './game/ModeMastery.js';
 import {
   ensureAchStats, updateAchStats, checkAllAchievements,
   migrateOldAchievements, getAchById
@@ -118,9 +120,9 @@ function defaults() {
     lastStreakFreezeEarned: null, // date when last freeze was earned
     /* v50: Mode Mastery — per-mode engagement tracking */
     modeMastery: {},
-    /* v60 Welle 4: Daily Quests + Season Pass (Free) */
-    dailyQuests: null,   /* { date:'YYYY-MM-DD', quests:[{id,type,target,progress,claimed,...}] } */
-    seasonPass:  null    /* { startDate:'YYYY-MM-DD', points, dailyGameCount:{}, claimedStages:[] } */
+    progression: null,
+    dailyQuests: null,   /* Versioned state for one multi-round daily goal. */
+    seasonPass:  null    /* Retained legacy state; no new season rewards. */
   };
 }
 
@@ -131,6 +133,7 @@ export class SaveService {
     this._loaded = false;
     this._activeScope = null;
     this._activeKey = null;
+    this._batchDepth = 0;
   }
 
   _scope() {
@@ -268,6 +271,8 @@ export class SaveService {
     /* v20: Achievement system migration & achStats init */
     migrateOldAchievements(this.data);
     ensureAchStats(this.data);
+    ensureProgression(this.data);
+    new ModeMastery(this).migrateRanks();
 
     this._loaded = true;
     return this.data;
@@ -283,6 +288,7 @@ export class SaveService {
   }
 
   async save() {
+    if (this._batchDepth > 0) return true;
     if (!this._activeKey || this._scope() !== this._activeScope) return false;
     localStorage.setItem(this._activeKey, JSON.stringify(this.data));
     if (this._activeScope !== 'guest') {
@@ -291,6 +297,23 @@ export class SaveService {
       }
     }
     return true;
+  }
+
+  /* Completed-round mutations commit together, including goals and receipts. */
+  async withBatch(callback) {
+    const outer = this._batchDepth === 0;
+    const snapshot = outer ? JSON.parse(JSON.stringify(this.data)) : null;
+    this._batchDepth++;
+    try {
+      const result = await callback();
+      this._batchDepth--;
+      if (outer) await this.save();
+      return result;
+    } catch (error) {
+      if (this._batchDepth > 0) this._batchDepth--;
+      if (outer) this.data = snapshot;
+      throw error;
+    }
   }
 
   _showSyncToast() {
@@ -319,10 +342,15 @@ export class SaveService {
 
   /* ─── Score ─── */
   async addScore(stats) {
+    const progression = ensureProgression(this.data);
+    const savedRound = stats.roundId && progression.recentRounds.find(round => round.id === stats.roundId);
+    if (savedRound) return { ...savedRound.result, duplicate: true };
+    const rewards = getRoundRewards(stats);
     const entry = {
       score: stats.score, streak: stats.streak, accuracy: stats.accuracy,
       avgReaction: stats.avgReaction, mode: stats.mode, playType: stats.playType || 'blitz',
-      date: new Date().toISOString()
+      date: new Date().toISOString(), correct: stats.correct, total: stats.total,
+      elapsed: stats.elapsed, isDaily: !!stats.isDaily
     };
     const key = `scores_${stats.mode}`;
     if (!this.data[key]) this.data[key] = [];
@@ -332,8 +360,10 @@ export class SaveService {
 
     const ruleset = stats.isDaily ? `daily_${new Date().toISOString().slice(0, 10)}` : (stats.playType || 'blitz');
     const scopedPBKey = `pb_${stats.mode}_${ruleset}`;
-    const isNewPB = stats.score > (this.data[scopedPBKey] || 0);
-    if (isNewPB) this.data[scopedPBKey] = stats.score;
+    const previousPB = this.data[scopedPBKey] ?? (stats.isDaily ? 0 : Math.max(0,
+      ...this.data[key].filter(score => score !== entry && !score.isDaily && score.playType === ruleset).map(score => score.score || 0)));
+    const isNewPB = previousPB > 0 && stats.score > previousPB;
+    this.data[scopedPBKey] = Math.max(previousPB, stats.score);
     const allTimePBKey = `pb_${stats.mode}`;
     this.data[allTimePBKey] = Math.max(this.data[allTimePBKey] || 0, stats.score);
 
@@ -348,7 +378,7 @@ export class SaveService {
     this.data.gamesPlayed++;
 
     /* v12: Daily diminishing returns */
-    const rawXP = stats.xp || 0;
+    const rawXP = rewards.xp;
     const today = new Date().toISOString().slice(0, 10);
     if (this.data.dailyXPDate !== today) {
       this.data.dailyXPDate = today;
@@ -369,35 +399,30 @@ export class SaveService {
     this.data[modeLevelKey] = this._calcLevel(this.data[modeXPKey]);
     const modeLeveledUp = (this.data[modeLevelKey] || 0) > oldModeLevel;
 
-    /* v11: Award life on level up (v23: every 3 levels only) */
-    let levelUpFire = 0;
-    if (leveledUp && this.data.level % 3 === 0) {
-      this.data.lives = Math.min((this.data.lives || 0) + CONFIG.LIVES_LEVEL_UP, CONFIG.LIVES_MAX);
-      /* v23: Award fire on level up */
-      levelUpFire = 25;
-      this.data.fire = (this.data.fire || 0) + levelUpFire;
-    } else if (leveledUp) {
-      /* Non-life levels still get fire */
-      levelUpFire = 15;
-      this.data.fire = (this.data.fire || 0) + levelUpFire;
+    for (let level = oldLevel + 1; level <= this.data.level; level++) {
+      if (level % 3 === 0) this.data.lives = Math.min((this.data.lives || 0) + CONFIG.LIVES_LEVEL_UP, CONFIG.LIVES_MAX);
     }
 
-    /* v23: Award fire based on best streak */
-    const fireEarned = Math.max(0, stats.streak || 0);
+    const fireEarned = rewards.fire;
     if (fireEarned > 0) {
       this.data.fire = (this.data.fire || 0) + fireEarned;
     }
 
-    if (stats.isDaily) {
-      const { GameEngine } = await import('./game/GameEngine.js');
-      const dayKey = GameEngine.todayKey();
+    recordRoundProgress(this.data, stats);
+    if (stats.isDaily && rewards.qualified) {
+      const dayKey = today;
       const existing = this.data.dailyChallenges[dayKey];
       if (!existing || stats.score > existing.score) {
         this.data.dailyChallenges[dayKey] = { score: stats.score, mode: stats.mode };
       }
     }
+    const result = { isNewPB, leveledUp, newLevel: this.data.level, xpEarned: effectiveXP, fireEarned, modeLeveledUp, modeLevel: this.data[modeLevelKey] || 0, qualified: rewards.qualified };
+    if (stats.roundId) {
+      progression.recentRounds.push({ id: stats.roundId, result });
+      progression.recentRounds = progression.recentRounds.slice(-100);
+    }
     await this.save();
-    return { isNewPB, leveledUp, newLevel: this.data.level, xpEarned: effectiveXP, fireEarned: fireEarned + levelUpFire, modeLeveledUp, modeLevel: this.data[modeLevelKey] || 0 };
+    return result;
   }
 
   /* ── Per-mode level getters ── */
@@ -498,6 +523,7 @@ export class SaveService {
    * @returns {string[]} array of newly-unlocked achievement IDs
    */
   checkAchievements(stats, sessionGames) {
+    if (!isQualifiedRound(stats)) return [];
     // Update accumulated stats for the achievement system
     updateAchStats(stats, this.data, sessionGames || 0);
 
@@ -579,49 +605,14 @@ export class SaveService {
   }
 
   /* v23: Claim daily challenge rewards (escalating with streak) */
-  async claimDailyReward() {
+  async claimDailyReward(stats) {
     const today = new Date().toISOString().slice(0, 10);
+    if (!stats?.isDaily || !isQualifiedRound(stats) || !this.hasDailyToday()) return null;
     if (this.data._lastDailyRewardDate === today) return null;
     this.data._lastDailyRewardDate = today;
-
-    const streak = this.data.loginStreak || 0;
-
-    /* v23: Escalating daily rewards based on streak tier */
-    let livesReward, baseXP, fireReward;
-    if (streak >= 31) {
-      livesReward = 3; baseXP = 200; fireReward = 10;
-    } else if (streak >= 15) {
-      livesReward = 3; baseXP = 150; fireReward = 8;
-    } else if (streak >= 8) {
-      livesReward = 2; baseXP = 100; fireReward = 5;
-    } else if (streak >= 4) {
-      livesReward = 2; baseXP = 75; fireReward = 3;
-    } else {
-      livesReward = 1; baseXP = 50; fireReward = 0;
-    }
-
-    const bonusXP = Math.min(streak * (CONFIG.DAILY_STREAK_XP_BONUS || 25), 250);
-    const xpReward = baseXP + bonusXP;
-    this.data.fire = (this.data.fire || 0) + fireReward;
-
-    /* v23: Earn streak freeze every 7-day streak (max 2 banked) */
-    if (streak > 0 && streak % 7 === 0 && (this.data.streakFreezes || 0) < 2) {
-      const lastEarned = this.data.lastStreakFreezeEarned;
-      if (lastEarned !== today) {
-        this.data.streakFreezes = Math.min(2, (this.data.streakFreezes || 0) + 1);
-        this.data.lastStreakFreezeEarned = today;
-      }
-    }
-
-    await this.addLives(livesReward);
-    this.data.totalXP += xpReward;
-    const oldLevel = this.data.level;
-    this.data.level = this._calcLevel(this.data.totalXP);
-    if (this.data.level > oldLevel && this.data.level % 3 === 0) {
-      this.data.lives = Math.min((this.data.lives || 0) + CONFIG.LIVES_LEVEL_UP, CONFIG.LIVES_MAX);
-    }
-    await this.save();
-    return { lives: livesReward, xp: xpReward, bonusXP, fire: fireReward };
+    this.data.fire = (this.data.fire || 0) + DAILY_REWARD.fire;
+    const reward = await this.grantXP(DAILY_REWARD.xp);
+    return { ...DAILY_REWARD, ...reward };
   }
 
   /* ─── Mode unlock check (v6: competition-gate for Ultra) ─── */
@@ -729,8 +720,8 @@ export class SaveService {
 
     this.data.lives = Math.min((this.data.lives || 0) + livesAwarded, CONFIG.LIVES_MAX);
 
-    /* v23: Award fire on daily login (streak × 5) */
-    const fireLogin = newStreak * 5;
+    /* A small daily allowance, bounded independently of a long login streak. */
+    const fireLogin = Math.min(5, newStreak);
     this.data.fire = (this.data.fire || 0) + fireLogin;
 
     await this.save();

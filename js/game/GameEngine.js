@@ -5,6 +5,7 @@
    math / word / memo modes.
    ═══════════════════════════════════════════════ */
 import { CONFIG } from '../config.js';
+import { getRoundRewards } from '../services/ProgressionService.js';
 
 const COLORBLIND_PATTERNS = ['diagonal-stripes', 'dots', 'crosshatch', 'horizontal-stripes'];
 
@@ -44,6 +45,7 @@ export class GameEngine {
   constructor() { this.reset(); }
 
   reset() {
+    this.roundId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
     clearTimeout(this._feverTimeout);
     this._seqFlashTimeouts?.forEach(t => clearTimeout(t));
     this.mode = 'beginner';
@@ -2375,16 +2377,19 @@ export class GameEngine {
       ? Math.round(this.score * accuracy * (CONFIG.END_BONUS_ACCURACY_SCORE_SHARE || 0.25))
       : 0;
     const finalScore = this.score + streakBonus + accBonus;
-    const xp = Math.round(finalScore / 100 * CONFIG.XP_PER_100_SCORE);
     const lightningCount = this.reactionTimes.filter(r => r < 300).length;
     const bestReactionTime = this.reactionTimes.length > 0 ? Math.min(...this.reactionTimes) : 0;
-    const isPerfectRound = this.correct === this.total && this.total >= 15;
-    const perfectBonus = isPerfectRound ? 500 : 0;
-    const lightningBonus = lightningCount * 25;
+    const rewards = getRoundRewards({
+      correct: this.correct, total: this.total, elapsed: this.elapsed,
+      mode: this.mode, playType: this.playType, practice: this.practice, streak: this.bestStreak,
+    });
+    const isPerfectRound = rewards.perfectXP > 0;
+    const perfectBonus = rewards.perfectXP;
+    const lightningBonus = 0;
     const day = new Date().getDay();
     const isWeekend = (day === 0 || day === 6);
-    const weekendMult = isWeekend ? (CONFIG.WEEKEND_XP_MULTIPLIER || 1) : 1;
-    const totalXp = Math.round((xp + perfectBonus + lightningBonus) * weekendMult);
+    const weekendMult = 1;
+    const totalXp = rewards.xp;
     const competitionStars = this.playType !== 'competition' || this.score < this.competitionTarget ? 0
       : this.score >= this.competitionTarget * 2 ? 3
         : this.score >= this.competitionTarget * 1.5 ? 2 : 1;
@@ -2394,6 +2399,7 @@ export class GameEngine {
       correct: this.correct, wrong: this.wrong, total: this.total,
       avgReaction, streakBonus, accBonus, xp: totalXp,
       mode: this.mode, playType: this.playType, isDaily: this.isDaily,
+      roundId: this.roundId, practice: this.practice,
       competitionLevel: this.competitionLevel,
       competitionTarget: this.competitionTarget,
       competitionWon: competitionStars > 0,

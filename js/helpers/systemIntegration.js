@@ -39,6 +39,17 @@ export function bindQaHooks() {
             correct: game.correct,
             spawnInterval: game.spawnInterval,
             feverActive: game.feverActive,
+            elapsed: game.elapsed,
+            total: game.total,
+          };
+        },
+        progressionState() {
+          const save = app.save;
+          return {
+            xp: save.getTotalXP(), level: save.getLevel(), fire: save.getFireBalance(), lives: save.getLives(),
+            achievements: [...save.getAchievements()], progression: structuredClone(save.data.progression),
+            quests: structuredClone(save.data.dailyQuests), seasonPass: structuredClone(save.data.seasonPass),
+            masteryTier: app.mastery.getMasteryTier(app.selectedMode).tier,
           };
         },
       };

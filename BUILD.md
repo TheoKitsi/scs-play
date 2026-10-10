@@ -34,8 +34,9 @@ This runs:
 3. Static WCAG token/theme contrast audit.
 4. Production web build.
 5. Playwright PWA release checks for cached music, HTTP byte ranges, and offline loading.
-6. Playwright DOM contrast audit against rendered screens.
-7. Playwright smoke test for the core game flow; browser console errors fail the gate.
+6. Playwright first-round reward and existing-save migration checks.
+7. Playwright DOM contrast audit against rendered screens.
+8. Playwright smoke test for the core game flow; browser console errors fail the gate.
 
 The Playwright scripts start a local static server for `docs/` automatically. To target an external deployment instead, pass `SCS_BASE`:
 

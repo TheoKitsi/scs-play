@@ -1,6 +1,6 @@
 /* ================================================================
    SCS Play -- Achievement System v2.0
-   Template-based generation of 1000+ achievements.
+   A small milestone catalog; previous awards remain readable in the archive.
    Categories, tiers, progress tracking, i18n (DE/EN).
    ================================================================ */
 
@@ -30,18 +30,9 @@ const PT_NAMES = {
 // ── Categories ──────────────────────────────────────────────────
 export const CATEGORIES = [
   { id:'milestones',  name:{ de:'Meilensteine',    en:'Milestones' },      desc:{ de:'Spiele & Fortschritt',          en:'Games & progress' }},
-  { id:'scores',      name:{ de:'Highscores',      en:'High Scores' },     desc:{ de:'Punkteziele erreichen',         en:'Reach score targets' }},
-  { id:'streaks',     name:{ de:'Combos',          en:'Combos' },           desc:{ de:'Ununterbrochene Treffer',       en:'Unbroken hit chains' }},
   { id:'precision',   name:{ de:'Präzision',       en:'Precision' },        desc:{ de:'Genauigkeit & Perfektion',      en:'Accuracy & perfection' }},
-  { id:'speed',       name:{ de:'Geschwindigkeit', en:'Speed' },            desc:{ de:'Reaktionszeit-Rekorde',         en:'Reaction time records' }},
   { id:'modes',       name:{ de:'Spielmodi',       en:'Game Modes' },       desc:{ de:'Modus-Erkundung',              en:'Mode exploration' }},
-  { id:'endless',     name:{ de:'Endlos',          en:'Endless' },          desc:{ de:'Endlos-Modus',                 en:'Endless mode' }},
-  { id:'competition', name:{ de:'Wettkampf',       en:'Competition' },      desc:{ de:'Wettkampf-Level',              en:'Competition levels' }},
-  { id:'bonuses',     name:{ de:'Boni & Fever',    en:'Bonuses & Fever' },  desc:{ de:'Goldene, Diamanten & Fever',   en:'Goldens, diamonds & fever' }},
-  { id:'progression', name:{ de:'Fortschritt',     en:'Progression' },      desc:{ de:'Level & Erfahrung',            en:'Levels & experience' }},
-  { id:'daily',       name:{ de:'Täglich',         en:'Daily' },            desc:{ de:'Tägliche Aktivitäten',         en:'Daily activities' }},
-  { id:'cumulative',  name:{ de:'Kumulativ',       en:'Cumulative' },       desc:{ de:'Lebenslange Statistiken',      en:'Lifetime statistics' }},
-  { id:'mastery',     name:{ de:'Meisterschaft',   en:'Mastery' },          desc:{ de:'Kombinierte Höchstleistungen', en:'Combined master feats' }},
+  { id:'daily',       name:{ de:'Trainingstage',  en:'Training Days' },     desc:{ de:'Regelmäßig spielen',           en:'Regular practice' }},
 ];
 
 // ── Tiers ───────────────────────────────────────────────────────
@@ -73,6 +64,11 @@ function fmtN(n, lang) {
 // Each receives (saveData, achStats, mode, playType)
 // saveData = save.data,  achStats = saveData.achStats
 const M = {
+  qualifiedRounds: (s) => s.progression?.qualifiedRounds || 0,
+  consistentRounds: (s) => s.progression?.consistentRounds || 0,
+  perfectRounds: (s) => s.progression?.perfectRounds || 0,
+  practicedModes: (s) => s.progression?.practicedModes || 0,
+  activeDays: (s) => s.progression?.activeDays?.length || 0,
   /* Accumulated counts */
   gamesPlayed:     (s)       => s.gamesPlayed || 0,
   modeGames:       (s,a,m)   => a.modeGames[m] || 0,
@@ -151,7 +147,7 @@ const M = {
 //   pts         - optional array of play types (cross-product)
 //   cmp         - 'gte' (default) or 'lte'
 //   name/desc   - {de,en} patterns with {n}, {mode}, {pt}
-const TEMPLATES = [
+const LEGACY_TEMPLATES = [
 
   // ═══════════ MILESTONES ═══════════
   { id:'games_total', cat:'milestones', metric:'gamesPlayed',
@@ -463,6 +459,24 @@ const TEMPLATES = [
     desc:{ de:'3x Fever ausgel\u00f6st', en:'Trigger fever 3 times' }},
 ];
 
+const TEMPLATES = [
+  { id:'games_total', cat:'milestones', metric:'qualifiedRounds', T:[5,25,100,500],
+    name:{ de:'{n} gespielte Runden', en:'{n} Completed Rounds' },
+    desc:{ de:'Spiele {n} gültige Runden mit mindestens 20 Sekunden und genug Antworten im jeweiligen Modus', en:'Complete {n} qualified rounds with at least 20 seconds and enough answers for the mode' } },
+  { id:'consistent_rounds', cat:'precision', metric:'consistentRounds', T:[5,25,100],
+    name:{ de:'{n} präzise Runden', en:'{n} Accurate Rounds' },
+    desc:{ de:'Spiele {n} gültige Runden mit mindestens 90% Genauigkeit', en:'Complete {n} qualified rounds with at least 90% accuracy' } },
+  { id:'perf_game_g', cat:'precision', metric:'perfectRounds', T:[3,10,50],
+    name:{ de:'{n} fehlerfreie Runden', en:'{n} Flawless Rounds' },
+    desc:{ de:'Spiele {n} gültige Runden ohne Fehler und mit ausreichend vielen Antworten im jeweiligen Modus', en:'Complete {n} qualified rounds without mistakes and with enough answers for the mode' } },
+  { id:'trained_modes', cat:'modes', metric:'practicedModes', T:[3,6,10],
+    name:{ de:'{n} Modi trainiert', en:'{n} Modes Practiced' },
+    desc:{ de:'Spiele jeweils 5 gültige Runden in {n} verschiedenen Modi', en:'Complete 5 qualified rounds in each of {n} different modes' } },
+  { id:'active_days', cat:'daily', metric:'activeDays', T:[3,7,30,100],
+    name:{ de:'{n} Trainingstage', en:'{n} Training Days' },
+    desc:{ de:'Spiele an {n} verschiedenen Tagen eine gültige Runde', en:'Complete a qualified round on {n} different days' } },
+];
+
 
 // ══════════════════════════════════════════════════════════════════
 //  GENERATION
@@ -471,6 +485,7 @@ const TEMPLATES = [
 let _cache = null;
 let _chainIndex = null;   // templateBaseId -> [achIds in order]
 let _byId = null;         // achId -> achievement object
+let _legacyById = null;
 
 function buildId(base, mode, pt, threshold) {
   let id = base;
@@ -564,7 +579,42 @@ export function generateAchievements() {
 /** Get a single achievement by id */
 export function getAchById(id) {
   if (!_byId) generateAchievements();
-  return _byId[id] || null;
+  if (_byId[id]) return _byId[id];
+  if (OLD_TO_NEW[id]) return getAchById(OLD_TO_NEW[id]);
+  if (!_legacyById) {
+    _legacyById = {};
+    for (const template of LEGACY_TEMPLATES) {
+      for (const mode of template.modes || [null]) {
+        for (const pt of template.pts || [null]) {
+          template.T.forEach((threshold, index) => {
+            const legacyId = buildId(template.id, mode, pt, threshold);
+            _legacyById[legacyId] = {
+              id: legacyId, name: {
+                de: buildText(template.name, threshold, mode, pt, 'de'),
+                en: buildText(template.name, threshold, mode, pt, 'en'),
+              }, tier: assignTier(index, template.T.length),
+            };
+          });
+        }
+      }
+    }
+  }
+  if (_legacyById[id]) return _legacyById[id];
+  const threshold = Number(String(id).split('_').at(-1));
+  if (Number.isFinite(threshold)) {
+    for (const template of LEGACY_TEMPLATES) {
+      for (const mode of template.modes || [null]) {
+        for (const pt of template.pts || [null]) {
+          if (buildId(template.id, mode, pt, threshold) !== id) continue;
+          return { id, name: {
+            de: buildText(template.name, threshold, mode, pt, 'de'),
+            en: buildText(template.name, threshold, mode, pt, 'en'),
+          } };
+        }
+      }
+    }
+  }
+  return null;
 }
 
 /** Get the chain index map (chainKey -> [id, id, ...]) */
@@ -612,7 +662,9 @@ export function checkAllAchievements(saveData) {
 
   for (const ach of all) {
     if (earned.has(ach.id)) continue;
-    if (isAchievementMet(ach, saveData)) {
+    /* Only newly crossed milestones qualify. No deferred backlog on round 5. */
+    const previous = saveData.progression?.previous?.[ach.metric];
+    if (previous != null && previous < ach.threshold && isAchievementMet(ach, saveData)) {
       newlyUnlocked.push(ach.id);
       earned.add(ach.id);
     }

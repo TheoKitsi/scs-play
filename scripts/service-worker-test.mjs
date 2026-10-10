@@ -14,6 +14,8 @@ function worker({ entries = new Map(), network = async () => new Response('netwo
   const focused = [];
   const opened = [];
   const calls = [];
+  const cacheNames = [];
+  const precached = [];
   const key = request => request.url || String(request);
   const cache = {
     async match(request) { return entries.get(key(request))?.clone(); },
@@ -22,7 +24,7 @@ function worker({ entries = new Map(), network = async () => new Response('netwo
       stored.push({ url: key(request), status: response.status });
       entries.set(key(request), response.clone());
     },
-    async addAll() {},
+    async addAll(requests) { precached.push(...requests); },
   };
   const clients = {
     async claim() { calls.push('claim'); },
@@ -45,11 +47,12 @@ function worker({ entries = new Map(), network = async () => new Response('netwo
     },
     clients,
     caches: {
-      async open() {
+      async open(name) {
+        cacheNames.push(name);
         if (failOpen) throw new Error('Storage unavailable');
         return cache;
       },
-      async keys() { return ['scs-v0', 'scs-v60', 'scs-v61', 'another-app-cache']; },
+      async keys() { return ['scs-v0', 'scs-v60', ...cacheNames, 'another-app-cache']; },
       async delete(name) { deleted.push(name); },
     },
     fetch: network,
@@ -66,7 +69,7 @@ function worker({ entries = new Map(), network = async () => new Response('netwo
     await Promise.all(pending);
     return result;
   }
-  return { dispatch, stored, deleted, focused, opened, calls };
+  return { dispatch, stored, deleted, focused, opened, calls, cacheNames, precached };
 }
 
 function cachedMusic() {
@@ -146,8 +149,10 @@ for (const request of [
   const sw = worker();
   await sw.dispatch('install');
   assert.deepEqual(sw.calls, ['skipWaiting'], 'Installation must await precaching and activation handoff');
+  assert.ok(sw.precached.length > 0 && sw.precached.every(request => request.cache === 'reload'), 'A new release must not precache stale entry files from the HTTP cache');
   await sw.dispatch('activate');
   assert.deepEqual(sw.deleted, ['scs-v0', 'scs-v60'], 'Cache cleanup must preserve the current cache and other apps');
+  assert.ok(!sw.deleted.includes(sw.cacheNames[0]));
   assert.equal(sw.calls.at(-1), 'claim', 'Activation must await taking control of game clients');
 }
 

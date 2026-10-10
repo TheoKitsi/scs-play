@@ -12,7 +12,7 @@ import { applyTheme }       from '../services/ThemeService.js';
 import { updateXPBar }      from '../helpers/xpBarHelper.js';
 import { checkOnboardingHints } from '../helpers/onboardingHints.js';
 import { getOrSeedQuests, countCompleted as questsCompleted } from '../services/DailyQuestService.js';
-import { getProgress as getPassProgress, PASS_STAGES } from '../services/SeasonPass.js';
+import { DAILY_REWARD } from '../services/ProgressionService.js';
 import app                   from '../appState.js';
 
 /* ═══════ Hero Carousel State ═══════ */
@@ -441,7 +441,7 @@ function renderDailyQuestsPanel() {
   list.innerHTML = quests.map(q => {
     const done = q.progress >= q.target;
     const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
-    const labelKey = `quest_label_${q.type}`;
+    const labelKey = q.labelKey;
     const labelTxt = t(labelKey, { n: q.target });
     return `<li class="dq-item${done ? ' dq-done' : ''}" data-id="${q.id}">
       <div class="dq-text">
@@ -454,35 +454,6 @@ function renderDailyQuestsPanel() {
       <span class="dq-count">${Math.min(q.progress, q.target)}/${q.target}</span>
     </li>`;
   }).join('');
-}
-
-/* ═══════ v60 Welle 4: Season Pass card ═══════ */
-function renderSeasonPassCard() {
-  const root = $('#seasonPassCard');
-  if (!root) return;
-  const { save } = app;
-  const p = getPassProgress(save);
-  if (!p) return;
-  const pct = Math.min(1, p.points / p.nextAt);
-  const fill = $('#spBarFill');
-  if (fill) {
-    fill.style.transform = `scaleX(${pct})`;
-    fill.parentElement?.setAttribute('aria-valuenow', String(Math.round(pct * 100)));
-    fill.parentElement?.setAttribute('aria-valuemin', '0');
-    fill.parentElement?.setAttribute('aria-valuemax', '100');
-  }
-  const meta = $('#spMeta');
-  if (meta) {
-    meta.textContent = t('sp_meta', { d: p.daysLeft });
-  }
-  const stage = $('#spStage');
-  if (stage) {
-    stage.textContent = t('sp_stage', { s: p.stage, total: p.totalStages });
-  }
-  const next = $('#spNext');
-  if (next) {
-    next.textContent = t('sp_next', { n: Math.max(0, p.nextAt - p.points) });
-  }
 }
 
 /* ═══════ Show home ═══════ */
@@ -533,14 +504,8 @@ export function showHome() {
     } else {
       dailyCard.classList.remove('daily-done');
       if (dailyBtn) dailyBtn.textContent = t('play');
-      /* Show streak-scaled reward text */
-      const streak = save.data?.loginStreak || 0;
-      const bonusXP = Math.min(streak * (CONFIG.DAILY_STREAK_XP_BONUS || 25), 250);
-      const fireReward = (streak + 1) * 5;
       if (dailyReward) {
-        dailyReward.textContent = bonusXP > 0
-          ? t('daily_reward_detail', { xp: 100 + bonusXP, fire: fireReward })
-          : t('daily_reward_text');
+        dailyReward.textContent = t('daily_reward_lean', { xp: DAILY_REWARD.xp, fire: DAILY_REWARD.fire });
       }
       stopDailyCountdown();
     }
@@ -551,14 +516,11 @@ export function showHome() {
   window.dispatchEvent(new Event('scs:update-wheel-card'));
   /* v60 Welle 4: Quests panel + Season Pass bar */
   try { renderDailyQuestsPanel(); } catch (e) { console.warn('quests render failed', e); }
-  try { renderSeasonPassCard();    } catch (e) { console.warn('pass render failed',   e); }
 
   /* Weekend XP bonus badge */
   const weekendBadge = $('#weekendBadge');
   if (weekendBadge) {
-    const day = new Date().getDay();
-    const isWeekend = day === 0 || day === 6;
-    weekendBadge.textContent = isWeekend ? t('weekend_xp_active') : '';
+    weekendBadge.textContent = '';
   }
 
   /* XP rate hint when throttled */

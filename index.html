@@ -662,9 +662,7 @@
   <div class="screen-content results-content">
     <div class="results-panel">
       <h2 data-i18n="game_over">ZEIT ABGELAUFEN!</h2>
-    <div id="resPB" class="results-pb" style="display:none"></div>
-    <div id="resLevelUp" class="results-levelup" style="display:none"></div>
-    <div id="resCompResult" class="results-comp" style="display:none"></div>
+    <div id="resMilestone" class="results-milestone" role="status" hidden></div>
 
     <!-- Phase 1: Score (counts up immediately) -->
     <div class="results-phase" id="resPhase1">
@@ -682,12 +680,25 @@
     <!-- Phase 2: Stats grid (fades in after count-up) -->
     <div class="results-phase results-phase-hidden" id="resPhase2">
       <div class="results-grid">
-        <div class="res-item res-item--detail"><span class="res-label" data-i18n="correct">Richtig</span><span id="resCorrect" class="res-val">0</span></div>
         <div class="res-item"><span class="res-label" data-i18n="accuracy_label">Genauigkeit</span><span id="resAccuracy" class="res-val">0%</span></div>
-        <div class="res-item"><span class="res-label" data-i18n="best_streak">Beste Serie</span><span id="resBestStreak" class="res-val">0</span></div>
         <div class="res-item"><span class="res-label" data-i18n="avg_reaction">&#216; Reaktion</span><span id="resAvgReaction" class="res-val">0ms</span></div>
       </div>
 
+      <div id="resXPSection" class="results-xp" role="status" aria-live="polite">
+        <div id="resXP" class="xp-earned"></div>
+        <div class="xp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-i18n-aria="xp_progress" aria-label="Fortschritt zum nächsten Level"><div id="resXPBar" class="xp-bar-fill"></div></div>
+        <div id="resNextLevel" class="xp-next"></div>
+      </div>
+    </div>
+
+    <details id="resDetails" class="results-details">
+      <summary data-i18n="result_details">Rundendetails</summary>
+      <div id="resDetailsBody" class="results-details-body">
+      <div id="resCompResult" class="results-comp" style="display:none"></div>
+      <div class="results-grid">
+        <div class="res-item"><span class="res-label" data-i18n="correct">Richtig</span><span id="resCorrect" class="res-val">0</span></div>
+        <div class="res-item"><span class="res-label" data-i18n="best_streak">Beste Combo</span><span id="resBestStreak" class="res-val">0</span></div>
+      </div>
       <div class="results-bonus">
         <span id="resStreakBonus" class="bonus-label">+0</span> <span data-i18n="streak_bonus">Streak-Bonus</span>
         &#183; <span id="resAccBonus" class="bonus-label">+0</span> <span data-i18n="acc_bonus">Acc-Bonus</span>
@@ -695,12 +706,7 @@
       <div id="resPerfectRound" class="results-pb" style="display:none;background:rgba(124,58,237,0.12);border-color:rgba(124,58,237,0.3);color:var(--primary-glow)"></div>
       <div id="resBonusExtra" class="results-bonus" style="display:none;color:var(--gold);font-weight:700"></div>
 
-      <div class="results-xp" role="status" aria-live="polite">
-        <div id="resXP" class="xp-earned"></div>
-        <div id="resFireEarned" class="xp-earned" style="color:var(--color-fire)"></div>
-        <div class="xp-bar"><div id="resXPBar" class="xp-bar-fill"></div></div>
-        <div id="resNextLevel" class="xp-next"></div>
-      </div>
+      <div id="resFireEarned" class="results-bonus"></div>
 
       <!-- Per-mode level progress -->
       <div id="resModeLevelInfo" class="results-mode-level" style="display:none"></div>
@@ -710,9 +716,11 @@
         <span id="resSession"></span> &#183; <span id="resBestToday"></span>
       </div>
 
-      <!-- Achievement progress teasers -->
-      <div id="resAchTeasers" class="res-ach-teasers"></div>
-    </div>
+      <p id="resDailyGoal" class="results-daily-goal"></p>
+      <p id="resRoundHelp" class="results-daily-goal"></p>
+      <button id="btnShare" class="btn btn-ghost btn-share" data-i18n="share_score">Teilen</button>
+      </div>
+    </details>
 
     <!-- Phase 3: Buttons (slide up after stats) — pinned outside scrollable area -->
     <div class="results-phase results-phase-hidden" id="resPhase3">
@@ -726,10 +734,8 @@
         </div>
       </div>
       <!-- Normal result buttons (hidden during continue prompt) -->
-      <div id="resNextHook" class="results-next-hook" role="status" aria-live="polite"></div>
       <div id="resNormalBtns" class="results-buttons">
         <button id="btnOneMore" class="btn btn-primary"><span id="oneMoreText" data-i18n="retry">Nochmal</span></button>
-        <button id="btnShare" class="btn btn-secondary btn-share" data-i18n="share_score"><svg class="ui-icon" viewBox="0 0 24 24" style="width:16px;height:16px;vertical-align:middle;margin-right:4px"><path fill="currentColor" d="M18 16a3 3 0 00-2.12.88l-7.17-4.18A3 3 0 009 12a3 3 0 00-.29-.7l7.17-4.18A3 3 0 0018 8a3 3 0 100-6 3 3 0 00-2.71 1.7L8.12 7.88A3 3 0 006 7a3 3 0 100 6c.77 0 1.47-.3 2.01-.78l7.17 4.18A3 3 0 0018 22a3 3 0 100-6z"/></svg> Teilen</button>
         <button id="btnHome" class="btn btn-ghost" data-i18n="home">Home</button>
       </div>
     </div>

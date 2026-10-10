@@ -597,6 +597,16 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
   background:#161b27;
 }
 #resPhase2{display:flex;flex-direction:column;gap:7px}
+.results-milestone{padding:9px 12px;border-radius:12px;background:var(--surface);color:var(--text);font-size:.8rem;line-height:1.4}
+.results-details{width:100%;color:var(--text-dim);font-size:.78rem;border-top:1px solid var(--border)}
+.results-details>summary{padding:13px 2px;cursor:pointer;color:var(--text-muted);font-weight:600}
+.results-details>summary:focus-visible{outline:2px solid var(--primary-glow);outline-offset:2px}
+.results-details-body{display:flex;flex-direction:column;gap:9px;padding-bottom:10px}
+.results-daily-goal{margin:2px 0;font-size:.75rem;line-height:1.5;color:var(--text-dim)}
+#resXPSection[hidden],#resMilestone[hidden],#resDetails[hidden]{display:none!important}
+.ach-legacy-archive{margin-top:16px;font-size:.8rem;color:var(--text-dim)}
+.ach-legacy-archive>summary{padding:12px 0;cursor:pointer}
+.ach-legacy-list{max-height:300px;overflow:auto;line-height:1.7}
 .results-grid{grid-template-columns:repeat(2,1fr);gap:7px;margin:0}
 .res-item--detail{display:flex}
 .res-item{
@@ -616,7 +626,7 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
 .results-bonus{display:block;margin:0;font-size:.72rem;color:var(--text-dim)}
 .results-xp{
   display:grid;
-  grid-template-columns:auto auto;
+  grid-template-columns:1fr;
   justify-content:center;
   align-items:center;
   column-gap:12px;
@@ -624,6 +634,8 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
   text-align:center;
 }
 .results-xp .xp-bar,.results-xp .xp-next{grid-column:1/-1;width:100%}
+.results-xp .xp-bar{height:4px;overflow:hidden;border-radius:4px;background:rgba(255,255,255,.1)}
+.results-xp .xp-bar-fill{height:100%;border-radius:inherit;background:var(--primary-glow);transition:width .25s ease}
 .xp-earned{font-size:.9rem;color:#e1d8ff;font-weight:800}
 .xp-next{font-size:.72rem}
 .results-session{display:block!important;font-size:.7rem}
@@ -653,7 +665,7 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
   font-size:.9rem;
   box-shadow:none;
 }
-#btnOneMore{grid-column:1/-1;min-height:58px;background:#7657f6;border-color:#987efa;font-size:1rem}
+#btnOneMore{min-height:50px;background:#7657f6;border-color:#987efa;font-size:1rem}
 #btnShare,#btnHome{background:#121720;border-color:rgba(255,255,255,.08)}
 .results-next-hook{
   width:100%;
@@ -669,17 +681,8 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
 }
 
 @media(max-width:767px){
-  #results .results-bonus,
-  #results #resPerfectRound,
-  #results .results-xp .xp-bar,
-  #results .results-xp .xp-next,
-  #results .results-mode-level,
-  #results .xp-bar-mode,
-  #results .results-session,
-  #results .results-mastery,
-  #results .res-ach-teasers{display:none!important}
   #results .results-xp{
-    grid-template-columns:repeat(2,minmax(0,auto));
+    grid-template-columns:1fr;
     padding:3px 8px;
   }
 }

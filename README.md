@@ -43,6 +43,7 @@ npm run visual-review
 | `npm run smoke-test` | Critical boot -> guest -> home -> game -> results flow. |
 | `npm run service-worker-test` | Regression coverage for cached media ranges, cache failures, and scoped worker lifecycle. |
 | `npm run pwa-release-test` | Real-browser checks for all music tracks, range responses, and offline loading; supports `SCS_BASE`. |
+| `npm run reward-release-test` | A real first round, quiet results, reward limits, and existing-save migration; supports `SCS_BASE`. |
 | `npm run visual-review` | Capture mobile screenshots for manual review. |
 | `npm run perf-benchmark` | Play a round with a scripted fast player under CPU throttling and report frame times, long tasks and style/layout cost per pace bucket (see flags in the script header). |
 | `npm run verify` | Full local gate: static checks, logic/service worker tests, contrast, build, PWA/offline checks, DOM contrast, and smoke. |
@@ -66,6 +67,14 @@ SCS Play/
   android/                    Capacitor Android project
   docs/                       Generated production web output
 ```
+
+## Lean Progression
+
+Qualified rounds require at least 20 active seconds and a mode-appropriate answer sample: 10 sorting/memory answers, 5 reading/thinking answers, or 6 sequence inputs, with at least half that minimum answered correctly. They earn 20–30 XP in Blitz, 40–50 XP in Classic, or bounded playtime-based XP in Endless. Score multipliers and fast-answer counts do not multiply progression rewards.
+
+There is one daily goal requiring three qualifying rounds, 17 long-term milestones, and no automatic season-pass payouts. Mastery ranks require five qualifying rounds and sufficient samples in the mode. First scores establish personal-best baselines; results show at most one milestone and put extra analysis behind **Round details**.
+
+Existing XP, balances, purchases, earned awards and mastery ranks are preserved. Earlier awards remain available in the earned-achievement archive.
 
 ## Quality Bar
 

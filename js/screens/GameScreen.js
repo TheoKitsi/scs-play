@@ -12,7 +12,6 @@ import { shapeSVG }         from '../renderers/shapes.js';
 import { SwipeHandler }     from '../input.js';
 import { EffectsManager }   from '../effects.js';
 import app                   from '../appState.js';
-import { getBodyFx }        from '../services/EffectsService.js';
 import { startModeMastery, finishModeMastery } from './gameHud/modeMasteryLifecycle.js';
 import { trackKlassikAnswer, getGhostDelta, getSpeedZone } from '../game/ModeMastery.js';
 import { trackFormenAnswer, getFormenGhostDelta } from '../game/ModeMastery.js';
@@ -2547,13 +2546,6 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
         else if (result.bonus === 'golden') { popText = `\u2726 +${result.points}`; popColor = '#FFD700'; big = true; effects.goldenFlash(); effects.bonusParticles(cx, cy, 'golden'); haptic('golden', save); }
         effects.scorePop(cx, cy - 40, popText, popColor, big);
 
-        if (result.bonus === 'diamond') {
-          if (save.addAchievement('diamond_catch')) {
-            const bodyFx = getBodyFx();
-            bodyFx.achievementToast(t('ach_diamond_catch'));
-            audio.achievementUnlock();
-          }
-        }
         if (result.streak > 0 && result.streak % 20 === 0 && typeof effects.screenPulse === 'function') {
           effects.screenPulse();
         }
@@ -2623,10 +2615,6 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     effects.startFever();
     const feverEl = $('#feverText');
     if (feverEl) { feverEl.textContent = t('fever'); feverEl.classList.remove('active'); requestAnimationFrame(() => { feverEl.classList.add('active'); }); }
-    if (save.addAchievement('fever_triggered')) {
-      effects.achievementToast(t('ach_fever_triggered'));
-      audio.achievementUnlock();
-    }
   };
 
   game.onFeverEnd = () => {
@@ -2650,14 +2638,8 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     }
   };
 
-  /* v19: Score milestone celebration — skip burst during rush */
-  game.onScoreMilestone = (threshold, tier) => {
-    if (typeof audio.scoreMilestone === 'function') audio.scoreMilestone(tier);
-    if (!game.inRush && typeof effects.scoreMilestoneBurst === 'function') effects.scoreMilestoneBurst(tier);
-    haptic('combo', save);
-    const label = threshold >= 10000 ? `${threshold/1000}K!` : `${threshold/1000}K`;
-    effects.scorePop(window.innerWidth / 2, window.innerHeight / 2 - 80, `⭐ ${label}`, '#FFD700', true);
-  };
+  /* Score changes stay in the HUD; they are not separate achievement events. */
+  game.onScoreMilestone = null;
 
   /* v19: Streak break feedback */
   game.onStreakBreak = (lostStreak) => {
@@ -2810,12 +2792,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     effects.flash('#a78bfa30', 300);
   };
 
-  game.onCompetitionComplete = () => {
-    if (typeof audio.competitionWin === 'function') audio.competitionWin();
-    const bodyFx = getBodyFx();
-    bodyFx.achievementToast(t('competition_complete'));
-    bodyFx.confetti();
-  };
+  game.onCompetitionComplete = null;
 
   game.onContinuePrompt = (stats) => { showContinuePrompt(stats); };
 

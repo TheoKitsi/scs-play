@@ -21,7 +21,7 @@
 | Game core | `js/game/` | Game engine and ModeMastery logic. |
 | Screens | `js/screens/` | UI for home, game, results, store, settings, achievements, and onboarding. |
 | Helpers | `js/helpers/` | DOM utilities, haptics, display helpers, system integration, onboarding. |
-| Services | `js/services/` | Ads, quests, season pass, theme/effects integration, sharing. |
+| Services | `js/services/` | Bounded progression, a single daily goal, ads, theme/effects integration, sharing. |
 | Rendering | `js/renderers/` | Avatar and shape markup renderers. |
 
 ## Screen Coupling Rules

@@ -9,14 +9,11 @@ import { haptic }           from '../helpers/haptics.js';
 import app                   from '../appState.js';
 import { updateXPBar }      from '../helpers/xpBarHelper.js';
 import { updateLivesDisplay } from '../helpers/livesDisplayHelper.js';
-import { getBodyFx }        from '../services/EffectsService.js';
 import { maybeShowFeedback } from '../helpers/microFeedback.js';
-import { generateAchievements, getProgress } from '../achievements/AchievementSystem.js';
 import { getKlassikInsights, getFormenInsights, getExpertInsights, getUltraInsights, getMatheInsights, getAlgebraInsights, getWorteInsights, getHauptstaedteInsights, getWissenInsights, getMemoInsights, getSequenzInsights, getStroopInsights, getFokusInsights, getChaosInsights } from '../game/ModeMastery.js';
-import { recordGameResult as recordQuestProgress, autoClaim as autoClaimQuests } from '../services/DailyQuestService.js';
-import { recordGamePoint as recordPassGamePoint, addBonusPoints as addPassBonusPoints, collectReachedRewards as collectPassRewards } from '../services/SeasonPass.js';
+import { getOrSeedQuests, recordGameResult as recordQuestProgress, autoClaim as autoClaimQuests } from '../services/DailyQuestService.js';
+import { isQualifiedRound, getRoundRequirements } from '../services/ProgressionService.js';
 
-let _lastRetryKey = '';
 let _resultGeneration = 0;
 let _resultCountUpCancel = null;
 const _resultTimers = new Set();
@@ -55,71 +52,6 @@ window.addEventListener('scs:screenchange', ({ detail }) => {
   if (detail?.prevScreen === 'results' && detail.id !== 'results') cancelResultWork();
 });
 
-function getRemainingToNextLevel(xp, level) {
-  const thresholds = CONFIG.LEVEL_THRESHOLDS;
-  const current = thresholds[level] || 0;
-  const next = thresholds[level + 1] || thresholds[thresholds.length - 1] || current;
-  if (next <= current) return 0;
-  return Math.max(0, next - xp);
-}
-
-function getReplayHook(save, stats, modeLabel) {
-  if (stats.playType === 'competition') {
-    const target = stats.competitionTarget || CONFIG.COMPETITION_SCORE_TARGETS[stats.competitionLevel] || 2000;
-    const rankedScore = stats.rawScore ?? stats.score;
-    if (rankedScore < target) {
-      return {
-        text: t('next_goal_competition_push', { n: target - rankedScore }),
-        tone: 'competition',
-      };
-    }
-  }
-
-  const pbRuleset = stats.isDaily ? `daily_${new Date().toISOString().slice(0, 10)}` : stats.playType;
-  const personalBest = save.getPB(stats.mode || app.selectedMode, pbRuleset);
-  if (personalBest > stats.score && stats.score > 0) {
-    const gap = personalBest - stats.score;
-    const threshold = Math.max(100, Math.round(personalBest * 0.15));
-    if (gap <= threshold) {
-      return {
-        text: t('close_to_pb', { n: gap }),
-        tone: 'flow',
-      };
-    }
-  }
-
-  const modeKey = stats.mode || app.selectedMode;
-  const modeXP = save.getModeXP(modeKey);
-  const modeLevel = save.getModeLevel(modeKey);
-  const remainingModeXP = getRemainingToNextLevel(modeXP, modeLevel);
-  if (remainingModeXP > 0 && remainingModeXP <= 220) {
-    return {
-      text: t('next_goal_mode_level', { mode: modeLabel, n: remainingModeXP, level: modeLevel + 1 }),
-      tone: 'level',
-    };
-  }
-
-  const sessionDiff = app.sessionBest - stats.score;
-  if (app.sessionBest > stats.score && sessionDiff <= Math.max(180, Math.round(app.sessionBest * 0.16))) {
-    return {
-      text: t('next_goal_session_best', { n: sessionDiff }),
-      tone: 'flow',
-    };
-  }
-
-  if (stats.isDaily || stats.accuracy >= 85 || stats.streak >= 12) {
-    return {
-      text: t('next_goal_keep_flow'),
-      tone: 'flow',
-    };
-  }
-
-  return {
-    text: t('next_goal_retry'),
-    tone: 'flow',
-  };
-}
-
 function setResultValue(selector, value, hasData = true) {
   const el = $(selector);
   if (!el) return;
@@ -147,7 +79,8 @@ export async function showResults(stats, canContinue = false) {
   const { save, audio, effects, engagement } = app;
   app.lastResultStats = stats;
 
-  if (!canContinue) {
+  const alreadySaved = stats.roundId && save.data.progression?.recentRounds.some(round => round.id === stats.roundId);
+  if (!canContinue && !alreadySaved) {
     app.sessionGames++;
 
     /* Engagement: track game end + mode/playType adoption */
@@ -163,79 +96,46 @@ export async function showResults(stats, canContinue = false) {
   if (engagement) engagement.markResultsShown();
   if (stats.score > app.sessionBest) app.sessionBest = stats.score;
 
-  /* v19: Victory jingle based on performance tier */
-  if (!canContinue && typeof audio.victoryJingle === 'function') {
-    const tier = stats.accuracy >= 95 && stats.score >= 5000 ? 'platinum'
-      : stats.accuracy >= 80 && stats.score >= 2000 ? 'gold'
-      : stats.accuracy >= 60 ? 'silver' : 'bronze';
-    audio.victoryJingle(tier);
-  }
-
   let isNewPB = false, leveledUp = false, unlocked = [], fireEarned = 0, gameXPEarned = 0;
+  let completedGoal = false, ultraUnlocked = false, duplicate = false;
   if (!canContinue) {
-    ({ isNewPB, leveledUp, fireEarned, xpEarned: gameXPEarned } = await save.addScore(stats));
-    fireEarned = fireEarned || 0;
-
-    if (stats.playType === 'competition' && stats.competitionWon) {
-      const stars = stats.competitionStars;
-      const ultraUnlocked = await save.completeCompetitionLevel(stats.competitionLevel, stars);
-      if (ultraUnlocked) {
-        scheduleResult(resultGeneration, () => {
-          getBodyFx().achievementToast(t('competition_ultra_unlocked'));
-          audio.levelUp();
-        }, 1200);
+    await save.withBatch(async () => {
+      const scoreResult = await save.addScore(stats);
+      ({ isNewPB, leveledUp, fireEarned, xpEarned: gameXPEarned, duplicate = false } = scoreResult);
+      fireEarned = fireEarned || 0;
+      if (!duplicate && stats.playType === 'competition' && stats.competitionWon) {
+        const stars = stats.competitionStars;
+        const wasUnlocked = save.isUltraUnlockedViaCompetition();
+        ultraUnlocked = await save.completeCompetitionLevel(stats.competitionLevel, stars) && !wasUnlocked;
       }
-    }
-
-    unlocked = save.checkAchievements(stats, app.sessionGames);
-    if (unlocked.length) await save.save();
-
-    /* v60 Welle 4: Daily quest progress + Season Pass points */
-    try {
-      const completed = recordQuestProgress(save, stats);
-      if (recordPassGamePoint(save)) {
-        const passClaim = await collectPassRewards(save);
-        leveledUp = leveledUp || passClaim.leveledUp;
-        fireEarned += passClaim.fire;
+      if (!duplicate) {
+        completedGoal = recordQuestProgress(save, stats).length > 0;
+        const claim = await autoClaimQuests(save);
+        leveledUp = leveledUp || claim.leveledUp;
+        gameXPEarned += claim.xp;
+        fireEarned += claim.fire;
+        if (stats.isDaily) {
+          const reward = await save.claimDailyReward(stats);
+          if (reward) {
+            leveledUp = leveledUp || reward.leveledUp;
+            gameXPEarned += reward.xp;
+            fireEarned += reward.fire;
+          }
+        }
+        unlocked = save.checkAchievements(stats, app.sessionGames);
+        app.mastery?.getMasteryTier(stats.mode);
+        const receipt = save.data.progression?.recentRounds.find(round => round.id === stats.roundId);
+        if (receipt) Object.assign(receipt.result, { xpEarned: gameXPEarned, fireEarned, leveledUp });
+        await save.save();
       }
-      const claim = await autoClaimQuests(save);
-      leveledUp = leveledUp || claim.leveledUp;
-      fireEarned += claim.fire;
-      if (completed && completed.length) {
-        addPassBonusPoints(save, completed.length);
-        const passClaim = await collectPassRewards(save);
-        leveledUp = leveledUp || passClaim.leveledUp;
-        fireEarned += passClaim.fire;
-        const fx = getBodyFx();
-        const lang = getLanguage();
-        completed.forEach((q, i) => {
-          scheduleResult(resultGeneration, () => {
-            try {
-              const label = (typeof t === 'function') ? t('quest_complete_toast', { n: q.target, xp: q.rewardXP, fire: q.rewardFire }) : 'Quest!';
-              fx.achievementToast(label);
-            } catch {}
-          }, 1800 + i * 700);
-        });
-      }
-      await save.save();
-    } catch (e) { console.warn('quest/pass hook failed', e); }
-
-    if (stats.isDaily) {
-      const reward = await save.claimDailyReward();
-      if (reward) {
-        scheduleResult(resultGeneration, () => {
-          const fx = getBodyFx();
-          fx.achievementToast(t('daily_reward_earned', { l: reward.lives, x: reward.xp }));
-        }, 1500);
-      }
-    }
+    });
   }
 
   if (resultGeneration !== _resultGeneration) return;
 
   const headingEl = $('[data-i18n="game_over"]');
   if (headingEl) {
-    if (stats.isDaily) {
+    if (stats.isDaily && isQualifiedRound(stats)) {
       headingEl.textContent = t('daily_complete');
     } else {
       headingEl.textContent = stats.playType === 'endless' ? t('endless_over') : t('game_over');
@@ -244,7 +144,7 @@ export async function showResults(stats, canContinue = false) {
 
   /* Daily Challenge banner in results */
   let dailyBanner = $('#resDailyBanner');
-  if (stats.isDaily && !canContinue) {
+  if (stats.isDaily && !canContinue && isQualifiedRound(stats)) {
     if (!dailyBanner) {
       dailyBanner = document.createElement('div');
       dailyBanner.id = 'resDailyBanner';
@@ -255,21 +155,16 @@ export async function showResults(stats, canContinue = false) {
         insertTarget.parentElement.insertBefore(dailyBanner, insertTarget.nextSibling);
       }
     }
-    dailyBanner.innerHTML = `<span class="daily-banner-icon">🌟</span><span class="daily-banner-text">${t('daily_reward_summary')}</span>`;
+    dailyBanner.textContent = t('result_daily_recorded');
     dailyBanner.style.display = '';
   } else if (dailyBanner) {
     dailyBanner.style.display = 'none';
   }
 
-  /* Tier-colored ring: tint based on accuracy */
-  const tier = stats.accuracy >= 95 && stats.score >= 5000 ? 3
-    : stats.accuracy >= 80 && stats.score >= 2000 ? 2
-    : stats.accuracy >= 60 ? 1 : 0;
-  const ringColors = ['#EF4444', '#F59E0B', '#7C3AED', '#2DD4BF'];
   const ringEl = $('#resXPRingFill');
   if (ringEl) {
-    ringEl.style.stroke = ringColors[tier];
-    ringEl.style.filter = `drop-shadow(0 0 12px ${ringColors[tier]})`;
+    ringEl.style.stroke = 'var(--primary-glow)';
+    ringEl.style.filter = '';
   }
 
   /* Dramatic ring entrance */
@@ -291,14 +186,7 @@ export async function showResults(stats, canContinue = false) {
   const scoreEl = $('#resScore');
   if (scoreEl) scoreEl.classList.remove('score-complete');
   if (scoreEl && effects && typeof effects.scoreCountUp === 'function') {
-    /* v19: Audio ticks during score count-up */
-    const tickFn = typeof audio.scoreCountTick === 'function'
-        ? (progress) => {
-            audio.scoreCountTick(progress);
-            if (progress > 0.1 && Math.random() > 0.5) haptic('tap', app.save);
-        }
-        : null;
-      _resultCountUpCancel = effects.scoreCountUp(scoreEl, 0, stats.score, CONFIG.RESULTS_COUNTUP_MS, tickFn);
+      _resultCountUpCancel = effects.scoreCountUp(scoreEl, 0, stats.score, CONFIG.RESULTS_COUNTUP_MS);
       scheduleResult(resultGeneration, () => scoreEl.classList.add('score-complete'), CONFIG.RESULTS_COUNTUP_MS + 50);
   } else {
     setText('#resScore', stats.score.toLocaleString());
@@ -319,16 +207,13 @@ export async function showResults(stats, canContinue = false) {
   const bonusEl = $('#resBonusExtra');
   if (bonusEl) {
     const parts = [];
-    if (stats.isPerfectRound) parts.push(t('perfect_bonus', { n: stats.perfectBonus }));
-    if (stats.lightningCount > 0) parts.push(t('lightning_bonus', { n: stats.lightningBonus, c: stats.lightningCount }));
-    if (stats.isWeekend) parts.push(t('weekend_xp_info'));
+    if (stats.perfectBonus > 0) parts.push(t('perfect_bonus', { n: stats.perfectBonus }));
     bonusEl.textContent = parts.join(' \u2022 ');
     bonusEl.style.display = parts.length > 0 ? 'block' : 'none';
   }
   const perfectEl = $('#resPerfectRound');
   if (perfectEl) {
-    perfectEl.style.display = stats.isPerfectRound ? 'block' : 'none';
-    if (stats.isPerfectRound) perfectEl.textContent = t('perfect_round');
+    perfectEl.style.display = 'none';
   }
   setResultValue('#resBestReaction', `${stats.bestReactionTime}${t('ms')}`,
     Number(stats.correct) > 0 && Number(stats.bestReactionTime) > 0);
@@ -351,9 +236,12 @@ export async function showResults(stats, canContinue = false) {
   }
 
   const prog = save.getXPProgress();
-  setText('#resNextLevel', t('next_level', { n: prog.needed - prog.current }));
+  setText('#resNextLevel', `${t('level')} ${save.getLevel() + 1}`);
   const xpBar = $('#resXPBar');
-  if (xpBar) xpBar.style.width = (prog.pct * 100) + '%';
+  if (xpBar) {
+    xpBar.style.width = (prog.pct * 100) + '%';
+    xpBar.parentElement.setAttribute('aria-valuenow', String(Math.round(prog.pct * 100)));
+  }
 
   /* v25: Per-mode level display */
   const modeLvEl = $('#resModeLevelInfo');
@@ -362,7 +250,7 @@ export async function showResults(stats, canContinue = false) {
     const modeLvName = save.getModeLevelName(modeKey, getLanguage());
     const modeLvProgress = save.getModeLevelProgress(modeKey);
     const modeLv = save.getModeLevel(modeKey);
-    modeLvEl.innerHTML = `<span class="mode-level-label">${modeLabel} Lv.${modeLv}</span> <span class="mode-level-name">${modeLvName}</span>`;
+    modeLvEl.innerHTML = `<span class="mode-level-label">${modeLabel} Lv.${modeLv + 1}</span> <span class="mode-level-name">${modeLvName}</span>`;
     modeLvEl.style.display = '';
     const modeLvBar = $('#resModeLevelBar');
     if (modeLvBar) modeLvBar.style.width = (modeLvProgress * 100) + '%';
@@ -407,69 +295,36 @@ export async function showResults(stats, canContinue = false) {
     if (resNormalBtns) resNormalBtns.style.display = '';
   }
 
-  const pbEl = $('#resPB');
-  if (pbEl) {
-    pbEl.style.display = isNewPB ? 'block' : 'none';
-    if (isNewPB) {
-      pbEl.textContent = t('new_pb');
-      audio.newPB();
-      haptic('newPB', save);
-      getBodyFx().pbCelebration();
-    }
+  const milestone = !canContinue && !duplicate
+    ? ultraUnlocked ? t('competition_ultra_unlocked')
+      : stats.playType === 'competition' ? `${t('competition_level', { n: stats.competitionLevel + 1 })} · ${t(stats.competitionWon ? 'competition_complete' : 'competition_failed')}`
+        : leveledUp ? `${t('level_up')} ${save.getLevelName()}`
+        : unlocked.length ? `${t('achievement')} ${save.getAchievementName(unlocked[0])}`
+          : completedGoal ? t('result_goal_complete')
+            : isNewPB ? t('result_pb_improved') : ''
+    : '';
+  const milestoneEl = $('#resMilestone');
+  if (milestoneEl) {
+    milestoneEl.textContent = milestone;
+    milestoneEl.hidden = !milestone;
   }
-
-  if (leveledUp) {
-    audio.levelUp();
-    haptic('levelUp', save);
-    const lvlEl = $('#resLevelUp');
-    if (lvlEl) { lvlEl.style.display = 'block'; lvlEl.textContent = `${t('level_up')} ${save.getLevelName()}`; }
-    scheduleResult(resultGeneration, () => {
-      const fx = getBodyFx();
-      fx.levelUpCelebration();
-      fx.achievementToast(t('lives_earned_levelup'));
-      updateLivesDisplay();
-    }, 2000);
-  } else {
-    const lvlEl = $('#resLevelUp');
-    if (lvlEl) lvlEl.style.display = 'none';
+  if (milestone && (stats.playType !== 'competition' || stats.competitionWon)) {
+    if (stats.playType === 'competition' && !ultraUnlocked) audio.competitionWin();
+    else if (leveledUp || ultraUnlocked) audio.levelUp();
+    else if (isNewPB && !unlocked.length && !completedGoal) audio.newPB();
+    else audio.achievementUnlock();
+    haptic('tap', save);
   }
-
-  const bodyFx = getBodyFx();
+  updateLivesDisplay();
+  const xpSection = $('#resXPSection');
+  if (xpSection) xpSection.hidden = canContinue;
   const countupDuration = CONFIG.RESULTS_COUNTUP_MS || 1200;
   const statsDelay = CONFIG.RESULTS_STATS_DELAY || 400;
   const buttonsDelay = CONFIG.RESULTS_BUTTONS_DELAY || 800;
-  const maxToasts = 3;
-  const toastSlice = unlocked.slice(0, maxToasts);
-  const achBaseDelay = countupDuration + statsDelay + 260;
-  toastSlice.forEach((id, i) => {
-    const achName = save.getAchievementName(id) || id;
-    scheduleResult(resultGeneration, () => { bodyFx.achievementToast(`${t('achievement')} ${achName}`); audio.achievementUnlock(); haptic('diamond', app.save); }, achBaseDelay + i * 1500);
-  });
-  if (unlocked.length > maxToasts) {
-    const extra = unlocked.length - maxToasts;
-    scheduleResult(resultGeneration, () => { bodyFx.achievementToast(t('more_achievements', { n: extra })); }, achBaseDelay + maxToasts * 1500);
-  }
 
-  const replayHookEl = $('#resNextHook');
-  const replayHook = !canContinue ? getReplayHook(save, stats, modeLabel) : null;
-  if (replayHookEl) {
-    if (replayHook?.text) {
-      replayHookEl.textContent = replayHook.text;
-      replayHookEl.className = `results-next-hook is-${replayHook.tone || 'flow'}`;
-      replayHookEl.style.display = '';
-    } else {
-      replayHookEl.textContent = '';
-      replayHookEl.className = 'results-next-hook';
-      replayHookEl.style.display = 'none';
-    }
-  }
-
-  /* Retry button glow pulse */
   const retryBtn = $('#btnOneMore');
   if (retryBtn) {
-    retryBtn.classList.remove('retry-glow');
-    const countupDone = countupDuration + statsDelay + buttonsDelay + 220;
-    scheduleResult(resultGeneration, () => retryBtn.classList.add('retry-glow'), countupDone);
+    retryBtn.classList.remove('retry-glow', 'cta-pulse');
   }
 
   const hasNextCompetitionStage = stats.playType === 'competition'
@@ -478,17 +333,6 @@ export async function showResults(stats, canContinue = false) {
   setText('#oneMoreText', hasNextCompetitionStage
     ? t('competition_level', { n: stats.competitionLevel + 2 })
     : t('retry'));
-  /* v19: Randomize retry button text for freshness (avoid repeats) */
-  const retryVariants = hasNextCompetitionStage ? [] : ['retry', 'retry_2', 'retry_3', 'retry_4', 'retry_5'];
-  let retryKey;
-  if (retryVariants.length) {
-    do {
-      retryKey = retryVariants[Math.floor(Math.random() * retryVariants.length)];
-    } while (retryKey === _lastRetryKey && retryVariants.length > 1);
-    _lastRetryKey = retryKey;
-    const retryText = t(retryKey);
-    if (retryText && retryText !== retryKey) setText('#oneMoreText', retryText);
-  }
 
   updateXPBar();
 
@@ -511,40 +355,23 @@ export async function showResults(stats, canContinue = false) {
   scheduleResult(resultGeneration, () => { if (phase3) phase3.classList.add('results-phase-visible'); },
     countupDuration + statsDelay + buttonsDelay);
 
-  /* Auto-pulse the Replay CTA once buttons are visible.
-     Compositor-safe (transform only); css gates it for low-perf
-     and reduced-motion in 12-polish-v18-v19.css. */
-  const ctaPulseDelay = countupDuration + statsDelay + buttonsDelay + 600;
-  scheduleResult(resultGeneration, () => {
-    const btn = $('#btnOneMore');
-    if (!btn) return;
-    /* Only pulse when the normal buttons row is actually shown
-       (not during a continue prompt). */
-    const normalBtns = $('#resNormalBtns');
-    if (!normalBtns || normalBtns.style.display === 'none') return;
-    btn.classList.add('cta-pulse');
-  }, ctaPulseDelay);
-
-  /* ─── MicroFeedback trigger (delayed to not clash with animations) ─── */
-  if (!canContinue && engagement) {
-    const feedbackDelay = countupDuration + 1800;
-    scheduleResult(resultGeneration, () => {
-      const ctx = { mode: stats.mode || app.selectedMode, score: stats.score, sessionGame: app.sessionGames };
-      if (isNewPB)           maybeShowFeedback('pb', ctx);
-      else if (leveledUp)    maybeShowFeedback('levelup', ctx);
-      else if (app.sessionGames % 10 === 0) maybeShowFeedback('sampling', ctx);
-      else if (app.sessionGames === 3) maybeShowFeedback('streak', ctx);
-    }, feedbackDelay);
-  }
-
-  /* Achievement progress teasers (show after phase 2 loads) */
-  if (!canContinue) {
-    scheduleResult(resultGeneration, () => renderAchTeasers(save), countupDuration + statsDelay + 120);
-  }
-
-  /* Mode Mastery insights (show after stats phase) */
-  if (!canContinue && app.mastery) {
-    scheduleResult(resultGeneration, () => renderMasteryInsights(app.mastery, stats), countupDuration + statsDelay + 300);
+  const details = $('#resDetails');
+  if (details) {
+    details.open = false;
+    details.hidden = canContinue;
+    let rendered = false;
+    details.ontoggle = () => {
+      if (!details.open || rendered || resultGeneration !== _resultGeneration) return;
+      rendered = true;
+      const goal = getOrSeedQuests(save)[0];
+      setText('#resDailyGoal', goal ? `${t(goal.labelKey, { n: goal.target })} · ${goal.progress}/${goal.target}` : '');
+      const requirements = getRoundRequirements(stats);
+      setText('#resRoundHelp', t('progression_round_help', { n: requirements.minAnswers, hits: requirements.minCorrect }));
+      if (app.mastery) renderMasteryInsights(app.mastery, stats);
+      if (!milestone && engagement && save.data.progression.qualifiedRounds >= 20 && app.sessionGames % 10 === 0) {
+        maybeShowFeedback('sampling', { mode: stats.mode, score: stats.score, sessionGame: app.sessionGames });
+      }
+    };
   }
 }
 
@@ -556,16 +383,21 @@ function renderMasteryInsights(mastery, stats) {
     el = document.createElement('div');
     el.id = 'resMasteryInsights';
     el.className = 'results-mastery';
-    const achTeasers = $('#resAchTeasers');
-    const parent = achTeasers?.parentElement || $('#resPhase2');
-    if (parent) {
-      if (achTeasers) parent.insertBefore(el, achTeasers);
-      else parent.appendChild(el);
-    } else return;
+    const parent = $('#resDetailsBody');
+    if (!parent) return;
+    parent.appendChild(el);
   }
 
   const mode = stats.mode;
   let insights = [];
+  const masteryTier = mastery.getMasteryTier(mode);
+
+  if (!masteryTier.qualified) {
+    el.style.display = '';
+    el.classList.add('results-mastery--empty');
+    el.textContent = t('result_analysis_pending');
+    return;
+  }
 
   if (!stats.correct) {
     el.style.display = '';
@@ -1292,7 +1124,7 @@ function renderMasteryInsights(mastery, stats) {
   }
 
   /* Mastery tier display */
-  const tierInfo = mastery.getMasteryTier(mode);
+  const tierInfo = masteryTier;
   if (tierInfo.name) {
     html += `<div style="text-align:center;margin-top:8px;font-size:0.55rem;color:rgba(255,255,255,0.4)">
       Mastery: <span style="color:#FFD700;font-weight:700">${tierInfo.name}</span>
@@ -1302,56 +1134,6 @@ function renderMasteryInsights(mastery, stats) {
 
   el.innerHTML = html;
   el.style.display = '';
-}
-
-/* ═══════ Achievement progress teasers (cached) ═══════ */
-let _achTeaserCache = '';
-let _achTeaserCacheKey = '';
-
-function renderAchTeasers(save) {
-  const el = $('#resAchTeasers');
-  if (!el) return;
-
-  /* Cache by earned count + games played to avoid re-computing 1000+ achievements */
-  const cacheKey = `${save.getAchievements().length}_${save.data.gamesPlayed || 0}`;
-  if (_achTeaserCache && _achTeaserCacheKey === cacheKey) {
-    el.innerHTML = _achTeaserCache;
-    return;
-  }
-
-  const allAchs = generateAchievements();
-  const earned = new Set(save.getAchievements());
-  const saveData = save.data;
-
-  /* Find unearned achievements with highest progress (>30%, <100%) */
-  const candidates = [];
-  for (const ach of allAchs) {
-    if (earned.has(ach.id)) continue;
-    const prog = getProgress(ach, saveData);
-    if (prog.pct > 0.3 && prog.pct < 1) {
-      candidates.push({ ach, prog });
-    }
-  }
-
-  if (candidates.length === 0) { el.innerHTML = ''; _achTeaserCache = ''; _achTeaserCacheKey = cacheKey; return; }
-
-  /* Sort by progress descending, pick top 2 */
-  candidates.sort((a, b) => b.prog.pct - a.prog.pct);
-  const top = candidates.slice(0, 2);
-
-  const html = `<span class="res-ach-teasers-title">${t('ach_almost') || 'Fast geschafft!'}</span>` +
-    top.map(({ ach, prog }) => {
-      const name = save.getAchievementName(ach.id);
-      const pctRound = Math.round(prog.pct * 100);
-      return `<div class="res-ach-teaser">
-        <span class="res-ach-teaser-name">${name}</span>
-        <div class="res-ach-teaser-bar"><div class="res-ach-teaser-fill" style="width:${pctRound}%"></div></div>
-        <span class="res-ach-teaser-pct">${pctRound}%</span>
-      </div>`;
-    }).join('');
-  el.innerHTML = html;
-  _achTeaserCache = html;
-  _achTeaserCacheKey = cacheKey;
 }
 
 /* ═══════ Continue / Decline ═══════ */
