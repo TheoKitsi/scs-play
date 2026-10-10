@@ -19,7 +19,7 @@ npm run build:prod
 The build script enforces default budgets:
 
 - JavaScript bundle: 480 KB max.
-- CSS bundle: 240 KB max.
+- CSS bundle: 255 KB max.
 
 ## Full Local Gate
 
@@ -30,11 +30,12 @@ npm run verify
 This runs:
 
 1. Knip static dependency and export checks.
-2. Game and audio logic regression tests.
+2. Game, audio, and service worker regression tests.
 3. Static WCAG token/theme contrast audit.
 4. Production web build.
-5. Playwright DOM contrast audit against rendered screens.
-6. Playwright smoke test for the core game flow.
+5. Playwright PWA release checks for cached music, HTTP byte ranges, and offline loading.
+6. Playwright DOM contrast audit against rendered screens.
+7. Playwright smoke test for the core game flow; browser console errors fail the gate.
 
 The Playwright scripts start a local static server for `docs/` automatically. To target an external deployment instead, pass `SCS_BASE`:
 

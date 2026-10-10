@@ -9,7 +9,7 @@ npm ci
 npm run verify
 ```
 
-Use Node 20 when possible because CI uses Node 20.
+Use Node.js 22 or newer (required by Capacitor 8). CI uses Node.js 24.
 
 ## Development Rules
 

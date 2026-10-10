@@ -41,9 +41,11 @@ npm run visual-review
 | `npm run contrast-audit` | Static WCAG token/theme contrast audit. |
 | `npm run contrast-audit:dom` | Playwright scan of rendered app screens for text/background contrast. |
 | `npm run smoke-test` | Critical boot -> guest -> home -> game -> results flow. |
+| `npm run service-worker-test` | Regression coverage for cached media ranges, cache failures, and scoped worker lifecycle. |
+| `npm run pwa-release-test` | Real-browser checks for all music tracks, range responses, and offline loading; supports `SCS_BASE`. |
 | `npm run visual-review` | Capture mobile screenshots for manual review. |
 | `npm run perf-benchmark` | Play a round with a scripted fast player under CPU throttling and report frame times, long tasks and style/layout cost per pace bucket (see flags in the script header). |
-| `npm run verify` | Full local gate: contrast, build, DOM contrast, smoke. |
+| `npm run verify` | Full local gate: static checks, logic/service worker tests, contrast, build, PWA/offline checks, DOM contrast, and smoke. |
 | `npm run cap:sync` | Build production web assets and sync Android. |
 | `npm run cap:run` | Build and run through Capacitor Android. |
 

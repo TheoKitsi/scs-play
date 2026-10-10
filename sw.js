@@ -1,7 +1,7 @@
 ﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SCS Play â€” Service Worker
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-const CACHE = 'scs-v60';
+const CACHE = 'scs-v61';
 const ASSETS = [
   './',
   './index.html',
@@ -75,45 +75,82 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
+  e.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(k => /^scs-v\d+$/.test(k) && k !== CACHE).map(k => caches.delete(k)));
+    await self.clients.claim();
+  })());
 });
 
+/* Media elements request byte ranges, including when the file is cached.
+   Return actual partial content so Chromium/Safari can load and seek MP3s offline. */
+async function rangeResponse(request, cached) {
+  const body = await cached.arrayBuffer();
+  const size = body.byteLength;
+  const match = /^bytes=(\d*)-(\d*)$/i.exec(request.headers.get('range').trim());
+  let start = match?.[1] ? Number(match[1]) : 0;
+  let end = match?.[2] ? Number(match[2]) : size - 1;
+  if (match && !match[1] && match[2]) {
+    const suffix = Number(match[2]);
+    start = Number.isSafeInteger(suffix) && suffix > 0 ? Math.max(0, size - suffix) : size;
+    end = size - 1;
+  }
+  const headers = new Headers(cached.headers);
+  headers.delete('content-encoding');
+  headers.delete('transfer-encoding');
+  headers.set('accept-ranges', 'bytes');
+  if (!match || (!match[1] && !match[2]) || !Number.isSafeInteger(start) ||
+      !Number.isSafeInteger(end) || start >= size || end < start) {
+    headers.set('content-range', `bytes */${size}`);
+    headers.set('content-length', '0');
+    return new Response(null, { status: 416, statusText: 'Range Not Satisfiable', headers });
+  }
+  end = Math.min(end, size - 1);
+  headers.set('content-range', `bytes ${start}-${end}/${size}`);
+  headers.set('content-length', String(end - start + 1));
+  return new Response(body.slice(start, end + 1), { status: 206, statusText: 'Partial Content', headers });
+}
+
+async function storeResponse(cache, request, response) {
+  /* Cache.put rejects 206 responses. Storage failure must not turn a successful
+     network response into a failed asset request. */
+  if (!cache || !response.ok || response.status === 206) return;
+  try { await cache.put(request, response.clone()); } catch {}
+}
+
 self.addEventListener('fetch', e => {
-  const url = e.request.url;
-  /* Skip caching for Firebase, external APIs, and non-GET requests */
+  const url = new URL(e.request.url);
+  /* This worker owns only this game's GET requests, not other sites/apps. */
   if (e.request.method !== 'GET' ||
-      url.includes('firebaseio.com') ||
-      url.includes('googleapis.com/identitytoolkit') ||
-      url.includes('firestore.googleapis.com') ||
-      url.includes('cloudfunctions.net') ||
-      url.includes('firebase.googleapis.com')) {
+      url.origin !== self.location.origin ||
+      !url.href.startsWith(self.registration.scope)) {
     return;
   }
   e.respondWith((async () => {
-    const cache = await caches.open(CACHE);
-    const cached = await cache.match(e.request);
+    const cache = await caches.open(CACHE).catch(() => null);
+    const cached = cache ? await cache.match(e.request).catch(() => null) : null;
     if (cached) {
+      if (e.request.headers.has('range') && cached.status === 200) {
+        return rangeResponse(e.request, cached);
+      }
       e.waitUntil(fetch(e.request).then(response => {
-        if (response?.ok) return cache.put(e.request, response.clone());
+        return storeResponse(cache, e.request, response);
       }).catch(() => {}));
       return cached;
     }
     try {
       const response = await fetch(e.request);
-      if (response?.ok) await cache.put(e.request, response.clone());
+      await storeResponse(cache, e.request, response);
       return response;
     } catch {
-      if (e.request.mode === 'navigate') return caches.match('./index.html');
+      if (e.request.mode === 'navigate' && cache) {
+        const fallback = await cache.match(new URL('index.html', self.registration.scope)).catch(() => null);
+        if (fallback) return fallback;
+      }
       return Response.error();
     }
   })());
@@ -124,7 +161,7 @@ self.addEventListener('push', e => {
   const data = e.data ? e.data.json() : {};
   const title = data.title || 'SCS Play';
   const options = {
-    body: data.body || 'Komm zurÃ¼ck und schlage deinen Rekord!',
+    body: data.body || 'Komm zurück und schlage deinen Rekord!',
     icon: './img/icon-192.svg',
     badge: './img/icon-192.svg',
     vibrate: [100, 50, 100],
@@ -136,11 +173,11 @@ self.addEventListener('push', e => {
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(
-    clients.matchAll({ type: 'window' }).then(list => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
       for (const client of list) {
-        if (client.url.includes('index.html') && 'focus' in client) return client.focus();
+        if (client.url.startsWith(self.registration.scope) && 'focus' in client) return client.focus();
       }
-      return clients.openWindow(e.notification.data?.url || './');
+      return clients.openWindow(new URL(e.notification.data?.url || './', self.registration.scope).href);
     })
   );
 });

@@ -37,13 +37,30 @@ async function run() {
   console.log(`Target: ${BASE}`);
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext(DEVICE);
-  await context.addInitScript(() => localStorage.setItem('scsQa', '1'));
+  await context.addInitScript(() => {
+    localStorage.setItem('scsQa', '1');
+    /* Production error boundaries preventDefault; capture errors before they
+       suppress the browser's normal pageerror/console reporting. */
+    window.addEventListener('error', event => {
+      if (event.message) console.error('[Smoke runtime error]', event.message);
+    });
+    window.addEventListener('unhandledrejection', event => {
+      console.error('[Smoke unhandled rejection]', String(event.reason?.stack || event.reason));
+    });
+  });
   const page = await context.newPage();
 
   page.on('console', msg => {
-    if (msg.type() === 'error') consoleErrors.push(msg.text());
+    if (msg.type() === 'error') {
+      const { url } = msg.location();
+      consoleErrors.push(`${msg.text()}${url ? ` (${url})` : ''}`);
+    }
   });
   page.on('pageerror', err => consoleErrors.push(`PAGE ERROR: ${err.message}`));
+  page.on('requestfailed', request => {
+    const failure = request.failure()?.errorText;
+    if (failure !== 'net::ERR_ABORTED') consoleErrors.push(`REQUEST ERROR: ${failure} (${request.url()})`);
+  });
 
   const visible = async (sel, timeout = 3000) => {
     try {
@@ -253,6 +270,12 @@ async function run() {
   assert(await hasActiveClass('#game', 3000), 'Sequenz game screen starts');
   await page.waitForTimeout(4500);
   assert(await page.evaluate(() => document.body.classList.contains('mode-sequenz')), 'Sequenz mode class is active during watch');
+  const endlessLabelsMatch = await page.evaluate(() => {
+    const labelLives = parseInt(document.querySelector('[data-i18n="play_endless_sub"]')?.textContent, 10);
+    const displayedLives = document.querySelectorAll('#hudEndlessLives .endless-heart').length;
+    return labelLives === displayedLives && displayedLives > 0;
+  });
+  assert(endlessLabelsMatch, 'Endless description matches the actual starting lives');
   await page.evaluate(() => document.querySelector('#btnPauseQuit')?.click());
   assert(await hasActiveClass('#home', 3000), 'Sequenz quit returns home during watch');
   await page.evaluate(() => globalThis.__SCS_QA__.setGameSelection('mathe'));
@@ -412,7 +435,7 @@ async function run() {
   await context.close();
   await browser.close();
   if (staticServer) await staticServer.close();
-  process.exit(failed > 0 ? 1 : 0);
+  process.exit(failed > 0 || consoleErrors.length > 0 ? 1 : 0);
 }
 
 run().catch(err => {

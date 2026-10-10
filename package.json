@@ -16,12 +16,14 @@
     "contrast-audit:dom": "node scripts/dom-contrast-audit.mjs",
     "game-logic-test": "node scripts/game-logic-test.mjs",
     "audio-logic-test": "node scripts/audio-logic-test.mjs",
+    "service-worker-test": "node scripts/service-worker-test.mjs",
+    "pwa-release-test": "node scripts/pwa-release-test.mjs",
     "effects-lifecycle-test": "node scripts/effects-lifecycle-test.mjs",
     "progression-logic-test": "node scripts/progression-logic-test.mjs",
     "engine-release-test": "node scripts/engine-release-test.mjs",
     "mastery-release-test": "node scripts/mastery-release-test.mjs",
     "knip": "knip --no-progress",
-    "verify": "npm run knip && npm run game-logic-test && npm run engine-release-test && npm run mastery-release-test && npm run audio-logic-test && npm run effects-lifecycle-test && npm run progression-logic-test && npm run contrast-audit && npm run build:prod && npm run contrast-audit:dom && npm run smoke-test",
+    "verify": "npm run knip && npm run game-logic-test && npm run engine-release-test && npm run mastery-release-test && npm run audio-logic-test && npm run service-worker-test && npm run effects-lifecycle-test && npm run progression-logic-test && npm run contrast-audit && npm run build:prod && npm run pwa-release-test && npm run contrast-audit:dom && npm run smoke-test",
     "cap:sync": "node scripts/build-prod.mjs && npx cap sync android",
     "cap:open": "npx cap open android",
     "cap:run": "node scripts/build-prod.mjs && npx cap run android"
@@ -30,9 +32,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@capacitor/android": "^8.1.0",
-    "@capacitor/cli": "^8.1.0",
-    "@capacitor/core": "^8.1.0"
+    "@capacitor/android": "^8.4.3",
+    "@capacitor/cli": "^8.4.3",
+    "@capacitor/core": "^8.4.3"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",

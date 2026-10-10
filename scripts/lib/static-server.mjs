@@ -30,18 +30,58 @@ export async function startStaticServer({ root, host = '127.0.0.1', port = 3000 
   }
 
   const server = createServer((req, res) => {
-    const filePath = resolveRequest(publicRoot, req.url || '/');
+    let filePath;
+    try {
+      filePath = resolveRequest(publicRoot, req.url || '/');
+    } catch {
+      res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('Bad request');
+      return;
+    }
     if (!filePath || !existsSync(filePath) || !statSync(filePath).isFile()) {
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('Not found');
       return;
     }
 
-    res.writeHead(200, {
+    const size = statSync(filePath).size;
+    const headers = {
+      'accept-ranges': 'bytes',
       'cache-control': 'no-store',
       'content-type': MIME_TYPES[extname(filePath)] || 'application/octet-stream',
-    });
-    createReadStream(filePath).pipe(res);
+      'content-length': size,
+    };
+    let start = 0;
+    let end = size - 1;
+    const range = req.method === 'GET' ? req.headers.range : null;
+    if (range) {
+      const match = /^bytes=(\d*)-(\d*)$/i.exec(range.trim());
+      start = match?.[1] ? Number(match[1]) : 0;
+      end = match?.[2] ? Number(match[2]) : size - 1;
+      if (match && !match[1] && match[2]) {
+        const suffix = Number(match[2]);
+        start = Number.isSafeInteger(suffix) && suffix > 0 ? Math.max(0, size - suffix) : size;
+        end = size - 1;
+      }
+      if (!match || (!match[1] && !match[2]) || !Number.isSafeInteger(start) ||
+          !Number.isSafeInteger(end) || start >= size || end < start) {
+        res.writeHead(416, { ...headers, 'content-range': `bytes */${size}`, 'content-length': 0 });
+        res.end();
+        return;
+      }
+      end = Math.min(end, size - 1);
+      headers['content-range'] = `bytes ${start}-${end}/${size}`;
+      headers['content-length'] = end - start + 1;
+    }
+    res.writeHead(range ? 206 : 200, headers);
+    if (req.method === 'HEAD' || !size) {
+      res.end();
+      return;
+    }
+    const stream = createReadStream(filePath, { start, end });
+    stream.on('error', () => res.destroy());
+    res.on('close', () => stream.destroy());
+    stream.pipe(res);
   });
 
   await new Promise((resolveListen, rejectListen) => {
