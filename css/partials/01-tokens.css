@@ -13,12 +13,12 @@
   --btn-height: 52px;
   --hud-height: 72px;
 
-  /* State of the Art Colors */
-  --primary:#7C3AED;--primary-glow:#9D4EDD;--primary-dark:#5B21B6;
-  --accent:#EC4899;--accent-glow:#F472B6;
-  --bg:#030014;--bg-hue:250;
-  --surface:rgba(15, 23, 42, 0.6);--card:rgba(30, 41, 59, 0.7);
-  --text:#F8FAFC;--text-dim:#B6C3D5;--text-muted:#AAB6C8;
+  /* UI colors are independent of the answer palette in CONFIG.COLORS. */
+  --primary:#7C3AED;--primary-glow:#B7A2FF;--primary-dark:#5B21B6;
+  --accent:#8754D7;--accent-glow:#D4C7FF;
+  --bg:#080C14;--bg-hue:225;
+  --surface:#111824;--card:#192231;
+  --text:#F4F7FC;--text-dim:#C4CEDD;--text-muted:#A9B4C5;
   
   --success:#10B981;--warning:#F59E0B;--error:#EF4444;--danger:#EF4444;
   --info:#0EA5E9;
@@ -34,17 +34,17 @@
   --glass-active:rgba(255,255,255,0.12);
 
   /* ── Semantic Surface Hierarchy (Material-inspired) ── */
-  --surface-container:rgba(15,23,42,0.5);
-  --surface-container-high:rgba(30,41,59,0.65);
-  --surface-elevated:rgba(20,30,52,0.85);
-  --scrim:rgba(3,0,20,0.8);
+  --surface-container:#111824;
+  --surface-container-high:#192231;
+  --surface-elevated:#1E293B;
+  --scrim:rgba(4,7,12,0.84);
 
   /* ── Outline / Border ── */
   --outline:rgba(255,255,255,0.12);
   --outline-subtle:rgba(255,255,255,0.06);
 
   /* ── Focus Ring ── */
-  --focus-ring:0 0 0 3px rgba(157,78,221,0.5);
+  --focus-ring:0 0 0 3px var(--bg),0 0 0 6px var(--primary-glow);
 
   /* ── Contrast-safe "on" colors ── */
   --on-primary:#ffffff;
@@ -62,7 +62,8 @@
   /* ── Primary text on light surfaces (used in light theme) ── */
   --primary-text:#7C3AED;
   
-  --radius:20px;--radius-sm:14px;--radius-xs:8px;--radius-md:16px;--radius-lg:28px;--radius-xl:32px;
+  --radius:20px;--radius-sm:14px;--radius-xs:8px;--radius-md:18px;--radius-lg:24px;--radius-xl:28px;
+  --phone-gutter:clamp(14px,4vw,20px);
   --shadow:0 8px 32px rgba(0,0,0,0.5);
   --shadow-sm:0 4px 16px rgba(0,0,0,0.4);
   --shadow-lg:0 16px 48px rgba(0,0,0,0.6);

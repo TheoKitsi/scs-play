@@ -51,10 +51,9 @@ body[data-perf-mode="low"] *::after{
   -webkit-backdrop-filter: none !important;
 }
 /* ── Hidden screens don't animate ──────────
-   Inactive screens are only visibility:hidden, so their infinite
-   animations (boot logo ring, tutorial dots, results aura …) kept
-   forcing a style recalc every frame during gameplay. They resume
-   automatically when the screen becomes active again. */
+   Exit transitions briefly keep inactive screens mounted. Pause their
+   children until display:none releases the layout/compositing tree.
+   Gameplay must not pay for boot rings or hidden tutorial animations. */
 .screen:not(.active) *,
 .screen:not(.active) *::before,
 .screen:not(.active) *::after{

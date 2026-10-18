@@ -184,10 +184,11 @@
   padding:20px 32px;font-size:1.25rem;font-weight:800;letter-spacing:1px;
   font-family: 'Space Grotesk', sans-serif;
   text-transform: uppercase;
-  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
-  color:#fff;border:none;border-radius:var(--radius-lg);
+  background:var(--action-gradient);
+  background-color:var(--primary);
+  color:var(--on-primary);border:none;border-radius:var(--radius-md);
   cursor:pointer;position:relative;overflow:hidden;
-  box-shadow:0 8px 32px rgba(124, 58, 237,.5), inset 0 2px 2px rgba(255,255,255,0.3);
+  box-shadow:0 6px 0 color-mix(in srgb,var(--primary) 42%,#000),0 16px 28px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.25);
   transition:transform .2s var(--ease-bounce), box-shadow .3s ease;
 }
 .btn-guest-hero .btn-icon {

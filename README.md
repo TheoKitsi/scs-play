@@ -44,8 +44,10 @@ npm run visual-review
 | `npm run service-worker-test` | Regression coverage for cached media ranges, cache failures, and scoped worker lifecycle. |
 | `npm run pwa-release-test` | Real-browser checks for all music tracks, range responses, and offline loading; supports `SCS_BASE`. |
 | `npm run reward-release-test` | A real first round, quiet results, reward limits, and existing-save migration; supports `SCS_BASE`. |
-| `npm run visual-review` | Capture mobile screenshots for manual review. |
+| `npm run visual-review` | Capture phone and desktop screenshots, including the mode catalog, for manual review. |
+| `npm run presentation-release-test` | Check the ten mode layouts, mode catalog, themes, settings, motion preferences and feedback on phone/desktop viewports. |
 | `npm run perf-benchmark` | Play a round with a scripted fast player under CPU throttling and report frame times, long tasks and style/layout cost per pace bucket (see flags in the script header). |
+| `npm run performance-release-test` | Deterministic resource/work limits for particles, trails, input geometry, motion and the frame-rate governor. |
 | `npm run verify` | Full local gate: static checks, logic/service worker tests, contrast, build, PWA/offline checks, DOM contrast, and smoke. |
 | `npm run cap:sync` | Build production web assets and sync Android. |
 | `npm run cap:run` | Build and run through Capacitor Android. |
@@ -67,6 +69,14 @@ SCS Play/
   android/                    Capacitor Android project
   docs/                       Generated production web output
 ```
+
+## Presentation
+
+The game uses a lightweight 2.5D presentation, not a 3D engine: material SVG silhouettes, a shared neutral arena, and local answer feedback. Directional light only confirms a committed answer; scene decoration must never disclose the next answer. Reading modes use wider answer cards and a protected question surface. The mode catalog uses the same previews as the home carousel.
+
+UI colors are defined in `css/partials/01-tokens.css` and the theme definitions in `09-extensions.css`. Theme-aware action labels use `--on-primary`, including dark labels on bright themes. The static contrast gate reads those source tokens directly; browser contrast coverage also checks every theme and the mode catalog.
+
+Performance tiers share one policy for CSS and effects. Short particle trajectories are baked into compositor animations; input bounds and material nodes are reused, and unchanged HUD values are not rewritten. The trail canvas is capped at 2× / 1.5× / 1× resolution for high / mid / low tiers and clears only its previous drawn bounds. The governor samples active gameplay, not menus or pauses, and keeps downgrade decisions within the current tab session. See `BUILD.md` for repeatable benchmarks; emulated FPS is not an Android device guarantee.
 
 ## Lean Progression
 

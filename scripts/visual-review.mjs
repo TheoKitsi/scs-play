@@ -9,6 +9,12 @@ import { mkdirSync } from 'fs';
 import { startStaticServer } from './lib/static-server.mjs';
 
 const DEVICES = {
+  'desktop': {
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1,
+    isMobile: false,
+    hasTouch: false,
+  },
   'galaxy-s25': {
     viewport: { width: 412, height: 915 },
     deviceScaleFactor: 3,
@@ -97,6 +103,13 @@ async function screenshotAll(deviceName, deviceConfig, baseUrl) {
   }
   await page.waitForTimeout(400);
   await shot('02-home-top');
+
+  if (await click('#btnAllModes')) {
+    await shot('02-mode-catalog');
+    await page.locator('#modePicker .mode-picker-content').evaluate(el => { el.scrollTop = el.scrollHeight; });
+    await shot('02-mode-catalog-bottom');
+    await click('#btnCloseModes');
+  }
 
   // Scroll home content to see game modes
   await page.evaluate(() => {

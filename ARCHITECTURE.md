@@ -59,7 +59,15 @@ Important partials:
 - `09-extensions.css`: mode unlocks, themes, responsive extensions.
 - `10-micro-modes.css` and `11-mode-mastery.css`: mode-specific UI.
 - `12-polish-v18-v19.css`: final polish and overrides.
+- `13-mobile-2026.css`: canonical responsive UI surfaces, shared arena coordinates, accessible controls and text sizing.
+- `14-mode-worlds.css`: neutral static stage materials and performance tiers. Stage decoration must never encode the next answer.
+
+`renderers/shapes.js` provides material SVG silhouettes; cached gameplay clones receive unique gradient IDs. `renderers/modePreview.js` shares previews between the home carousel and mode catalog. The catalog uses the common modal controller for focus trapping, Escape/Back and inert-background cleanup. Answer confirmation state and streak lighting live on the decorative stage rather than the full game root to keep style invalidation local.
+
+## Runtime Performance
+
+`helpers/perfMode.js` owns quality detection, session-scoped downgrades and gameplay-only frame sampling. `EffectsManager` follows its tier/motion events instead of running a second device benchmark. Its particle trajectories use bounded transform/opacity animations with cancellation and recycling; trail draws are coalesced and use a tier-capped backing store. `SwipeHandler` caches fixed target geometry and invalidates it on mode/layout/resize/scroll changes. HUD updates are diffed and cached material nodes have a bounded per-round cache. Inactive screens release their layout trees after the exit transition.
 
 ## QA Gates
 
-`npm run verify` is the default local gate. It checks static contrast, builds the production bundle, scans rendered screens for contrast, and runs a smoke test through the core gameplay flow.
+`npm run verify` is the default local gate. It checks static contrast, deterministic performance resource limits, builds the production bundle, scans rendered screens for contrast, and runs a smoke test through the core gameplay flow.

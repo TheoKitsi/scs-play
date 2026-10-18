@@ -302,6 +302,7 @@ body.theme-neon{
   --accent:#FF00FF;--accent-glow:#FF44FF;
   --bg:#000811;--bg-hue:200;--surface:#0a1428;--card:#0d1a33;
   --success:#00FF87;--warning:#FFFF00;--info:#00FFFF;
+  --on-primary:#001B10;
 }
 /* Ocean */
 body.theme-ocean{
@@ -309,6 +310,7 @@ body.theme-ocean{
   --accent:#00CED1;--accent-glow:#33E3E6;
   --bg:#020E1A;--bg-hue:210;--surface:#0A1929;--card:#0D2137;
   --success:#00E5A0;--warning:#FFB74D;--info:#00BCD4;
+  --on-primary:#001526;
 }
 /* Sunset */
 body.theme-sunset{
@@ -316,6 +318,7 @@ body.theme-sunset{
   --accent:#FF1493;--accent-glow:#FF44B0;
   --bg:#1A0A0A;--bg-hue:0;--surface:#2A1515;--card:#331A1A;
   --success:#FFD700;--warning:#FF8C00;--info:#FF69B4;
+  --on-primary:#260C05;
 }
 /* Forest */
 body.theme-forest{
@@ -323,6 +326,7 @@ body.theme-forest{
   --accent:#8D6E63;--accent-glow:#A1887F;
   --bg:#0A1A0A;--bg-hue:120;--surface:#152415;--card:#1A2E1A;
   --success:#76FF03;--warning:#FFAB00;--info:#00BFA5;
+  --on-primary:#061508;
 }
 /* Cosmic */
 body.theme-cosmic{
@@ -337,6 +341,7 @@ body.theme-retro{
   --accent:#FF6E40;--accent-glow:#FF8A65;
   --bg:#0A0D00;--bg-hue:70;--surface:#1A1F0A;--card:#1F260D;
   --success:#00E676;--warning:#FFAB00;--info:#40C4FF;
+  --on-primary:#081507;
 }
 /* Crystal */
 body.theme-crystal{
@@ -344,6 +349,7 @@ body.theme-crystal{
   --accent:#CE93D8;--accent-glow:#E1BEE7;
   --bg:#050A10;--bg-hue:200;--surface:#0E1822;--card:#12202E;
   --success:#A5D6A7;--warning:#FFE082;--info:#80CBC4;
+  --on-primary:#061218;
 }
 
 /* Theme previews for shop cards */
@@ -584,7 +590,7 @@ body.mode-worte .center-platform{
 #settings .setting-row > span{flex:1;min-width:0;line-height:1.25;padding-top:3px}
 #settings .setting-row select{max-width:48%}
 #settings .setting-volume{align-items:center}
-#settings .setting-volume input[type="range"]{width:min(34vw,130px);accent-color:var(--primary-glow)}
+#settings .setting-volume input[type="range"]{accent-color:var(--primary-glow)}
 #settings .setting-volume output{width:38px;text-align:right;color:var(--text-dim);font-variant-numeric:tabular-nums;font-size:.78rem}
 
 #store .store-item{gap:10px;align-items:flex-start}

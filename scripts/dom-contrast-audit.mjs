@@ -24,10 +24,10 @@ async function clickIfPresent(page, selector, wait = 700) {
 
 async function forceHome(page) {
   await page.evaluate(() => {
-    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-    document.querySelector('#home')?.classList.add('active');
+    if (!document.querySelector('#home.active')) document.querySelector('.screen.active .btn-back-bottom')?.click();
   });
-  await page.waitForTimeout(300);
+  await page.waitForSelector('#home.active');
+  await page.waitForTimeout(400);
 }
 
 async function scan(page, label) {
@@ -139,7 +139,19 @@ async function run() {
   failures.push(...await scan(page, 'auth'));
 
   await clickIfPresent(page, '#btnGuest', 1200);
+  await clickIfPresent(page, '#btnAllModes', 500);
+  failures.push(...await scan(page, 'mode catalog'));
+  await clickIfPresent(page, '#btnCloseModes', 400);
   failures.push(...await scan(page, 'home'));
+
+  for (const theme of ['neon', 'ocean', 'sunset', 'forest', 'cosmic', 'retro', 'crystal']) {
+    await page.evaluate(theme => {
+      document.body.className = document.body.className.replace(/\btheme-\w+/g, '').trim();
+      document.body.classList.add(`theme-${theme}`);
+    }, theme);
+    failures.push(...await scan(page, `home / ${theme}`));
+  }
+  await page.evaluate(() => { document.body.className = document.body.className.replace(/\btheme-\w+/g, '').trim(); });
 
   for (const [button, label] of [['#btnLeaderboard', 'leaderboard'], ['#btnAchievements', 'achievements'], ['#btnSettings', 'settings'], ['#btnStore', 'store']]) {
     await forceHome(page);

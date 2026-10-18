@@ -11,13 +11,13 @@ export class EffectsManager {
   constructor(container) {
     this.c = container;
     this.reduced = false;
-    this.lowPerf = false;
-
-    /* Auto-detect device capability */
-    this._detectPerformance();
-    if (document.body.dataset.perfMode === 'low') this.lowPerf = true;
-    this._onPerfTier = (e) => { if (e.detail && e.detail.tier === 'low') this.lowPerf = true; };
+    /* One policy, shared with CSS and the governor; no per-round canvas probe. */
+    this.tier = document.body.dataset.perfMode || 'high';
+    this.lowPerf = this.tier === 'low';
+    this._onPerfTier = event => this._setTier(event.detail?.tier);
     window.addEventListener('scs:perftier', this._onPerfTier);
+    this._onMotion = event => this.setReduced(event.detail?.reduced);
+    window.addEventListener('scs:motionpreference', this._onMotion);
 
     /* Canvas trail state */
     this._canvas = null;
@@ -42,7 +42,6 @@ export class EffectsManager {
     /* Physics particle system */
     this._activeParticles = [];
     this._particlePool = [];
-    this._particleLoopId = null;
     this._size = null;
 
     /* Chromatic aberration SVG filter (cached) */
@@ -58,7 +57,30 @@ export class EffectsManager {
     this._radialZoomTimeouts = [];
   }
 
-  setReduced(on) { this.reduced = on; }
+  setReduced(on) {
+    this.reduced = Boolean(on || document.body.hasAttribute('data-reduced-motion'));
+    if (!this.reduced) return;
+    this.stopAmbient();
+    this._cancelParticles();
+    this._trailActive = false;
+    this._cancelTrailDraw();
+    this._cancelTrailFade();
+    clearTimeout(this._completeFadeTimeout);
+    this._completeFadeTimeout = null;
+    this._trailPoints = [];
+    this._clearTrailCanvas();
+  }
+
+  _setTier(tier) {
+    if (!['high', 'mid', 'low'].includes(tier) || tier === this.tier) return;
+    const ambient = this._ambientOn;
+    this.tier = tier;
+    this.lowPerf = tier === 'low';
+    this.stopAmbient();
+    if (ambient) this.startAmbient();
+    if (this.lowPerf) this._cancelParticles();
+    this._resizeCanvas();
+  }
 
   _appendNode(parent, el) {
     parent.appendChild(el);
@@ -94,47 +116,6 @@ export class EffectsManager {
   }
 
   /* ══════════════════════════════════════
-     DEVICE PERFORMANCE DETECTION
-     Heuristic: check deviceMemory, hardwareConcurrency,
-     and a quick canvas draw benchmark. Mid-range devices
-     (Samsung A54 class) will get lowPerf = true.
-     ══════════════════════════════════════ */
-  _detectPerformance() {
-    const nav = navigator;
-    const mem = nav.deviceMemory || 8;        // GB (Chrome/Edge only)
-    const cores = nav.hardwareConcurrency || 8;
-
-    // Quick heuristic: low memory or few cores → probably mid-range
-    if (mem <= 4 || cores <= 4) {
-      this.lowPerf = true;
-      document.body.classList.add('low-perf');
-      return;
-    }
-
-    // Canvas benchmark: draw 500 arcs in a tight loop, measure time
-    try {
-      const cv = document.createElement('canvas');
-      cv.width = 200; cv.height = 200;
-      const ctx = cv.getContext('2d');
-      if (ctx) {
-        const t0 = performance.now();
-        for (let i = 0; i < 500; i++) {
-          ctx.beginPath();
-          ctx.arc(100, 100, 50, 0, Math.PI * 2);
-          ctx.fillStyle = `hsl(${i % 360},80%,50%)`;
-          ctx.fill();
-        }
-        const elapsed = performance.now() - t0;
-        // If > 8ms for 500 fills, device is slow
-        if (elapsed > 8) {
-          this.lowPerf = true;
-          document.body.classList.add('low-perf');
-        }
-      }
-    } catch (_) { /* ignore */ }
-  }
-
-  /* ══════════════════════════════════════
      CANVAS SWIPE TRAIL
      ══════════════════════════════════════ */
   initTrailCanvas(canvas) {
@@ -152,11 +133,14 @@ export class EffectsManager {
   _resizeCanvas() {
     this._size = null;
     if (!this._canvas) return;
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, this.lowPerf ? 1 : this.tier === 'mid' ? 1.5 : 2);
+    this._trailDpr = dpr;
     const w = this._canvas.parentElement?.clientWidth || window.innerWidth;
     const h = this._canvas.parentElement?.clientHeight || window.innerHeight;
-    this._canvas.width = w * dpr;
-    this._canvas.height = h * dpr;
+    this._size = { w, h };
+    this._trailBounds = null;
+    this._canvas.width = Math.round(w * dpr);
+    this._canvas.height = Math.round(h * dpr);
     this._canvas.style.width = w + 'px';
     this._canvas.style.height = h + 'px';
     if (this._ctx) {
@@ -229,14 +213,16 @@ export class EffectsManager {
     const ctx = this._ctx;
     const pts = this._trailPoints;
     if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = this._trailDpr || 1;
     const w = (this._canvas.width / dpr) || window.innerWidth;
     const h = (this._canvas.height / dpr) || window.innerHeight;
 
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, w, h);
+    const previous = this._trailBounds;
+    if (previous) ctx.clearRect(previous.x, previous.y, previous.w, previous.h);
+    this._trailBounds = null;
 
     if (pts.length < 1) { ctx.restore(); return; }
 
@@ -244,6 +230,15 @@ export class EffectsManager {
     let trailColor = this._trailColor;
     const glowSize = tcfg.glow || 14;
     const lineW = tcfg.width || 3;
+    const glow = !this.lowPerf && this.tier === 'high';
+    const pad = 30 + (glow ? glowSize : 0);
+    const left = Math.min(w, Math.max(0, Math.min(...pts.map(p => p.x)) - pad));
+    const top = Math.min(h, Math.max(0, Math.min(...pts.map(p => p.y)) - pad));
+    this._trailBounds = {
+      x: left, y: top,
+      w: Math.min(w, Math.max(...pts.map(p => p.x)) + pad) - left,
+      h: Math.min(h, Math.max(...pts.map(p => p.y)) + pad) - top,
+    };
 
     /* Bought trails always use their own color scheme;
        default trail keeps the game-provided center-shape color */
@@ -283,7 +278,7 @@ export class EffectsManager {
       for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
       ctx.strokeStyle = trailColor;
       ctx.lineWidth = lineW;
-      if (!this.lowPerf) {
+      if (glow) {
         ctx.shadowColor = trailColor;
         ctx.shadowBlur = glowSize;
       }
@@ -328,7 +323,7 @@ export class EffectsManager {
     ctx.arc(last.x, last.y, 6, 0, Math.PI * 2);
     ctx.fillStyle = this._alphaColor(trailColor, '90');
     ctx.shadowColor = trailColor;
-    ctx.shadowBlur = glowSize + 4;
+    ctx.shadowBlur = glow ? glowSize + 4 : 0;
     ctx.fill();
 
     /* White center */
@@ -375,11 +370,14 @@ export class EffectsManager {
   }
 
   _clearTrailCanvas() {
-    if (!this._ctx) return;
+    if (!this._ctx || !this._trailBounds) return;
+    const { x, y, w, h } = this._trailBounds;
     this._ctx.save();
-    this._ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this._ctx.clearRect(0, 0, this._canvas?.width || 0, this._canvas?.height || 0);
+    const dpr = this._trailDpr || 1;
+    this._ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this._ctx.clearRect(x, y, w, h);
     this._ctx.restore();
+    this._trailBounds = null;
   }
 
   /* ══════════════════════════════════════
@@ -402,7 +400,8 @@ export class EffectsManager {
   startAmbient() {
     if (this.reduced || this.lowPerf || this._ambientOn) return;
     this._ambientOn = true;
-    for (let i = 0; i < 8; i++) {
+    const count = this.tier === 'high' ? 4 : 2;
+    for (let i = 0; i < count; i++) {
       const p = document.createElement('div');
       p.className = 'ambient-particle';
       p.style.left = Math.random() * 100 + '%';
@@ -569,12 +568,13 @@ export class EffectsManager {
      PARTICLES — Advanced Physics
      ══════════════════════════════════════ */
   particles(x, y, color, count = 8, isHeavy = false) {
-    if (this.reduced) { this._particlesSimple(x, y, color, Math.min(count, 4)); return; }
+    if (this.reduced) return;
     if (this.lowPerf) { this._particlesSimple(x, y, color, Math.min(count, 4)); return; }
 
     // Optimization check depending on intensity
     const hi = document.body.dataset.perfMode === 'high';
-    const cap = isHeavy ? (hi ? 60 : 30) : (hi ? 40 : 20);
+    const cap = isHeavy ? (hi ? 24 : 12) : (hi ? 16 : 8);
+    count = Math.min(count, cap);
 
     for (let i = 0; i < count && this._activeParticles.length < cap; i++) {
       const size = (isHeavy ? 5 : 3) + Math.random() * (isHeavy ? 8 : 5);
@@ -603,7 +603,7 @@ export class EffectsManager {
       });
     }
 
-    if (!this._particleLoopId && this._activeParticles.length) this._startParticleLoop();
+    this._animateParticles();
   }
 
   /* Physics particles are recycled: creating and removing composited
@@ -663,14 +663,16 @@ export class EffectsManager {
     }
   }
 
-  _startParticleLoop() {
-    const loop = () => {
-      if (document.hidden) { this._particleLoopId = requestAnimationFrame(loop); return; }
-      const { w: cW, h: cH } = this._containerSize();
-      
-      for (let i = this._activeParticles.length - 1; i >= 0; i--) {
-        const p = this._activeParticles[i];
-        
+  /* Bake the short trajectory once. Only transform/opacity keyframes run on
+     the compositor; a particle no longer mutates DOM styles on every frame. */
+  _animateParticles() {
+    const { w: cW, h: cH } = this._containerSize();
+    for (const p of this._activeParticles) {
+      if (p.animation) continue;
+      const steps = Math.min(90, Math.ceil(1 / p.decay));
+      const frame = offset => ({ offset, opacity: Math.max(0, p.life), transform: `translate3d(${p.x}px,${p.y}px,0) rotate(${p.rotation}deg) scale(${Math.max(0, p.life * 1.2)})` });
+      const keyframes = [frame(0)];
+      for (let step = 1; step <= steps; step++) {
         p.x += p.vx; 
         p.y += p.vy; 
         p.vx *= p.drag; 
@@ -691,25 +693,29 @@ export class EffectsManager {
           p.rotSpeed *= 0.8; 
         }
         
-        if (p.life <= 0) { 
-          this._releaseParticle(p.el);
-          this._activeParticles.splice(i, 1); 
-          continue; 
-        }
-        
-        const currentScale = Math.max(0, p.life * 1.2);
-        p.el.style.transform = `translate3d(${p.x}px,${p.y}px,0) rotate(${p.rotation}deg) scale(${currentScale})`;
-        p.el.style.opacity = p.life;
+        if (step % 4 === 0 || step === steps) keyframes.push(frame(step / steps));
       }
-      
-      if (this._activeParticles.length > 0) { 
-        this._particleLoopId = requestAnimationFrame(loop); 
-      } else { 
-        this._particleLoopId = null; 
-      }
-    };
-    
-    this._particleLoopId = requestAnimationFrame(loop);
+      const animation = p.el.animate(keyframes, { duration: steps * (1000 / 60), fill: 'forwards' });
+      p.animation = animation;
+      animation.onfinish = () => {
+        animation.onfinish = null;
+        animation.cancel();
+        const index = this._activeParticles.indexOf(p);
+        if (index < 0) return;
+        this._activeParticles.splice(index, 1);
+        if (p.el.classList.contains('levelup-star')) this._removeNode(p.el);
+        else this._releaseParticle(p.el);
+      };
+    }
+  }
+
+  _cancelParticles() {
+    for (const p of this._activeParticles) {
+      if (p.animation) { p.animation.onfinish = null; p.animation.cancel(); }
+      if (p.el.classList.contains('levelup-star')) this._removeNode(p.el);
+      else this._releaseParticle(p.el);
+    }
+    this._activeParticles = [];
   }
 
   bonusParticles(x, y, type) {
@@ -908,7 +914,10 @@ export class EffectsManager {
      CONFETTI (celebration burst)
      ══════════════════════════════════════ */
   confetti(count, duration) {
-    const total = count || CONFIG.CONFETTI_COUNT;
+    if (this.reduced) return;
+    const limit = this.lowPerf ? 4 : this.tier === 'mid' ? 8 : 24;
+    const active = [...this._ownedNodes].filter(el => el.classList.contains('confetti-piece')).length;
+    const total = Math.min(count ?? CONFIG.CONFETTI_COUNT, Math.max(0, limit - active));
     const dur = duration || 2500;
     const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff',
                     '#ff922b', '#cc5de8', '#20c997', '#fcc419'];
@@ -1030,8 +1039,9 @@ export class EffectsManager {
     /* Star particles — golden */
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
-    for (let i = 0; i < 16; i++) {
-      if (this._activeParticles.length >= 50) break;
+    const starCount = this.lowPerf ? 0 : this.tier === 'mid' ? 6 : 12;
+    for (let i = 0; i < starCount; i++) {
+      if (this._activeParticles.length >= 24) break;
       const size = 5 + Math.random() * 7;
       const hue = 40 + Math.random() * 30;
       const el = document.createElement('div');
@@ -1046,11 +1056,11 @@ export class EffectsManager {
         el, x: cx, y: cy,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - 3,
-        gravity: 0.2, rotation: 0, rotSpeed: 0,
+        gravity: 0.2, drag: 0.96, rotation: 0, rotSpeed: 0,
         life: 1, decay: 0.012, size
       });
     }
-    if (!this._particleLoopId) this._startParticleLoop();
+    this._animateParticles();
   }
 
   /* ══════════════════════════════════════
@@ -1663,6 +1673,8 @@ export class EffectsManager {
      CLEANUP
      ══════════════════════════════════════ */
   cleanup() {
+    window.removeEventListener('scs:perftier', this._onPerfTier);
+    window.removeEventListener('scs:motionpreference', this._onMotion);
     this.stopAmbient();
     this.stopFever();
 
@@ -1675,12 +1687,8 @@ export class EffectsManager {
     this.c.classList.remove('hit-stop-active');
 
     /* Physics particles */
-    this._activeParticles = [];
+    this._cancelParticles();
     this._particlePool = [];
-    if (this._particleLoopId) {
-      cancelAnimationFrame(this._particleLoopId);
-      this._particleLoopId = null;
-    }
 
     /* Danger zone */
     if (this._dangerVignetteEl) {

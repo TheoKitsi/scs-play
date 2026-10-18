@@ -27,94 +27,22 @@
 
 /* ─── Corner Shapes: Feedback only (removed infinite breathing for GPU perf) ─── */
 .corner-shape.corner-correct{
-  animation:cornerCorrectEnhanced .5s ease!important;
-}
-.corner-shape[data-dir="up"].corner-correct,
-.corner-shape[data-dir="down"].corner-correct{
-  animation:cornerCorrectEnhancedX .5s ease!important;
-}
-.corner-shape[data-dir="left"].corner-correct,
-.corner-shape[data-dir="right"].corner-correct{
-  animation:cornerCorrectEnhancedY .5s ease!important;
-}
-@keyframes cornerCorrectEnhanced{
-  0%{transform:scale(1)}
-  30%{transform:scale(1.12)}
-  100%{transform:scale(1)}
-}
-@keyframes cornerCorrectEnhancedX{
-  0%{transform:translateX(-50%) scale(1)}
-  30%{transform:translateX(-50%) scale(1.12)}
-  100%{transform:translateX(-50%) scale(1)}
-}
-@keyframes cornerCorrectEnhancedY{
-  0%{transform:translateY(-50%) scale(1)}
-  30%{transform:translateY(-50%) scale(1.12)}
-  100%{transform:translateY(-50%) scale(1)}
+  animation:none!important;
+  outline:2px solid #F4F7FC;
+  outline-offset:3px;
 }
 .corner-shape.corner-wrong{
-  animation:cornerWrongEnhanced .5s ease!important;
+  animation:none!important;
+  outline:2px solid #FF9AA7;
+  outline-offset:3px;
 }
-.corner-shape[data-dir="up"].corner-wrong,
-.corner-shape[data-dir="down"].corner-wrong{
-  animation:cornerWrongEnhancedX .5s ease!important;
-}
-.corner-shape[data-dir="left"].corner-wrong,
-.corner-shape[data-dir="right"].corner-wrong{
-  animation:cornerWrongEnhancedY .5s ease!important;
-}
-@keyframes cornerWrongEnhanced{
-  0%{transform:translateX(0)}
-  15%{transform:translateX(-6px)}
-  30%{transform:translateX(6px)}
-  45%{transform:translateX(-4px)}
-  60%{transform:translateX(4px)}
-  75%{transform:translateX(-2px)}
-  100%{transform:translateX(0)}
-}
-@keyframes cornerWrongEnhancedX{
-  0%{transform:translateX(-50%) translateX(0)}
-  15%{transform:translateX(-50%) translateX(-6px)}
-  30%{transform:translateX(-50%) translateX(6px)}
-  45%{transform:translateX(-50%) translateX(-4px)}
-  60%{transform:translateX(-50%) translateX(4px)}
-  75%{transform:translateX(-50%) translateX(-2px)}
-  100%{transform:translateX(-50%) translateX(0)}
-}
-@keyframes cornerWrongEnhancedY{
-  0%{transform:translateY(-50%) translateX(0)}
-  15%{transform:translateY(-50%) translateX(-6px)}
-  30%{transform:translateY(-50%) translateX(6px)}
-  45%{transform:translateY(-50%) translateX(-4px)}
-  60%{transform:translateY(-50%) translateX(4px)}
-  75%{transform:translateY(-50%) translateX(-2px)}
-  100%{transform:translateY(-50%) translateX(0)}
-}
+.corner-shape.corner-correct::after,.corner-shape.corner-wrong::after{position:absolute;right:-5px;bottom:-5px;display:grid;place-items:center;width:24px;height:24px;border:1px solid #F4F7FC;border-radius:8px;background:#111824;color:#F4F7FC;font:700 16px/1 'Outfit',sans-serif;pointer-events:none}
+.corner-shape.corner-correct::after{content:'✓'}
+.corner-shape.corner-wrong::after{content:'×';border-color:#FF9AA7;color:#FFB8C2}
 .corner-shape.near-miss-hint{
-  animation:nearMissPulse .6s ease!important;
-}
-.corner-shape[data-dir="up"].near-miss-hint,
-.corner-shape[data-dir="down"].near-miss-hint{
-  animation:nearMissPulseX .6s ease!important;
-}
-.corner-shape[data-dir="left"].near-miss-hint,
-.corner-shape[data-dir="right"].near-miss-hint{
-  animation:nearMissPulseY .6s ease!important;
-}
-@keyframes nearMissPulse{
-  0%{transform:scale(1)}
-  50%{transform:scale(1.08);border-color:var(--warning)}
-  100%{transform:scale(1);border-color:rgba(255,255,255,.08)}
-}
-@keyframes nearMissPulseX{
-  0%{transform:translateX(-50%) scale(1)}
-  50%{transform:translateX(-50%) scale(1.08);border-color:var(--warning)}
-  100%{transform:translateX(-50%) scale(1);border-color:rgba(255,255,255,.08)}
-}
-@keyframes nearMissPulseY{
-  0%{transform:translateY(-50%) scale(1)}
-  50%{transform:translateY(-50%) scale(1.08);border-color:var(--warning)}
-  100%{transform:translateY(-50%) scale(1);border-color:rgba(255,255,255,.08)}
+  animation:none!important;
+  outline:2px dashed #CAD4E3;
+  outline-offset:3px;
 }
 
 /* ─── Game Over Freeze: Enhanced ─── */
@@ -229,8 +157,7 @@
 
 /* ─── Game: Action climax for fast modes only (JS-gated) ─── */
 #game.action-climax .center-platform{
-  animation:actionClimaxBeat .72s ease-in-out infinite;
-  filter:saturate(1.08) brightness(1.03);
+  border-color:rgba(202,212,227,.32);
 }
 #game.action-climax .timer-bar-fill{
   box-shadow:0 0 18px rgba(255,107,53,0.24);
@@ -239,15 +166,10 @@
   transform:scale(1.03);
 }
 #game.action-climax-peak .center-platform{
-  animation-duration:.42s;
-  box-shadow:0 0 38px rgba(255,107,53,0.24);
+  border-color:rgba(202,212,227,.5);
 }
 #game.action-climax-peak .hud-timer{
   animation:actionTimerPulse .42s ease-in-out infinite;
-}
-@keyframes actionClimaxBeat{
-  0%,100%{transform:translate(-50%,-50%) scale(1.05)}
-  50%{transform:translate(-50%,-50%) scale(1.085)}
 }
 @keyframes actionTimerPulse{
   0%,100%{transform:scale(1);text-shadow:0 0 0 rgba(255,107,53,0)}
@@ -783,63 +705,6 @@
    style.css already short-circuits durations).
    ═══════════════════════════════════════════════════ */
 
-/* ─── Animated sweep on the primary play CTA ─── */
-.btn-play-fab{
-  overflow:hidden;
-  isolation:isolate;
-}
-.btn-play-fab::before{
-  content:'';
-  position:absolute;
-  inset:-40%;
-  background:conic-gradient(from 0deg,
-    transparent 0deg,
-    rgba(255,255,255,0.18) 30deg,
-    transparent 60deg,
-    transparent 360deg);
-  z-index:-1;
-  pointer-events:none;
-  animation:btnPlaySweep 4s linear infinite;
-  will-change:transform;
-}
-@keyframes btnPlaySweep{
-  to{transform:rotate(360deg);}
-}
-body[data-perf-mode="low"] .btn-play-fab::before,
-body[data-reduced-motion] .btn-play-fab::before{
-  display:none;
-}
-
-/* Subtle attention pulse on Play CTA every 6s when idle */
-.btn-play-fab:not(:active):not(:hover){
-  animation:btnPlayBreath 5.5s ease-in-out infinite;
-}
-@keyframes btnPlayBreath{
-  0%,100%{box-shadow:0 6px 20px rgba(124,58,237,0.45),0 3px 8px rgba(0,0,0,0.3),inset 0 1px 1px rgba(255,255,255,0.25);}
-  50%{box-shadow:0 10px 28px rgba(236,72,153,0.55),0 4px 10px rgba(0,0,0,0.32),inset 0 1px 1px rgba(255,255,255,0.32);}
-}
-
-/* ─── Mode-card selected halo upgrade ─── */
-.mode-card.selected{
-  box-shadow: var(--shadow-glow-md, 0 0 16px rgba(124,58,237,0.45)),
-              0 4px 12px rgba(0,0,0,0.3),
-              inset 0 1px 1px rgba(255,255,255,0.12) !important;
-}
-.mode-card.selected::before{
-  content:'';
-  position:absolute;
-  inset:-2px;
-  border-radius:inherit;
-  background:linear-gradient(135deg,
-    rgba(124,58,237,0.0),
-    rgba(157,78,221,0.18),
-    rgba(236,72,153,0.18),
-    rgba(124,58,237,0.0));
-  z-index:-1;
-  opacity:0.7;
-  pointer-events:none;
-}
-
 /* ─── Tap-target safety net for play-type buttons ─── */
 .play-type-selector--primary .play-type-btn{
   min-height:48px;
@@ -895,122 +760,9 @@ body[data-reduced-motion] #btnOneMore.cta-pulse{
   animation:none;
 }
 
-/* ═══ Focused mobile home: one viewport, one primary action ═══ */
+/* Shared hidden-state contract; responsive home layout lives in 13. */
 .play-type-btn[hidden]{display:none!important}
-
-#home .hero-zone{
-  gap:2px;
-  padding-bottom:5px;
-}
-#home .hero-top-bar{
-  padding-top:calc(env(safe-area-inset-top, 6px) + 2px);
-  min-height:42px;
-}
-#home .htb-left .avatar-small{width:36px;height:36px}
-#home .home-greeting{font-size:.65rem}
-#home .htb-left .user-info-badge{font-size:.72rem}
-#home .resource-pill{padding:2px 7px}
-#home .hero-xp-bar{min-height:14px;padding-bottom:0}
-#home .hero-xp-bar .xp-title,
-#home .hero-xp-bar .xp-numbers,
-#home .weekend-badge{display:none}
-#home .hero-slider{height:112px}
-#home .hero-slide{gap:2px;padding-block:0}
-#home .hero-slide-visual{width:46px;height:46px}
-#home .hero-slide-name{font-size:.86rem}
-#home .hero-slide-desc{font-size:.56rem;line-height:1.1}
-#home .hero-slide-badges{margin-top:0}
-#home .hero-slide-badge{font-size:.58rem;padding:1px 7px}
-#home .hero-slide-badge--level,
-#home .hero-slide-badge--mastery,
-#home .hero-slide-level-bar{display:none}
-#home .hero-nav-arrow{top:42%}
-#home .home-play-command{gap:5px;padding-inline:8px}
-#home .play-type-selector--primary{min-height:40px}
-#home .play-type-btn{min-height:36px;padding:2px}
-#home .play-type-icon{min-height:12px}
-#home .btn-play-fab{min-height:48px;padding:9px 24px;font-size:.98rem}
-
-#home .home-bottom-sheet{
-  overflow:hidden;
-  gap:6px;
-  padding:3px 8px calc(58px + var(--bottom-inset));
-  background:rgba(3,0,20,.34);
-  -webkit-mask-image:none;
-  mask-image:none;
-}
-#home .sheet-handle{opacity:.55}
-#home .today-actions{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:6px;
-  flex:0 0 58px;
-  min-height:58px;
-}
-#home .today-actions .daily-card,
-#home .today-actions .wheel-card{
-  min-width:0;
-  height:58px;
-  margin:0;
-  padding:6px 7px;
-  gap:0;
-  border-radius:12px;
-  flex-shrink:0;
-  flex-direction:column;
-  justify-content:center;
-}
-#home .today-actions .daily-left{width:100%;justify-content:center;gap:0}
-#home .today-actions .daily-icon-wrap{display:none}
-#home .today-actions .daily-info{width:100%;text-align:center}
-#home .today-actions .daily-title{
-  width:100%;
-  font-size:.52rem;
-  letter-spacing:.1px;
-  white-space:nowrap;
-  overflow:visible;
-}
-#home .today-actions .daily-reward,
-#home .today-actions .daily-streak-pill,
-#home .today-actions .wheel-meta-row{display:none}
-#home .today-actions .daily-right{width:100%;gap:0}
-#home .today-actions .btn-daily-cta,
-#home .today-actions .btn-wheel-cta{
-  width:100%;
-  min-height:32px;
-  padding:5px 8px;
-  font-size:.62rem;
-  border-radius:9px;
-  box-shadow:none;
-}
-#home .today-actions .daily-timer{
-  max-width:74px;
-  overflow:hidden;
-  padding:5px 6px;
-  font-size:.58rem;
-}
 
 /* Progression remains calculated, but no longer competes with the core play flow. */
 #home .daily-quests-panel,
 #home .season-pass-card{display:none}
-
-#home .pwa-install-banner{
-  position:fixed;
-  left:8px;
-  right:8px;
-  bottom:calc(64px + var(--bottom-inset));
-  z-index:40;
-}
-
-@media (max-height:700px){
-  #home .hero-slider{height:92px}
-  #home .hero-slide-desc{display:none}
-  #home .hero-slide-visual{width:40px;height:40px}
-  #home .hero-slide-name{font-size:.8rem}
-  #home .hero-slide-badge{font-size:.54rem}
-  #home .play-type-selector--primary{min-height:38px}
-  #home .play-type-btn{min-height:34px}
-  #home .btn-play-fab{min-height:46px;padding-block:7px}
-  #home .today-actions{flex-basis:54px;min-height:54px}
-  #home .today-actions .daily-card,
-  #home .today-actions .wheel-card{height:54px}
-}

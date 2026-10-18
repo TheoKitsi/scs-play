@@ -896,15 +896,6 @@ body.mode-expert .corner-shape[data-dir="down"] { top:calc(82% - var(--half)); l
 body.mode-expert .corner-shape[data-dir="dl"]   { top:calc(73% - var(--half)); left:calc(22% - var(--half)); }
 body.mode-expert .corner-shape[data-dir="left"] { top:calc(53% - var(--half)); left:calc(12% - var(--half)); }
 body.mode-expert .corner-shape[data-dir="ul"]   { top:calc(33% - var(--half)); left:calc(22% - var(--half)); }
-/* Expert: ad offset (+4%) */
-body.mode-expert:not(.ad-free) .corner-shape[data-dir="up"]   { top:calc(28% - var(--half)); }
-body.mode-expert:not(.ad-free) .corner-shape[data-dir="ur"]   { top:calc(36% - var(--half)); }
-body.mode-expert:not(.ad-free) .corner-shape[data-dir="right"]{ top:calc(55% - var(--half)); }
-body.mode-expert:not(.ad-free) .corner-shape[data-dir="dr"]   { top:calc(75% - var(--half)); }
-body.mode-expert:not(.ad-free) .corner-shape[data-dir="down"] { top:calc(84% - var(--half)); }
-body.mode-expert:not(.ad-free) .corner-shape[data-dir="dl"]   { top:calc(75% - var(--half)); }
-body.mode-expert:not(.ad-free) .corner-shape[data-dir="left"] { top:calc(55% - var(--half)); }
-body.mode-expert:not(.ad-free) .corner-shape[data-dir="ul"]   { top:calc(36% - var(--half)); }
 
 /* ═══════════════════════════════════════
    ULTRA: 12 corners on regular ellipse
@@ -927,19 +918,6 @@ body.mode-ultra .corner-shape[data-dir="wsw"]  { top:calc(66% - var(--half)); le
 body.mode-ultra .corner-shape[data-dir="left"] { top:calc(53% - var(--half)); left:calc(13% - var(--half)); }
 body.mode-ultra .corner-shape[data-dir="ul"]   { top:calc(40% - var(--half)); left:calc(18% - var(--half)); }
 body.mode-ultra .corner-shape[data-dir="nnw"]  { top:calc(30% - var(--half)); left:calc(32% - var(--half)); }
-/* Ultra: ad offset (+3%) */
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="up"]   { top:calc(30% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="ur"]   { top:calc(33% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="ene"]  { top:calc(43% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="right"]{ top:calc(56% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="dr"]   { top:calc(69% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="sse"]  { top:calc(79% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="down"] { top:calc(82% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="dl"]   { top:calc(79% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="wsw"]  { top:calc(69% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="left"] { top:calc(56% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="ul"]   { top:calc(43% - var(--half)); }
-body.mode-ultra:not(.ad-free) .corner-shape[data-dir="nnw"]  { top:calc(33% - var(--half)); }
 
 /* ─── Center ─── */
 

@@ -3,26 +3,24 @@
    Generates inline SVG for all 12 game shapes.
    ═══════════════════════════════════════ */
 
+let paintId = 0;
+
 /**
  * Generate an SVG string for a game shape.
  * @param {string} shape - circle|square|triangle|star|diamond|hexagon|pentagon|cross|heart|crescent|arrow|bolt
  * @param {string} color - Fill color (hex)
  * @param {number} size  - Width/height in px
  * @param {string|null} bonus - 'golden' | 'diamond' | null
- * @returns {string} SVG markup
+ * @returns {string} SVG markup. The main face retains the exact answer color;
+ * neutral light and a shallow extrusion add volume without changing its hue.
  */
 export function shapeSVG(shape, color, size = 48, bonus = null) {
   const s = size, h = s / 2, r = h - 2;
-  const glow = bonus === 'diamond' ? 'filter="url(#dGlow)"' :
-               bonus === 'golden'  ? 'filter="url(#gGlow)"' : '';
-  /* No stroke on bonus shapes — the glow filter is sufficient visual feedback.
-     A colored border confuses players in color-sorting modes (klassik/farben). */
+  const glow = '';
+  /* All geometry shares the same neutral bevel; bonus identity is a separate
+     badge, never a gold/blue outline that could confuse color sorting. */
   const stroke = 'none';
   const sw = 0;
-
-  let defs = '';
-  if (bonus === 'golden')  defs = '<defs><filter id="gGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
-  if (bonus === 'diamond') defs = '<defs><filter id="dGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
 
   let inner = '';
   switch (shape) {
@@ -89,5 +87,15 @@ export function shapeSVG(shape, color, size = 48, bonus = null) {
       break;
     }
   }
-  return `<svg viewBox="0 0 ${s} ${s}" width="${s}" height="${s}" xmlns="http://www.w3.org/2000/svg">${defs}${inner}</svg>`;
+  const id = `shape-light-${++paintId}`;
+  const geometry = inner.replace(/ fill="[^"]*"| stroke="[^"]*"| stroke-width="[^"]*"/g, '');
+  return `<svg class="material-shape" viewBox="0 0 ${s} ${s + 3}" width="${s}" height="${s}" aria-hidden="true" focusable="false"${bonus ? ` data-bonus="${bonus}"` : ''} xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2=".65" y2="1">
+      <stop stop-color="#fff" stop-opacity=".38"/><stop offset=".36" stop-color="#fff" stop-opacity=".03"/><stop offset="1" stop-color="#000" stop-opacity=".25"/>
+    </linearGradient></defs>
+    <g fill="${color}" transform="translate(0 2.5)">${geometry}</g>
+    <g fill="#000" opacity=".38" transform="translate(0 2.5)">${geometry}</g>
+    <g fill="${color}" stroke="#fff" stroke-opacity=".2" stroke-width=".65">${geometry}</g>
+    <g data-shape-light fill="url(#${id})">${geometry}</g>
+  </svg>`;
 }

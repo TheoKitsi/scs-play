@@ -48,57 +48,41 @@
   to   { box-shadow: 0 0 28px rgba(255, 71, 87, 0.8); }
 }
 
-/* ── Klassik reference stage: precision creates visible resonance ── */
+/* ── Scene geometry: all routes are neutral until an answer is committed. ── */
 .resonance-stage {
   position:absolute;inset:0;z-index:2;overflow:hidden;pointer-events:none;opacity:0;
-  --resonance-strength: calc(.16 + var(--resonance-level, 0) * .34);
+  --resonance-strength: calc(.1 + var(--resonance-level, 0) * .12);
 }
-body.mode-klassik #game.active .resonance-stage { opacity:1 }
-
-.resonance-orbit,.resonance-core{position:absolute;left:50%;top:54%;border-radius:50%;transform:translate(-50%,-50%)}
+#game.active .resonance-stage { opacity:1 }
+.resonance-orbit{position:absolute;left:50%;top:var(--arena-cy,55%);border-radius:50%;transform:translate(-50%,-50%)}
 
 .resonance-orbit {
-  border:1px solid var(--resonance-color,#7c3aed);
+  border:1px solid #CAD4E3;
   opacity: var(--resonance-strength);
-  transition:border-color .2s,opacity .3s;
+  transition:opacity .3s;
 }
-.resonance-orbit--inner { width: min(39vw, 205px); aspect-ratio: 1; }
-
-.resonance-core {
-  width: 9px;
-  height: 9px;
-  background: var(--resonance-color, #7c3aed);
-  box-shadow:0 0 22px var(--resonance-color,#7c3aed);
-  opacity: calc(.35 + var(--resonance-level, 0) * .55);
-  transition: background .2s ease, box-shadow .2s ease, opacity .3s ease;
-}
-
-.resonance-path {
-  position:absolute;left:50%;top:54%;width:min(43vw,230px);height:1px;transform-origin:0 50%;
-  background:linear-gradient(90deg,var(--resonance-color,#7c3aed),transparent 88%);opacity:.045;transition:opacity .18s,filter .18s;
-}
-
-.resonance-path--ur { transform: rotate(-45deg); }
-.resonance-path--dr { transform: rotate(45deg); }
-.resonance-path--dl { transform: rotate(135deg); }
-.resonance-path--ul { transform: rotate(225deg); }
-
-#game[data-resonance-target="ul"] .resonance-path--ul,
-#game[data-resonance-target="ur"] .resonance-path--ur,
-#game[data-resonance-target="dl"] .resonance-path--dl,
-#game[data-resonance-target="dr"] .resonance-path--dr {
-  opacity: calc(.16 + var(--resonance-level, 0) * .28);
-  filter: drop-shadow(0 0 7px var(--resonance-color, #7c3aed));
-}
+.resonance-orbit--inner { width:min(53vw,250px);aspect-ratio:1 }
+.arena-routes{position:absolute;left:calc(50% - var(--arena-dx));top:calc(var(--arena-cy) - var(--arena-dy));width:calc(var(--arena-dx) * 2);height:calc(var(--arena-dy) * 2);overflow:visible}
+.arena-routes path{fill:none;stroke:#CAD4E3;stroke-opacity:.1;stroke-width:1;vector-effect:non-scaling-stroke;transition:stroke-opacity .12s}
+.arena-route-edge{display:none}
+body.mode-expert .arena-route-edge{display:block}
+body.mode-ultra .arena-routes{display:none}
+#resonanceStage[data-confirmed-direction="ul"] [data-arena-dir="ul"],
+#resonanceStage[data-confirmed-direction="ur"] [data-arena-dir="ur"],
+#resonanceStage[data-confirmed-direction="dl"] [data-arena-dir="dl"],
+#resonanceStage[data-confirmed-direction="dr"] [data-arena-dir="dr"],
+#resonanceStage[data-confirmed-direction="up"] [data-arena-dir="up"],
+#resonanceStage[data-confirmed-direction="down"] [data-arena-dir="down"],
+#resonanceStage[data-confirmed-direction="left"] [data-arena-dir="left"],
+#resonanceStage[data-confirmed-direction="right"] [data-arena-dir="right"]{stroke-opacity:.8;stroke-width:2}
 
 .resonance-stage.resonance-hit .resonance-orbit--inner {
-  animation: resonance-confirm .38s cubic-bezier(.2,.8,.2,1);
+  animation:resonance-confirm .26s ease-out;
 }
 
 @keyframes resonance-confirm {
-  0% { transform: translate(-50%,-50%) scale(.82); opacity: .15; }
-  45% { opacity: .85; }
-  100% { transform: translate(-50%,-50%) scale(1.28); opacity: var(--resonance-strength); }
+  0% { transform:translate(-50%,-50%) scale(.98);opacity:.3 }
+  100% { transform:translate(-50%,-50%) scale(1.08);opacity:var(--resonance-strength) }
 }
 
 @media (prefers-reduced-motion: reduce) {

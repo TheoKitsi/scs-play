@@ -33,9 +33,22 @@ export class SwipeHandler {
     this._onCancel = this._cancel.bind(this);
     this._onKeyDown = this._keyDown.bind(this);
     this._onAccessibleClick = this._accessibleClick.bind(this);
+    this._invalidateGeometry = () => { this._hitRects = null; this._centerRect = null; };
+    this._invalidateGeometry();
   }
 
-  setMode(m) { this.mode = m; }
+  setMode(m) { this.mode = m; this.invalidateGeometry(); }
+
+  invalidateGeometry() { this._invalidateGeometry(); }
+
+  /* Read the stationary targets before trail/feedback writes, not at touchend. */
+  _cacheGeometry() {
+    if (this._hitRects) return;
+    this._hitRects = [...this.el.querySelectorAll('.corner-shape')]
+      .filter(el => el.offsetParent !== null && (el.hasChildNodes() || el.dataset.value))
+      .map(el => ({ dir: el.dataset.dir, rect: el.getBoundingClientRect() }));
+    this._centerRect = this.el.querySelector('#centerPlatform')?.getBoundingClientRect();
+  }
 
   bind() {
     if (this._bound) return;
@@ -48,6 +61,10 @@ export class SwipeHandler {
     this.el.addEventListener('mouseup',    this._onEnd,   { passive: true });
     window.addEventListener('keydown', this._onKeyDown);
     this.el.addEventListener('click', this._onAccessibleClick);
+    window.addEventListener('resize', this._invalidateGeometry, { passive: true });
+    window.addEventListener('orientationchange', this._invalidateGeometry, { passive: true });
+    window.addEventListener('scroll', this._invalidateGeometry, { passive: true, capture: true });
+    this.invalidateGeometry();
     this._bound = true;
   }
 
@@ -61,6 +78,10 @@ export class SwipeHandler {
     this.el.removeEventListener('mouseup',    this._onEnd);
     window.removeEventListener('keydown', this._onKeyDown);
     this.el.removeEventListener('click', this._onAccessibleClick);
+    window.removeEventListener('resize', this._invalidateGeometry);
+    window.removeEventListener('orientationchange', this._invalidateGeometry);
+    window.removeEventListener('scroll', this._invalidateGeometry, true);
+    this.invalidateGeometry();
     this._bound = false;
     this._active = false;
   }
@@ -108,6 +129,7 @@ export class SwipeHandler {
     this._st = performance.now();
     this._gestureStimulusId = this.onGestureStart ? this.onGestureStart() : undefined;
     this._active = true;
+    this._cacheGeometry();
     if (this.onTrailStart) this.onTrailStart(p.clientX, p.clientY);
   }
 
@@ -157,9 +179,8 @@ export class SwipeHandler {
 
       /* Hit-test center platform (for Memo peek) */
       if (this.onCenterTap) {
-        const center = this.el.querySelector('#centerPlatform');
-        if (center) {
-          const r = center.getBoundingClientRect();
+        const r = this._centerRect;
+        if (r) {
           if (tapX >= r.left - TAP_HIT_PADDING && tapX <= r.right + TAP_HIT_PADDING &&
               tapY >= r.top - TAP_HIT_PADDING && tapY <= r.bottom + TAP_HIT_PADDING) {
             this.onCenterTap();
@@ -194,15 +215,11 @@ export class SwipeHandler {
 
   /* ─── Hit-test visible corner shapes ─── */
   _hitTestCorner(x, y) {
-    const corners = this.el.querySelectorAll('.corner-shape');
-    for (const el of corners) {
-      /* Skip hidden corners (edge-only/ultra-only not in current mode) */
-      if (el.offsetParent === null) continue;
-      if (!el.innerHTML && !el.dataset.value) continue;  /* empty & no value = unassigned corner */
-      const r = el.getBoundingClientRect();
+    this._cacheGeometry();
+    for (const { dir, rect: r } of this._hitRects) {
       if (x >= r.left - TAP_HIT_PADDING && x <= r.right + TAP_HIT_PADDING &&
           y >= r.top - TAP_HIT_PADDING && y <= r.bottom + TAP_HIT_PADDING) {
-        return el.dataset.dir;
+        return dir;
       }
     }
     return null;
