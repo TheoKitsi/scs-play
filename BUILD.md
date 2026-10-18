@@ -30,14 +30,15 @@ npm run verify
 This runs:
 
 1. Knip static dependency and export checks.
-2. Game, audio, service worker and effects regression tests, plus deterministic performance resource/lifecycle limits.
+2. Game, audio, service worker and effects regression tests, plus deterministic performance resource/lifecycle limits and 100-answer phase-flow regressions.
 3. Static WCAG token/theme contrast audit.
 4. Production web build.
 5. Playwright PWA release checks for cached music, HTTP byte ranges, and offline loading.
 6. Playwright first-round reward and existing-save migration checks.
 7. Playwright DOM contrast audit against rendered screens.
 8. Playwright presentation checks: ten mode layouts on phone/desktop, catalog navigation, theme surfaces, full-size form controls, motion preferences, local answer feedback and results.
-9. Playwright smoke test for the core game flow; browser console errors fail the gate.
+9. Playwright flawless-streak checks through combo, Shuffle, Rush and cooldown, including first-frame stimulus visibility and footer/target separation.
+10. Playwright smoke test for the core game flow; browser console errors fail the gate.
 
 The Playwright scripts start a local static server for `docs/` automatically. To target an external deployment instead, pass `SCS_BASE`:
 

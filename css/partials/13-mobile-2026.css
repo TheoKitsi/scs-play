@@ -524,12 +524,16 @@ body.mode-ultra #game .corner-shape[data-dir="nnw"]{--slot-x:calc(50% - var(--ar
 }
 #game .center-platform::before{content:'';display:block;position:absolute;inset:7px;border:1px solid rgba(255,255,255,.07);border-radius:inherit;pointer-events:none}
 #game .center-shape svg{width:72%;height:72%;max-width:128px;filter:none}
-#game .center-shape.pop-in{animation:stimulusReveal .12s ease-out}
-#game .center-shape.bonus-golden,#game .center-shape.bonus-diamond{animation:stimulusReveal .12s ease-out}
+#game .center-shape.pop-in{animation:stimulusReveal .08s ease-out}
+#game .center-shape.bonus-golden,#game .center-shape.bonus-diamond{animation:stimulusReveal .08s ease-out}
 #game .center-shape.bonus-golden::after,#game .center-shape.bonus-diamond::after{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);padding:3px 7px;border-radius:8px;background:var(--bg);font:700 .75rem 'Outfit',sans-serif;color:var(--text);border:1px solid var(--outline)}
 #game .center-shape.bonus-golden::after{content:'✦ ×3'}
 #game .center-shape.bonus-diamond::after{content:'◇ ×5'}
-@keyframes stimulusReveal{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+@keyframes stimulusReveal{from{opacity:1;transform:scale(.98)}to{opacity:1;transform:scale(1)}}
+#game .corner-shape.shuffle-warn{animation:none;outline:2px dashed var(--text-dim);outline-offset:3px}
+.game-notice{position:absolute;left:50%;bottom:calc(10px + var(--bottom-inset));transform:translateX(-50%);width:min(calc(100% - 24px),560px);height:32px;padding:6px 10px;border:1px solid var(--outline);border-radius:var(--radius-xs);background:var(--surface);color:var(--text);font:600 .8rem/18px 'Outfit',sans-serif;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:30;pointer-events:none;opacity:0;transition:opacity .08s linear;contain:layout style paint}
+.game-notice.visible{opacity:1}
+.game-notice.visible~.mode-metric{visibility:hidden}
 #game[data-mode-world="think"]{--target-width:min(38vw,184px);--target-height:80px;--arena-dx:min(27vw,204px);--arena-dy:24%}
 #game[data-mode-world="think"] .center-platform{width:min(84vw,420px)!important;height:clamp(144px,22vh,202px)!important;border-radius:var(--radius-lg)}
 #game[data-mode-world="think"] .center-text{padding:12px;text-shadow:none}

@@ -487,7 +487,7 @@ rushAnswer.lastSpawnTime = performance.now() - 100;
 let rushAnswerSchedules = 0;
 rushAnswer._scheduleSpawn = () => { rushAnswerSchedules++; };
 rushAnswer.handleSwipe('ur', performance.now(), 1);
-assert.equal(rushAnswerSchedules, 0, 'Rush answers must not start a competing normal spawn timer');
+assert.equal(rushAnswerSchedules, 1, 'Rush answers must promptly replace their single spawn deadline');
 
 const sequenzCallbacks = new GameEngine();
 sequenzCallbacks.running = true;

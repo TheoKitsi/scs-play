@@ -86,20 +86,23 @@ try {
     rush.rng = () => 0;
     rush._assignCorners();
     rush._triggerRush();
-    assert.equal(callbacks.size, CONFIG.RUSH_COUNT, `${mode}: Rush must queue only its intended spawns`);
+    assert.equal(callbacks.size, 1, `${mode}: Rush must use the single spawn scheduler`);
 
-    for (const id of [...rush._rushQueue]) {
-      rush.currentShape = null;
-      callbacks.get(id)();
+    for (let item = 1; item <= CONFIG.RUSH_COUNT; item++) {
+      const id = rush._spawnTimeout;
+      const callback = callbacks.get(id);
+      assert.equal(typeof callback, 'function');
       callbacks.delete(id);
+      callback();
+      assert.equal(rush._rushIndex, item);
+      assert.equal(callbacks.size, 1, `${mode}: unanswered Rush item must have exactly one deadline`);
+      rush.lastSpawnTime = performance.now() - 100;
+      rush.handleSwipe(rush.currentShape.direction, performance.now(), rush.currentShape.stimulusId);
+      assert.equal(callbacks.size, 1, `${mode}: answering replaces the deadline, never adds a competing timer`);
+      assert.equal(rush.inRush, item < CONFIG.RUSH_COUNT);
     }
-    assert.equal(callbacks.size, 1, `${mode}: Rush spawns must not queue normal successors`);
-
-    const completionId = rush._rushTimeout;
-    callbacks.get(completionId)();
-    callbacks.delete(completionId);
     assert.equal(rush.inRush, false);
-    assert.equal(callbacks.size, 1, `${mode}: Rush completion must queue exactly one normal successor`);
+    assert.equal(callbacks.size, 1, `${mode}: last Rush answer queues exactly one normal successor`);
     rush.stop();
   }
 } finally {
