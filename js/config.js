@@ -73,11 +73,10 @@ export const CONFIG = {
   /* ─── Anti-cheat ─── */
   ANTI_CHEAT_MIN_REACTION: 50,
 
-  /* ─── Rush phases ─── */
+  /* Rush counts items, not forced gaps; delay is an unanswered-item deadline. */
   RUSH_INTERVAL: 15,
   RUSH_COUNT: 2,
   RUSH_DELAY: 1200,
-  RUSH_WARNING_MS: 800,
 
   /* ─── Adaptive difficulty ─── */
   DIFFICULTY_GOOD_ACCURACY: 0.9,
@@ -197,7 +196,6 @@ export const CONFIG = {
   STREAK_PROTECTION_THRESHOLD: Infinity,  // v23: disabled — misses must hurt
   STREAK_PROTECTION_PENALTY: 1,
   RUSH_NO_MULTIPLIER_LOSS: true,    // rush misses don't reduce multiplier
-  RUSH_PRE_WARNING_SEC: 2,          // show rush warning N seconds before
 
   /* ─── Combo Decay (v23) ─── */
   COMBO_DECAY_THRESHOLD: 2.0,       // multiplier on spawn interval before decay starts

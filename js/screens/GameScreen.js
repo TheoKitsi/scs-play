@@ -12,6 +12,7 @@ import { shapeSVG }         from '../renderers/shapes.js';
 import { SwipeHandler }     from '../input.js';
 import { EffectsManager }   from '../effects.js';
 import { setGameplayPerformanceActive } from '../helpers/perfMode.js';
+import { showGameNotice, clearGameNotice } from '../helpers/gameNotice.js';
 import app                   from '../appState.js';
 import { startModeMastery, finishModeMastery } from './gameHud/modeMasteryLifecycle.js';
 import { trackKlassikAnswer, getGhostDelta, getSpeedZone } from '../game/ModeMastery.js';
@@ -2006,6 +2007,7 @@ function updateModeMasteryAfterAnswer(game, result) {
 }
 
 function cleanupGameClasses() {
+  clearGameNotice();
   for (const el of _cornerPopPool) {
     clearTimeout(el._hideTimeout);
     if (el._showRafId) cancelAnimationFrame(el._showRafId);
@@ -2294,13 +2296,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   };
 
   game.onCornerShuffleWarn = () => {
-    /* Show SHUFFLE! text overlay */
-    const shuffleEl = $('#shuffleText');
-    if (shuffleEl) {
-      shuffleEl.textContent = t('shuffle');
-      shuffleEl.classList.remove('active');
-      requestAnimationFrame(() => { shuffleEl.classList.add('active'); });
-    }
+    showGameNotice(t('shuffle'), { kind: 'shuffle', importance: 3, duration: 900 });
     /* Pulse all active corners */
     $$('.corner-shape').forEach(el => {
       if (el.style.display === 'none') return;
@@ -2315,20 +2311,12 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     /* Force full re-render of corners with new layout */
     for (const k in _prevCornerState) delete _prevCornerState[k];
     renderCorners(cornerMap, true);
-    /* Pop-in animation on shuffled corners */
+    /* New targets are fully visible before the next stimulus. No pop-in wait. */
     $$('.corner-shape').forEach(el => {
       if (el.style.display === 'none') return;
       el.classList.remove('shuffle-warn', 'shuffle-done');
-      requestAnimationFrame(() => { el.classList.add('shuffle-done'); });
     });
-    setTimeout(() => {
-      $$('.corner-shape').forEach(el => el.classList.remove('shuffle-done'));
-    }, 220);
     if (typeof audio.cornerShuffleDone === 'function') audio.cornerShuffleDone();
-    /* Clean up text overlay */
-    setTimeout(() => {
-      $('#shuffleText')?.classList.remove('active');
-    }, 500);
   };
 
   game.onCornersUpdate = (cm) => { renderCorners(cm); };
@@ -2474,39 +2462,26 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   game.onRush = () => {
     audio.rush();
     haptic('rush', save);
-    /* Skip speedLines during rush — they pile up and cause DOM pressure */
-    const rushEl = $('#rushText');
-    if (rushEl) { rushEl.textContent = t('rush'); rushEl.classList.remove('active'); requestAnimationFrame(() => { rushEl.classList.add('active'); }); }
-    setTimeout(() => $('#rushText')?.classList.remove('active'), 1500);
+    showGameNotice(t('rush'), { kind: 'rush', importance: 1, duration: 900 });
   };
 
   game.onFeverStart = () => {
     audio.feverStart();
     haptic('fever', save);
     effects.startFever();
-    const feverEl = $('#feverText');
-    if (feverEl) { feverEl.textContent = t('fever'); feverEl.classList.remove('active'); requestAnimationFrame(() => { feverEl.classList.add('active'); }); }
+    showGameNotice(t('fever'), { kind: 'fever', importance: 1, duration: 900 });
   };
 
   game.onFeverEnd = () => {
     audio.feverEnd();
     effects.stopFever();
-    const feverEl = $('#feverText');
-    if (feverEl) {
-      feverEl.classList.remove('active');
-      feverEl.textContent = t('fever_cooldown');
-      feverEl.classList.add('fever-cooldown');
-      setTimeout(() => { feverEl.classList.remove('fever-cooldown'); feverEl.textContent = ''; }, 3000);
-    }
+    showGameNotice(t('fever_cooldown'), { kind: 'cooldown', duration: 1000 });
   };
 
   game.onComboMilestone = (streak, bonusPoints) => {
     haptic('combo', save);
     if (typeof audio.comboMilestone === 'function') audio.comboMilestone(streak);
-    if (typeof effects.comboMilestone === 'function') effects.comboMilestone(streak);
-    if (bonusPoints > 0) {
-      effects.scorePop(window.innerWidth / 2, window.innerHeight / 2 - 60, `+${bonusPoints}`, '#FFD700', true);
-    }
+    effects.comboMilestone(streak, bonusPoints);
   };
 
   /* Score changes stay in the HUD; they are not separate achievement events. */
@@ -2619,25 +2594,8 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     }
   };
 
-  game.onRushWarning = (seconds) => {
-    if (typeof audio.rushWarning === 'function') audio.rushWarning();
-    const gameEl = document.getElementById('game');
-    if (!gameEl) return;
-    const warn = document.createElement('div');
-    warn.className = 'rush-warning';
-    warn.textContent = t('rush_incoming', { n: seconds });
-    gameEl.appendChild(warn);
-    setTimeout(() => warn.remove(), 1200);
-  };
-
   game.onShuffleExplain = () => {
-    const gameEl = document.getElementById('game');
-    if (!gameEl) return;
-    const tip = document.createElement('div');
-    tip.className = 'shuffle-explain';
-    tip.textContent = t('shuffle_explain');
-    gameEl.appendChild(tip);
-    setTimeout(() => tip.remove(), 1200);
+    showGameNotice(t('shuffle_explain'), { kind: 'shuffle', importance: 3, duration: 1200 });
   };
 
   game.onWissenLevelUp = (level) => {

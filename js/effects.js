@@ -6,6 +6,7 @@
    ═══════════════════════════════════════ */
 import { CONFIG } from './config.js';
 import { t } from './i18n.js';
+import { showGameNotice } from './helpers/gameNotice.js';
 
 export class EffectsManager {
   constructor(container) {
@@ -1100,14 +1101,9 @@ export class EffectsManager {
   }
 
   /* ══════════════════════════════════════
-     COMBO MILESTONE (big centered text)
-     v22: stripped particle ring, shockwave and chromatic
-     aberration — they cause heavy jank at high streaks.
-     Only the CSS-animated label remains (GPU composited).
+     COMBO MILESTONE — compact status, never over the next stimulus.
      ══════════════════════════════════════ */
-  comboMilestone(streak) {
-    if (this.reduced) return;
-
+  comboMilestone(streak, bonusPoints = 0) {
     let label, tier;
     if (streak >= 75) {
       label = t('combo_transcendent'); tier = 'transcendent';
@@ -1123,84 +1119,9 @@ export class EffectsManager {
       return;
     }
 
-    /* ── Milestone text animation — GPU-composited CSS class ── */
-    const el = document.createElement('div');
-    el.className = `combo-milestone combo-tier-${tier}`;
-    el.textContent = label;
-
-    this._injectComboMilestoneKeyframes();
-    this._appendNode(this.c, el);
-
-    /* Confetti burst */
-    if (!this.lowPerf) {
-      const cx = window.innerWidth / 2;
-      const cy = window.innerHeight / 2;
-      const count = tier === 'transcendent' ? 16 : tier === 'godlike' ? 14 : tier === 'legendary' ? 12 : tier === 'insane' ? 10 : 8;
-      this.confetti(count, 2000);
-    }
-
-    el.addEventListener('animationend', () => this._removeNode(el));
-  }
-
-  _injectComboMilestoneKeyframes() {
-    if (document.getElementById('combo-milestone-kf')) return;
-    const style = document.createElement('style');
-    style.id = 'combo-milestone-kf';
-    style.textContent = `
-      .combo-milestone {
-        position: fixed;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%) scale(0);
-        font-family: 'Space Grotesk', system-ui, sans-serif;
-        font-size: clamp(1.8rem, 6vw, 3rem);
-        font-weight: 900;
-        text-align: center;
-        pointer-events: none;
-        z-index: 9999;
-        opacity: 1;
-        white-space: nowrap;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        line-height: 1;
-        color: #FFD700;
-        text-shadow: 0 0 30px rgba(255,215,0,0.8), 0 0 60px rgba(255,215,0,0.4), 0 4px 12px rgba(0,0,0,0.6);
-        will-change: transform, opacity;
-        contain: layout style;
-        max-width: 90vw;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        padding: 8px 24px;
-        border-radius: 12px;
-        background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, transparent 70%);
-        animation: comboMilestoneAnim 1.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-      }
-      .combo-tier-insane {
-        color: #FF6B35;
-        text-shadow: 0 0 30px rgba(255,107,53,0.8), 0 0 60px rgba(255,107,53,0.4), 0 4px 12px rgba(0,0,0,0.6);
-      }
-      .combo-tier-legendary {
-        color: #E040FB;
-        text-shadow: 0 0 30px rgba(224,64,251,0.8), 0 0 60px rgba(224,64,251,0.4), 0 4px 12px rgba(0,0,0,0.6);
-      }
-      .combo-tier-godlike {
-        color: #FF1744;
-        text-shadow: 0 0 30px rgba(255,23,68,0.8), 0 0 60px rgba(255,23,68,0.4), 0 4px 12px rgba(0,0,0,0.6);
-      }
-      .combo-tier-transcendent {
-        color: #FFFFFF;
-        text-shadow: 0 0 30px rgba(255,255,255,0.9), 0 0 80px rgba(124,58,237,0.6), 0 4px 12px rgba(0,0,0,0.6);
-      }
-      @keyframes comboMilestoneAnim {
-        0%   { transform: translate(-50%, -50%) scale(0) rotate(-8deg); opacity: 0; filter: blur(8px); }
-        12%  { opacity: 1; filter: blur(0); }
-        18%  { transform: translate(-50%, -50%) scale(1.35) rotate(2deg); opacity: 1; }
-        35%  { transform: translate(-50%, -50%) scale(0.95) rotate(0); }
-        55%  { transform: translate(-50%, -50%) scale(1.02); }
-        80%  { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-        100% { transform: translate(-50%, -50%) scale(1.08) translateY(-20px); opacity: 0; filter: blur(4px); }
-      }
-    `;
-    document.head.appendChild(style);
+    showGameNotice(`${label}${bonusPoints > 0 ? ` · +${bonusPoints}` : ''}`, {
+      kind: `combo-${tier}`, importance: 2, duration: 1000,
+    });
   }
 
   _injectLevelUpStyles() {

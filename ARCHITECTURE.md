@@ -46,6 +46,8 @@ Current shared helpers include:
 
 `js/screens/GameScreen.js` remains the densest module because it owns active gameplay UI. Keep changes incremental and validate after meaningful edits. ModeMastery lifecycle work is centralized in `js/screens/gameHud/modeMasteryLifecycle.js`, and per-answer ModeMastery updates are dispatched from `updateModeMasteryAfterAnswer`.
 
+`GameEngine._scheduleSpawn` is the single owner of normal and Rush successor/deadline timers. Rush counts actual emitted items and finishes when its last item is resolved; it does not queue fixed-duration pauses. Rush and corner Shuffle cannot own spawning simultaneously. `helpers/gameNotice.js` owns one bounded, prioritized footer notice with cleanup on leaving the game; no notice schedules game logic or injects styles. Keep the stimulus fully readable on its first frame.
+
 ## CSS
 
 `css/style.css` imports partials in order. Later partials intentionally override earlier ones, so avoid moving imports casually.

@@ -23,10 +23,12 @@
     "performance-release-test": "node scripts/performance-release-test.mjs",
     "progression-logic-test": "node scripts/progression-logic-test.mjs",
     "engine-release-test": "node scripts/engine-release-test.mjs",
+    "streak-flow-test": "node scripts/streak-flow-test.mjs",
+    "streak-presentation-test": "node scripts/streak-presentation-test.mjs",
     "mastery-release-test": "node scripts/mastery-release-test.mjs",
     "presentation-release-test": "node scripts/presentation-release-test.mjs",
     "knip": "knip --no-progress",
-    "verify": "npm run knip && npm run game-logic-test && npm run engine-release-test && npm run mastery-release-test && npm run audio-logic-test && npm run service-worker-test && npm run effects-lifecycle-test && npm run performance-release-test && npm run progression-logic-test && npm run contrast-audit && npm run build:prod && npm run pwa-release-test && npm run reward-release-test && npm run contrast-audit:dom && npm run presentation-release-test && npm run smoke-test",
+    "verify": "npm run knip && npm run game-logic-test && npm run engine-release-test && npm run streak-flow-test && npm run mastery-release-test && npm run audio-logic-test && npm run service-worker-test && npm run effects-lifecycle-test && npm run performance-release-test && npm run progression-logic-test && npm run contrast-audit && npm run build:prod && npm run pwa-release-test && npm run reward-release-test && npm run contrast-audit:dom && npm run presentation-release-test && npm run streak-presentation-test && npm run smoke-test",
     "cap:sync": "node scripts/build-prod.mjs && npx cap sync android",
     "cap:open": "npx cap open android",
     "cap:run": "node scripts/build-prod.mjs && npx cap run android"

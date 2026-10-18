@@ -48,6 +48,8 @@ npm run visual-review
 | `npm run presentation-release-test` | Check the ten mode layouts, mode catalog, themes, settings, motion preferences and feedback on phone/desktop viewports. |
 | `npm run perf-benchmark` | Play a round with a scripted fast player under CPU throttling and report frame times, long tasks and style/layout cost per pace bucket (see flags in the script header). |
 | `npm run performance-release-test` | Deterministic resource/work limits for particles, trails, input geometry, motion and the frame-rate governor. |
+| `npm run streak-flow-test` | Virtual-clock regression: 100 correct answers in five modes, phase overlap, Rush deadlines and pause cleanup. |
+| `npm run streak-presentation-test` | Real-browser flawless streaks through combo, Shuffle, Rush and cooldown; first-frame symbol visibility and unobstructed targets. |
 | `npm run verify` | Full local gate: static checks, logic/service worker tests, contrast, build, PWA/offline checks, DOM contrast, and smoke. |
 | `npm run cap:sync` | Build production web assets and sync Android. |
 | `npm run cap:run` | Build and run through Capacitor Android. |
@@ -77,6 +79,8 @@ The game uses a lightweight 2.5D presentation, not a 3D engine: material SVG sil
 UI colors are defined in `css/partials/01-tokens.css` and the theme definitions in `09-extensions.css`. Theme-aware action labels use `--on-primary`, including dark labels on bright themes. The static contrast gate reads those source tokens directly; browser contrast coverage also checks every theme and the mode catalog.
 
 Performance tiers share one policy for CSS and effects. Short particle trajectories are baked into compositor animations; input bounds and material nodes are reused, and unchanged HUD values are not rewritten. The trail canvas is capped at 2× / 1.5× / 1× resolution for high / mid / low tiers and clears only its previous drawn bounds. The governor samples active gameplay, not menus or pauses, and keeps downgrade decisions within the current tab session. See `BUILD.md` for repeatable benchmarks; emulated FPS is not an Android device guarantee.
+
+Gameplay notices are a single compact footer status, not center-screen celebrations. Combo/fever/cooldown text never holds the next item or injects a stylesheet mid-round. A stimulus is fully opaque on its first frame. Rush uses the same single spawn scheduler as normal play: a correct answer advances promptly, while unanswered items retain their minimum answer window. Shuffle keeps its short orientation cue, without an extra post-animation wait.
 
 ## Lean Progression
 

@@ -98,11 +98,9 @@ export class GameEngine {
     this._timerPauseStart = null;
     clearTimeout(this._spawnTimeout);
     this._spawnTimeout = null;
-    clearTimeout(this._rushTimeout);
-    this._rushTimeout = null;
-    this._rushQueue = [];
     this.inRush = false;
     this._rushIndex = 0;
+    this._lastRushTimer = null;
     this._consecutiveMisses = 0;
     this._recentWindow = [];
 
@@ -187,7 +185,6 @@ export class GameEngine {
     /* Anti-frustration callbacks (v22) */
     this.onStreakProtected = null;
     this.onShowCorrectAnswer = null;
-    this.onRushWarning = null;
     /* Combo decay callback */
     this.onComboDecay = null;
     this.onShuffleExplain = null;
@@ -584,11 +581,8 @@ export class GameEngine {
     }
     clearTimeout(this._memoPreviewTimeout);
     this._stopComboDecay();
-    this._rushQueue.forEach(t => clearTimeout(t));
-    this._rushQueue = [];
-    clearTimeout(this._rushTimeout);
-    this._rushTimeout = null;
     this.inRush = false;
+    this._rushIndex = 0;
     /* Sequenz: clear queued flashes + input timeout */
     this._seqFlashTimeouts.forEach(t => clearTimeout(t));
     this._seqFlashTimeouts = [];
@@ -684,7 +678,7 @@ export class GameEngine {
       this._shuffleInProgress = false;
       if (this.onCornerShuffle) this.onCornerShuffle(this.cornerMap);
       this.currentShape = null;
-      this._scheduleSpawn(100);
+      this._scheduleSpawn(0);
       return;
     }
     if (this.currentShape) {
@@ -703,10 +697,6 @@ export class GameEngine {
     if (this.continued) return false;
     this.continued = true;
     clearTimeout(this._spawnTimeout);
-    clearTimeout(this._rushTimeout);
-    this._rushTimeout = null;
-    this._rushQueue.forEach(t => clearTimeout(t));
-    this._rushQueue = [];
     this.inRush = false;
     this._rushIndex = 0;
     clearTimeout(this._shuffleTimeout);
@@ -724,18 +714,28 @@ export class GameEngine {
   }
 
   _scheduleSpawn(delay) {
-    if (!this.running || this.paused || this.inRush) return;
+    if (!this.running || this.paused || this._shuffleInProgress) return;
     clearTimeout(this._spawnTimeout);
-    let d = delay != null ? delay : (this.practice ? CONFIG.PRACTICE_INTERVAL : this.spawnInterval);
+    /* One owner for BOTH normal and Rush spawning. RUSH_DELAY is an unanswered
+       item's deadline, not a forced wait after a successful answer. */
+    const rushDeadline = (this.isBrainMode || this.isMemoMode || this.isReflexMode)
+      ? (CONFIG.RUSH_DELAY_BRAIN || CONFIG.RUSH_DELAY) : CONFIG.RUSH_DELAY;
+    let d = delay != null ? delay : this.inRush
+      ? Math.max(rushDeadline, this._minAnswerWindow)
+      : (this.practice ? CONFIG.PRACTICE_INTERVAL : this.spawnInterval);
     if (this._isFirstSpawn && delay == null) {
       this._isFirstSpawn = false;
       d += (this.isBrainMode || this.isMemoMode || this.isReflexMode) ? 800 : 500;
     }
-    this._spawnTimeout = setTimeout(() => this._spawn(), d);
+    this._spawnTimeout = setTimeout(() => {
+      this._spawnTimeout = null;
+      this._spawn();
+    }, d);
   }
 
   /* Central spawn finalization: records time, starts combo decay, fires callback */
   _emitSpawn() {
+    if (this.inRush) this._rushIndex++;
     this.currentShape.stimulusId = ++this._stimulusId;
     this.lastSpawnTime = performance.now();
     if (this.onSpawn) this.onSpawn(this.currentShape);
@@ -1836,6 +1836,7 @@ export class GameEngine {
 
     this.currentShape = null;
     this.bonusType = null;
+    this._finishRushItem();
 
     clearTimeout(this._spawnTimeout);
     /* After an answer: spawn next item quickly.
@@ -1855,7 +1856,7 @@ export class GameEngine {
     } else {
       postAnswerDelay = this.practice ? CONFIG.PRACTICE_INTERVAL : Math.max(80, this.spawnInterval * 0.15);
     }
-    if (!shouldEndGame && this._memoPhase !== 'reveal' && !this.inRush) this._scheduleSpawn(postAnswerDelay);
+    if (!shouldEndGame && this._memoPhase !== 'reveal') this._scheduleSpawn(postAnswerDelay);
     if (this.onResult) this.onResult(result);
     if (shouldEndGame) {
       this._endGame();
@@ -1968,6 +1969,7 @@ export class GameEngine {
       item: answeredItem
     };
     this.currentShape = null;
+    this._finishRushItem();
     if (this.onResult) this.onResult(result);
 
     if (this.playType === 'endless' && this.endlessLives <= 0) {
@@ -2191,7 +2193,7 @@ export class GameEngine {
 
   /* ─── Corner Shuffle ─── */
   _triggerCornerShuffle() {
-    if (this._shuffleInProgress || this.refreshCornersEachSpawn || this.isBrainMode || this.isMemoMode || this.isSequenzMode || this.isReflexMode) return;
+    if (this.inRush || this._shuffleInProgress || this.refreshCornersEachSpawn || this.isBrainMode || this.isMemoMode || this.isSequenzMode || this.isReflexMode) return;
     this._shuffleInProgress = true;
     this._shuffleCount++;
     const interval = Math.max(
@@ -2212,12 +2214,14 @@ export class GameEngine {
     /* Pause spawning during shuffle animation */
     clearTimeout(this._spawnTimeout);
     this._shuffleTimeout = setTimeout(() => {
+      this._shuffleTimeout = null;
       if (!this.running || this.paused) return;
       this._shuffleCorners();
       this._shuffleInProgress = false;
       if (this.onCornerShuffle) this.onCornerShuffle(this.cornerMap);
-      /* Resume spawning after shuffle */
-      this._scheduleSpawn(100);
+      /* The warning already gave orientation time. Do not wait for the label
+         or the corner pop animation before showing the next stimulus. */
+      this._scheduleSpawn(0);
     }, CONFIG.CORNER_SHUFFLE_WARNING_MS);
   }
 
@@ -2260,46 +2264,24 @@ export class GameEngine {
     if (this.onFeverEnd) this.onFeverEnd();
   }
 
-  _triggerRush() {
-    if (this.inRush || this.mode === 'wissen') return;
-    /* Rush Pre-Warning (v22): notify UI before rush starts */
-    const preWarnSec = CONFIG.RUSH_PRE_WARNING_SEC || 0;
-    if (preWarnSec > 0 && this.onRushWarning) {
-      this.onRushWarning(preWarnSec);
+  _finishRushItem() {
+    if (this.inRush && this._rushIndex >= CONFIG.RUSH_COUNT) {
+      this.inRush = false;
+      this._rushIndex = 0;
     }
+  }
 
-    if (this.onRush) this.onRush();
-    clearTimeout(this._spawnTimeout);
-    clearTimeout(this._rushTimeout);
-    this._rushTimeout = null;
-    this._rushQueue.forEach(t => clearTimeout(t));
-    this._rushQueue = [];
-
+  _triggerRush() {
+    if (this.inRush || this._shuffleInProgress || this.mode === 'wissen'
+        || (this.isMemoMode && this._memoPhase !== 'playing')) return;
+    if (this.playType !== 'endless' && this._lastRushTimer === this.timer) return;
     this.inRush = true;
     this._rushIndex = 0;
-    const totalShapes = CONFIG.RUSH_COUNT;
-    const warningDelay = CONFIG.RUSH_WARNING_MS || 400;
-    const rushDelay = (this.isBrainMode || this.isMemoMode || this.isReflexMode)
-      ? (CONFIG.RUSH_DELAY_BRAIN || CONFIG.RUSH_DELAY)
-      : CONFIG.RUSH_DELAY;
-
-    for (let i = 0; i < totalShapes; i++) {
-      const delay = warningDelay + rushDelay * (i + 1);
-      const t = setTimeout(() => {
-        if (!this.running || this.paused) return;
-        this._rushIndex = i + 1;
-        this._spawn();
-        if (!this.running) return;
-        if (this._rushIndex >= totalShapes) {
-          this._rushTimeout = setTimeout(() => {
-            this._rushTimeout = null;
-            this.inRush = false;
-            if (this.running && !this.paused) this._scheduleSpawn();
-          }, rushDelay);
-        }
-      }, delay);
-      this._rushQueue.push(t);
-    }
+    if (this.playType !== 'endless') this._lastRushTimer = this.timer;
+    if (this.onRush) this.onRush();
+    /* Keep the fast successor already queued by handleSwipe. The announcement
+       is visual feedback only; it never reserves seconds of empty playfield. */
+    if (this._spawnTimeout === null) this._scheduleSpawn(0);
   }
 
   _addRecentResult(correct, reaction) {
@@ -2344,12 +2326,9 @@ export class GameEngine {
     clearTimeout(this._feverTimeout);
     clearTimeout(this._shuffleTimeout);
     clearTimeout(this._memoPreviewTimeout);
-    clearTimeout(this._rushTimeout);
-    this._rushTimeout = null;
     this._stopComboDecay();
-    this._rushQueue.forEach(t => clearTimeout(t));
-    this._rushQueue = [];
     this.inRush = false;
+    this._rushIndex = 0;
     this._seqFlashTimeouts.forEach(t => clearTimeout(t));
     this._seqFlashTimeouts = [];
     clearTimeout(this._seqStartTimeout);
@@ -2446,11 +2425,8 @@ export class GameEngine {
     clearTimeout(this._feverTimeout);
     clearTimeout(this._shuffleTimeout);
     clearTimeout(this._memoPreviewTimeout);
-    clearTimeout(this._rushTimeout);
-    this._rushTimeout = null;
     this._stopComboDecay();
-    this._rushQueue.forEach(t => clearTimeout(t));
-    this._rushQueue = [];
+    this._rushIndex = 0;
     this._seqFlashTimeouts.forEach(t => clearTimeout(t));
     this._seqFlashTimeouts = [];
     clearTimeout(this._seqStartTimeout);
