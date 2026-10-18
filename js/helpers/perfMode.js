@@ -29,6 +29,14 @@ function reducedMotionActive() {
   }
 }
 
+export function applyMotionPreference(userReduced) {
+  if (typeof document === 'undefined' || !document.body) return;
+  if (userReduced !== undefined) document.body.toggleAttribute('data-user-reduced-motion', Boolean(userReduced));
+  const reduced = document.body.hasAttribute('data-user-reduced-motion') || reducedMotionActive();
+  document.body.toggleAttribute('data-reduced-motion', reduced);
+  window.dispatchEvent(new CustomEvent('scs:motionpreference', { detail: { reduced } }));
+}
+
 /* QA builds (localStorage scsQa=1) can pin a tier so benchmarks compare
    like with like instead of racing the governor's step-downs. */
 function pinnedQaTier() {
@@ -43,18 +51,17 @@ export function initPerfMode() {
   if (typeof document === 'undefined' || !document.body) return;
   const pinned = pinnedQaTier();
   document.body.dataset.perfMode = pinned || restoreTier(detectClass());
-  if (document.body.dataset.perfMode === 'low') document.body.classList.add('low-perf');
-  if (!pinned) startGovernor();
-  if (reducedMotionActive()) {
-    document.body.dataset.reducedMotion = 'true';
-  }
+  document.body.classList.toggle('low-perf', document.body.dataset.perfMode === 'low');
+  governorEnabled = !pinned;
+  document.addEventListener('visibilitychange', () => {
+    stopGovernor();
+    if (!document.hidden && gameplayActive) startGovernor();
+  });
+  applyMotionPreference();
   /* React if the user toggles reduced-motion at OS level */
   try {
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const apply = () => {
-      if (mql.matches) document.body.dataset.reducedMotion = 'true';
-      else delete document.body.dataset.reducedMotion;
-    };
+    const apply = () => applyMotionPreference();
     if (typeof mql.addEventListener === 'function') {
       mql.addEventListener('change', apply);
     } else if (typeof mql.addListener === 'function') {
@@ -68,49 +75,77 @@ export function initPerfMode() {
 const TIERS = ['high', 'mid', 'low'];
 const TIER_KEY = 'scs_perf_tier';
 
-/* A tier the governor measured earlier can only lower the detected one */
+/* Keep thermal/load decisions within this tab session, not permanently across
+   visits after a single slow startup or a backgrounded browser. */
 function restoreTier(detected) {
   try {
-    const saved = localStorage.getItem(TIER_KEY);
+    const saved = sessionStorage.getItem(TIER_KEY);
     if (TIERS.includes(saved) && TIERS.indexOf(saved) > TIERS.indexOf(detected)) return saved;
   } catch { /* storage unavailable */ }
   return detected;
 }
 let govRaf = 0;
+let governorEnabled = false;
+let gameplayActive = false;
+
+export function setGameplayPerformanceActive(active) {
+  gameplayActive = Boolean(active);
+  stopGovernor();
+  if (gameplayActive) startGovernor();
+}
+
+function stopGovernor() {
+  if (govRaf) cancelAnimationFrame(govRaf);
+  govRaf = 0;
+}
 
 function stepDown() {
   const cur = document.body.dataset.perfMode || 'high';
   const next = TIERS[Math.min(TIERS.indexOf(cur) + 1, TIERS.length - 1)];
   if (next === cur) return false;
   document.body.dataset.perfMode = next;
-  try { localStorage.setItem(TIER_KEY, next); } catch { /* storage unavailable */ }
+  try { sessionStorage.setItem(TIER_KEY, next); } catch { /* storage unavailable */ }
   if (next === 'low') document.body.classList.add('low-perf');
   window.dispatchEvent(new CustomEvent('scs:perftier', { detail: { tier: next } }));
   return true;
 }
 
 function startGovernor() {
-  if (govRaf || typeof requestAnimationFrame !== 'function') return;
+  if (!governorEnabled || govRaf || document.hidden || document.body.dataset.perfMode === 'low' || typeof requestAnimationFrame !== 'function') return;
   let last = 0;
+  let warmupUntil = 0;
   let slow = 0;
   let frames = 0;
+  let elapsed = 0;
+  let badWindows = 0;
   const tick = (now) => {
-    if (document.hidden) { last = 0; slow = 0; frames = 0; govRaf = requestAnimationFrame(tick); return; }
-    if (last) {
+    govRaf = 0;
+    if (document.hidden || !gameplayActive) return;
+    if (!warmupUntil) warmupUntil = now + 750;
+    if (last && now >= warmupUntil) {
       const dt = now - last;
-      /* ignore stalls from tab switches / app resume */
-      if (dt < 250) {
+      /* Resume gaps are not load samples; sustained 250–1000ms frames ARE. */
+      if (dt < 1000) {
         frames++;
+        elapsed += dt;
         if (dt > 24) slow++;
-        if (frames >= 90) {
-          if (slow / frames > 0.25 && !stepDown()) { /* already at floor */ }
-          slow = 0; frames = 0;
+        if (elapsed >= 1500 && frames >= 6) {
+          badWindows = slow / frames > 0.25 ? badWindows + 1 : 0;
+          if (badWindows >= 2 || (slow / frames > 0.5 && elapsed / frames > 50)) {
+            stepDown();
+            badWindows = 0;
+            warmupUntil = now + 500;
+          }
+          slow = 0; frames = 0; elapsed = 0;
         }
+      } else {
+        warmupUntil = now + 750;
+        slow = 0; frames = 0; elapsed = 0; badWindows = 0;
       }
     }
     last = now;
     const tier = document.body.dataset.perfMode;
-    if (tier === 'low' && frames === 0) { govRaf = 0; return; }
+    if (tier === 'low') return;
     govRaf = requestAnimationFrame(tick);
   };
   govRaf = requestAnimationFrame(tick);

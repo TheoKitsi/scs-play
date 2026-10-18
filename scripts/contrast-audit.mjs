@@ -14,7 +14,19 @@
  * Exit code 1 on any failure → usable as CI gate.
  */
 
-// ─── Inline WCAG helpers (no import needed) ───
+import { readFileSync } from 'node:fs';
+
+// Read production tokens so the gate cannot silently audit an older palette.
+const tokenCss = readFileSync(new URL('../css/partials/01-tokens.css', import.meta.url), 'utf8');
+const themeCss = readFileSync(new URL('../css/partials/09-extensions.css', import.meta.url), 'utf8');
+function cssColor(css, name, fallback) {
+  const match = css.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6}|#[0-9a-f]{3})(?=[;\\s])`, 'i'));
+  if (match) return match[1];
+  if (fallback) return fallback;
+  throw new Error(`Missing contrast token: --${name}`);
+}
+
+// ─── Inline WCAG helpers ───
 function sRGBtoLinear(c) {
   const s = c / 255;
   return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
@@ -54,26 +66,27 @@ function compositeRgba(fgHex, alpha, bgHex) {
 // For rgba surfaces, we composite against the mode's --bg.
 
 const DARK = {
-  bg:            '#030014',
-  surface:       compositeRgba('#0F172A', 0.6, '#030014'),   // rgba(15,23,42,0.6)
-  card:          compositeRgba('#1E293B', 0.7, '#030014'),   // rgba(30,41,59,0.7)
-  surfaceElev:   compositeRgba('#141E34', 0.85, '#030014'),  // rgba(20,30,52,0.85)
-  text:          '#F8FAFC',
-  textDim:       '#B6C3D5',
-  textMuted:     '#AAB6C8',
-  textOnSurface: '#F8FAFC',
-  textOnSurfDim: '#B0BEC5',
-  iconOnSurface: '#CBD5E1',
-  iconOnSurfVar: '#AAB6C8',
-  primary:       '#7C3AED',
-  primaryGlow:   '#9D4EDD',
-  accent:        '#EC4899',
-  success:       '#10B981',
-  warning:       '#F59E0B',
-  error:         '#EF4444',
-  gold:          '#FBBF24',
-  diamond:       '#38BDF8',
-  info:          '#0EA5E9',
+  bg:            cssColor(tokenCss, 'bg'),
+  surface:       cssColor(tokenCss, 'surface'),
+  card:          cssColor(tokenCss, 'card'),
+  surfaceElev:   cssColor(tokenCss, 'surface-elevated'),
+  text:          cssColor(tokenCss, 'text'),
+  textDim:       cssColor(tokenCss, 'text-dim'),
+  textMuted:     cssColor(tokenCss, 'text-muted'),
+  textOnSurface: cssColor(tokenCss, 'text-on-surface'),
+  textOnSurfDim: cssColor(tokenCss, 'text-on-surface-dim'),
+  iconOnSurface: cssColor(tokenCss, 'icon-on-surface'),
+  iconOnSurfVar: cssColor(tokenCss, 'icon-on-surface-variant'),
+  primary:       cssColor(tokenCss, 'primary'),
+  primaryGlow:   cssColor(tokenCss, 'primary-glow'),
+  onPrimary:     cssColor(tokenCss, 'on-primary'),
+  accent:        cssColor(tokenCss, 'accent'),
+  success:       cssColor(tokenCss, 'success'),
+  warning:       cssColor(tokenCss, 'warning'),
+  error:         cssColor(tokenCss, 'error'),
+  gold:          cssColor(tokenCss, 'gold'),
+  diamond:       cssColor(tokenCss, 'diamond'),
+  info:          cssColor(tokenCss, 'info'),
 };
 
 const LIGHT = {
@@ -196,15 +209,11 @@ const checks = [
   { label: 'Light: --text-dim on store-card',    fg: LIGHT.textDim,     bg: compositeRgba('#ffffff', 0.85, '#f0f0f5'), min: 4.5, type: 'text' },
 ];
 
-const THEMES = [
-  { id: 'neon', bg: '#000811', surface: '#0a1428', card: '#0d1a33', primary: '#00FF87', accent: '#FF00FF', success: '#00FF87', warning: '#FFFF00', info: '#00FFFF' },
-  { id: 'ocean', bg: '#020E1A', surface: '#0A1929', card: '#0D2137', primary: '#0099FF', accent: '#00CED1', success: '#00E5A0', warning: '#FFB74D', info: '#00BCD4' },
-  { id: 'sunset', bg: '#1A0A0A', surface: '#2A1515', card: '#331A1A', primary: '#FF6B35', accent: '#FF1493', success: '#FFD700', warning: '#FF8C00', info: '#FF69B4' },
-  { id: 'forest', bg: '#0A1A0A', surface: '#152415', card: '#1A2E1A', primary: '#4CAF50', accent: '#8D6E63', success: '#76FF03', warning: '#FFAB00', info: '#00BFA5' },
-  { id: 'cosmic', bg: '#0A0514', surface: '#1A0F28', card: '#200F33', primary: '#9C27B0', accent: '#E040FB', success: '#69F0AE', warning: '#FFD740', info: '#7C4DFF' },
-  { id: 'retro', bg: '#0A0D00', surface: '#1A1F0A', card: '#1F260D', primary: '#00E676', accent: '#FF6E40', success: '#00E676', warning: '#FFAB00', info: '#40C4FF' },
-  { id: 'crystal', bg: '#050A10', surface: '#0E1822', card: '#12202E', primary: '#80DEEA', accent: '#CE93D8', success: '#A5D6A7', warning: '#FFE082', info: '#80CBC4' },
-];
+const THEMES = [...themeCss.matchAll(/body\.theme-([a-z]+)\s*\{([^}]+)\}/g)].map(([, id, css]) => ({
+  id,
+  ...Object.fromEntries(['bg', 'surface', 'card', 'primary', 'accent', 'success', 'warning', 'info'].map(name => [name, cssColor(css, name)])),
+  onPrimary: cssColor(css, 'on-primary', DARK.onPrimary),
+}));
 
 for (const theme of THEMES) {
   checks.push(
@@ -216,6 +225,8 @@ for (const theme of THEMES) {
     { label: `Theme ${theme.id}: --success on --bg`, fg: theme.success, bg: theme.bg, min: 3, type: 'ui' },
     { label: `Theme ${theme.id}: --warning on --bg`, fg: theme.warning, bg: theme.bg, min: 3, type: 'ui' },
     { label: `Theme ${theme.id}: --info on --bg`, fg: theme.info, bg: theme.bg, min: 3, type: 'ui' },
+    { label: `Theme ${theme.id}: primary button label`, fg: theme.onPrimary, bg: theme.primary, min: 4.5, type: 'text' },
+    { label: `Theme ${theme.id}: primary gradient end`, fg: theme.onPrimary, bg: compositeRgba(theme.primary, .9, '#000000'), min: 4.5, type: 'text' },
   );
 }
 

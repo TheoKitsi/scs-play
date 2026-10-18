@@ -164,3 +164,5 @@ window.addEventListener('resize', () => {
 window.addEventListener('scs:screenchange', (event) => {
   if (event.detail?.id !== 'home') clearOnboardingHints();
 });
+
+window.addEventListener('scs:home-explore', clearOnboardingHints);

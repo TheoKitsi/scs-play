@@ -221,6 +221,14 @@
         <span id="weekendBadge" class="weekend-badge"></span>
       </div>
 
+      <div class="mode-browser-bar">
+        <span id="modePosition" class="mode-position" aria-hidden="true">01 / 10</span>
+        <button id="btnAllModes" type="button" class="btn-mode-browser" aria-haspopup="dialog" aria-controls="modePicker">
+          <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z"/></svg>
+          <span data-i18n="all_modes">Alle Modi</span>
+        </button>
+      </div>
+
       <!-- Swipeable mode slides — JS renders one .hero-slide per mode -->
       <div class="hero-slider" id="heroSlider" role="region" aria-roledescription="carousel" data-i18n-aria="select_mode" aria-label="Spielmodus wählen" aria-describedby="heroCarouselStatus"></div>
       <div id="heroCarouselStatus" class="sr-only" aria-live="polite" aria-atomic="true"></div>
@@ -546,14 +554,15 @@
   <!-- Speed lines overlay -->
   <div id="speedLines" class="speed-lines"></div>
 
-  <!-- Klassik reference art: the active route becomes part of the stage. -->
+  <!-- Neutral scene geometry. Directional confirmation is only shown after input. -->
   <div id="resonanceStage" class="resonance-stage" aria-hidden="true">
     <span class="resonance-orbit resonance-orbit--inner"></span>
-    <span class="resonance-path resonance-path--ul" data-resonance-dir="ul"></span>
-    <span class="resonance-path resonance-path--ur" data-resonance-dir="ur"></span>
-    <span class="resonance-path resonance-path--dl" data-resonance-dir="dl"></span>
-    <span class="resonance-path resonance-path--dr" data-resonance-dir="dr"></span>
-    <span class="resonance-core"></span>
+    <svg class="arena-routes" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <path data-arena-dir="ul" d="M50 50 0 0"/><path data-arena-dir="ur" d="M50 50 100 0"/>
+      <path data-arena-dir="dl" d="M50 50 0 100"/><path data-arena-dir="dr" d="M50 50 100 100"/>
+      <path data-arena-dir="up" class="arena-route-edge" d="M50 50 50 -20.7"/><path data-arena-dir="down" class="arena-route-edge" d="M50 50 50 120.7"/>
+      <path data-arena-dir="left" class="arena-route-edge" d="M50 50 -20.7 50"/><path data-arena-dir="right" class="arena-route-edge" d="M50 50 120.7 50"/>
+    </svg>
   </div>
 
   <!-- HUD -->
@@ -797,20 +806,28 @@
   <div class="screen-content">
     <div class="screen-header"><h2 data-i18n="settings">Einstellungen</h2></div>
     <div class="settings-list">
-      <label class="setting-row"><span data-i18n="colorblind_mode">Farbenblind-Modus</span><input id="toggleColorblind" type="checkbox"></label>
-      <label class="setting-row"><span data-i18n="reduced_motion">Reduzierte Animationen</span><input id="toggleMotion" type="checkbox"></label>
-      <label class="setting-row"><span data-i18n="haptics">Haptik</span><input id="toggleHaptics" type="checkbox"></label>
-      <label class="setting-row"><span data-i18n="sound">Sound</span><input id="toggleSound" type="checkbox"></label>
-      <label class="setting-row setting-volume"><span data-i18n="sfx_volume">Effektlautstärke</span><input id="rangeSfxVolume" type="range" min="0" max="100" step="5"><output id="sfxVolumeValue" for="rangeSfxVolume">80%</output></label>
-      <label class="setting-row"><span data-i18n="music">Musik</span><input id="toggleMusic" type="checkbox"></label>
-      <label class="setting-row setting-volume"><span data-i18n="music_volume">Musiklautstärke</span><input id="rangeMusicVolume" type="range" min="0" max="100" step="5"><output id="musicVolumeValue" for="rangeMusicVolume">70%</output></label>
-
-      <label class="setting-row">
-        <span data-i18n="language">Sprache</span>
-        <select id="selectLang"><option value="auto" data-i18n="lang_auto">Automatisch</option><option value="de">Deutsch</option><option value="en">English</option></select>
-      </label>
+      <fieldset class="setting-group">
+        <legend data-i18n="settings_accessibility">Anzeige & Bedienung</legend>
+        <label class="setting-row"><span class="setting-copy"><span data-i18n="colorblind_mode">Farbenblind-Modus</span><small data-i18n="settings_colorblind_help">Zusätzliche Muster und unterscheidbare Farben.</small></span><input id="toggleColorblind" type="checkbox"></label>
+        <label class="setting-row"><span class="setting-copy"><span data-i18n="reduced_motion">Reduzierte Animationen</span><small data-i18n="settings_motion_help">Ruhigere Effekte, gleiches Spieltempo.</small></span><input id="toggleMotion" type="checkbox"></label>
+        <label class="setting-row"><span data-i18n="haptics">Haptik</span><input id="toggleHaptics" type="checkbox"></label>
+      </fieldset>
+      <fieldset class="setting-group">
+        <legend data-i18n="settings_audio">Audio</legend>
+        <label class="setting-row"><span data-i18n="sound">Sound</span><input id="toggleSound" type="checkbox" aria-controls="rangeSfxVolume"></label>
+        <label class="setting-row setting-volume"><span data-i18n="sfx_volume">Effektlautstärke</span><input id="rangeSfxVolume" type="range" min="0" max="100" step="5"><output id="sfxVolumeValue" for="rangeSfxVolume">80%</output></label>
+        <label class="setting-row"><span data-i18n="music">Musik</span><input id="toggleMusic" type="checkbox" aria-controls="rangeMusicVolume"></label>
+        <label class="setting-row setting-volume"><span data-i18n="music_volume">Musiklautstärke</span><input id="rangeMusicVolume" type="range" min="0" max="100" step="5"><output id="musicVolumeValue" for="rangeMusicVolume">70%</output></label>
+      </fieldset>
+      <fieldset class="setting-group">
+        <legend data-i18n="settings_profile">Profil & Sprache</legend>
+        <label class="setting-row">
+          <span data-i18n="language">Sprache</span>
+          <select id="selectLang"><option value="auto" data-i18n="lang_auto">Automatisch</option><option value="de">Deutsch</option><option value="en">English</option></select>
+        </label>
+        <button id="btnAvatar" class="btn btn-secondary" data-i18n="avatar_change">Avatar ändern</button>
+      </fieldset>
     </div>
-    <button id="btnAvatar" class="btn btn-secondary" style="margin-top:12px" data-i18n="avatar_change">Avatar &#228;ndern</button>
     <button id="btnEngagementReport" class="btn btn-secondary" style="margin-top:8px" data-i18n="engagement_report_btn"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" style="width:18px;height:18px"><path fill="currentColor" d="M4 13h3v7H4zm6-5h3v12h-3zm6-5h3v17h-3z"/></svg> Spielanalyse</button>
     <div class="legal-links" aria-label="Rechtliches">
       <a href="privacy-policy.html" target="_blank" rel="noopener" data-i18n="privacy_policy">Datenschutz</a>
@@ -931,6 +948,16 @@
 </div>
 
 <!-- ═══════ WHEEL OF FORTUNE OVERLAY ═══════ -->
+<div id="modePicker" class="mode-picker-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modePickerTitle" hidden inert>
+  <div class="mode-picker-panel">
+    <header class="mode-picker-header">
+      <div><span class="mode-picker-eyebrow" data-i18n="mode_picker_eyebrow">Dein nächster Fokus</span><h2 id="modePickerTitle" data-i18n="all_modes">Alle Modi</h2></div>
+      <button id="btnCloseModes" type="button" class="btn-icon-circle" data-i18n-aria="close_modes" aria-label="Modusübersicht schließen"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
+    </header>
+    <div id="modePickerGrid" class="mode-picker-content"></div>
+  </div>
+</div>
+
 <div id="wheelOverlay" class="wheel-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="wheelHeading" hidden inert>
   <div class="wheel-panel">
     <button class="wheel-close" id="btnWheelClose" aria-label="Gl&uuml;cksrad schlie&szlig;en">&times;</button>

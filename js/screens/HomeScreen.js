@@ -13,6 +13,8 @@ import { updateXPBar }      from '../helpers/xpBarHelper.js';
 import { checkOnboardingHints } from '../helpers/onboardingHints.js';
 import { getOrSeedQuests, countCompleted as questsCompleted } from '../services/DailyQuestService.js';
 import { DAILY_REWARD } from '../services/ProgressionService.js';
+import { modePreview } from '../renderers/modePreview.js';
+import { openModal, closeModal } from '../helpers/modal.js';
 import app                   from '../appState.js';
 
 /* ═══════ Hero Carousel State ═══════ */
@@ -136,12 +138,35 @@ const MODE_SKILL_KEYS = {
 
 /* ═══════ Carousel Engine ═══════ */
 
-/** Get the SVG HTML for a mode from the hidden template cards */
+/** Share the same material scene between the hero and the full catalog. */
 function getModeSVG(mode) {
-  const card = $(`.mode-card[data-mode="${mode}"]`);
-  if (!card) return '';
-  const svg = card.querySelector('.mode-card-visual svg');
-  return svg ? svg.outerHTML : '';
+  return modePreview(mode, app.colorblind);
+}
+
+const MODE_GROUPS = [
+  { key: 'section_sort', modes: ['klassik', 'beginner', 'expert'] },
+  { key: 'section_brain', modes: ['mathe', 'wissen'] },
+  { key: 'section_merken', modes: ['memo', 'sequenz'] },
+  { key: 'section_reflex', modes: ['stroop', 'fokus', 'chaos'] },
+];
+
+function openModePicker() {
+  const grid = $('#modePickerGrid');
+  if (!grid) return;
+  window.dispatchEvent(new Event('scs:home-explore'));
+  const selected = CONFIG.MODE_ORDER[carouselIdx];
+  grid.innerHTML = MODE_GROUPS.map(group => `<section class="mode-picker-group" aria-labelledby="picker-${group.key}">
+    <h3 id="picker-${group.key}">${t(group.key)}</h3><div class="mode-picker-grid">${group.modes.map(mode => {
+      const unlocked = app.save.isModeUnlocked(mode);
+      return `<button type="button" class="mode-choice${unlocked ? '' : ' mode-choice--locked'}" data-mode-choice="${mode}" aria-pressed="${mode === selected}">
+        ${getModeSVG(mode)}<span class="mode-choice-name">${t(`mode_${mode}`)}</span>
+        <span class="mode-choice-meta">${unlocked ? t(MODE_SKILL_KEYS[mode]) : t('mode_locked', { n: getUnlockLevel(mode) })}</span>
+      </button>`;
+    }).join('')}</div></section>`).join('');
+  openModal($('#modePicker'), {
+    initialFocus: '[aria-pressed="true"]',
+    onDismiss: () => closeModal($('#modePicker')),
+  });
 }
 
 /** Build a single hero slide element */
@@ -245,6 +270,7 @@ function positionSlides() {
 
   // Update selected mode
   const currentMode = CONFIG.MODE_ORDER[carouselIdx];
+  setText('#modePosition', `${String(carouselIdx + 1).padStart(2, '0')} / ${total}`);
   const currentSlide = slides[carouselIdx];
   const status = $('#heroCarouselStatus');
   if (status && currentSlide) {
@@ -312,7 +338,7 @@ function updateBackdropAura() {
   const heroBackdrop = $('#heroBackdrop');
   if (heroBackdrop) {
     const aura = MODE_AURA[currentMode] || 'rgba(124,58,237,0.35)';
-    heroBackdrop.style.background = `radial-gradient(ellipse 80% 70% at 50% 40%, ${aura} 0%, rgba(124,58,237,0.08) 50%, transparent 100%)`;
+    heroBackdrop.style.setProperty('--hero-aura', aura);
   }
 }
 
@@ -327,6 +353,26 @@ function initCarouselListeners() {
   const nextBtn = $('#heroNavNext');
   if (prevBtn) prevBtn.addEventListener('click', () => navigateCarousel(-1));
   if (nextBtn) nextBtn.addEventListener('click', () => navigateCarousel(1));
+  $('#btnAllModes')?.addEventListener('click', openModePicker);
+  $('#btnCloseModes')?.addEventListener('click', () => closeModal($('#modePicker')));
+  $('#modePicker')?.addEventListener('click', event => {
+    if (event.target === event.currentTarget) closeModal(event.currentTarget);
+    const choice = event.target.closest('[data-mode-choice]');
+    if (!choice) return;
+    const index = CONFIG.MODE_ORDER.indexOf(choice.dataset.modeChoice);
+    if (index < 0) return;
+    carouselIdx = index;
+    positionSlides();
+    updateBackdropAura();
+    updateHeroStats();
+    updatePlayTypeSelector();
+    closeModal($('#modePicker'));
+  });
+  window.addEventListener('scs:screenchange', ({ detail }) => {
+    if (detail?.id !== 'home' && $('#modePicker')?.classList.contains('active')) {
+      closeModal($('#modePicker'), { restoreFocus: false });
+    }
+  });
 
   // Touch/swipe on slider
   const slider = $('#heroSlider');

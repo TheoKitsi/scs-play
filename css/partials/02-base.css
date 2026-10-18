@@ -4,7 +4,7 @@
 .sr-skip-link{
   position:absolute;top:-100%;left:50%;transform:translateX(-50%);
   z-index:9999;padding:8px 16px;border-radius:8px;
-  background:var(--primary);color:white;font-weight:700;font-size:.85rem;
+  background:var(--primary);color:var(--on-primary);font-weight:700;font-size:.85rem;
   text-decoration:none;transition:top .2s;
 }
 .sr-skip-link:focus{top:8px}
@@ -24,6 +24,11 @@ button:focus:not(:focus-visible){outline:none}
 
 /* ─── Smartphone touch UX ─── */
 body{
+  /* Derived on the same element as theme overrides, not frozen at :root. */
+  --surface-soft:color-mix(in srgb,var(--surface) 94%,var(--text));
+  --surface-raised:color-mix(in srgb,var(--card) 94%,var(--text));
+  --scene-bg:color-mix(in srgb,var(--bg) 92%,#000);
+  --action-gradient:linear-gradient(135deg,var(--primary),color-mix(in srgb,var(--primary) 90%,#000));
   -webkit-tap-highlight-color:transparent;
   touch-action:manipulation;
   overscroll-behavior-y:contain;
@@ -95,6 +100,8 @@ body{
   font-family:inherit;
   letter-spacing:0.3px;
 }
+/* Release inactive layout/compositing trees after the exit transition. */
+.screen:not(.active):not(.screen-exit){display:none}
 .btn::before {
   content: '';
   position: absolute;
@@ -155,18 +162,16 @@ body{
   outline:none;
 }
 .btn-primary{
-  background:linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(124, 58, 237, 0.15));
-  color:var(--on-primary);border:1px solid rgba(124, 58, 237, 0.45);
-  box-shadow:
-    0 4px 16px rgba(124, 58, 237, 0.2),
-    inset 0 1px 1px rgba(255,255,255,0.15);
+  background:var(--action-gradient);
+  background-color:var(--primary);
+  color:var(--on-primary);border:1px solid var(--primary);
+  box-shadow:0 5px 16px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.2);
 }
 .btn-primary:hover{
-  background:linear-gradient(135deg, rgba(124, 58, 237, 0.35), rgba(124, 58, 237, 0.2));
-  box-shadow:
-    0 8px 28px rgba(124, 58, 237, 0.35),
-    0 0 0 1px rgba(124, 58, 237, 0.3),
-    inset 0 1px 1px rgba(255,255,255,0.2);
+  background:var(--action-gradient);
+  background-color:var(--primary);
+  color:var(--on-primary);
+  box-shadow:0 8px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.3);
 }
 .btn-secondary{background:var(--card);border:1px solid var(--glass-border)}
 .btn-sm{font-size:0.9rem;padding:12px 16px;}

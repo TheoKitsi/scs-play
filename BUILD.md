@@ -30,13 +30,14 @@ npm run verify
 This runs:
 
 1. Knip static dependency and export checks.
-2. Game, audio, and service worker regression tests.
+2. Game, audio, service worker and effects regression tests, plus deterministic performance resource/lifecycle limits.
 3. Static WCAG token/theme contrast audit.
 4. Production web build.
 5. Playwright PWA release checks for cached music, HTTP byte ranges, and offline loading.
 6. Playwright first-round reward and existing-save migration checks.
 7. Playwright DOM contrast audit against rendered screens.
-8. Playwright smoke test for the core game flow; browser console errors fail the gate.
+8. Playwright presentation checks: ten mode layouts on phone/desktop, catalog navigation, theme surfaces, full-size form controls, motion preferences, local answer feedback and results.
+9. Playwright smoke test for the core game flow; browser console errors fail the gate.
 
 The Playwright scripts start a local static server for `docs/` automatically. To target an external deployment instead, pass `SCS_BASE`:
 
@@ -44,6 +45,29 @@ The Playwright scripts start a local static server for `docs/` automatically. To
 $env:SCS_BASE="https://example.com/scs-play/"
 npm run smoke-test
 ```
+
+## Performance Checks
+
+Run measurements serially on an otherwise quiet machine, after building. Use the Node command directly so shells/npm cannot drop benchmark flags:
+
+```powershell
+node scripts/perf-benchmark.mjs --mode=klassik --play=classic --cpu=4 --seconds=30 --reaction=150 --tier=mid --seed=1337 --json=perf-mid.json
+```
+
+Use the same viewport, CPU rate, input, seed, duration and pinned tier for comparisons. Repeat runs and compare medians, including p95 frame time and long-task time rather than FPS alone. `--root=<built-directory>` can compare an archived build; `--input=tap` covers the tap path. JSON includes steady-state frames after the warmup, connected DOM nodes, active animations and trail allocation. The seed makes a given build repeatable; decorative randomness can change the precise stimulus sequence between builds.
+
+`--trace=trace.json` is diagnostic and adds overhead; do not compare traced measurements with untraced ones. Headless Chromium with CPU throttling does not simulate an Android GPU, thermals or battery use. Check those on physical devices before claiming a stable device frame rate. Performance JSON and traces are local diagnostics, not release assets.
+
+The 2.5D performance pass was compared against its pre-optimization build in three alternating, untraced 30-second runs each: Farben / classic, 412×915 at DPR 2, 4× CPU throttling, 150 ms reaction, fixed `mid` tier, seed 1337. Medians:
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| FPS | 37.1 | 41.8 |
+| p95 frame time | 66.8 ms | 50.0 ms |
+| Total long-task time | 8,011 ms | 4,845 ms |
+| Trail backing pixels | 1,507,920 | 848,514 |
+
+These are relative local measurements with visible run-to-run variance, not device targets or a 60 FPS guarantee. An additional retained/recolored-SVG experiment was slower and was not kept.
 
 ## Android Build
 

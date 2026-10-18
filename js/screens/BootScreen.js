@@ -8,6 +8,7 @@ import { $, $$, setText, localise, showScreen } from '../helpers/dom.js';
 import { applyTheme } from '../services/ThemeService.js';
 import { EngagementTracker }   from '../helpers/engagementTracker.js';
 import app                     from '../appState.js';
+import { applyMotionPreference } from '../helpers/perfMode.js';
 
 export function applyLoadedSave() {
   const { save, audio } = app;
@@ -30,7 +31,7 @@ export function applyLoadedSave() {
   localise(t);
   applyTheme(save.getActiveTheme());
   document.body.classList.add('ad-free');
-  document.body.toggleAttribute('data-reduced-motion', Boolean(save.getSetting('reducedMotion')));
+  applyMotionPreference(save.getSetting('reducedMotion'));
   app.engagement = new EngagementTracker(save);
 }
 

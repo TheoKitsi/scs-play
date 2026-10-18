@@ -11,6 +11,7 @@ import { closeModal, openModal } from '../helpers/modal.js';
 import { shapeSVG }         from '../renderers/shapes.js';
 import { SwipeHandler }     from '../input.js';
 import { EffectsManager }   from '../effects.js';
+import { setGameplayPerformanceActive } from '../helpers/perfMode.js';
 import app                   from '../appState.js';
 import { startModeMastery, finishModeMastery } from './gameHud/modeMasteryLifecycle.js';
 import { trackKlassikAnswer, getGhostDelta, getSpeedZone } from '../game/ModeMastery.js';
@@ -30,6 +31,8 @@ import { trackChaosAnswer, getChaosGhostDelta } from '../game/ModeMastery.js';
 
 /* ═══════ SVG Cache — avoid regenerating & parsing identical SVGs ═══════ */
 const _svgCache = new Map();
+const _centerSVGCache = new Map();
+let _svgInstance = 0;
 let _gameRunId = 0;
 
 function beginGameRun() {
@@ -50,46 +53,20 @@ function getCachedSVGNode(shape, color, size, bonus) {
     node = tmp.firstChild;
     _svgCache.set(key, node);
   }
-  return node.cloneNode(true);
+  const clone = node.cloneNode(true);
+  /* Cached clones still need document-unique paint IDs. */
+  const light = clone.querySelector('linearGradient');
+  if (light) {
+    light.id = `game-shape-light-${++_svgInstance}`;
+    clone.querySelector('[data-shape-light]')?.setAttribute('fill', `url(#${light.id})`);
+  }
+  return clone;
 }
 
 function syncGameplayMusicIntensity(game, result) {
   if (game.practice) return;
   if (typeof app.audio?.setPerformanceIntensity !== 'function') return;
   app.audio.setPerformanceIntensity(result.correct ? game.streak : 0);
-}
-
-/* ═══════ Platform color cache — avoid recomputing gradient strings ═══════ */
-let _lastPlatformColor = '';
-const _platformStyles = {};
-
-function applyPlatformColor(platform, color) {
-  if (color === _lastPlatformColor) return;
-  _lastPlatformColor = color;
-  if (!_platformStyles[color]) {
-    _platformStyles[color] = {
-      bg: `radial-gradient(circle, ${hexToRgba(color, 0.15)} 0%, ${hexToRgba(color, 0.04)} 55%, transparent 75%)`,
-      border: hexToRgba(color, 0.2),
-      shadow: `0 0 40px ${hexToRgba(color, 0.12)}`
-    };
-  }
-  const s = _platformStyles[color];
-  platform.style.background = s.bg;
-  platform.style.borderColor = s.border;
-  platform.style.boxShadow = s.shadow;
-}
-
-/* ═══════ Corner style cache — avoid recomputing per-color strings ═══════ */
-const _cornerStyleCache = {};
-function getCornerStyles(color) {
-  if (!_cornerStyleCache[color]) {
-    _cornerStyleCache[color] = {
-      bg: hexToRgba(color, 0.08),
-      border: hexToRgba(color, 0.3),
-      shadow: `0 0 15px ${hexToRgba(color, 0.15)}, inset 0 0 15px ${hexToRgba(color, 0.05)}`
-    };
-  }
-  return _cornerStyleCache[color];
 }
 
 /* ═══════ Render corners (with diffing — only touch changed DOM) ═══════ */
@@ -166,6 +143,7 @@ function renderCorners(cornerMap, forceAll = false) {
 
   /* Full reset only when necessary (first render or mode change) */
   if (forceAll || !Object.keys(_prevCornerState).length) {
+    app.swipe?.invalidateGeometry();
     $$('.corner-shape').forEach(el => {
       el.innerHTML = '';
       el.className = el.className.replace(/\bdir-\S+/g, '').trim();
@@ -186,6 +164,8 @@ function renderCorners(cornerMap, forceAll = false) {
     const el = $(`.corner-shape[data-dir="${dir}"]`);
     if (!el) return;
     el.setAttribute('aria-label', getGameplayCornerLabel(dir, info));
+    el.dataset.content = info.type || 'shape';
+    el.style.setProperty('--target-color', color);
 
     /* ── STROOP corners: solid color swatch (no text — pure Stroop effect) ── */
     if (info.type === 'stroop') {
@@ -194,9 +174,9 @@ function renderCorners(cornerMap, forceAll = false) {
       el.dataset.value = info.value;
       el.dataset.color = color;
       if (!el.classList.contains(`dir-${dir}`)) el.classList.add(`dir-${dir}`);
-      el.style.background = hexToRgba(color, 0.82);
+      el.style.background = color;
       el.style.borderColor = hexToRgba(color, 0.9);
-      el.style.boxShadow = `0 0 18px ${hexToRgba(color, 0.4)}, inset 0 0 12px ${hexToRgba(color, 0.2)}`;
+      el.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,.3),0 8px 18px rgba(0,0,0,.3)';
       return;
     }
 
@@ -209,10 +189,6 @@ function renderCorners(cornerMap, forceAll = false) {
       appendColorblindMark(el, info.colorblindPattern);
       el.dataset.color = color;
       if (!el.classList.contains(`dir-${dir}`)) el.classList.add(`dir-${dir}`);
-      const cs = getCornerStyles(color);
-      el.style.background = cs.bg;
-      el.style.borderColor = cs.border;
-      el.style.boxShadow = cs.shadow;
       return;
     }
 
@@ -228,31 +204,18 @@ function renderCorners(cornerMap, forceAll = false) {
 
     el.dataset.color = color;
     if (!el.classList.contains(`dir-${dir}`)) el.classList.add(`dir-${dir}`);
-    const cs = getCornerStyles(color);
-    el.style.background = cs.bg;
-    el.style.borderColor = cs.border;
-    el.style.boxShadow = cs.shadow;
   });
 }
 
 /* ═══════ Render center shape ═══════ */
-/* Neutral platform accent for brain/reflex modes — prevents leaking correct-answer color */
-const NEUTRAL_PLATFORM_COLOR = '#9D4EDD';
-
 function renderCenter(shapeData) {
   const center = $('#centerShape');
   const platform = $('#centerPlatform');
   if (!center || !shapeData) return;
   const color = app.colorblind ? shapeData.colorblind : shapeData.color;
-  const inRush = app.game.inRush;
-  const inFever = app.game.feverActive;
   announceStimulus(String(shapeData.display ?? shapeData.shape ?? shapeData.value ?? t('game_shape')));
-
-  /* Brain & reflex modes: use neutral platform glow so it doesn't reveal the answer */
-  const isBrainLike = shapeData.type === 'math' || shapeData.type === 'word'
-    || shapeData.type === 'stroop' || shapeData.type === 'fokus' || shapeData.type === 'chaos'
-    || shapeData.type === 'capitals' || shapeData.type === 'wissen';
-  const platformColor = isBrainLike ? NEUTRAL_PLATFORM_COLOR : color;
+  /* The plinth always uses neutral CSS materials, never an answer-derived tint. */
+  platform?.classList.add('platform-active');
 
   /* ── CAPITALS: show country name as center stimulus ── */
   if (shapeData.type === 'capitals') {
@@ -266,8 +229,6 @@ function renderCenter(shapeData) {
     span.textContent = shapeData.display;
     center.className = 'center-shape pop-in spawn-pop';
     if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
-    if (platform) { applyPlatformColor(platform, platformColor); platform.classList.add('platform-active'); }
-    if (!inRush) spawnBurstParticles(platformColor);
     return;
   }
 
@@ -283,8 +244,6 @@ function renderCenter(shapeData) {
     span.textContent = shapeData.display;
     center.className = 'center-shape pop-in spawn-pop';
     if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
-    if (platform) { applyPlatformColor(platform, platformColor); platform.classList.add('platform-active'); }
-    if (!inRush) spawnBurstParticles(platformColor);
     return;
   }
 
@@ -307,12 +266,6 @@ function renderCenter(shapeData) {
 
     center.className = 'center-shape pop-in spawn-pop';
     if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
-    if (platform) {
-      applyPlatformColor(platform, platformColor);
-      platform.classList.add('platform-active');
-    }
-    /* Skip burst particles during rush — they pile up and cause DOM pressure */
-    if (!inRush) spawnBurstParticles(platformColor);
     return;
   }
 
@@ -331,8 +284,6 @@ function renderCenter(shapeData) {
     }));
     center.className = 'center-shape pop-in spawn-pop';
     if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
-    if (platform) { applyPlatformColor(platform, platformColor); platform.classList.add('platform-active'); }
-    if (!inRush) spawnBurstParticles(platformColor);
     return;
   }
 
@@ -352,8 +303,6 @@ function renderCenter(shapeData) {
     center.appendChild(row);
     center.className = 'center-shape pop-in spawn-pop';
     if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
-    if (platform) { applyPlatformColor(platform, platformColor); platform.classList.add('platform-active'); }
-    if (!inRush) spawnBurstParticles(platformColor);
     return;
   }
 
@@ -388,23 +337,22 @@ function renderCenter(shapeData) {
     center.appendChild(wrap);
     center.className = 'center-shape pop-in spawn-pop';
     if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
-    if (platform) { applyPlatformColor(platform, platformColor); platform.classList.add('platform-active'); }
-    if (!inRush) spawnBurstParticles(platformColor);
     return;
   }
 
   const size = shapeData.bonus === 'diamond' ? 100 : shapeData.bonus === 'golden' ? 95 : 90;
   /* Use cached SVG clone instead of innerHTML parse */
   center.textContent = '';
-  center.appendChild(getCachedSVGNode(shapeData.shape, color, size, shapeData.bonus));
+  const key = `${shapeData.shape}|${color}|${size}|${shapeData.bonus || ''}`;
+  let node = _centerSVGCache.get(key);
+  if (!node) node = getCachedSVGNode(shapeData.shape, color, size, shapeData.bonus);
+  /* Reuse detached material nodes rather than allocating an SVG tree per hit. */
+  _centerSVGCache.delete(key);
+  _centerSVGCache.set(key, node);
+  if (_centerSVGCache.size > 32) _centerSVGCache.delete(_centerSVGCache.keys().next().value);
+  center.appendChild(node);
   center.className = 'center-shape pop-in spawn-pop';
   if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
-  if (platform) {
-    applyPlatformColor(platform, color);
-    platform.classList.add('platform-active');
-  }
-  /* Skip burst particles during rush — they pile up and cause DOM pressure */
-  if (!inRush) spawnBurstParticles(color);
 }
 
 /* Corner and platform geometry doesn't move during a round. Caching their
@@ -419,73 +367,16 @@ function stableRect(el) {
   }
   return rect;
 }
-function invalidateRects() { _rectCache.clear(); }
+function invalidateRects() { _rectCache.clear(); app.swipe?.invalidateGeometry(); }
 if (typeof window !== 'undefined') {
   window.addEventListener('resize', invalidateRects, { passive: true });
   window.addEventListener('orientationchange', invalidateRects, { passive: true });
 }
 
-/* Particle pool for spawn burst — avoids creating/removing DOM nodes every spawn */
-const _spawnPool = [];
-const _POOL_SIZE = 6;
-let _poolInited = false;
-let _spawnCleanupTimeout = null;
-
-function _initPool() {
-  if (_poolInited) return;
-  _poolInited = true;
-  const gameEl = $('#game');
-  if (!gameEl) return;
-  for (let i = 0; i < _POOL_SIZE; i++) {
-    const p = document.createElement('div');
-    p.className = 'spawn-particle';
-    p.style.display = 'none';
-    gameEl.appendChild(p);
-    _spawnPool.push(p);
-  }
-}
-
-function spawnBurstParticles(color) {
-  if (app.save.getSetting('reducedMotion')) return;
-  /* Skip during rush — rapid spawns pile up particles */
-  if (app.game.inRush) return;
-  const platform = $('#centerPlatform');
-  if (!platform) return;
-  _initPool();
-  if (!_spawnPool.length) return;
-
-  const rect = stableRect(platform);
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + rect.height / 2;
-
-  /* Web Animations restart without the forced reflow a class re-trigger needs */
-  for (let i = 0; i < _spawnPool.length; i++) {
-    const p = _spawnPool[i];
-    const angle = (i / _spawnPool.length) * Math.PI * 2;
-    const dist = 20 + Math.random() * 15;
-    p.style.cssText = `left:${cx}px;top:${cy}px;width:4px;height:4px;background:${color};animation:none;`;
-    p.animate([
-      { opacity: 1, transform: 'translate(0,0) scale(1)' },
-      { opacity: 0, transform: `translate(${Math.cos(angle) * dist}px,${Math.sin(angle) * dist}px) scale(0)` },
-    ], { duration: 500, easing: 'ease-out', fill: 'forwards' });
-  }
-  /* Single timeout for cleanup */
-  clearTimeout(_spawnCleanupTimeout);
-  _spawnCleanupTimeout = setTimeout(() => {
-    for (let i = 0; i < _spawnPool.length; i++) _spawnPool[i].style.display = 'none';
-    _spawnCleanupTimeout = null;
-  }, 500);
-}
-
 function clearCenter() {
   const center = $('#centerShape');
-  const platform = $('#centerPlatform');
   if (center) { center.textContent = ''; center.className = 'center-shape'; }
-  if (platform) {
-    /* Skip resetting platform styles — they'll be overwritten on next spawn.
-       Only remove the active class so CSS transitions reset properly. */
-    platform.classList.remove('platform-active');
-  }
+  /* Keep the neutral plinth stable between stimuli; only its content changes. */
 }
 
 /* ═══════ HUD updates — cached element refs ═══════ */
@@ -518,7 +409,12 @@ function _getHudEls() {
   return _hudCache;
 }
 /** Call when leaving game screen to drop cached refs */
-function invalidateHudCache() { _hudCache = null; }
+function invalidateHudCache() {
+  if (_hudRafId) cancelAnimationFrame(_hudRafId);
+  _hudRafId = 0;
+  _hudCache = null;
+  _timerBarState = '';
+}
 
 const INTENSITY_CLASSES = ['intensity-low','intensity-mid','intensity-high','intensity-max',
   'edge-glow-warm','edge-glow-hot','edge-glow-fire','action-climax','action-climax-peak'];
@@ -564,28 +460,41 @@ function updateIntensity() {
     const level = String(Math.min(1, Math.max(0, game.streak / 20)));
     if (level !== _resonanceLevel) {
       _resonanceLevel = level;
-      g.style.setProperty('--resonance-level', level);
+      $('#resonanceStage')?.style.setProperty('--resonance-level', level);
     }
   }
 }
 
-function updateKlassikResonance(direction, color, pulse = false) {
-  const gameEl = $('#game');
-  if (!gameEl || app.selectedMode !== 'klassik') return;
-  if (direction) gameEl.dataset.resonanceTarget = direction;
-  if (color) gameEl.style.setProperty('--resonance-color', color);
-  if (!pulse) return;
+let _arenaConfirmationTimer = null;
 
+function clearArenaConfirmation() {
+  clearTimeout(_arenaConfirmationTimer);
+  _arenaConfirmationTimer = null;
   const stage = $('#resonanceStage');
-  if (!stage) return;
-  stage.classList.remove('resonance-hit');
-  requestAnimationFrame(() => stage.classList.add('resonance-hit'));
+  if (stage) {
+    delete stage.dataset.confirmedDirection;
+    stage.classList.remove('resonance-hit');
+  }
 }
+
+function confirmArenaAnswer(direction) {
+  const stage = $('#resonanceStage');
+  if (!stage || !direction) return;
+  clearArenaConfirmation();
+  stage.dataset.confirmedDirection = direction;
+  stage.classList.add('resonance-hit');
+  _arenaConfirmationTimer = setTimeout(clearArenaConfirmation, 260);
+}
+
+let _timerBarState = '';
 
 function updateTimerBar() {
   const { game } = app;
   const fill = _getHudEls().timerFill;
   if (!fill) return;
+  const key = `${game.practice}|${game.playType}|${game.timer}|${app.gameDuration}`;
+  if (key === _timerBarState) return;
+  _timerBarState = key;
   if (game.practice || game.playType === 'endless' || app.gameDuration <= 0) {
     fill.style.transform = 'scaleX(0)';
     fill.parentElement?.removeAttribute('aria-valuenow');
@@ -596,22 +505,20 @@ function updateTimerBar() {
   fill.parentElement?.setAttribute('aria-valuemin', '0');
   fill.parentElement?.setAttribute('aria-valuemax', String(app.gameDuration));
   fill.parentElement?.setAttribute('aria-valuenow', String(Math.max(0, game.timer)));
-  fill.classList.remove('urgent','critical');
   const thresholds = getUrgencyThresholds();
-  if (game.timer <= thresholds.critical) fill.classList.add('critical');
-  else if (game.timer <= thresholds.urgent) fill.classList.add('urgent');
+  fill.classList.toggle('critical', game.timer <= thresholds.critical);
+  fill.classList.toggle('urgent', game.timer > thresholds.critical && game.timer <= thresholds.urgent);
 }
 
-let _hudRafPending = false;
+let _hudRafId = 0;
 
 function updateHUD() {
-  if (_hudRafPending) return;
-  _hudRafPending = true;
-  requestAnimationFrame(_updateHUDInner);
+  if (_hudRafId) return;
+  _hudRafId = requestAnimationFrame(_updateHUDInner);
 }
 
 function _updateHUDInner() {
-  _hudRafPending = false;
+  _hudRafId = 0;
   const { game } = app;
   const hud = _getHudEls();
 
@@ -628,21 +535,21 @@ function _updateHUDInner() {
 
   const multEl = hud.mult;
   if (multEl) {
-    const prev = multEl.textContent;
-    multEl.textContent = `x${game.multiplier}`;
-    multEl.className = 'hud-multiplier';
-    if (game.multiplier >= 8) multEl.classList.add('mult-ultra');
-    else if (game.multiplier >= 6) multEl.classList.add('mult-high');
-    else if (game.multiplier >= 3) multEl.classList.add('mult-mid');
-    if (prev !== `x${game.multiplier}`) {
+    multEl.classList.toggle('mult-ultra', game.multiplier >= 8);
+    multEl.classList.toggle('mult-high', game.multiplier >= 6 && game.multiplier < 8);
+    multEl.classList.toggle('mult-mid', game.multiplier >= 3 && game.multiplier < 6);
+    const text = `x${game.multiplier}`;
+    if (multEl.textContent !== text) {
+      multEl.textContent = text;
       multEl.classList.add('value-changed');
-      setTimeout(() => multEl.classList.remove('value-changed'), 350);
+      clearTimeout(multEl._popTimer);
+      multEl._popTimer = setTimeout(() => multEl.classList.remove('value-changed'), 350);
     }
   }
 
   const streakEl = hud.streak;
   if (streakEl) {
-    streakEl.textContent = game.streak;
+    if (streakEl.textContent !== String(game.streak)) streakEl.textContent = game.streak;
     streakEl.classList.toggle('on-fire', game.streak >= 10);
   }
 
@@ -652,12 +559,13 @@ function _updateHUDInner() {
     if (game.playType === 'endless') {
       const min = Math.floor(game.elapsed / 60);
       const sec = game.elapsed % 60;
-      timerEl.textContent = `${min}:${sec.toString().padStart(2, '0')}`;
+      const text = `${min}:${sec.toString().padStart(2, '0')}`;
+      if (timerEl.textContent !== text) timerEl.textContent = text;
       timerEl.classList.remove('timer-urgent', 'timer-critical');
     } else if (game.practice) {
       timerEl.style.visibility = 'hidden';
     } else {
-      timerEl.textContent = game.timer;
+      if (timerEl.textContent !== String(game.timer)) timerEl.textContent = game.timer;
       timerEl.classList.toggle('timer-urgent', game.timer <= thresholds.urgent);
       timerEl.classList.toggle('timer-critical', game.timer <= thresholds.critical);
     }
@@ -744,6 +652,8 @@ function cornerScorePop(dir, text) {
 
   const el = _cornerPopPool[_cornerPopIdx % _CORNER_POP_POOL];
   _cornerPopIdx++;
+  clearTimeout(el._hideTimeout);
+  if (el._showRafId) cancelAnimationFrame(el._showRafId);
 
   const r = stableRect(corner);
   el.textContent = text;
@@ -752,10 +662,11 @@ function cornerScorePop(dir, text) {
   el.style.display = '';
   el.classList.remove('corner-score-pop');
   /* Use rAF instead of forced reflow for re-trigger */
-  requestAnimationFrame(() => {
+  el._showRafId = requestAnimationFrame(() => {
+    el._showRafId = null;
     el.classList.add('corner-score-pop');
   });
-  setTimeout(() => { el.style.display = 'none'; }, 700);
+  el._hideTimeout = setTimeout(() => { el.style.display = 'none'; el._hideTimeout = null; }, 700);
 }
 
 let _instructionTimer = null;
@@ -877,7 +788,7 @@ function ensureKlassikHUD() {
   if (!$('#flawlessCounter')) {
     const el = document.createElement('div');
     el.id = 'flawlessCounter';
-    el.className = 'flawless-counter';
+    el.className = 'flawless-counter mode-metric';
     gameEl.appendChild(el);
   }
   if (!$('#zenOverlay')) {
@@ -1000,7 +911,7 @@ function ensureFormenHUD() {
   if (!$('#flowMeter')) {
     const el = document.createElement('div');
     el.id = 'flowMeter';
-    el.className = 'flow-meter';
+    el.className = 'flow-meter mode-metric';
     el.innerHTML = '<div class="flow-meter-fill" id="flowMeterFill"></div><span class="flow-meter-label" id="flowMeterLabel">FLOW</span>';
     gameEl.appendChild(el);
   }
@@ -1107,7 +1018,7 @@ function ensureExpertHUD() {
   if (!$('#expertCompassRing')) {
     const ring = document.createElement('div');
     ring.id = 'expertCompassRing';
-    ring.className = 'expert-compass-ring';
+    ring.className = 'expert-compass-ring mode-metric';
     ring.innerHTML = Object.entries(COMPASS_DIR_ANGLES).map(([dir, angle]) =>
       `<div class="compass-dir" data-dir="${dir}" style="--angle:${angle}deg">
         <span class="compass-star-count">0</span>
@@ -1206,7 +1117,7 @@ function ensureUltraHUD() {
   if (!$('#ultraCompassGrid')) {
     const grid = document.createElement('div');
     grid.id = 'ultraCompassGrid';
-    grid.className = 'ultra-compass-grid';
+    grid.className = 'ultra-compass-grid mode-metric';
     grid.innerHTML = Object.entries(ULTRA_DIR_ANGLES).map(([dir, angle]) =>
       `<div class="ultra-dir" data-dir="${dir}" style="--angle:${angle}deg">
         <span class="ultra-star-count">0</span>
@@ -1299,7 +1210,7 @@ function ensureMatheHUD() {
   if ($('#matheOpBar')) return;
   const bar = document.createElement('div');
   bar.id = 'matheOpBar';
-  bar.className = 'mathe-op-bar';
+  bar.className = 'mathe-op-bar mode-metric';
   for (const op of MATHE_OPS) {
     const seg = document.createElement('div');
     seg.className = 'mathe-op-seg';
@@ -1563,7 +1474,7 @@ function ensureWissenHUD() {
   if ($('#wissenHUD')) return;
   const el = document.createElement('div');
   el.id = 'wissenHUD';
-  el.className = 'wissen-hud';
+  el.className = 'wissen-hud mode-metric';
   el.innerHTML = `<span class="wissen-iq-live">IQ --</span>`;
   $('#game')?.appendChild(el);
 
@@ -1677,7 +1588,7 @@ function ensureMemoHUD() {
   if ($('#memoHUD')) return;
   const el = document.createElement('div');
   el.id = 'memoHUD';
-  el.className = 'memo-hud';
+  el.className = 'memo-hud mode-metric';
   el.innerHTML = `<span class="memo-span-label">${t('mastery_span')}</span><span class="memo-span-val">0</span>`;
   $('#game')?.appendChild(el);
 
@@ -1721,7 +1632,7 @@ function ensureSequenzHUD() {
   if ($('#sequenzHUD')) return;
   const el = document.createElement('div');
   el.id = 'sequenzHUD';
-  el.className = 'sequenz-hud';
+  el.className = 'sequenz-hud mode-metric';
   el.innerHTML = `<span class="seq-rec-label">${t('mastery_record')}</span><span class="seq-rec-val">0</span>`;
   $('#game')?.appendChild(el);
 }
@@ -1759,7 +1670,7 @@ function ensureStroopHUD() {
   if ($('#stroopHUD')) return;
   const el = document.createElement('div');
   el.id = 'stroopHUD';
-  el.className = 'stroop-hud';
+  el.className = 'stroop-hud mode-metric';
   el.innerHTML = `<span class="stroop-int-label">${t('mastery_interference')}</span><span class="stroop-int-val">--</span>`;
   $('#game')?.appendChild(el);
 
@@ -1809,7 +1720,7 @@ function ensureFokusHUD() {
   if ($('#fokusHUD')) return;
   const el = document.createElement('div');
   el.id = 'fokusHUD';
-  el.className = 'fokus-hud';
+  el.className = 'fokus-hud mode-metric';
   el.innerHTML = `<span class="fokus-cost-label">${t('mastery_distraction')}</span><span class="fokus-cost-val">--</span>`;
   $('#game')?.appendChild(el);
 
@@ -1859,7 +1770,7 @@ function ensureChaosHUD() {
   if ($('#chaosHUD')) return;
   const el = document.createElement('div');
   el.id = 'chaosHUD';
-  el.className = 'chaos-hud';
+  el.className = 'chaos-hud mode-metric';
   el.innerHTML = `<span class="chaos-rule-label">${t('mastery_rule')}</span><span class="chaos-rule-val">--</span><span class="chaos-switch-count">${t('mastery_switches', { n: 0 })}</span>`;
   $('#game')?.appendChild(el);
 
@@ -2095,6 +2006,15 @@ function updateModeMasteryAfterAnswer(game, result) {
 }
 
 function cleanupGameClasses() {
+  for (const el of _cornerPopPool) {
+    clearTimeout(el._hideTimeout);
+    if (el._showRafId) cancelAnimationFrame(el._showRafId);
+    el._hideTimeout = null;
+    el._showRafId = null;
+    el.style.display = 'none';
+  }
+  $('#centerPlatform')?.classList.remove('platform-active');
+  clearArenaConfirmation();
   const g = $('#game');
   g?.classList.remove(...INTENSITY_CLASSES);
   _intensityKey = '';
@@ -2105,27 +2025,27 @@ function cleanupGameClasses() {
     g.style.removeProperty('--resonance-color');
     g.style.removeProperty('--resonance-level');
   }
-  $('#resonanceStage')?.classList.remove('resonance-hit');
+  $('#resonanceStage')?.style.removeProperty('--resonance-level');
   /* Remove memo-covered from corners */
-  $$('.corner-shape').forEach(el => el.classList.remove(
-    'memo-covered', 'memo-revealing', 'sequenz-flash', 'corner-correct',
-    'corner-tapped', 'corner-wrong', 'corner-matched', 'corner-destination-flash',
-    'near-miss-hint', 'shuffle-warn', 'shuffle-done'
-  ));
+  $$('.corner-shape').forEach(el => {
+    clearTimeout(el._answerFeedbackTimer);
+    el._answerFeedbackTimer = null;
+    el.classList.remove('memo-covered', 'memo-revealing', 'sequenz-flash', 'corner-correct',
+      'corner-tapped', 'corner-wrong', 'corner-matched', 'corner-destination-flash',
+      'near-miss-hint', 'shuffle-warn', 'shuffle-done');
+  });
   /* Remove mode class from body */
   document.body.className = document.body.className.replace(/\bmode-\w+/g, '').trim();
   invalidateHudCache();
   invalidateRects();
   /* Reset corner diff state so next game does full render */
   for (const k in _prevCornerState) delete _prevCornerState[k];
-  _lastPlatformColor = '';
   _svgCache.clear();
-  clearTimeout(_spawnCleanupTimeout);
-  _spawnCleanupTimeout = null;
-  _spawnPool.forEach(particle => { particle.style.display = 'none'; });
+  _centerSVGCache.clear();
 }
 
 function cleanupActiveGame({ stopEngine = true } = {}) {
+  setGameplayPerformanceActive(false);
   const { game, audio, effects, swipe } = app;
   document.body.style.overflow = '';
   document.documentElement.style.overflow = '';
@@ -2306,6 +2226,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
 export function beginGame(practice, daily, showResults, showHome, showContinuePrompt) {
   const { audio, game, save, effects, swipe } = app;
   const runId = _gameRunId;
+  setGameplayPerformanceActive(true);
 
   if (typeof audio.setMusicMode === 'function') {
     audio.setMusicMode(practice ? 'classic' : app.selectedPlayType, {
@@ -2474,100 +2395,54 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       gameEl.appendChild(banner);
       setTimeout(() => banner.remove(), 1800);
     }
-    effects.flash((ruleColors[newRule] || '#ffffff') + '30', 250);
     haptic('rush', save);
   };
 
   game.onSpawn = (shape) => {
+    clearArenaConfirmation();
+    $$('.corner-correct,.corner-wrong', $('#game')).forEach(corner => {
+      clearTimeout(corner._answerFeedbackTimer);
+      corner.classList.remove('corner-correct', 'corner-wrong');
+    });
     renderCenter(shape);
-
-    if (app.selectedMode === 'klassik') {
-      updateKlassikResonance(shape.direction, shape.color);
-    }
 
     if (shape.bonus === 'golden') audio.goldenFound();
     if (shape.bonus === 'diamond') audio.diamondFound();
   };
 
   game.onResult = (result) => {
-    const cx = window.innerWidth / 2;
-    const cy = window.innerHeight / 2;
-    const isRush = game.inRush;
-    const isFever = game.feverActive;
-
     syncGameplayMusicIntensity(game, result);
 
     if (result.correct) {
       audio.correct(result.streak);
 
-      if (app.selectedMode === 'klassik') {
-        updateKlassikResonance(result.expected, game.cornerMap[result.expected]?.color, true);
+      /* One local impact. Neither the arena nor the next stimulus moves. */
+      confirmArenaAnswer(result.expected);
+      const corner = $(`.corner-shape[data-dir="${result.expected}"]`);
+      if (corner) {
+        clearTimeout(corner._answerFeedbackTimer);
+        corner.classList.remove('corner-wrong');
+        corner.classList.add('corner-correct');
+        corner._answerFeedbackTimer = setTimeout(() => corner.classList.remove('corner-correct'), 260);
       }
-
-      /* ── Rush fast-path: minimal FX for maximum frame budget ── */
-      if (isRush) {
-        /* Lightweight: just particles, score pop, multiplier ring */
-        const pColor = app.colorblind ? "#fff" : (game.cornerMap[result.expected]?.color || "#fff");
-        effects.particles(cx, cy, pColor, 2, false);
-        effects.updateMultiplierRing(result.multiplier);
-        effects.scorePop(cx, cy - 40, `+${result.points}`, '#fff', false);
-        const corner = $(`.corner-shape[data-dir="${result.expected}"]`);
-        if (corner) {
-          corner.classList.add('corner-correct');
-          setTimeout(() => corner.classList.remove('corner-correct'), 300);
-        }
-        haptic('correct', save);
-      } else {
-        /* ── Normal path: full FX ── */
-        effects.shakeHit();
-        const particleFxCount = Math.min(10, 4 + Math.floor(result.streak / 10));
-        const pColor = app.colorblind ? "#fff" : (game.cornerMap[result.expected]?.color || "#fff");
-        effects.particles(cx, cy, pColor, particleFxCount, false);
-        effects.updateMultiplierRing(result.multiplier);
-
-        const corner = $(`.corner-shape[data-dir="${result.expected}"]`);
-        effects.glowCorner(corner, game.cornerMap[result.expected]?.color || '#fff');
-
-        if (corner) {
-          corner.classList.remove('corner-matched','corner-destination-flash','corner-correct');
-          /* Use rAF instead of forced reflow (void offsetWidth) */
-          requestAnimationFrame(() => {
-            corner.classList.add('corner-matched','corner-destination-flash','corner-correct');
-          });
-          setTimeout(() => corner.classList.remove('corner-matched','corner-destination-flash','corner-correct'), 500);
-          const r = stableRect(corner);
-          effects.absorb(cx, cy, r.left + r.width/2, r.top + r.height/2, game.cornerMap[result.expected]?.color || '#fff');
-        }
-
-        cornerScorePop(result.expected, `+${result.points}`);
-
-        let popText = `+${result.points}`, popColor = '#fff', big = false;
-        if (result.bonus === 'diamond') { popText = `\uD83D\uDC8E +${result.points}`; popColor = '#00D2FF'; big = true; effects.diamondFlash(); effects.bonusParticles(cx, cy, 'diamond'); haptic('diamond', save); }
-        else if (result.bonus === 'golden') { popText = `\u2726 +${result.points}`; popColor = '#FFD700'; big = true; effects.goldenFlash(); effects.bonusParticles(cx, cy, 'golden'); haptic('golden', save); }
-        effects.scorePop(cx, cy - 40, popText, popColor, big);
-
-        if (result.streak > 0 && result.streak % 20 === 0 && typeof effects.screenPulse === 'function') {
-          effects.screenPulse();
-        }
-        if (typeof effects.animateStreakCounter === 'function') effects.animateStreakCounter($('#hudStreak'));
-        haptic('correct', save);
+      cornerScorePop(result.expected, `${result.bonus ? '✦ ' : ''}+${result.points}`);
+      if (result.bonus && !isTextHeavyMode() && !game.inRush && !effects.lowPerf) {
+        const r = stableRect(corner || $('#centerPlatform'));
+        effects.particles(r.left + r.width / 2, r.top + r.height / 2, '#F4F7FC', 4);
       }
+      haptic(result.bonus || 'correct', save);
     } else {
       if (!result.autoMiss) {
           audio.wrong();
-          effects.hitStop(80);
-          effects.shakeError();
-          effects.flash('rgba(255,0,0,0.2)');
-        if (typeof effects.missOverlay === 'function') effects.missOverlay();
         haptic('wrong', save);
         if (result.expected) showNearMiss(result.expected);
         if (result.direction) {
           const wrongCorner = $(`.corner-shape[data-dir="${result.direction}"]`);
           if (wrongCorner) {
-            wrongCorner.classList.remove('corner-wrong');
-            /* Use rAF instead of forced reflow */
-            requestAnimationFrame(() => { wrongCorner.classList.add('corner-wrong'); });
-            setTimeout(() => wrongCorner.classList.remove('corner-wrong'), 500);
+            clearTimeout(wrongCorner._answerFeedbackTimer);
+            wrongCorner.classList.remove('corner-correct');
+            wrongCorner.classList.add('corner-wrong');
+            wrongCorner._answerFeedbackTimer = setTimeout(() => wrongCorner.classList.remove('corner-wrong'), 320);
           }
         }
       }
@@ -2583,14 +2458,10 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   game.onPerfect = () => {
     audio.perfect();
-    effects.perfectFlash();
-    effects.scorePop(window.innerWidth / 2, window.innerHeight / 2 - 80, t('perfect'), '#FFD700', true);
     haptic('perfect', save);
   };
 
   game.onStreak = (streak) => {
-    const color = streak >= 20 ? '#FFD700' : streak >= 10 ? '#FFA502' : '#2ED573';
-    effects.scorePop(window.innerWidth / 2, window.innerHeight / 2 - 100, `\uD83D\uDD25 ${streak} ${t('streak')}!`, color, true);
     haptic(streak >= 10 ? 'streak10' : 'streak5', save);
   };
 
@@ -2644,13 +2515,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   /* v19: Streak break feedback */
   game.onStreakBreak = (lostStreak) => {
     if (typeof audio.streakBreak === 'function') audio.streakBreak(lostStreak);
-    if (lostStreak >= 10) { 
-       haptic('heartLost', app.save); 
-       effects.advancedShake(400, 15); 
-    } else { 
-       haptic('wrong', app.save); 
-       effects.advancedShake(200, 5); 
-    }
+    haptic(lostStreak >= 10 ? 'heartLost' : 'wrong', app.save);
   };
 
   /* Combo decay: update streak HUD as combo ticks down */
@@ -2681,16 +2546,13 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       '#2ED573',
       true
     );
-    effects.flash('#2ED57340', 200);
     const gameEl = document.getElementById('game');
     if (gameEl) {
       gameEl.classList.remove('edge-glow-bonus');
-      void gameEl.offsetWidth;
       gameEl.classList.add('edge-glow-bonus');
       setTimeout(() => gameEl.classList.remove('edge-glow-bonus'), 600);
     }
     timerEl.classList.remove('timer-bonus');
-    void timerEl.offsetWidth;
     timerEl.classList.add('timer-bonus');
     setTimeout(() => timerEl.classList.remove('timer-bonus'), 800);
     updateHUD();
@@ -2708,7 +2570,6 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       false
     );
     timerEl.classList.remove('timer-penalty');
-    void timerEl.offsetWidth;
     timerEl.classList.add('timer-penalty');
     setTimeout(() => timerEl.classList.remove('timer-penalty'), 500);
     updateHUD();
@@ -2883,9 +2744,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     if (result.correct && result.sequenzComplete) {
       /* Full sequence reproduced — celebrate */
       audio.correct(result.streak);
-      effects.particles(cx, cy, '#FFD700', 8, false);
-      effects.scorePop(cx, cy - 40, `+${result.points}`, '#FFD700', true);
-      effects.perfectFlash();
+      effects.scorePop(cx, cy + 80, `+${result.points}`, '#F4F7FC', false);
       haptic('combo', save);
     } else if (result.correct && !result.sequenzComplete) {
       /* Correct step — small confirmation */
@@ -2899,8 +2758,6 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     } else {
       /* Wrong step */
       audio.wrong();
-      effects.shakeError();
-      effects.flash('rgba(255,0,0,0.2)');
       haptic('wrong', save);
       if (result.expected) showNearMiss(result.expected);
     }
@@ -2990,14 +2847,10 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   swipe.onTrailStart = (x, y) => {
     if (game.paused) return;
     const shape = game.currentShape;
-    /* P4 fix: For brain modes (math/word) use a neutral accent color instead of
-       the corner item color, since the center shows text not a colored shape */
-    let color;
-    if (shape && (shape.type === 'math' || shape.type === 'word' || shape.type === 'capitals')) {
-      color = getComputedStyle(document.documentElement).getPropertyValue('--primary-glow').trim() || '#9D4EDD';
-    } else {
-      color = shape ? (app.colorblind ? shape.colorblind : shape.color) : '#ffffff';
-    }
+    /* Text/reflex answers never tint the trail. This also avoids a synchronous
+       computed-style read in the touch handler. */
+    const color = shape?.type ? '#C4CEDD'
+      : shape ? (app.colorblind ? shape.colorblind : shape.color) : '#ffffff';
     effects.trailStart(x, y, color);
     effects.ripple(x, y, color);
     if (typeof audio.swipeStart === 'function') audio.swipeStart();
@@ -3015,6 +2868,7 @@ export function pauseGame() {
   const { game, audio } = app;
   if (!game.running || game.paused) return;
   game.pause();
+  setGameplayPerformanceActive(false);
   audio.cancelSfx?.();
   audio.stopMusic();
   if (typeof audio.stopTension === 'function') audio.stopTension();
@@ -3038,6 +2892,7 @@ export function reopenPauseMenu() {
 export function resumeGame() {
   const { game, audio } = app;
   game.resume();
+  setGameplayPerformanceActive(game.running && !game.paused);
   audio.startMusic();
   /* Memo re-reveal is handled by the engine's resume() via callbacks */
   closeModal($('#pauseOverlay'));

@@ -5,9 +5,21 @@
 import { t, setLanguage }   from '../i18n.js';
 import { $, $$, localise, showScreen } from '../helpers/dom.js';
 import app                   from '../appState.js';
+import { applyMotionPreference } from '../helpers/perfMode.js';
 
 let _settingsBack = null;
 let _backLabelKey = 'nav_back_home';
+
+function updateVolumeControl(input) {
+  if (!input) return;
+  input.style.setProperty('--range-value', `${input.value}%`);
+  input.setAttribute('aria-valuetext', `${input.value}%`);
+}
+
+function syncAudioControls() {
+  $('#rangeSfxVolume').disabled = !$('#toggleSound').checked;
+  $('#rangeMusicVolume').disabled = !$('#toggleMusic').checked;
+}
 
 /* The bottom back button says where it actually goes (menu or paused game) */
 function applyBackLabel() {
@@ -38,6 +50,9 @@ export function showSettings(fromPause, showHome, showPausedGame) {
   $('#rangeMusicVolume').value = musicVolume;
   $('#sfxVolumeValue').textContent = `${sfxVolume}%`;
   $('#musicVolumeValue').textContent = `${musicVolume}%`;
+  updateVolumeControl($('#rangeSfxVolume'));
+  updateVolumeControl($('#rangeMusicVolume'));
+  syncAudioControls();
   $('#selectLang').value         = save.getSetting('language') || 'auto';
 
   /* Guests have no account to sign out of; the button only bounced them to
@@ -70,12 +85,12 @@ export function bindSettings(showHome) {
 
   bind('#toggleColorblind', 'colorblind', v => { app.colorblind = v; });
   bind('#toggleMotion', 'reducedMotion', v => {
+    applyMotionPreference(v);
     app.effects?.setReduced(v);
-    document.body.toggleAttribute('data-reduced-motion', Boolean(v));
   });
   bind('#toggleHaptics', 'haptics');
-  bind('#toggleSound', 'sound', v => audio.toggle(v));
-  bind('#toggleMusic', 'music', v => audio.toggleMusic(v));
+  bind('#toggleSound', 'sound', v => { audio.toggle(v); syncAudioControls(); });
+  bind('#toggleMusic', 'music', v => { audio.toggleMusic(v); syncAudioControls(); });
 
   const bindVolume = (selector, outputSelector, key, setter, preview) => {
     const el = $(selector);
@@ -84,6 +99,7 @@ export function bindSettings(showHome) {
     el.addEventListener('input', () => {
       const value = Number(el.value);
       if (output) output.textContent = `${value}%`;
+      updateVolumeControl(el);
       setter(value / 100);
     });
     el.addEventListener('change', async () => {

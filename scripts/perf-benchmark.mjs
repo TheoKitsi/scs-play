@@ -10,6 +10,7 @@
  * Run (after npm run build:prod):
  *   node scripts/perf-benchmark.mjs [--mode=klassik] [--play=classic]
  *        [--cpu=4] [--seconds=40] [--reaction=200] [--tier=high|mid|low]
+ *        [--seed=1337] [--input=swipe|tap] [--warmup=3] [--root=docs]
  *        [--json=out.json] [--trace=trace.json]
  *
  * Numbers are relative: headless Chromium rasterizes in software, so
@@ -25,13 +26,22 @@ const args = Object.fromEntries(process.argv.slice(2).map(arg => {
 }));
 const MODE = args.mode || 'klassik';
 const PLAY_TYPE = args.play || 'classic';
-const CPU_RATE = Number(args.cpu || 4);
-const SECONDS = Number(args.seconds || 40);
-const REACTION_MS = Number(args.reaction || 200);
-const BUCKET = Number(args.bucket || 20);
+const CPU_RATE = Number(args.cpu ?? 4);
+const SECONDS = Number(args.seconds ?? 40);
+const REACTION_MS = Number(args.reaction ?? 200);
+const BUCKET = Number(args.bucket ?? 20);
 /* --tier=high|mid|low pins the perf tier (disables the FPS governor) */
 const TIER = args.tier || '';
+const SEED = Number(args.seed ?? 1337);
+const INPUT = args.input || 'swipe';
+const WARMUP = Number(args.warmup ?? 3);
 const EXTERNAL_BASE = process.env.SCS_BASE || '';
+
+if (![CPU_RATE, SECONDS, REACTION_MS, BUCKET, SEED, WARMUP].every(Number.isFinite)
+    || CPU_RATE < 1 || SECONDS <= 0 || REACTION_MS < 0 || BUCKET < 1 || WARMUP < 0 || WARMUP >= SECONDS
+    || (TIER && !['high', 'mid', 'low'].includes(TIER)) || !['swipe', 'tap'].includes(INPUT)) {
+  throw new Error('Invalid benchmark options: check CPU rate, duration, reaction, bucket, warmup, seed, tier and input.');
+}
 
 const DEVICE = {
   viewport: { width: 412, height: 915 },
@@ -77,7 +87,7 @@ async function enterGame(page) {
 }
 
 /* Runs inside the page: frame monitor + scripted swipes. */
-async function playInPage({ seconds, reactionMs }) {
+async function playInPage({ seconds, reactionMs, input }) {
   const qa = globalThis.__SCS_QA__;
   const game = document.getElementById('game');
   const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
@@ -87,10 +97,11 @@ async function playInPage({ seconds, reactionMs }) {
   const answers = [];
   let stop = false;
 
-  let last = performance.now();
+  const started = performance.now();
+  let last = started;
   const onFrame = (now) => {
     const state = qa.gameState();
-    frames.push({ dt: now - last, correct: state?.correct ?? 0 });
+    frames.push({ dt: now - last, correct: state?.correct ?? 0, at: now - started });
     last = now;
     if (!stop) requestAnimationFrame(onFrame);
   };
@@ -100,7 +111,7 @@ async function playInPage({ seconds, reactionMs }) {
   try {
     observer = new PerformanceObserver(list => {
       const correct = qa.gameState()?.correct ?? 0;
-      for (const entry of list.getEntries()) longTasks.push({ duration: entry.duration, correct });
+      for (const entry of list.getEntries()) longTasks.push({ duration: entry.duration, correct, at: entry.startTime - started });
     });
     observer.observe({ type: 'longtask' });
   } catch { /* longtask unsupported */ }
@@ -132,15 +143,20 @@ async function playInPage({ seconds, reactionMs }) {
     if (!corner || !platform) { await nextFrame(); continue; }
     const from = center(platform);
     const to = center(corner);
-    touch('touchstart', from.x, from.y);
-    for (let i = 1; i <= 3; i++) {
+    if (input === 'tap') {
+      touch('touchstart', to.x, to.y);
       await nextFrame();
-      touch('touchmove', from.x + (to.x - from.x) * i / 4, from.y + (to.y - from.y) * i / 4);
+    } else {
+      touch('touchstart', from.x, from.y);
+      for (let i = 1; i <= 3; i++) {
+        await nextFrame();
+        touch('touchmove', from.x + (to.x - from.x) * i / 4, from.y + (to.y - from.y) * i / 4);
+      }
+      await nextFrame();
     }
-    await nextFrame();
     const t0 = performance.now();
     touch('touchend', to.x, to.y);
-    answers.push({ handlerMs: performance.now() - t0, correct: fresh.correct, spawnInterval: fresh.spawnInterval });
+    answers.push({ handlerMs: performance.now() - t0, correct: fresh.correct, spawnInterval: fresh.spawnInterval, at: t0 - started });
     answered = fresh.stimulusId;
   }
   stop = true;
@@ -163,14 +179,19 @@ function summarizeFrames(frames) {
 }
 
 async function run() {
-  const staticServer = EXTERNAL_BASE ? null : await startStaticServer({ root: 'docs', port: 3100 });
+  const staticServer = EXTERNAL_BASE ? null : await startStaticServer({ root: args.root || 'docs', port: 0 });
   const BASE = EXTERNAL_BASE || staticServer.baseUrl;
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext(DEVICE);
-  await context.addInitScript((tier) => {
+  await context.addInitScript(({ tier, seed }) => {
     localStorage.setItem('scsQa', '1');
     if (tier) localStorage.setItem('scsQaPerfTier', tier);
-  }, TIER);
+    let state = seed >>> 0;
+    Math.random = () => {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      return state / 4294967296;
+    };
+  }, { tier: TIER, seed: SEED });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', err => errors.push(err.message));
@@ -178,6 +199,13 @@ async function run() {
   try {
     await page.goto(BASE, { waitUntil: 'networkidle' });
     await enterGame(page);
+    const resources = () => page.evaluate(() => ({
+      connectedNodes: document.querySelectorAll('*').length,
+      runningAnimations: document.getAnimations().filter(a => a.playState === 'running').length,
+      inactiveScreenAnimations: document.getAnimations().filter(a => a.playState === 'running' && a.effect?.target?.closest?.('.screen:not(.active):not(.screen-exit)')).length,
+      trailPixels: document.querySelector('#trailCanvas').width * document.querySelector('#trailCanvas').height,
+    }));
+    const resourcesBefore = await resources();
 
     const cdp = await context.newCDPSession(page);
     await cdp.send('Performance.enable');
@@ -209,11 +237,12 @@ async function run() {
       })();
     }
 
-    const result = await page.evaluate(playInPage, { seconds: SECONDS, reactionMs: REACTION_MS });
+    const result = await page.evaluate(playInPage, { seconds: SECONDS, reactionMs: REACTION_MS, input: INPUT });
     await tracing;
     sampling = false;
     await sampler;
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    const resourcesAfter = await resources();
 
     const buckets = new Map();
     const bucketOf = correct => Math.floor(correct / BUCKET) * BUCKET;
@@ -254,6 +283,7 @@ async function run() {
     const lastSample = samples[samples.length - 1]?.m || {};
     const overall = {
       mode: MODE, playType: PLAY_TYPE, cpuThrottle: CPU_RATE, reactionMs: REACTION_MS, pinnedTier: TIER || null,
+      seed: SEED, input: INPUT, seconds: SECONDS, traced: Boolean(args.trace),
       perfModeAtEnd: result.perfMode,
       answers: result.answers.length,
       finalCorrect: result.final?.correct,
@@ -262,15 +292,22 @@ async function run() {
       longTasks: result.longTasks.length,
       longTaskMs: Math.round(result.longTasks.reduce((s, t) => s + t.duration, 0)),
       domNodesStart: first.Nodes, domNodesEnd: lastSample.Nodes,
+      scriptMs: round(((lastSample.ScriptDuration || 0) - (first.ScriptDuration || 0)) * 1000),
+      styleMs: round(((lastSample.RecalcStyleDuration || 0) - (first.RecalcStyleDuration || 0)) * 1000),
+      layoutMs: round(((lastSample.LayoutDuration || 0) - (first.LayoutDuration || 0)) * 1000),
       pageErrors: errors.length,
     };
 
     console.log('\nSCS Play gameplay benchmark');
     console.log(JSON.stringify(overall, null, 2));
+    const steady = summarizeFrames(result.frames.filter(f => f.at >= WARMUP * 1000));
+    console.log(`After ${WARMUP}s warmup:`, JSON.stringify(steady));
+    console.log('Resources:', JSON.stringify({ before: resourcesBefore, after: resourcesAfter }));
     console.log('\nPer pace bucket (per-answer averages for style/layout/script):');
     console.table(rows);
     if (errors.length) console.log('Page errors:', errors);
-    if (args.json) writeFileSync(args.json, JSON.stringify({ overall, rows }, null, 2));
+    if (args.json) writeFileSync(args.json, JSON.stringify({ overall, steady, resources: { before: resourcesBefore, after: resourcesAfter }, rows }, null, 2));
+    if (errors.length) process.exitCode = 1;
   } finally {
     await browser.close();
     if (staticServer) await staticServer.close();
