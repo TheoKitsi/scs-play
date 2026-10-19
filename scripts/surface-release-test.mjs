@@ -7,6 +7,12 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { startStaticServer } from './lib/static-server.mjs';
 
+// Composited translation can report 44 CSS px as 43.999996. Keep checking
+// painted geometry (not just offset size), with 0.001 CSS-px rounding tolerance.
+function hasFullTouchTarget({ width, height, layoutWidth, layoutHeight }) {
+  return layoutWidth >= 44 && layoutHeight >= 44 && width >= 44 - 0.001 && height >= 44 - 0.001;
+}
+
 export async function runSurfaceReview({ out = process.env.SCS_REVIEW_OUT || '', only = process.env.SCS_REVIEW_VIEW || '' } = {}) {
   const server = await startStaticServer({ root: '.', port: 0 });
   const browser = await chromium.launch({ headless: true });
@@ -295,9 +301,40 @@ export async function runSurfaceReview({ out = process.env.SCS_REVIEW_OUT || '',
         await page.evaluate(async () => (await import('/js/services/EffectsService.js')).getBodyFx().achievementToast('Design freigeschaltet'));
         await shot('36-notice');
         await page.evaluate(() => document.querySelector('.achievement-toast')?.click());
-        await page.evaluate(() => dispatchEvent(new Event('beforeinstallprompt', { cancelable: true })));
+        const installTargets = await page.evaluate(() => {
+          dispatchEvent(new Event('beforeinstallprompt', { cancelable: true }));
+          const button = document.querySelector('#btnDismissInstall');
+          const animation = document.querySelector('#pwaInstallBanner').getAnimations().find(item => item.animationName === 'pwaSlideIn');
+          const time = animation?.currentTime;
+          const wasRunning = animation?.playState === 'running';
+          const transform = button.style.transform;
+          const measure = () => {
+            const { width, height } = button.getBoundingClientRect();
+            return { width, height, layoutWidth: button.offsetWidth, layoutHeight: button.offsetHeight };
+          };
+          try {
+            // Exercise the real fractional-translation frame, not only the
+            // settled layout. No production timers or animation rules change.
+            if (animation) { animation.pause(); animation.currentTime = 247; }
+            const animated = measure();
+            button.style.transform = 'scale(.99)';
+            return { animated, undersized: measure() };
+          } finally {
+            button.style.transform = transform;
+            if (animation) {
+              animation.currentTime = time;
+              if (wasRunning) animation.play();
+            }
+          }
+        });
+        assert.ok(hasFullTouchTarget(installTargets.animated), `Animated installation dismissal is full-size: ${JSON.stringify(installTargets.animated)}`);
+        assert.equal(hasFullTouchTarget(installTargets.undersized), false, `An actually scaled-down target must still fail: ${JSON.stringify(installTargets.undersized)}`);
         await page.locator('#pwaInstallBanner').waitFor({ state: 'visible' }); await shot('36-install');
-        assert.ok(await page.locator('#btnDismissInstall').evaluate(el => { const r = el.getBoundingClientRect(); return r.width >= 44 && r.height >= 44; }), 'Install dismissal has a full-size touch target');
+        const settledTarget = await page.locator('#btnDismissInstall').evaluate(el => {
+          const { width, height } = el.getBoundingClientRect();
+          return { width, height, layoutWidth: el.offsetWidth, layoutHeight: el.offsetHeight };
+        });
+        assert.ok(hasFullTouchTarget(settledTarget), `Settled installation dismissal is full-size: ${JSON.stringify(settledTarget)}`);
         await page.locator('#btnDismissInstall').click();
         await page.evaluate(() => dispatchEvent(new Event('offline'))); await shot('36-offline');
         await page.evaluate(() => dispatchEvent(new Event('online')));
