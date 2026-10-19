@@ -192,7 +192,9 @@ export class AudioManager {
   _ensure() {
     if (this._pageHidden) return false;
     if (!this.ctx) {
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const Context = globalThis.AudioContext || globalThis.webkitAudioContext;
+      if (!Context) return false;
+      try { this.ctx = new Context(); } catch { return false; }
 
       /* Master bus compressor to prevent clipping */
       this._compressor = this.ctx.createDynamicsCompressor();
@@ -244,7 +246,7 @@ export class AudioManager {
       this._padGain.connect(this._compressor);
       this._padGain.connect(this._reverbGain); // send pads to reverb
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.ctx.state === 'suspended') this.ctx.resume()?.catch(() => {});
     return true;
   }
 
@@ -1422,13 +1424,14 @@ export class AudioManager {
   startMusic() {
     this._musicRequested = true;
     if (!this.musicEnabled || this._pageHidden || this._musicRunning) return;
-    this._ensure();
+    const synthReady = this._ensure();
     this._musicRunning = true;
 
     /* Try audio file first, fall back to procedural synth */
     if (this._hasMusicFile(this._musicMode) && this._startMusicFile()) {
       return; /* file-based playback started */
     }
+    if (!synthReady) { this._musicRunning = false; return; }
 
     this._musicBeat = 0;
     this._melodyIndex = 0;

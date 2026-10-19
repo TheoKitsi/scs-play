@@ -5,8 +5,8 @@
    accessibility shim's tiny all-property transitions when motion is toggled. */
 .resonance-stage,.resonance-stage *{transition-property:none}
 .arena-scenery{position:absolute;inset:0;pointer-events:none;contain:layout style}
-.arena-scenery::before{content:"";position:absolute;left:50%;top:var(--arena-cy,55%);transform:translate(-50%,-50%);pointer-events:none;border-radius:32%;width:min(92vw,750px);height:65%;border:1px solid rgba(var(--arena-light),.09);background:linear-gradient(150deg,rgba(255,255,255,.045),transparent 65%);box-shadow:0 6px 0 rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.07)}
-.arena-blueprint{position:absolute;left:50%;top:var(--arena-cy,55%);width:min(88vw,710px);height:58%;transform:translate(-50%,-50%);opacity:var(--world-ink);pointer-events:none}
+.arena-scenery::before{content:"";position:absolute;left:50%;top:var(--arena-cy,55%);transform:translate(-50%,-50%);pointer-events:none;border-radius:24px;width:min(92vw,750px);height:65%;border-block:1px solid rgba(var(--arena-light),.12);background:linear-gradient(180deg,rgba(255,255,255,.035),transparent 24%,transparent 78%,rgba(255,255,255,.02));box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.arena-blueprint{position:absolute;left:50%;top:var(--arena-cy,55%);width:min(88vw,710px);height:58%;transform:translate(-50%,-50%);opacity:var(--world-ink);pointer-events:none;mask-image:linear-gradient(#000,transparent 44%,transparent 56%,#000)}
 .arena-blueprint path{fill:none;stroke:#CAD4E3;stroke-width:1;vector-effect:non-scaling-stroke}
 .arena-light{position:absolute;top:calc(var(--arena-cy) - 24%);width:min(22vw,150px);height:min(48vh,420px);border-radius:50%;background:radial-gradient(ellipse,rgba(var(--arena-light),.16),transparent 68%);opacity:.65;pointer-events:none}
 .arena-light--left{left:max(0px,calc(50% - 400px))}
@@ -31,22 +31,18 @@ body[data-perf-mode="high"] .resonance-stage[data-live] .arena-light{animation:a
 #game[data-mode-world="think"] .arena-light{opacity:.35;animation:none}
 #game[data-mode-world="memory"] .arena-scenery::before{background:linear-gradient(180deg,rgba(202,212,227,.055),transparent 30%,transparent 70%,rgba(202,212,227,.03))}
 #game[data-mode-world="reflex"] .arena-scenery::before{background:none;box-shadow:none}
-.resonance-stage[data-world="klassik"] .arena-scenery::before{border-radius:38%}
-.resonance-stage[data-world="beginner"] .arena-scenery::before{border-radius:12%;border-width:2px}
-.resonance-stage[data-world="expert"] .arena-scenery::before{border-radius:50%;height:58%}
+.resonance-stage[data-world="klassik"] .arena-scenery::before{border-radius:24px}
+.resonance-stage[data-world="beginner"] .arena-scenery::before{border-radius:12px;border-block-width:2px}
+.resonance-stage[data-world="expert"] .arena-scenery::before{border-radius:36px;height:58%}
 .resonance-stage[data-world="wissen"] .arena-scenery::before{border-radius:5% 15%;background:linear-gradient(90deg,transparent 49.8%,rgba(202,212,227,.06) 50%,transparent 50.2%)}
-.resonance-stage[data-world="memo"] .arena-scenery::before{height:58%;border-radius:24%;border-style:dashed}
-.resonance-stage[data-world="sequenz"] .arena-scenery::before{border-radius:42% 12%;height:58%}
+.resonance-stage[data-world="memo"] .arena-scenery::before{height:58%;border-radius:24px;border-block-style:dashed}
+.resonance-stage[data-world="sequenz"] .arena-scenery::before{border-radius:32px 12px;height:58%}
 .resonance-stage[data-world="stroop"] .arena-scenery::before{border-radius:12%;border-inline-width:3px}
-.resonance-stage[data-world="fokus"] .arena-scenery::before{border-radius:50%;width:min(80vw,640px);height:56%}
-.resonance-stage[data-world="chaos"] .arena-scenery::before{border-radius:25% 6%;border-style:dashed}
+.resonance-stage[data-world="fokus"] .arena-scenery::before{border-radius:32px;width:min(80vw,640px);height:56%}
+.resonance-stage[data-world="chaos"] .arena-scenery::before{border-radius:24px 6px;border-block-style:dashed}
 
 /* Selection and controls share the game's machined, softly bevelled surfaces.
    Theme button fills/text are deliberately unchanged for contrast. */
-.mode-preview .arena-blueprint{inset:12% 0 0;top:auto;left:auto;width:100%;height:88%;transform:none;opacity:.26;z-index:-1}
-.mode-preview[data-world-family="think"] .preview-plinth{border-radius:14px}
-.mode-preview[data-world-family="memory"] .preview-plinth{border-radius:28%;box-shadow:0 7px 0 var(--scene-bg),0 15px 0 rgba(202,212,227,.04)}
-.mode-preview[data-world-family="reflex"] .preview-plinth{border-radius:20% 8%}
 #home .btn-play-fab{border-radius:var(--radius-sm);border:1px solid var(--outline)}
 .btn-primary,.btn-secondary{border-radius:var(--radius-sm);box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 2px 0 rgba(0,0,0,.15)}
 .btn-primary:active,.btn-secondary:active{box-shadow:inset 0 1px 0 rgba(0,0,0,.1)}

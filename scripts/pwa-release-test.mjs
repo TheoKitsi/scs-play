@@ -62,6 +62,20 @@ async function run() {
     assert.ok(!state.cacheNames.includes('scs-v0'), 'The new worker must retire old game caches');
     assert.ok(state.tracks.length > 0, 'The release must ship its music catalog');
     console.log('PASS scoped cache activation');
+    const fonts = await page.evaluate(async () => {
+      await document.fonts.load('500 16px Outfit', 'Größe Weiß');
+      await document.fonts.load('500 16px "Space Grotesk"', 'Übung 123');
+      const cache = await caches.open((await caches.keys()).find(name => /^scs-v\d+$/.test(name)));
+      const fontFiles = [...[300, 400, 500, 600, 700, 800, 900].map(weight => `outfit-${weight}`), ...[400, 500, 600, 700].map(weight => `space-grotesk-${weight}`)];
+      const cached = await Promise.all(fontFiles.map(async name => {
+        const response = await cache.match(new URL(`fonts/${name}.woff2`, location.href).href);
+        return response?.ok && new TextDecoder().decode((await response.arrayBuffer()).slice(0, 4)) === 'wOF2';
+      }));
+      return { cached, external: performance.getEntriesByType('resource').filter(entry => /fonts\.(googleapis|gstatic)\.com/.test(entry.name)).map(entry => entry.name) };
+    });
+    assert.equal(fonts.cached.length, 11);
+    assert.ok(fonts.cached.every(Boolean), 'All local font cuts must be precached before going offline');
+    assert.deepEqual(fonts.external, [], 'Typography must not make third-party font requests');
 
     const networkRange = await context.request.get(new URL('audio/music/menu.mp3', base).href, { headers: { Range: 'bytes=10-31' } });
     assert.equal(networkRange.status(), 206, 'The test server must reproduce GitHub Pages byte-range responses');
@@ -116,6 +130,14 @@ async function run() {
     await page.waitForSelector('#btnGuest', { state: 'visible', timeout: 10000 });
     assert.ok(await page.evaluate(() => Boolean(navigator.serviceWorker.controller)), 'Offline reload must remain controlled by the worker');
     console.log('PASS offline app reload');
+    assert.equal(await page.evaluate(async () => {
+      const faces = await Promise.all([
+        ...[300, 400, 500, 600, 700, 800, 900].map(weight => document.fonts.load(`${weight} 16px Outfit`, 'Größe Weiß')),
+        ...[400, 500, 600, 700].map(weight => document.fonts.load(`${weight} 16px "Space Grotesk"`, 'Übung 123')),
+      ]);
+      return faces.every(list => list.length > 0 && list.every(face => face.status === 'loaded'));
+    }), true, 'Offline fonts must actually load, not silently fall back');
+    console.log('PASS all 11 local, precached and decoded offline DE/EN font cuts');
     for (const track of state.tracks) {
       await loadTrack(page, track);
       console.log(`PASS offline music: ${track}`);

@@ -232,7 +232,7 @@ function bindEvents() {
     });
   });
 
-  initOrientationListeners();
+  initOrientationListeners(pauseLoadedGame);
 }
 
 /* ═══════ Init ═══════ */

@@ -173,6 +173,12 @@ async function run() {
   for (const [button, label] of [['#btnLeaderboard', 'leaderboard'], ['#btnAchievements', 'achievements'], ['#btnSettings', 'settings'], ['#btnStore', 'store']]) {
     await forceHome(page);
     if (await clickIfPresent(page, button, 900)) failures.push(...await scan(page, label));
+    if (label === 'store') {
+      await page.locator('[data-preview-id="ocean"]').click();
+      await page.locator('#designPreviewOverlay.active').waitFor();
+      failures.push(...await scan(page, 'static design preview'));
+      await page.keyboard.press('Escape');
+    }
   }
 
   await forceHome(page);

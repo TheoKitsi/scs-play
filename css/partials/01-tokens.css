@@ -62,7 +62,8 @@
   /* ── Primary text on light surfaces (used in light theme) ── */
   --primary-text:#7C3AED;
   
-  --radius:20px;--radius-sm:14px;--radius-xs:8px;--radius-md:18px;--radius-lg:24px;--radius-xl:28px;
+  --font-display:'Space Grotesk','Outfit',system-ui,sans-serif;
+  --radius:14px;--radius-sm:10px;--radius-xs:6px;--radius-md:14px;--radius-lg:20px;--radius-xl:24px;
   --phone-gutter:clamp(14px,4vw,20px);
   --shadow:0 8px 32px rgba(0,0,0,0.5);
   --shadow-sm:0 4px 16px rgba(0,0,0,0.4);

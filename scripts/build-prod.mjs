@@ -40,6 +40,8 @@ const cssResult = await esbuild.build({
   bundle: true,
   minify: true,
   outfile: resolve(out, 'css/style.bundle.css'),
+  loader: { '.woff2': 'file' },
+  assetNames: '../fonts/[name]',
   metafile: true,
 });
 await esbuild.build({ entryPoints: [resolve(root, 'css/legal.css')], minify: true, outfile: resolve(out, 'css/legal.css') });
@@ -84,6 +86,9 @@ let sw = readFileSync(resolve(out, 'sw.js'), 'utf8');
 const bundledJsAssets = Object.keys(jsResult.metafile.outputs)
   .filter(path => path.endsWith('.js'))
   .map(path => `  './${path.replace(/^docs[\\/]/, '').replaceAll('\\', '/')}'`);
+const bundledFontAssets = Object.keys(cssResult.metafile.outputs)
+  .filter(path => path.endsWith('.woff2'))
+  .map(path => `  './${path.replace(/^docs[\\/]/, '').replaceAll('\\', '/')}'`);
 const bundledAssets = `const ASSETS = [
   './',
   './index.html',
@@ -91,6 +96,7 @@ const bundledAssets = `const ASSETS = [
   './terms-of-service.html',
   './css/style.bundle.css',
   './css/legal.css',
+${bundledFontAssets.join(',\n')},
 ${bundledJsAssets.join(',\n')},
   './manifest.json',
   './img/icon-192.svg',

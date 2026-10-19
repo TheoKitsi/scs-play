@@ -92,8 +92,10 @@ export function initVisibilityPause(pauseGame) {
 export function checkOrientation() {
   const isLandscape = window.matchMedia('(orientation: landscape)').matches;
   const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-  const isPhoneLikeViewport = Math.min(window.innerWidth, window.innerHeight) <= 900;
-  $('#landscapeWarning')?.classList.toggle('active', isLandscape && isTouchDevice && isPhoneLikeViewport);
+  const narrowArena = app.currentScreen === 'game' && isLandscape && isTouchDevice && window.innerHeight < 500;
+  const warning = $('#landscapeWarning');
+  if (warning) { warning.hidden = !narrowArena; warning.classList.toggle('active', narrowArena); }
+  return narrowArena;
 }
 
 export function initWakeLock() {
@@ -166,9 +168,13 @@ export function initBackButton({ pauseGame, quitGame, showHome, backFromSettings
   window.Capacitor?.Plugins?.App?.addListener?.('backButton', handleBack);
 }
 
-export function initOrientationListeners() {
-  if (screen.orientation) screen.orientation.addEventListener('change', checkOrientation);
-  window.addEventListener('resize', checkOrientation, { passive: true });
+export function initOrientationListeners(pauseGame) {
+  const update = () => {
+    if (checkOrientation() && app.game?.running && !app.game.paused) pauseGame?.();
+  };
+  if (screen.orientation) screen.orientation.addEventListener('change', update);
+  window.addEventListener('resize', update, { passive: true });
+  window.addEventListener('scs:screenchange', update);
 }
 
 export function initGestureNavInset() {

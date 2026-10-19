@@ -297,7 +297,7 @@
    Theme classes override :root CSS variables
    ═══════════════════════════════════════════ */
 /* Neon City */
-body.theme-neon{
+.design-preview.theme-neon,body.theme-neon{
   --primary:#00FF87;--primary-glow:#00FFAA;--primary-dark:#00CC6A;
   --accent:#FF00FF;--accent-glow:#FF44FF;
   --bg:#000811;--bg-hue:200;--surface:#0a1428;--card:#0d1a33;
@@ -305,7 +305,7 @@ body.theme-neon{
   --on-primary:#001B10;
 }
 /* Ocean */
-body.theme-ocean{
+.design-preview.theme-ocean,body.theme-ocean{
   --primary:#0099FF;--primary-glow:#33BBFF;--primary-dark:#0066CC;
   --accent:#00CED1;--accent-glow:#33E3E6;
   --bg:#020E1A;--bg-hue:210;--surface:#0A1929;--card:#0D2137;
@@ -313,7 +313,7 @@ body.theme-ocean{
   --on-primary:#001526;
 }
 /* Sunset */
-body.theme-sunset{
+.design-preview.theme-sunset,body.theme-sunset{
   --primary:#FF6B35;--primary-glow:#FF8A5C;--primary-dark:#CC5429;
   --accent:#FF1493;--accent-glow:#FF44B0;
   --bg:#1A0A0A;--bg-hue:0;--surface:#2A1515;--card:#331A1A;
@@ -321,7 +321,7 @@ body.theme-sunset{
   --on-primary:#260C05;
 }
 /* Forest */
-body.theme-forest{
+.design-preview.theme-forest,body.theme-forest{
   --primary:#4CAF50;--primary-glow:#66BB6A;--primary-dark:#388E3C;
   --accent:#8D6E63;--accent-glow:#A1887F;
   --bg:#0A1A0A;--bg-hue:120;--surface:#152415;--card:#1A2E1A;
@@ -329,14 +329,14 @@ body.theme-forest{
   --on-primary:#061508;
 }
 /* Cosmic */
-body.theme-cosmic{
+.design-preview.theme-cosmic,body.theme-cosmic{
   --primary:#9C27B0;--primary-glow:#BA68C8;--primary-dark:#7B1FA2;
   --accent:#E040FB;--accent-glow:#EA80FC;
   --bg:#0A0514;--bg-hue:270;--surface:#1A0F28;--card:#200F33;
   --success:#69F0AE;--warning:#FFD740;--info:#7C4DFF;
 }
 /* Retro */
-body.theme-retro{
+.design-preview.theme-retro,body.theme-retro{
   --primary:#00E676;--primary-glow:#33FF99;--primary-dark:#00B85C;
   --accent:#FF6E40;--accent-glow:#FF8A65;
   --bg:#0A0D00;--bg-hue:70;--surface:#1A1F0A;--card:#1F260D;
@@ -344,7 +344,7 @@ body.theme-retro{
   --on-primary:#081507;
 }
 /* Crystal */
-body.theme-crystal{
+.design-preview.theme-crystal,body.theme-crystal{
   --primary:#80DEEA;--primary-glow:#B2EBF2;--primary-dark:#4DD0E1;
   --accent:#CE93D8;--accent-glow:#E1BEE7;
   --bg:#050A10;--bg-hue:200;--surface:#0E1822;--card:#12202E;
@@ -352,23 +352,22 @@ body.theme-crystal{
   --on-primary:#061218;
 }
 
-/* Theme previews for shop cards */
-.theme-preview-default{background:linear-gradient(135deg,#6C5CE7,#FD79A8)}
-.theme-preview-neon{background:linear-gradient(135deg,#00FF87,#FF00FF)}
-.theme-preview-ocean{background:linear-gradient(135deg,#0099FF,#00CED1)}
-.theme-preview-sunset{background:linear-gradient(135deg,#FF6B35,#FF1493)}
-.theme-preview-forest{background:linear-gradient(135deg,#4CAF50,#8D6E63)}
-.theme-preview-cosmic{background:linear-gradient(135deg,#9C27B0,#E040FB)}
-.theme-preview-retro{background:linear-gradient(135deg,#00E676,#FF6E40)}
-.theme-preview-crystal{background:linear-gradient(135deg,#80DEEA,#CE93D8)}
-
-/* Trail previews for shop cards */
-.trail-preview-default{background:linear-gradient(135deg,#FFD700,#FFA500)}
-.trail-preview-fire{background:linear-gradient(135deg,#FF6B35,#FF0000)}
-.trail-preview-ice{background:linear-gradient(135deg,#00D2FF,#E0F7FA)}
-.trail-preview-rainbow{background:linear-gradient(135deg,#FF0000,#00FF00,#0000FF)}
-.trail-preview-electric{background:linear-gradient(135deg,#7B68EE,#FFFFFF)}
-.trail-preview-stardust{background:linear-gradient(135deg,#FFD700,#FFF8DC)}
+/* Static previews use the exact same palette declarations as the real themes.
+   The local default must not inherit an active purchased theme. */
+.design-preview.theme-default{--bg:#080C14;--surface:#111824;--card:#192231;--primary:#7C3AED}
+.design-preview{--surface-raised:color-mix(in srgb,var(--card) 94%,#F4F7FC);--panel-fill:linear-gradient(155deg,var(--surface-raised),var(--surface) 58%);position:relative;display:block;width:100%;aspect-ratio:240/156;background:var(--bg);border-radius:var(--radius-sm);overflow:hidden}
+.design-preview>svg{display:block;width:100%;height:100%}
+.design-architecture{fill:none;stroke:var(--primary);stroke-width:1;opacity:.5}
+.design-slot,.design-plinth{position:absolute;display:grid;place-items:center;border:1px solid rgba(255,255,255,.2);border-radius:12%;background:var(--panel-fill);box-shadow:var(--material-edge)}
+.design-slot{top:21.8%;left:7.5%;width:14.2%;height:21.8%}
+.design-slot--1,.design-slot--3{left:78.3%}
+.design-slot--2,.design-slot--3{top:65.4%}
+.design-slot svg{width:64%;height:64%}
+.design-plinth{left:39.2%;top:37.2%;width:21.6%;height:33.3%;border-radius:18%}
+.design-accent{fill:var(--primary)}
+.design-object{position:absolute;left:44.2%;top:47.4%;width:11.6%;height:18%}
+.design-object svg{width:100%;height:100%}
+.design-trace{opacity:.75}
 
 /* ═══════════════════════════════════════════
    MOBILE RESPONSIVE
@@ -404,13 +403,6 @@ body.mode-worte .center-platform{
 
 /* Results score responsive */
 .results-score-num{font-size:clamp(2rem,8vw,3rem)}
-
-/* Landscape CSS fallback */
-@media(orientation:landscape) and (max-height:500px) and (max-width:900px){
-  .landscape-warning{opacity:1 !important;visibility:visible !important}
-  #home,#game,#auth,#results,#tutorial,
-  #leaderboard,#achievements,#settings,#store,#avatarSelect,#engagementReport{display:none !important}
-}
 
 /* ─── 320px small devices (iPhone SE, small Androids) ─── */
 @media(max-width:374px){
