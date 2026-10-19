@@ -464,42 +464,25 @@ export class AudioManager {
     }
   }
 
-  /**
-   * Game over — ascending resolution to C, followed by warm major pad.
-   * No descending funeral tones.
-   */
-  gameOver() {
-    // Ascending resolution sequence ending on C5
-    const notes = [392, 440, 523, 494, 523];
-    notes.forEach((f, i) => {
-      this._scheduleSfx(() => this._play(f, 'sine', 0.3, 0.12), i * 150);
-    });
-
-    // Warm major pad chord follows the melody
-    const padDelay = notes.length * 150 + 80;
-    this._scheduleSfx(() => {
-      if (!this.enabled) return;
-      if (!this._ensure()) return;
-      const t = this.ctx.currentTime;
-
-      // C4-E4-G4-C5 with chorus detune for warmth
-      [262, 330, 392, 523].forEach(f => {
-        for (const det of [-6, 6]) {
-          const osc = this.ctx.createOscillator();
-          const eg = this.ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.value = f;
-          osc.detune.value = det;
-          eg.gain.setValueAtTime(0, t);
-          eg.gain.linearRampToValueAtTime(0.055, t + 0.12);
-          eg.gain.setValueAtTime(0.055, t + 0.6);
-          eg.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-          osc.connect(eg).connect(this._sfxGain);
-          osc.start(t);
-          osc.stop(t + 1.25);
-        }
-      });
-    }, padDelay);
+  /** One short cadence; no queued funeral/fanfare over the next decision. */
+  roundEnd(kind = 'time') {
+    this.cancelSfx();
+    this.stopTension();
+    this._musicRequested = false;
+    clearTimeout(this._musicTimeout);
+    this._musicTimeout = null;
+    this._musicEndTimer = null;
+    this._musicRunning = false;
+    clearTimeout(this._musicEndTimer);
+    // Invalidate a pending play() resolution so it cannot fade the file back in.
+    this._musicFileAttempt++;
+    this._fadeMusicFileTo(0, 180);
+    for (const bus of [this._musicGain, this._melodyGain, this._padGain]) {
+      bus?.gain?.setTargetAtTime?.(0, this.ctx?.currentTime || 0, .04);
+    }
+    this._musicEndTimer = setTimeout(() => this.stopMusic(), 190);
+    const notes = kind === 'win' ? [659, 880] : kind === 'lives' ? [392, 523] : [523, 659];
+    notes.forEach(f => this._play(f, 'sine', .22, .065));
   }
 
   /** New personal best fanfare. */
@@ -1422,6 +1405,7 @@ export class AudioManager {
      ═══════════════════════════════════════ */
 
   startMusic() {
+    clearTimeout(this._musicEndTimer);
     this._musicRequested = true;
     if (!this.musicEnabled || this._pageHidden || this._musicRunning) return;
     const synthReady = this._ensure();
@@ -1878,6 +1862,8 @@ export class AudioManager {
   }
 
   stopMusic({ preserveRequest = false } = {}) {
+    clearTimeout(this._musicEndTimer);
+    this._musicEndTimer = null;
     if (!preserveRequest) this._musicRequested = false;
     this._musicRunning = false;
 

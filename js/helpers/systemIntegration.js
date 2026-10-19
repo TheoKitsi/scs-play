@@ -34,6 +34,12 @@ export function bindQaHooks() {
           return {
             running: game.running,
             paused: game.paused,
+            score: game.score,
+            timer: game.timer,
+            mode: game.mode,
+            playType: game.playType,
+            practice: game.practice,
+            continued: game.continued,
             stimulusId: game.currentShape?.stimulusId ?? null,
             direction: game.currentShape?.direction ?? null,
             streak: game.streak,

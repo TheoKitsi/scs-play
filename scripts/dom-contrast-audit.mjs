@@ -30,8 +30,11 @@ async function forceHome(page) {
   await page.waitForTimeout(400);
 }
 
-async function scan(page, label) {
-  const failures = await page.evaluate((screenLabel) => {
+async function scan(page, label, endRound = false) {
+  const failures = await page.evaluate(({ screenLabel, endRound }) => {
+    // Take a real end-cue DOM snapshot in the same task that starts it, without
+    // lengthening the production hold or racing CI/browser command latency.
+    if (endRound) globalThis.__SCS_QA__.forceGameOver();
     function parseRgb(value) {
       const match = String(value).match(/rgba?\(([^)]+)\)/i);
       if (!match) return null;
@@ -112,7 +115,7 @@ async function scan(page, label) {
       }
     }
     return failures.slice(0, 40);
-  }, label);
+  }, { screenLabel: label, endRound });
 
   if (failures.length) {
     console.error(`\n${label}: ${failures.length} contrast failures`);
@@ -190,10 +193,15 @@ async function run() {
     await clickIfPresent(page, '#btnPause', 300);
     failures.push(...await scan(page, 'pause'));
     await clickIfPresent(page, '#btnResume', 200);
-    await page.evaluate(() => globalThis.__SCS_QA__?.forceGameOver());
+    failures.push(...await scan(page, 'round completion cue', true));
     await page.waitForFunction(() => document.querySelector('#results')?.classList.contains('active'), null, { timeout: 5000 });
     await page.waitForTimeout(1200);
     failures.push(...await scan(page, 'results'));
+    if (await page.locator('#btnResContinueNo').isVisible()) {
+      await page.locator('#btnResContinueNo').click();
+      await page.locator('#resNormalBtns').waitFor({ state: 'visible' });
+      failures.push(...await scan(page, 'settled results'));
+    }
   }
 
   for (const file of ['privacy-policy.html', 'terms-of-service.html']) {

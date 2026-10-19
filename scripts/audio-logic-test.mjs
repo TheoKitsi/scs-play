@@ -13,6 +13,24 @@ globalThis.AudioContext = class { constructor() { throw new Error('Audio device 
 assert.equal(new AudioManager()._ensure(), false, 'Audio-context construction failure must remain non-fatal');
 delete globalThis.AudioContext;
 
+const finale = new AudioManager();
+const cadence = [];
+finale._play = (...args) => cadence.push(args);
+finale.roundEnd('time');
+assert.equal(cadence.length, 2, 'A timeout is one short two-voice cadence');
+assert.ok(cadence.every(args => args[2] <= .22));
+assert.equal(finale._musicRequested, false, 'Ending must not resurrect background music after hiding');
+finale.stopMusic();
+assert.equal(finale._musicEndTimer, null, 'Navigation cancels the pending music fade finisher');
+cadence.length = 0;
+finale.roundEnd('lives');
+assert.equal(cadence[0][0], 392, 'Endless has a different, non-punitive ending');
+finale.stopMusic();
+cadence.length = 0;
+finale.roundEnd('win');
+assert.equal(cadence[0][0], 659, 'A won competition has a distinct resolution');
+finale.stopMusic();
+
 const mapping = new AudioManager();
 mapping.setMusicMode('blitz', { modeId: 'klassik' });
 assert.equal(mapping._musicFamily, 'sort', 'Classic sorting must use the sort music family');

@@ -35,6 +35,7 @@ const PATTERNS = {
   levelUp:    [30, 40, 40, 40, 60, 20, 90], // Grand fanfare
   newPB:      [40, 30, 30, 30, 50, 20, 80, 20, 120], // Ecstatic heartbeat
   countdown:  [20],                      // Clock tick
+  roundEnd:   [18, 24, 12],              // A light full stop, not a loss alarm
   go:         [40, 20, 60],              // GO! burst
   gameOver:   [100, 50, 150, 50, 200]    // Devastating crush
 };

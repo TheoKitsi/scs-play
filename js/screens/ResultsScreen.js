@@ -13,30 +13,22 @@ import { maybeShowFeedback } from '../helpers/microFeedback.js';
 import { getKlassikInsights, getFormenInsights, getExpertInsights, getUltraInsights, getMatheInsights, getAlgebraInsights, getWorteInsights, getHauptstaedteInsights, getWissenInsights, getMemoInsights, getSequenzInsights, getStroopInsights, getFokusInsights, getChaosInsights } from '../game/ModeMastery.js';
 import { getOrSeedQuests, recordGameResult as recordQuestProgress, autoClaim as autoClaimQuests } from '../services/DailyQuestService.js';
 import { isQualifiedRound, getRoundRequirements } from '../services/ProgressionService.js';
+import { modeArtwork } from '../renderers/modeArtwork.js';
+import { arenaWorld } from '../renderers/arenaWorld.js';
+import { roundHighlight, practiceSuggestion } from '../helpers/roundSummary.js';
 
 let _resultGeneration = 0;
 let _resultCountUpCancel = null;
-const _resultTimers = new Set();
 const _resultFrames = new Set();
+let _continuing = false;
 
 function cancelResultWork() {
   _resultGeneration++;
-  _resultTimers.forEach(clearTimeout);
-  _resultTimers.clear();
   _resultFrames.forEach(cancelAnimationFrame);
   _resultFrames.clear();
   if (_resultCountUpCancel) _resultCountUpCancel();
   _resultCountUpCancel = null;
   return _resultGeneration;
-}
-
-function scheduleResult(generation, callback, delay) {
-  if (generation !== _resultGeneration) return;
-  const id = setTimeout(() => {
-    _resultTimers.delete(id);
-    if (generation === _resultGeneration) callback();
-  }, delay);
-  _resultTimers.add(id);
 }
 
 function scheduleResultFrame(generation, callback) {
@@ -49,8 +41,22 @@ function scheduleResultFrame(generation, callback) {
 }
 
 window.addEventListener('scs:screenchange', ({ detail }) => {
-  if (detail?.prevScreen === 'results' && detail.id !== 'results') cancelResultWork();
+  if (detail?.id !== 'results') {
+    cancelResultWork();
+    app.continueStats = null;
+    if (detail?.prevScreen === 'results') app.audio?.cancelSfx?.();
+  }
 });
+
+function settleResultScore() {
+  if (app.currentScreen !== 'results') return;
+  _resultCountUpCancel?.();
+  _resultCountUpCancel = null;
+  const score = $('#resScore');
+  if (score?.dataset.finalScore) score.textContent = Number(score.dataset.finalScore).toLocaleString();
+}
+window.addEventListener('scs:motionpreference', ({ detail }) => { if (detail?.reduced) settleResultScore(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) settleResultScore(); });
 
 function setResultValue(selector, value, hasData = true) {
   const el = $(selector);
@@ -75,9 +81,14 @@ export function wasLastGameGood() {
 }
 
 export async function showResults(stats, canContinue = false) {
+  const inPlace = app.currentScreen === 'results' && app.lastResultStats?.roundId === stats.roundId;
   const resultGeneration = cancelResultWork();
   const { save, audio, effects, engagement } = app;
   app.lastResultStats = stats;
+  const ruleset = stats.isDaily ? `daily_${new Date().toISOString().slice(0, 10)}` : stats.playType;
+  const previousPB = save.getPB(stats.mode, ruleset) || 0;
+  // Keep an existing continuation card stable while its one receipt is saved.
+  $('#resPhase3').inert = true;
 
   const alreadySaved = stats.roundId && save.data.progression?.recentRounds.some(round => round.id === stats.roundId);
   if (!canContinue && !alreadySaved) {
@@ -92,8 +103,6 @@ export async function showResults(stats, canContinue = false) {
     }
   }
 
-  showScreen('results', app);
-  if (engagement) engagement.markResultsShown();
   if (stats.score > app.sessionBest) app.sessionBest = stats.score;
 
   let isNewPB = false, leveledUp = false, unlocked = [], fireEarned = 0, gameXPEarned = 0;
@@ -133,11 +142,29 @@ export async function showResults(stats, canContinue = false) {
 
   if (resultGeneration !== _resultGeneration) return;
 
+  const world = arenaWorld(stats.mode);
+  $('#results').dataset.world = world.id;
+  $('#results').dataset.worldFamily = world.family;
+  $('#resWorld').innerHTML = modeArtwork(stats.mode);
+
   const empty = !(Number(stats.total) > 0);
   $('#results').dataset.resultState = canContinue ? 'continue' : empty ? 'empty'
     : stats.playType === 'competition' ? 'competition' : stats.isDaily ? 'daily' : isNewPB ? 'record' : 'complete';
   setText('#resSummary', t(canContinue ? (save.getLives() > 0 ? 'result_continue_help' : 'result_no_lives')
     : empty ? 'result_empty_help' : 'result_round_help', { correct: stats.correct, total: stats.total }));
+  const highlight = !canContinue && !empty && (stats.streak >= 5 || isNewPB)
+    ? roundHighlight(stats, isNewPB ? previousPB : 0) : '';
+  setText('#resHighlight', highlight);
+  $('#resHighlight').hidden = !highlight;
+  const rawScore = Number.isFinite(stats.rawScore) ? stats.rawScore : stats.score;
+  const bonus = Math.max(0, stats.score - rawScore);
+  setText('#resScoreBreakdown', canContinue ? t('round_provisional')
+    : t('round_breakdown', { raw: rawScore.toLocaleString(), bonus: bonus.toLocaleString() }));
+  $('#resScoreBreakdown').hidden = empty;
+  const suggestion = practiceSuggestion(stats);
+  setText('#resPracticeSuggestion', suggestion);
+  $('#resPracticeSuggestion').hidden = !suggestion;
+  $('#btnPracticeResult').hidden = !suggestion || !save.isModeUnlocked(stats.mode);
 
   const headingEl = $('[data-i18n="game_over"]');
   if (headingEl) {
@@ -186,8 +213,11 @@ export async function showResults(stats, canContinue = false) {
 
   const phase2 = $('#resPhase2');
   const phase3 = $('#resPhase3');
-  if (phase2) { phase2.classList.add('results-phase-hidden'); phase2.classList.remove('results-phase-visible'); }
-  if (phase3) { phase3.classList.add('results-phase-hidden'); phase3.classList.remove('results-phase-visible'); }
+  // Stats and actions do not wait behind the optional score animation.
+  for (const phase of [phase2, phase3]) {
+    phase?.classList.remove('results-phase-hidden');
+    phase?.classList.add('results-phase-visible');
+  }
 
   /* Reset transient state from previous results pass */
   const prevOneMore = $('#btnOneMore');
@@ -195,11 +225,16 @@ export async function showResults(stats, canContinue = false) {
 
   const scoreEl = $('#resScore');
   if (scoreEl) scoreEl.classList.remove('score-complete');
-  if (!empty && scoreEl && effects && typeof effects.scoreCountUp === 'function') {
-    _resultCountUpCancel = effects.scoreCountUp(scoreEl, 0, stats.score, CONFIG.RESULTS_COUNTUP_MS);
-    scheduleResult(resultGeneration, () => scoreEl.classList.add('score-complete'), CONFIG.RESULTS_COUNTUP_MS + 50);
+  const displayScore = canContinue ? rawScore : stats.score;
+  if (scoreEl) {
+    scoreEl.dataset.finalScore = empty ? '' : String(displayScore);
+    scoreEl.setAttribute('aria-label', empty ? t('er_no_data') : `${t('score')}: ${displayScore.toLocaleString()}`);
+  }
+  if (!empty && !canContinue && bonus > 0 && scoreEl && effects && typeof effects.scoreCountUp === 'function') {
+    scoreEl.textContent = rawScore.toLocaleString();
+    _resultCountUpCancel = effects.scoreCountUp(scoreEl, rawScore, stats.score, CONFIG.RESULTS_COUNTUP_MS);
   } else {
-    setText('#resScore', empty ? '—' : stats.score.toLocaleString());
+    setText('#resScore', empty ? '—' : displayScore.toLocaleString());
     if (scoreEl) scoreEl.classList.add('score-complete');
   }
 
@@ -332,9 +367,6 @@ export async function showResults(stats, canContinue = false) {
   updateLivesDisplay();
   const xpSection = $('#resXPSection');
   if (xpSection) xpSection.hidden = canContinue || (gameXPEarned <= 0 && fireEarned <= 0);
-  const countupDuration = empty ? 0 : CONFIG.RESULTS_COUNTUP_MS || 1200;
-  const statsDelay = CONFIG.RESULTS_STATS_DELAY || 400;
-  const buttonsDelay = CONFIG.RESULTS_BUTTONS_DELAY || 800;
 
   const retryBtn = $('#btnOneMore');
   if (retryBtn) {
@@ -364,11 +396,6 @@ export async function showResults(stats, canContinue = false) {
     });
   }
 
-  scheduleResult(resultGeneration, () => { if (phase2) phase2.classList.add('results-phase-visible'); },
-    countupDuration + statsDelay);
-  scheduleResult(resultGeneration, () => { if (phase3) phase3.classList.add('results-phase-visible'); },
-    countupDuration + statsDelay + buttonsDelay);
-
   const details = $('#resDetails');
   if (details) {
     details.open = false;
@@ -387,6 +414,12 @@ export async function showResults(stats, canContinue = false) {
       }
     };
   }
+  $('#resPhase3').inert = false;
+  $('#btnResContinueUse').disabled = false;
+  $('#btnResContinueNo').disabled = false;
+  if (!inPlace) showScreen('results', app);
+  else if (headingEl) { headingEl.tabIndex = -1; headingEl.focus({ preventScroll: true }); }
+  if (engagement) engagement.markResultsShown();
 }
 
 /* ═══════ Mode Mastery Insights ═══════ */
@@ -1159,18 +1192,34 @@ export function showContinuePrompt(stats) {
   showResults(stats, true);
 }
 
-export async function doContinue() {
-  const { save, game, audio } = app;
-  const ok = await save.useLive();
-  if (!ok) return;
-  app.continueStats = null;
-  showScreen('game', app);
-  game.continueGame();
-  audio.startMusic();
-  updateLivesDisplay();
+export async function doContinue(resume) {
+  if (_continuing || !app.continueStats || app.currentScreen !== 'results' || app.game.continued) return;
+  _continuing = true;
+  const generation = _resultGeneration;
+  $('#btnResContinueUse').disabled = $('#btnResContinueNo').disabled = true;
+  try {
+    const ok = await app.save.useLive();
+    if (!ok) return;
+    if (generation !== _resultGeneration || app.currentScreen !== 'results') {
+      await app.save.addLives(1);
+      return;
+    }
+    app.continueStats = null;
+    let refunded = false;
+    await resume(() => {
+      if (refunded || app.game.continued) return;
+      refunded = true;
+      void app.save.addLives(1);
+    });
+    updateLivesDisplay();
+  } finally {
+    _continuing = false;
+    if (generation === _resultGeneration) $('#btnResContinueUse').disabled = $('#btnResContinueNo').disabled = false;
+  }
 }
 
 export function declineContinue() {
+  if (_continuing || !app.continueStats || app.currentScreen !== 'results') return;
   app.continueStats = null;
   app.game.declineContinue();
 }
