@@ -472,8 +472,8 @@
 
 /* PB proximity — see v7.0 section for full rules */
 
-/* Rush / Fever text overlays — AAA cinematic quality */
-.rush-text,.fever-text{
+/* Sequence round cue */
+.rush-text{
   position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);
   font-family:'Space Grotesk',system-ui,sans-serif;
   font-size:clamp(2rem,7vw,3rem);font-weight:900;letter-spacing:4px;
@@ -490,10 +490,6 @@
   animation:rushIn 1.2s cubic-bezier(.2,.9,.1,1.1) forwards;
   color:#d4b0ff;
 }
-.fever-text.active{
-  animation:feverIn 1.2s cubic-bezier(.2,.9,.1,1.1) forwards;
-  color:var(--accent);
-}
 @keyframes rushIn{
   0%{opacity:0;transform:translate(-50%,-50%) scale(.15) rotate(-10deg)}
   18%{opacity:1;transform:translate(-50%,-50%) scale(1.25) rotate(2deg)}
@@ -502,15 +498,6 @@
   54%{transform:translate(-50%,-50%) scale(1) rotate(0)}
   72%{opacity:1;transform:translate(-50%,-50%) scale(1)}
   100%{opacity:0;transform:translate(-50%,-50%) scale(1.08) translateY(-40px)}
-}
-@keyframes feverIn{
-  0%{opacity:0;transform:translate(-50%,-50%) scale(.08)}
-  14%{opacity:1;transform:translate(-50%,-50%) scale(1.25)}
-  28%{transform:translate(-50%,-50%) scale(.9)}
-  40%{transform:translate(-50%,-50%) scale(1.08)}
-  52%{transform:translate(-50%,-50%) scale(1)}
-  72%{opacity:1}
-  100%{opacity:0;transform:translate(-50%,-50%) scale(1.08) translateY(-35px)}
 }
 
 /* Combo text — lightweight zoom */
@@ -536,32 +523,6 @@
   64%{transform:translate(-50%,-50%) scale(1.03)}
   78%{opacity:1;transform:translate(-50%,-50%) scale(1)}
   100%{opacity:0;transform:translate(-50%,-50%) scale(1.06) translateY(-40px)}
-}
-
-/* Shuffle text overlay */
-.shuffle-text{
-  position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);
-  font-family:'Space Grotesk',system-ui,sans-serif;
-  font-size:clamp(1.8rem,6vw,2.8rem);font-weight:900;letter-spacing:3px;
-  pointer-events:none;z-index:30;opacity:0;
-  text-transform:uppercase;
-  will-change:transform,opacity;
-  contain:layout style paint;
-  color:#FF9F43;
-  text-shadow: 0 0 14px rgba(255,159,67,.6), 0 2px 8px rgba(0,0,0,0.5);
-  line-height:1;
-  max-width:90vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.shuffle-text.active{
-  animation:shuffleIn 1s cubic-bezier(.2,.9,.1,1.1) forwards;
-}
-@keyframes shuffleIn{
-  0%{opacity:0;transform:translate(-50%,-50%) scale(.1) rotate(180deg)}
-  20%{opacity:1;transform:translate(-50%,-50%) scale(1.3) rotate(-10deg)}
-  35%{transform:translate(-50%,-50%) scale(.9) rotate(5deg)}
-  50%{transform:translate(-50%,-50%) scale(1.05) rotate(0)}
-  70%{opacity:1;transform:translate(-50%,-50%) scale(1)}
-  100%{opacity:0;transform:translate(-50%,-50%) scale(1.1) translateY(-35px)}
 }
 
 /* Corner shuffle warning pulse */
@@ -666,44 +627,16 @@
 }
 /* Correct / Wrong feedback pulse on corner shapes */
 .corner-shape.corner-correct{
-  animation:cornerCorrect .6s cubic-bezier(0.34, 1.56, 0.64, 1);
   background:rgba(16, 185, 129, 0.2);
   box-shadow:0 0 20px rgba(16,185,129,.4);
   border-color: rgba(16, 185, 129, 0.5);
 }
-.corner-shape.corner-correct svg{ transform: scale(1.2); }
+.corner-shape.corner-correct svg{ transform:none; }
 .corner-shape.corner-wrong{
-  animation:cornerWrong .5s cubic-bezier(0.34, 1.56, 0.64, 1);
   background:rgba(239, 68, 68, 0.2);
   box-shadow:0 0 16px rgba(239,68,68,.3);
   border-color: rgba(239, 68, 68, 0.5);
 }
-@keyframes cornerCorrect{
-  0%{transform:scale(1);filter:brightness(1)}
-  20%{transform:scale(1.3) rotate(4deg);filter:brightness(1.4);box-shadow:0 0 50px rgba(16,185,129,.8), inset 0 0 30px rgba(16,185,129,.5)}
-  50%{transform:scale(1.08) rotate(-2deg);filter:brightness(1.1)}
-  100%{transform:scale(1) rotate(0);filter:brightness(1)}
-}
-@keyframes cornerWrong{
-  0%,100%{transform:translateX(0) rotate(0)}
-  10%{transform:translateX(-12px) rotate(-6deg)}
-  25%{transform:translateX(12px) rotate(6deg)}
-  40%{transform:translateX(-10px) rotate(-4deg)}
-  55%{transform:translateX(10px) rotate(4deg)}
-  70%{transform:translateX(-6px) rotate(-2deg)}
-  85%{transform:translateX(4px) rotate(1deg)}
-}
-
-/* Tap-to-corner feedback */
-.corner-shape.corner-tapped{
-  animation:cornerTapped .35s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-@keyframes cornerTapped{
-  0%{transform:scale(1)}
-  40%{transform:scale(1.18); box-shadow:0 0 30px rgba(255,255,255,.3)}
-  100%{transform:scale(1)}
-}
-
 /* Generic UI icon normalization - use on SVG wrappers */
 .ui-icon, .action-icon, .quick-icon, .mode-icon, .play-type-icon {
   display:inline-flex;align-items:center;justify-content:center;

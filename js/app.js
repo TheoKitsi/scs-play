@@ -7,6 +7,7 @@ import { DEBUG }            from './config.js';
 import { t }                from './i18n.js';
 import { $, $$, showScreen } from './helpers/dom.js';
 import { closeModal }        from './helpers/modal.js';
+import { appDialog } from './helpers/appDialog.js';
 import { initPerfMode }     from './helpers/perfMode.js';
 import { getUnlockLevel }   from './helpers/modeUnlockHelper.js';
 import { bindQaHooks, checkOrientation, initBackButton, initErrorBoundary,
@@ -67,7 +68,7 @@ function bindStatTooltips() {
     el.addEventListener('click', () => { const key = el.dataset.tooltip; if (key) _showTooltip(key, el); });
   });
   $('#xpSection')?.addEventListener('click', () => _showTooltip('tooltip_level'));
-  $('#homeLivesBadge')?.addEventListener('click', () => _showTooltip('tooltip_lives'));
+  $('#homeLivesBadge')?.addEventListener('click', () => appDialog({ title: t('reserve_lives'), message: t('reserve_lives_help') }));
 }
 
 /* ═══════ Navigation wrappers ═══════ */
@@ -245,7 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
   /* global-haptics-bound */
   document.addEventListener('click', (e) => {
     const tapTarget = e.target.closest('button, .btn, .mode-card, .play-type-btn, input[type="checkbox"], select, .footer-item, .item-card, .avatar-option');
-    if (tapTarget) haptic('tap', app.save);
+    /* Gameplay targets own their precisely timed answer feedback. A generic
+       menu buzz here would immediately overwrite perfect/bonus impacts. */
+    if (tapTarget && !tapTarget.matches('.corner-shape,#centerPlatform')) haptic('tap', app.save);
   });
   bindEvents();
   boot(navShowHome, navShowAuth);

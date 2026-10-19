@@ -2,10 +2,12 @@
    SCS Play — Settings Screen
    Toggles, language.
    ═══════════════════════════════════════ */
-import { t, setLanguage }   from '../i18n.js';
+import { t, setLanguage, getLanguage } from '../i18n.js';
 import { $, $$, localise, showScreen } from '../helpers/dom.js';
 import app                   from '../appState.js';
 import { applyMotionPreference } from '../helpers/perfMode.js';
+import { livingArena } from '../helpers/livingArena.js';
+import { cancelHaptics } from '../helpers/haptics.js';
 
 let _settingsBack = null;
 let _backLabelKey = 'nav_back_home';
@@ -19,6 +21,20 @@ function updateVolumeControl(input) {
 function syncAudioControls() {
   $('#rangeSfxVolume').disabled = !$('#toggleSound').checked;
   $('#rangeMusicVolume').disabled = !$('#toggleMusic').checked;
+}
+
+function syncPresentationControls() {
+  const reduced = document.body.hasAttribute('data-reduced-motion');
+  const depth = Boolean(app.save?.getSetting('arenaDepth'));
+  const key = !depth ? 'settings_depth_off' : reduced ? 'settings_depth_motion'
+    : document.body.dataset.perfMode !== 'high' ? 'settings_depth_quality' : 'settings_depth_ready';
+  const status = $('#depthStatus');
+  if (status) status.textContent = t(key);
+  $$('.legal-links a').forEach(link => {
+    const url = new URL(link.href);
+    url.searchParams.set('lang', getLanguage());
+    link.href = url.href;
+  });
 }
 
 /* The bottom back button says where it actually goes (menu or paused game) */
@@ -41,6 +57,7 @@ export function showSettings(fromPause, showHome, showPausedGame) {
   showScreen('settings', app);
   $('#toggleColorblind').checked = save.getSetting('colorblind');
   $('#toggleMotion').checked     = save.getSetting('reducedMotion');
+  $('#toggleDepth').checked      = Boolean(save.getSetting('arenaDepth'));
   $('#toggleHaptics').checked    = save.getSetting('haptics');
   $('#toggleSound').checked      = save.getSetting('sound');
   $('#toggleMusic').checked      = save.getSetting('music');
@@ -53,6 +70,7 @@ export function showSettings(fromPause, showHome, showPausedGame) {
   updateVolumeControl($('#rangeSfxVolume'));
   updateVolumeControl($('#rangeMusicVolume'));
   syncAudioControls();
+  syncPresentationControls();
   $('#selectLang').value         = save.getSetting('language') || 'auto';
 
   /* Guests have no account to sign out of; the button only bounced them to
@@ -72,6 +90,8 @@ export function showSettings(fromPause, showHome, showPausedGame) {
 
 export function bindSettings(showHome) {
   const { save, audio } = app;
+  window.addEventListener('scs:perftier', syncPresentationControls);
+  window.addEventListener('scs:motionpreference', syncPresentationControls);
 
   const bind = (sel, key, cb) => {
     const el = $(sel);
@@ -88,7 +108,8 @@ export function bindSettings(showHome) {
     applyMotionPreference(v);
     app.effects?.setReduced(v);
   });
-  bind('#toggleHaptics', 'haptics');
+  bind('#toggleHaptics', 'haptics', v => { if (!v) cancelHaptics(); });
+  bind('#toggleDepth', 'arenaDepth', v => { livingArena.setDepthEnabled(v); syncPresentationControls(); });
   bind('#toggleSound', 'sound', v => { audio.toggle(v); syncAudioControls(); });
   bind('#toggleMusic', 'music', v => { audio.toggleMusic(v); syncAudioControls(); });
 
@@ -123,6 +144,7 @@ export function bindSettings(showHome) {
       }
       localise(t);
       applyBackLabel();
+      syncPresentationControls();
     });
   }
 }

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { startStaticServer } from './lib/static-server.mjs';
+import { mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const externalBase = process.env.SCS_BASE || '';
 const server = externalBase ? null : await startStaticServer({ root: 'docs', port: 0 });
@@ -24,6 +26,8 @@ async function startGame(page, mode) {
 
 async function review(viewport) {
   const label = `${viewport.width}×${viewport.height}`;
+  const out = process.env.SCS_REVIEW_OUT ? resolve(process.env.SCS_REVIEW_OUT, `modes-${viewport.width}`) : '';
+  if (out) mkdirSync(out, { recursive: true });
   const context = await browser.newContext({
     viewport, deviceScaleFactor: 2, locale: 'de-DE',
     isMobile: viewport.width < 768, hasTouch: viewport.width < 768,
@@ -103,6 +107,11 @@ async function review(viewport) {
       return { sliderHeight: slider.height, sliderWidth: slider.width, rowWidth: row.width, selectHeight: document.querySelector('#selectLang').getBoundingClientRect().height };
     });
     assert.ok(controls.sliderHeight >= 44 && controls.selectHeight >= 44 && controls.sliderWidth >= controls.rowWidth - 36, `${label}: full-size form controls`);
+    assert.equal(await page.locator('#toggleDepth').isChecked(), false, `${label}: background depth is opt-in`);
+    await page.locator('#toggleDepth').check();
+    await page.waitForFunction(() => Object.values(localStorage).some(value => {
+      try { return JSON.parse(value)?.settings?.arenaDepth === true; } catch { return false; }
+    }));
     await page.locator('#rangeSfxVolume').focus();
     await page.keyboard.press('Home');
     await page.keyboard.press('ArrowRight');
@@ -119,6 +128,7 @@ async function review(viewport) {
     await page.waitForFunction(() => !document.body.hasAttribute('data-reduced-motion'));
     await page.locator('#settings .btn-back-bottom').click();
 
+    const worldPaths = new Set();
     for (const mode of modes) {
       await startGame(page, mode);
       const layout = await page.evaluate(() => {
@@ -134,30 +144,88 @@ async function review(viewport) {
           separated: targets.every((r, i) => !overlaps(r, center) && !overlaps(r, hud) && targets.slice(i + 1).every(other => !overlaps(r, other))),
           centerAligned: Math.abs(center.x + center.width / 2 - innerWidth / 2) < 1,
           uniqueIds: new Set(ids).size === ids.length,
+          ambientDots: document.querySelectorAll('#game .ambient-particle').length,
+          world: document.querySelector('#resonanceStage').dataset.world,
+          worldPath: document.querySelector('#resonanceStage .arena-blueprint path')?.getAttribute('d'),
           noHint: !document.querySelector('#resonanceStage').dataset.confirmedDirection && !document.querySelector('#game').dataset.resonanceTarget,
+          localPaints: [...document.querySelectorAll('#game .material-shape')].every(svg => ['fill', 'stroke'].every(attribute => {
+            const ref = svg.querySelector('[data-shape-light]')?.getAttribute(attribute)?.match(/^url\(#(.+)\)$/)?.[1];
+            return Boolean(ref && svg.contains(document.getElementById(ref)));
+          })),
           labelFont: parseFloat(getComputedStyle(document.querySelector('.hud-label')).fontSize),
         };
       });
-      assert.ok(layout.withinViewport && layout.separated && layout.centerAligned && layout.uniqueIds && layout.noHint && layout.labelFont >= 12, `${label} ${mode}: ${JSON.stringify(layout)}`);
+      assert.ok(layout.withinViewport && layout.separated && layout.centerAligned && layout.uniqueIds && layout.localPaints && layout.noHint && layout.labelFont >= 12, `${label} ${mode}: ${JSON.stringify(layout)}`);
       assert.equal(layout.targetCount, mode === 'expert' ? 8 : 4);
+      assert.equal(layout.ambientDots, 0, `${label}: studio lights replace, not stack on, floating dots`);
+      assert.equal(layout.world, mode);
+      assert.ok(layout.worldPath);
+      worldPaths.add(layout.worldPath);
 
       if (mode === 'klassik') {
+        const depth = await page.evaluate(async () => {
+          const targets = [...document.querySelectorAll('.corner-shape,#centerPlatform')];
+          const rects = () => targets.map(el => { const r = el.getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; });
+          const before = JSON.stringify(rects());
+          document.querySelector('#game').dispatchEvent(new PointerEvent('pointermove', { clientX: innerWidth, clientY: innerHeight, isPrimary: true }));
+          await new Promise(resolve => requestAnimationFrame(resolve));
+          return { moved: document.querySelector('.arena-scenery').style.transform !== '', fixed: before === JSON.stringify(rects()) };
+        });
+        assert.ok(depth.moved && depth.fixed, `${label}: saved depth setting moves only background architecture`);
         const confirmation = await page.evaluate(() => {
           const game = document.querySelector('#game');
           const before = game.getBoundingClientRect();
           const state = globalThis.__SCS_QA__.gameState();
           document.querySelector(`.corner-shape[data-dir="${state.direction}"]`).click();
-          return { direction: state.direction, confirmation: document.querySelector('#resonanceStage').dataset.confirmedDirection, shift: Math.abs(game.getBoundingClientRect().x - before.x), correct: globalThis.__SCS_QA__.gameState().correct };
+          return { direction: state.direction, stimulusId: state.stimulusId, confirmation: document.querySelector('#resonanceStage').dataset.confirmedDirection, shift: Math.abs(game.getBoundingClientRect().x - before.x), correct: globalThis.__SCS_QA__.gameState().correct };
         });
         assert.equal(confirmation.confirmation, confirmation.direction);
         assert.equal(confirmation.correct, 1);
         assert.equal(confirmation.shift, 0, `${label}: no screen shake on hit`);
+        await page.evaluate(() => document.querySelector('#btnPause').click());
+        assert.equal(await page.locator('#resonanceStage').getAttribute('data-live'), null, `${label}: arena stops with gameplay`);
+        assert.equal(await page.locator('.arena-scenery').evaluate(el => el.style.transform), '', `${label}: pause clears optional depth`);
+        await page.evaluate(() => document.querySelector('#btnResume').click());
+        assert.notEqual(await page.locator('#resonanceStage').getAttribute('data-live'), null, `${label}: arena resumes with gameplay`);
+        if (viewport.width < 768) {
+          // A just-answered stimulus can remain in the snapshot until its
+          // scheduled successor. A non-null ID alone is not a new answer window.
+          await page.waitForFunction(previous => {
+            const state = globalThis.__SCS_QA__.gameState();
+            return state.running && !state.paused && state.stimulusId != null && state.stimulusId !== previous;
+          }, confirmation.stimulusId);
+          await page.waitForTimeout(120);
+          const gesture = await page.evaluate(() => {
+            const state = globalThis.__SCS_QA__.gameState();
+            const center = el => { const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
+            return { from: center(document.querySelector('#centerPlatform')), to: center(document.querySelector(`.corner-shape[data-dir="${state.direction}"]`)), correct: state.correct };
+          });
+          const cdp = await context.newCDPSession(page);
+          try {
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [gesture.from] });
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: (gesture.from.x + gesture.to.x) / 2, y: (gesture.from.y + gesture.to.y) / 2 }] });
+            await page.waitForTimeout(40);
+            assert.notEqual(await page.locator('.arena-scenery').evaluate(el => el.style.transform), '', `${label}: native touch reaches optional background depth`);
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [gesture.to] });
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+            await page.waitForFunction(before => globalThis.__SCS_QA__.gameState().correct === before + 1, gesture.correct, { timeout: 1500 });
+            assert.equal(await page.evaluate(() => globalThis.__SCS_QA__.gameState().correct), gesture.correct + 1, `${label}: depth cannot interfere with real touch answers`);
+            assert.equal(await page.locator('.arena-scenery').evaluate(el => el.style.transform), '', `${label}: release returns scenery to neutral`);
+          } finally { await cdp.detach(); }
+        }
+      }
+      if (out) {
+        // Capture only after input assertions: screenshot encoding must not
+        // consume the answer window or race a timeout into a fresh stimulus.
+        await page.waitForFunction(mode => mode === 'sequenz' || globalThis.__SCS_QA__.gameState().stimulusId != null, mode);
+        await page.screenshot({ path: resolve(out, `${mode}.png`), animations: 'disabled' });
       }
       if (mode !== modes.at(-1)) {
         await page.evaluate(() => document.querySelector('#btnPauseQuit').click());
         await page.locator('#home.active').waitFor();
       }
     }
+    assert.equal(worldPaths.size, 10, `${label}: all ten modes have distinct architecture`);
     await page.evaluate(() => { globalThis.__SCS_QA__.setContinued(true); globalThis.__SCS_QA__.forceGameOver(); });
     await page.locator('#results.active').waitFor();
     await page.waitForTimeout(1400);
@@ -189,14 +257,16 @@ async function review(viewport) {
     assert.ok(['#FF6348', '#A55EEA', '#A4B0BE', '#18DCFF'].includes(reduced.color), `${label}: colorblind material palette`);
     await page.evaluate(() => document.querySelector('#btnPauseQuit').click());
     assert.deepEqual(errors, [], `${label}: runtime errors`);
-    console.log(`PASS ${label}: catalog, themes, forms, motion, 10 mode layouts, feedback, results, English/colorblind/low tier`);
+    console.log(`PASS ${label}: catalog, themes, forms, motion, 10 worlds, persisted/native depth with fixed targets, feedback, results, English/colorblind/low tier`);
   } finally {
     await context.close();
   }
 }
 
 try {
-  await Promise.all([{ width: 360, height: 640 }, { width: 412, height: 915 }, { width: 1440, height: 900 }].map(review));
+  // Each viewport owns a real CDP touch device and a live answer deadline.
+  // Do not run competing touch/screenshot sessions against one browser at once.
+  for (const viewport of [{ width: 360, height: 640 }, { width: 412, height: 915 }, { width: 1440, height: 900 }]) await review(viewport);
   console.log('Presentation release tests passed.');
 } finally {
   await browser.close();

@@ -9,6 +9,11 @@ import { updateAvatarDisplay } from '../helpers/avatarDisplayHelper.js';
 import { avatarSVG }        from '../renderers/avatars.js';
 import app                   from '../appState.js';
 
+let uploadGeneration = 0;
+window.addEventListener('scs:screenchange', ({ detail }) => {
+  if (detail?.prevScreen === 'avatarSelect' && detail.id !== 'avatarSelect') uploadGeneration++;
+});
+
 function renderAvatarPreview(icon, colorIndex, photo) {
   if (photo) {
     setHTML('#avatarPreviewSvg', `<img src="${safeSrc(photo)}" alt="Avatar" style="width:52px;height:52px;border-radius:50%;object-fit:cover">`);
@@ -97,10 +102,13 @@ function resizeImageToBase64(file, maxSize = 128) {
 }
 
 function setupAvatarUpload() {
+  uploadGeneration++;
   const { save, audio } = app;
   const unlocked = $('#avatarUploadUnlocked');
   const fileInput = $('#avatarFileInput');
   const removeBtn = $('#btnAvatarRemovePhoto');
+  const status = $('#avatarUploadStatus');
+  if (status) status.textContent = '';
   if (unlocked) unlocked.style.display = '';
 
   const avatar = save.getAvatar();
@@ -111,24 +119,39 @@ function setupAvatarUpload() {
     fileInput.value = '';
     fileInput.onchange = async (e) => {
       const file = e.target.files?.[0];
-      if (!file || !file.type.startsWith('image/')) return;
+      if (!file) return;
+      const generation = ++uploadGeneration;
+      if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) {
+        if (status) status.textContent = t('avatar_upload_error');
+        fileInput.value = '';
+        return;
+      }
+      if (status) status.textContent = t('loading');
       try {
         const base64 = await resizeImageToBase64(file, 128);
+        if (generation !== uploadGeneration) return;
         await save.setAvatarPhoto(base64);
+        if (generation !== uploadGeneration) return;
         app.engagement?.trackAvatarChange();
         renderAvatarPreview(null, null, base64);
         if (removeBtn) removeBtn.hidden = false;
+        if (status) status.textContent = t('avatar_upload_saved');
         audio.tap();
-      } catch {}
+      } catch {
+        if (generation === uploadGeneration && status) status.textContent = t('avatar_upload_error');
+        fileInput.value = '';
+      }
     };
   }
 
   if (removeBtn) {
     removeBtn.onclick = async () => {
+      uploadGeneration++;
       await save.removeAvatarPhoto();
       const av = save.getAvatar();
       renderAvatarPreview(av.icon, av.colorIndex);
       removeBtn.hidden = true;
+      if (status) status.textContent = '';
       audio.tap();
     };
   }

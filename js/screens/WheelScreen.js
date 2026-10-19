@@ -138,9 +138,8 @@ function drawWheel(canvas, angle) {
     const end = start + SEG_ANGLE;
     const prize = SEGMENTS[i];
     const grad = ctx.createRadialGradient(0, 0, r * 0.08, 0, 0, r);
-    grad.addColorStop(0, '#FFFFFF24');
-    grad.addColorStop(0.45, prize.color + 'DD');
-    grad.addColorStop(1, prize.color);
+    grad.addColorStop(0, '#263141');
+    grad.addColorStop(1, i % 2 === 0 ? '#111824' : '#192231');
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.arc(0, 0, r, start, end);
@@ -150,17 +149,21 @@ function drawWheel(canvas, angle) {
     ctx.strokeStyle = i % 2 === 0 ? 'rgba(255,255,255,0.26)' : 'rgba(255,255,255,0.12)';
     ctx.lineWidth = 2;
     ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, r - 5, start + .035, end - .035);
+    ctx.strokeStyle = prize.color;
+    ctx.lineWidth = 5;
+    ctx.stroke();
 
     ctx.save();
     ctx.rotate(start + SEG_ANGLE / 2);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffffff';
-    ctx.font = '900 19px "Space Grotesk", sans-serif';
-    ctx.shadowColor = 'rgba(0,0,0,0.6)';
-    ctx.shadowBlur = 4;
+    ctx.font = '600 19px "Outfit", sans-serif';
+    ctx.shadowBlur = 0;
     ctx.fillText(prize.icon, r * 0.48, -5);
-    ctx.font = '800 9px "Space Grotesk", sans-serif';
+    ctx.font = '500 10px "Outfit", sans-serif';
     ctx.fillText(prize.label(), r * 0.64, 13);
     ctx.restore();
   }
@@ -179,25 +182,20 @@ function drawWheel(canvas, angle) {
 
   ctx.beginPath();
   ctx.arc(0, 0, r + 2, 0, 2 * Math.PI);
-  ctx.strokeStyle = 'rgba(255,215,0,0.25)';
-  ctx.lineWidth = 4;
-  ctx.shadowColor = 'rgba(255,215,0,0.3)';
-  ctx.shadowBlur = 12;
+  ctx.strokeStyle = '#738095';
+  ctx.lineWidth = 1;
   ctx.stroke();
   ctx.shadowBlur = 0;
 
   const centerGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 28);
-  centerGrad.addColorStop(0, '#FFFFFF');
-  centerGrad.addColorStop(0.18, '#FFE49A');
-  centerGrad.addColorStop(1, '#33210A');
+  centerGrad.addColorStop(0, '#3B4658');
+  centerGrad.addColorStop(1, '#111824');
   ctx.beginPath();
   ctx.arc(0, 0, 26, 0, 2 * Math.PI);
   ctx.fillStyle = centerGrad;
   ctx.fill();
-  ctx.strokeStyle = '#FFD700';
-  ctx.lineWidth = 4;
-  ctx.shadowColor = 'rgba(255,215,0,0.4)';
-  ctx.shadowBlur = 12;
+  ctx.strokeStyle = '#A9B4C5';
+  ctx.lineWidth = 1;
   ctx.stroke();
 
   ctx.restore();
@@ -224,6 +222,13 @@ function spinWheel(prizeIdx, bonusSpin = false) {
     const fullRotations = (bonusSpin ? 4 : 6) + Math.floor(Math.random() * 2);
     const totalAngle = fullRotations * 2 * Math.PI + (targetAngle - (currentAngle % (2 * Math.PI)));
     const endAngle = currentAngle + totalAngle;
+    if (document.body.hasAttribute('data-reduced-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      currentAngle = endAngle;
+      drawWheel(canvas, endAngle);
+      spinning = false;
+      if (closeBtn) { closeBtn.disabled = false; closeBtn.removeAttribute('aria-disabled'); }
+      return resolve();
+    }
     const duration = (bonusSpin ? 3200 : 4200) + Math.random() * 900;
 
     let lastTickSegment = -1;
@@ -231,7 +236,7 @@ function spinWheel(prizeIdx, bonusSpin = false) {
 
     function frame(now) {
       const elapsed = now - start;
-      const progress = Math.min(1, elapsed / duration);
+      const progress = document.hidden ? 1 : Math.min(1, elapsed / duration);
       const tEase = 1 - progress;
       const eased = 1 - (tEase * tEase * tEase * tEase);
       const angle = currentAngle + totalAngle * eased;
@@ -318,6 +323,7 @@ function clearResultCard() {
   const extraEl = $('#wheelResultExtra');
 
   if (resultCard) {
+    resultCard.hidden = true;
     resultCard.classList.remove('revealed', 'premium');
     resultCard.style.removeProperty('--wheel-win-color');
   }
@@ -420,6 +426,7 @@ function revealResult(result, bonusSpin) {
     extraEl.style.display = parts.length ? 'block' : 'none';
   }
   if (resultCard) {
+    resultCard.hidden = false;
     resultCard.style.setProperty('--wheel-win-color', prize.color);
     resultCard.classList.add('revealed');
     resultCard.classList.toggle('premium', prize.type === 'jackpot' || Boolean(milestoneBonus));

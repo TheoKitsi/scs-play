@@ -5,7 +5,7 @@
    feedback summary, chart, and export.
    ═══════════════════════════════════════ */
 
-import { t }                from '../i18n.js';
+import { t, getLanguage } from '../i18n.js';
 import { $, showScreen }    from '../helpers/dom.js';
 import { escHTML }          from '../helpers/dom.js';
 import app                   from '../appState.js';
@@ -85,8 +85,8 @@ function renderNoData(msg) {
 function renderSummary(signals) {
   const el = $('#erSummary');
   if (!el) return;
-  const since = signals.firstSeen ? signals.firstSeen.slice(0, 10) : '?';
-  el.innerHTML = `${t('er_basis')}: <strong>${signals.totalSessions}</strong> Sessions, <strong>${signals.totalGames}</strong> ${t('er_games')}, ${t('er_since')} ${since}`;
+  const since = signals.firstSeen ? new Date(signals.firstSeen).toLocaleDateString(getLanguage()) : '—';
+  el.innerHTML = `${t('er_basis')}: <strong>${signals.totalSessions}</strong> ${t('er_sessions_unit')}, <strong>${signals.totalGames}</strong> ${t('er_games')}, ${t('er_since')} ${since}`;
 }
 
 /* ─── Big score circle (SVG ring) ─── */
@@ -110,7 +110,7 @@ function renderScoreCircle(score, label) {
       </svg>
       <span class="er-score-num">${score}</span>
     </div>
-    <span class="er-score-label">${escHTML(labelText(label))}</span>`;
+    <span class="er-score-label">${t('er_activity')} · ${escHTML(labelText(label))}</span>`;
 
   /* Animate ring fill */
   requestAnimationFrame(() => {
@@ -138,7 +138,7 @@ function renderSignals(signals, subscores) {
       pct: subscores.sessionLen
     },
     {
-      title: t('er_learning'),
+      title: t('er_score_trend'),
       value: `${signals.avgScoreTrend >= 0 ? '\u2197 +' : '\u2198 '}${(signals.avgScoreTrend * 100).toFixed(1)}%`,
       pct: subscores.scoreTrend
     },

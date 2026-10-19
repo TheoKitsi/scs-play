@@ -1,15 +1,13 @@
 /* ═══════════════════════════════════════
    SCS Play — Micro Feedback
-   Minimal emoji-based feedback prompt
-   shown at key moments during gameplay.
+   Optional vector-face feedback inside
+   opened round details, never over play.
    ═══════════════════════════════════════ */
 
 import { $ } from './dom.js';
 import { t } from '../i18n.js';
 import app   from '../appState.js';
-
-const AUTO_DISMISS_MS = 8000;
-let _dismissTimer = null;
+import { icon } from '../renderers/icons.js';
 
 /**
  * Check trigger conditions and show feedback prompt if appropriate.
@@ -17,12 +15,18 @@ let _dismissTimer = null;
  * @param {object} context  — { mode, score, sessionGame, engagementScore }
  */
 export function maybeShowFeedback(trigger, context) {
+  /* Requested from opened round details only; never cover replay/navigation. */
+  const host = $('#resDetailsBody');
+  if (app.currentScreen !== 'results' || !$('#resDetails')?.open || !host) return;
   const { engagement } = app;
   if (!engagement) return;
   if (!engagement.shouldShowFeedback(trigger, context.sessionGame || 0)) return;
 
   const el = $('#microFeedback');
   if (!el) return;
+  host.appendChild(el);
+  el.setAttribute('role', 'group');
+  el.setAttribute('aria-label', t('mf_how_was_that'));
 
   // Store context for recording
   el.dataset.trigger = trigger;
@@ -33,12 +37,6 @@ export function maybeShowFeedback(trigger, context) {
   el.inert = false;
   el.classList.add('active');
   el.classList.remove('dismissed');
-
-  // Auto-dismiss after timeout
-  clearTimeout(_dismissTimer);
-  _dismissTimer = setTimeout(() => {
-    dismissFeedback(null); // null = skipped
-  }, AUTO_DISMISS_MS);
 }
 
 /**
@@ -46,7 +44,6 @@ export function maybeShowFeedback(trigger, context) {
  * @param {number|null} rating — 1-4 or null if skipped
  */
 function dismissFeedback(rating) {
-  clearTimeout(_dismissTimer);
   const el = $('#microFeedback');
   if (!el || !el.classList.contains('active')) return;
 
@@ -72,14 +69,17 @@ function dismissFeedback(rating) {
 export function bindMicroFeedback() {
   const el = $('#microFeedback');
   if (!el) return;
+  window.addEventListener('scs:screenchange', ({ detail }) => {
+    if (detail?.id !== 'results') dismissFeedback(null);
+  });
 
-  // Emoji rating buttons
+  // The response is recorded immediately, before navigation can change context.
   el.querySelectorAll('.mf-btn').forEach(btn => {
+    btn.querySelector('span').innerHTML = icon(`face-${btn.dataset.rating}`);
     btn.addEventListener('click', () => {
       const rating = parseInt(btn.dataset.rating);
       if (rating >= 1 && rating <= 4) {
-        btn.classList.add('mf-selected');
-        setTimeout(() => dismissFeedback(rating), 300);
+        dismissFeedback(rating);
       }
     });
   });

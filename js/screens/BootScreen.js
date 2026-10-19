@@ -5,6 +5,7 @@
 import { CONFIG }              from '../config.js';
 import { t, setLanguage }      from '../i18n.js';
 import { $, $$, setText, localise, showScreen } from '../helpers/dom.js';
+import { modePreview } from '../renderers/modePreview.js';
 import { applyTheme } from '../services/ThemeService.js';
 import { EngagementTracker }   from '../helpers/engagementTracker.js';
 import app                     from '../appState.js';
@@ -39,23 +40,17 @@ export async function boot(showHome, showAuth) {
   const { save, auth, audio } = app;
 
   showScreen('boot', app);
+  $$('[data-brand-scene]').forEach(el => { el.innerHTML = modePreview('beginner'); });
   const progressFill = $('#bootProgressFill');
   const setProgress = (pct) => { if (progressFill) progressFill.style.width = pct + '%'; };
 
   setText('#bootStatus', t('boot_init'));
   setProgress(10);
 
-  setTimeout(() => {
-    $$('.boot-orb').forEach(orb => {
-      orb.style.animation = `orbFadeIn 2s ease-out forwards, orbFloat ${10 + Math.random() * 5}s ease-in-out infinite`;
-    });
-  }, 300);
-
   setProgress(20);
   try { await auth.init(); } catch {}
   setText('#bootStatus', t('boot_audio'));
   setProgress(40);
-  await new Promise(r => setTimeout(r, 400));
 
   setText('#bootStatus', t('boot_sync'));
   setProgress(60);
@@ -82,14 +77,7 @@ export async function boot(showHome, showAuth) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 
-  await new Promise(r => setTimeout(r, CONFIG.BOOT_MIN_DISPLAY));
-
-  const bootEl = $('#boot');
-  if (bootEl) {
-    bootEl.classList.add('fade-out');
-    await new Promise(r => setTimeout(r, 450));
-  }
-
+  /* Ready means ready: no decorative minimum wait before the next screen. */
   if (auth.user) {
     showHome();
   } else {

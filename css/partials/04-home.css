@@ -497,7 +497,6 @@
 .btn-mode-browser:hover{border-color:var(--primary-glow);background:var(--card)}
 .mode-preview{position:relative;display:block;width:100%;height:100%;isolation:isolate}
 .preview-plinth{position:absolute;inset:22% 8% 3%;border:1px solid rgba(255,255,255,.15);border-radius:50%;background:radial-gradient(ellipse at 38% 20%,rgba(255,255,255,.12),transparent 70%),linear-gradient(165deg,var(--card),var(--bg));box-shadow:0 7px 0 var(--scene-bg),0 24px 32px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12);transform:rotateX(24deg);z-index:-1}
-.preview-orbit{position:absolute;inset:10% 0 -2%;border:1px solid rgba(255,255,255,.09);border-radius:50%;z-index:-2}
 .preview-object{position:absolute;display:block;width:33%;height:40%;filter:drop-shadow(0 8px 4px rgba(0,0,0,.4))}
 .preview-object svg{width:100%;height:100%}
 .preview-object--1{top:5%;left:18%}
@@ -518,10 +517,10 @@
 .preview-sequence i{display:grid;place-items:center;width:29%;aspect-ratio:1;font:700 clamp(20px,6vw,30px) 'Space Grotesk',sans-serif;font-style:normal;color:var(--text-dim);border:1px solid var(--outline);border-radius:14px;background:var(--card);box-shadow:0 5px 0 var(--scene-bg)}
 .preview-sequence i:nth-child(2){color:var(--text);border-color:var(--primary-glow);transform:translateY(-10px)}
 .preview-arrows{flex-direction:row;font-size:clamp(26px,8vw,44px);gap:8px;color:var(--text-muted)}
+.preview-arrows .direction-icon{width:1em;height:1em}
+.preview-arrows b{display:flex}
 .preview-arrows b{color:var(--text);font-size:1.3em;transform:translateY(-3px)}
 .preview-switch{font-size:84px}
-.preview-tick{position:absolute;top:62%;width:16%;height:1px;background:rgba(255,255,255,.25)}
-.preview-tick--left{left:0}.preview-tick--right{right:0}
 
 /* ═══ HERO SLIDER — swipeable carousel ═══ */
 .hero-slider{

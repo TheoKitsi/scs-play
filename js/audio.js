@@ -285,7 +285,7 @@ export class AudioManager {
    * @param {number} detune - cents detune
    * @param {number} pan    - stereo position (-1 left, 0 centre, +1 right)
    */
-  _play(freq, type, dur, vol = 0.15, detune = 0, pan = 0) {
+  _play(freq, type, dur, vol = 0.15, detune = 0, pan = 0, attack = 0) {
     if (!this.enabled || !this._ensure()) return;
 
     const t = this.ctx.currentTime;
@@ -294,7 +294,8 @@ export class AudioManager {
     osc.type = type;
     osc.frequency.value = freq;
     osc.detune.value = detune;
-    gain.gain.setValueAtTime(vol, t);
+    gain.gain.setValueAtTime(attack > 0 ? 0.001 : vol, t);
+    if (attack > 0) gain.gain.linearRampToValueAtTime(vol, t + Math.min(attack, dur / 2));
     gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
 
     if (pan !== 0 && typeof StereoPannerNode !== 'undefined') {
@@ -374,6 +375,34 @@ export class AudioManager {
         this._play(880, 'sine', 0.15, 0.10, 0, pan);
         this._play(1100, 'sine', 0.2, 0.08, 0, pan);
       }, 50);
+    }
+  }
+
+  /** Quiet, world-specific contact. All voices start on the same audio clock;
+      no delayed arpeggios or RNG compete with the next item. */
+  gameImpact({ correct, quality = 'good', streak = 0, mode = '', fever = false, direction, autoMiss = false }) {
+    if (!this.enabled || this._pageHidden) return;
+    if (!correct) {
+      this._play(autoMiss ? 174.61 : 146.83, 'triangle', .075, autoMiss ? .035 : .065, 0, 0, .004);
+      if (!autoMiss) this._play(110, 'sine', .07, .035, 0, 0, .003);
+      return;
+    }
+    const family = this._resolveMusicFamily(mode);
+    const [root, type, duration, volume] = ({
+      sort: [440, 'triangle', .085, .09],
+      think: [392, 'sine', .075, .075],
+      memory: [523.25, 'sine', .1, .07],
+      reflex: [329.63, 'triangle', .075, .095],
+    })[family];
+    const level = fever ? 4 : streak >= 30 ? 3 : streak >= (family === 'think' ? 18 : 15) ? 2
+      : streak >= (family === 'think' ? 8 : 5) ? 1 : 0;
+    const base = root * [1, 1.12246, 1.25992, 1.33484, 1.49831][level];
+    const pan = ({ ul: -.28, dl: -.28, left: -.28, nnw: -.28, wsw: -.28,
+      ur: .28, dr: .28, right: .28, ene: .28, sse: .28 })[direction] || 0;
+    this._play(base, type, duration, volume, 0, pan, .003);
+    this._play(base / 2, 'sine', .055, .035, 0, pan, .003);
+    if (quality === 'perfect' || quality === 'bonus') {
+      this._play(base * (quality === 'bonus' ? 2.5 : 2), 'sine', .06, .03, 0, pan, .003);
     }
   }
 
@@ -517,9 +546,9 @@ export class AudioManager {
   }
 
   /** Fever mode activated — rapid ascending sawtooth arpeggio. */
-  feverStart() {
+  feverStart(quiet = false) {
     this._feverMode = true;
-    [262, 330, 392, 523, 659, 784].forEach((f, i) => {
+    if (!quiet) [262, 330, 392, 523, 659, 784].forEach((f, i) => {
       this._scheduleSfx(() => this._play(f, 'sawtooth', 0.12, 0.08), i * 40);
     });
     this._musicTempo = this._baseTempo + 18;
@@ -528,11 +557,13 @@ export class AudioManager {
   }
 
   /** Fever mode ended — gentle descending resolve. */
-  feverEnd() {
+  feverEnd(quiet = false) {
     this._feverMode = false;
     this._applyMusicIntensity();
-    this._play(400, 'sine', 0.3, 0.08);
-    this._play(300, 'sine', 0.4, 0.06);
+    if (!quiet) {
+      this._play(400, 'sine', 0.3, 0.08);
+      this._play(300, 'sine', 0.4, 0.06);
+    }
   }
 
   setPerformanceIntensity(streak = 0) {
@@ -558,20 +589,14 @@ export class AudioManager {
     return next;
   }
 
-  /** Corner shuffle warning — swirling descending whoosh. */
+  /** Short orientation cues finish before a fast player's next answer. */
   cornerShuffleWarn() {
-    [800, 700, 600, 500].forEach((f, i) => {
-      this._scheduleSfx(() => this._play(f, 'triangle', 0.08, 0.1, i * 4), i * 50);
-    });
+    this._play(493.88, 'triangle', .045, .04, 0, 0, .003);
   }
 
   /** Corner shuffle done — snappy chord confirming new layout. */
   cornerShuffleDone() {
-    this._play(523, 'sine', 0.15, 0.1);
-    this._scheduleSfx(() => {
-      this._play(659, 'sine', 0.15, 0.08);
-      this._play(784, 'sine', 0.15, 0.06);
-    }, 60);
+    this._play(659.25, 'sine', .045, .045, 0, 0, .003);
   }
 
   /** Level up — grand ascending sequence with undertones. */

@@ -6,13 +6,18 @@
 import { CONFIG }           from '../config.js';
 import { t, getLanguage }   from '../i18n.js';
 import { $, $$, setText, hexToRgba, showScreen } from '../helpers/dom.js';
-import { haptic }           from '../helpers/haptics.js';
+import { haptic, cancelHaptics } from '../helpers/haptics.js';
+import { playGameImpact } from '../helpers/gameFeedback.js';
 import { closeModal, openModal } from '../helpers/modal.js';
 import { shapeSVG }         from '../renderers/shapes.js';
 import { SwipeHandler }     from '../input.js';
 import { EffectsManager }   from '../effects.js';
 import { setGameplayPerformanceActive } from '../helpers/perfMode.js';
 import { showGameNotice, clearGameNotice } from '../helpers/gameNotice.js';
+import { livingArena } from '../helpers/livingArena.js';
+import { arenaWorld } from '../renderers/arenaWorld.js';
+import { icon, directionIcon } from '../renderers/icons.js';
+import { modePreview } from '../renderers/modePreview.js';
 import app                   from '../appState.js';
 import { startModeMastery, finishModeMastery } from './gameHud/modeMasteryLifecycle.js';
 import { trackKlassikAnswer, getGhostDelta, getSpeedZone } from '../game/ModeMastery.js';
@@ -56,10 +61,16 @@ function getCachedSVGNode(shape, color, size, bonus) {
   }
   const clone = node.cloneNode(true);
   /* Cached clones still need document-unique paint IDs. */
-  const light = clone.querySelector('linearGradient');
-  if (light) {
-    light.id = `game-shape-light-${++_svgInstance}`;
-    clone.querySelector('[data-shape-light]')?.setAttribute('fill', `url(#${light.id})`);
+  const paints = new Map();
+  for (const paint of clone.querySelectorAll('linearGradient')) {
+    const oldRef = `url(#${paint.id})`;
+    paint.id = `game-shape-light-${++_svgInstance}`;
+    paints.set(oldRef, `url(#${paint.id})`);
+  }
+  const light = clone.querySelector('[data-shape-light]');
+  for (const attribute of ['fill', 'stroke']) {
+    const ref = paints.get(light?.getAttribute(attribute));
+    if (ref) light.setAttribute(attribute, ref);
   }
   return clone;
 }
@@ -183,10 +194,9 @@ function renderCorners(cornerMap, forceAll = false) {
 
     /* ── CHAOS corners: shape+color combo ── */
     if (info.type === 'chaos') {
-      const shapeMap = { circle: '●', square: '■', triangle: '▲', star: '★' };
-      const sym = shapeMap[info.shape] || info.shape;
       const sz = CHAOS_SIZE_MAP[info.size] || '1.1rem';
-      el.innerHTML = `<span class="corner-text chaos-corner-shape" style="color:${color};font-size:${sz}">${sym}</span>`;
+      el.innerHTML = `<span class="chaos-corner-shape" style="width:${sz};height:${sz}"></span>`;
+      el.firstChild.appendChild(getCachedSVGNode(info.shape, color, 48));
       appendColorblindMark(el, info.colorblindPattern);
       el.dataset.color = color;
       if (!el.classList.contains(`dir-${dir}`)) el.classList.add(`dir-${dir}`);
@@ -194,6 +204,13 @@ function renderCorners(cornerMap, forceAll = false) {
     }
 
     if (isText) {
+      if (info.type === 'fokus') {
+        el.innerHTML = directionIcon(info.display);
+        el.dataset.value = info.value;
+        el.dataset.color = color;
+        if (!el.classList.contains(`dir-${dir}`)) el.classList.add(`dir-${dir}`);
+        return;
+      }
       const extraCls = info.type === 'capitals' ? ' corner-capitals' : info.type === 'algebra' ? ' corner-algebra' : info.type === 'wissen' ? ' corner-wissen' : '';
       el.innerHTML = `<span class="corner-text${extraCls}">${info.display}</span>`;
       el.dataset.value = info.value;
@@ -297,9 +314,9 @@ function renderCenter(shapeData) {
     const leftFlankers = (shapeData.flankers || []).slice(0, half);
     const rightFlankers = (shapeData.flankers || []).slice(half);
     let html = '';
-    leftFlankers.forEach(f => { html += `<span class="fokus-flanker">${f}</span>`; });
-    html += `<span class="fokus-center">${shapeData.display}</span>`;
-    rightFlankers.forEach(f => { html += `<span class="fokus-flanker">${f}</span>`; });
+    leftFlankers.forEach(f => { html += `<span class="fokus-flanker">${directionIcon(f)}</span>`; });
+    html += `<span class="fokus-center">${directionIcon(shapeData.display)}</span>`;
+    rightFlankers.forEach(f => { html += `<span class="fokus-flanker">${directionIcon(f)}</span>`; });
     row.innerHTML = html;
     center.appendChild(row);
     center.className = 'center-shape pop-in spawn-pop';
@@ -312,22 +329,16 @@ function renderCenter(shapeData) {
     center.innerHTML = '';
     const wrap = document.createElement('div');
     wrap.className = 'chaos-stimulus';
-    const shapeMap = { circle: '●', square: '■', triangle: '▲', star: '★' };
     const sym = document.createElement('span');
     sym.className = 'chaos-shape';
-    sym.textContent = shapeMap[shapeData.display] || shapeData.display;
-    sym.style.color = app.colorblind ? shapeData.stimColorblind : shapeData.stimColor;
-    sym.style.fontSize = CHAOS_SIZE_MAP[shapeData.stimSize] || '2rem';
+    sym.style.width = sym.style.height = CHAOS_SIZE_MAP[shapeData.stimSize] || '2rem';
+    sym.appendChild(getCachedSVGNode(shapeData.display, app.colorblind ? shapeData.stimColorblind : shapeData.stimColor, 48));
     wrap.appendChild(sym);
     appendColorblindMark(wrap, shapeData.colorblindPattern);
-    /* Rule indicator — emoji + text label, color-coded by dimension */
+    /* Rule identity is explicit, neutral and never an answer-colored hint. */
     const rule = document.createElement('span');
     rule.className = 'chaos-rule-badge';
-    const ruleLabels = { color: '🎨', shape: '🔷', size: '📏' };
-    const ruleColors = { color: '#EF4444', shape: '#3B82F6', size: '#10B981' };
-    rule.textContent = `${ruleLabels[shapeData.chaosRule] || ''} ${t('chaos_rule_' + shapeData.chaosRule) || shapeData.chaosRule.toUpperCase()}`;
-    rule.style.borderColor = ruleColors[shapeData.chaosRule] || 'rgba(255,255,255,0.1)';
-    rule.style.color = ruleColors[shapeData.chaosRule] || 'rgba(255,255,255,0.6)';
+    rule.innerHTML = `${icon(({ color: 'palette', shape: 'shapes', size: 'ruler' })[shapeData.chaosRule])}<span>${t('chaos_rule_' + shapeData.chaosRule)}</span>`;
     wrap.appendChild(rule);
     announceStimulus(t('chaos_stimulus_label', {
       rule: t(`chaos_rule_${shapeData.chaosRule}`),
@@ -419,72 +430,8 @@ function invalidateHudCache() {
 
 const INTENSITY_CLASSES = ['intensity-low','intensity-mid','intensity-high','intensity-max',
   'edge-glow-warm','edge-glow-hot','edge-glow-fire','action-climax','action-climax-peak'];
-let _intensityKey = '';
-let _resonanceLevel = '';
-
 function updateIntensity() {
-  const { game } = app;
-  const g = _getHudEls().game;
-  if (!g) return;
-  const textHeavy = isTextHeavyMode();
-  const next = [];
-  if (game.feverActive) {
-    if (textHeavy) next.push('intensity-mid');
-    else next.push('intensity-max','edge-glow-fire');
-  } else if (game.streak >= 30) {
-    if (textHeavy) next.push('intensity-mid');
-    else next.push('intensity-high','edge-glow-fire');
-  } else if (game.streak >= 20) {
-    if (textHeavy) next.push('intensity-low');
-    else next.push('intensity-high','edge-glow-hot');
-  } else if (game.streak >= 10) {
-    next.push('intensity-mid','edge-glow-warm');
-  } else if (game.streak >= 5) {
-    next.push('intensity-low');
-  }
-
-  if (!textHeavy && !game.practice && game.playType !== 'endless' && game.timer > 0) {
-    if (game.timer <= 8) next.push('action-climax');
-    if (game.timer <= 3) next.push('action-climax-peak');
-  }
-
-  /* Only touch #game when the set changes: class churn on the screen root
-     invalidates style for the whole game subtree on every answer. */
-  const key = next.join(' ');
-  if (key !== _intensityKey) {
-    _intensityKey = key;
-    g.classList.remove(...INTENSITY_CLASSES);
-    if (next.length) g.classList.add(...next);
-  }
-
-  if (game.mode === 'klassik') {
-    const level = String(Math.min(1, Math.max(0, game.streak / 20)));
-    if (level !== _resonanceLevel) {
-      _resonanceLevel = level;
-      $('#resonanceStage')?.style.setProperty('--resonance-level', level);
-    }
-  }
-}
-
-let _arenaConfirmationTimer = null;
-
-function clearArenaConfirmation() {
-  clearTimeout(_arenaConfirmationTimer);
-  _arenaConfirmationTimer = null;
-  const stage = $('#resonanceStage');
-  if (stage) {
-    delete stage.dataset.confirmedDirection;
-    stage.classList.remove('resonance-hit');
-  }
-}
-
-function confirmArenaAnswer(direction) {
-  const stage = $('#resonanceStage');
-  if (!stage || !direction) return;
-  clearArenaConfirmation();
-  stage.dataset.confirmedDirection = direction;
-  stage.classList.add('resonance-hit');
-  _arenaConfirmationTimer = setTimeout(clearArenaConfirmation, 260);
+  livingArena.setEnergy(app.game.streak, app.game.feverActive);
 }
 
 let _timerBarState = '';
@@ -700,11 +647,10 @@ function _scheduleCountdown(generation, callback, delay) {
 function _showModeInstruction(mode, onDone, onCancel) {
   const overlay = $('#modeInstructionOverlay');
   if (!overlay) { onDone(); return; }
-  const icons = { mathe:'🧮', worte:'📝', memo:'🧠', sequenz:'🔔', stroop:'🎨', fokus:'🎯', chaos:'🌀', hauptstaedte:'🌍', algebra:'📐', wissen:'💡' };
   const iconEl = $('#modeInstructionIcon');
   const titleEl = $('#modeInstructionTitle');
   const textEl = $('#modeInstructionText');
-  if (iconEl) iconEl.textContent = icons[mode] || '💡';
+  if (iconEl) iconEl.innerHTML = modePreview(arenaWorld(mode).id, app.colorblind);
   if (titleEl) titleEl.textContent = t(`mode_${mode}`) || mode.toUpperCase();
   if (textEl) textEl.textContent = t(`instr_${mode}`) || '';
   const btn = $('#btnStartAfterInstruction');
@@ -2016,11 +1962,9 @@ function cleanupGameClasses() {
     el.style.display = 'none';
   }
   $('#centerPlatform')?.classList.remove('platform-active');
-  clearArenaConfirmation();
+  livingArena.reset();
   const g = $('#game');
   g?.classList.remove(...INTENSITY_CLASSES);
-  _intensityKey = '';
-  _resonanceLevel = '';
   if (g) {
     delete g.dataset.resonanceTarget;
     delete g.dataset.modeWorld;
@@ -2047,6 +1991,7 @@ function cleanupGameClasses() {
 }
 
 function cleanupActiveGame({ stopEngine = true } = {}) {
+  cancelHaptics();
   setGameplayPerformanceActive(false);
   const { game, audio, effects, swipe } = app;
   document.body.style.overflow = '';
@@ -2095,9 +2040,8 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
   app.pendingDaily = daily;
   const gameScreen = $('#game');
   if (!gameScreen) return;
-  const modeWorld = ({ beginner:'sort', expert:'sort', mathe:'think', wissen:'think', memo:'memory', sequenz:'memory', stroop:'reflex', fokus:'reflex', chaos:'reflex' })[app.selectedMode];
-  if (modeWorld) gameScreen.dataset.modeWorld = modeWorld;
-  else delete gameScreen.dataset.modeWorld;
+  gameScreen.dataset.modeWorld = arenaWorld(app.selectedMode).family;
+  livingArena.configure(app.selectedMode, save.getSetting('arenaDepth'));
 
   app.swipe?.unbind();
   app.effects?.cleanup();
@@ -2111,12 +2055,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
 
   const modeIndicator = $('#modeIndicator');
   if (modeIndicator) {
-    const modeLabels = { klassik: t('mode_klassik'), beginner: t('mode_beginner'), mathe: t('mode_mathe'), worte: t('mode_worte'), memo: t('mode_memo'), sequenz: t('mode_sequenz'), stroop: t('mode_stroop'), fokus: t('mode_fokus'), chaos: t('mode_chaos'), hauptstaedte: t('mode_hauptstaedte'), algebra: t('mode_algebra'), wissen: t('mode_wissen') };
-    if (modeLabels[app.selectedMode]) modeIndicator.textContent = modeLabels[app.selectedMode];
-    else {
-      const dirCount = app.selectedMode === 'ultra' ? 12 : app.selectedMode === 'expert' ? 8 : 4;
-      modeIndicator.textContent = `${dirCount}-DIR`;
-    }
+    modeIndicator.textContent = t(`mode_${app.selectedMode}`);
   }
 
   /* Persistent rule label — shows the mode's core instruction */
@@ -2244,6 +2183,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     lang: getLanguage()
   };
   const corners = game.start(app.selectedMode, practice ? 'blitz' : app.selectedPlayType, options);
+  livingArena.setActive(true);
 
   startModeMastery(app.selectedMode, app.mastery);
 
@@ -2262,7 +2202,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   effects.initTrailCanvas($('#trailCanvas'));
   invalidateRects();
   renderCorners(corners, true);  /* forceAll on first render */
-  effects.startAmbient();
+  /* Studio lights replace the old floating dots, not another effect layer. */
 
   /* ─── Wire game callbacks ─── */
   game.onTick = () => {
@@ -2278,20 +2218,6 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
         || (game.playType === 'endless' && game.endlessLives <= 1);
       effects.dangerZone(inDanger);
     }
-    /* v19: reactive background intensity */
-    if (typeof effects.setBackgroundIntensity === 'function') {
-      let intensity = 0;
-      if (textHeavy) {
-        if (game.feverActive) intensity = 2;
-        else if (game.streak >= 20) intensity = 1;
-      } else {
-        if (game.feverActive) intensity = 4;
-        else if (game.streak >= 30) intensity = 3;
-        else if (game.streak >= 15) intensity = 2;
-        else if (game.streak >= 5) intensity = 1;
-      }
-      effects.setBackgroundIntensity(intensity);
-    }
     checkPBProximity();
   };
 
@@ -2304,7 +2230,6 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       requestAnimationFrame(() => { el.classList.add('shuffle-warn'); });
     });
     if (typeof audio.cornerShuffleWarn === 'function') audio.cornerShuffleWarn();
-    haptic('rush', save);
   };
 
   game.onCornerShuffle = (cornerMap) => {
@@ -2370,43 +2295,33 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   /* ── Chaos mode: rule-switch banner ── */
   game.onChaosRuleSwitch = (newRule) => {
-    /* Clean up any existing banners to prevent DOM leaks */
-    document.querySelectorAll('.chaos-rule-banner').forEach(el => el.remove());
-    const ruleLabels = { color: '\uD83C\uDFA8', shape: '\uD83D\uDD37', size: '\uD83D\uDCCF', math: '\uD83D\uDCDD', stroop: '\uD83C\uDF08' };
-    const ruleColors = { color: '#EF4444', shape: '#3B82F6', size: '#10B981', math: '#FBBF24', stroop: '#EC4899' };
-    const banner = document.createElement('div');
-    banner.className = 'chaos-rule-banner pop-in';
-    banner.textContent = `${ruleLabels[newRule] || ''} ${t('chaos_rule_' + newRule) || newRule.toUpperCase()}`;
-    banner.style.borderColor = ruleColors[newRule] || '';
-    const gameEl = $('#game');
-    if (gameEl) {
-      gameEl.appendChild(banner);
-      setTimeout(() => banner.remove(), 1800);
-    }
+    showGameNotice(t('chaos_rule_' + newRule), { kind: 'rule', importance: 3, duration: 1100 });
     haptic('rush', save);
   };
 
   game.onSpawn = (shape) => {
-    clearArenaConfirmation();
+    livingArena.clearConfirmation();
     $$('.corner-correct,.corner-wrong', $('#game')).forEach(corner => {
       clearTimeout(corner._answerFeedbackTimer);
       corner.classList.remove('corner-correct', 'corner-wrong');
     });
     renderCenter(shape);
 
-    if (shape.bonus === 'golden') audio.goldenFound();
-    if (shape.bonus === 'diamond') audio.diamondFound();
   };
 
   game.onResult = (result) => {
     syncGameplayMusicIntensity(game, result);
 
     if (result.correct) {
-      audio.correct(result.streak);
-
       /* One local impact. Neither the arena nor the next stimulus moves. */
-      confirmArenaAnswer(result.expected);
       const corner = $(`.corner-shape[data-dir="${result.expected}"]`);
+      livingArena.confirm(result.expected, () => {
+        if (!corner) return null;
+        const from = stableRect($('#centerPlatform'));
+        const to = stableRect(corner);
+        return { x: to.left + to.width / 2 - from.left - from.width / 2,
+          y: to.top + to.height / 2 - from.top - from.height / 2 };
+      });
       if (corner) {
         clearTimeout(corner._answerFeedbackTimer);
         corner.classList.remove('corner-wrong');
@@ -2418,11 +2333,8 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
         const r = stableRect(corner || $('#centerPlatform'));
         effects.particles(r.left + r.width / 2, r.top + r.height / 2, '#F4F7FC', 4);
       }
-      haptic(result.bonus || 'correct', save);
     } else {
       if (!result.autoMiss) {
-          audio.wrong();
-        haptic('wrong', save);
         if (result.expected) showNearMiss(result.expected);
         if (result.direction) {
           const wrongCorner = $(`.corner-shape[data-dir="${result.direction}"]`);
@@ -2436,6 +2348,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       }
     }
 
+    playGameImpact(result, game, audio, save);
     updateModeMasteryAfterAnswer(game, result);
 
     effects.trailComplete(result.correct);
@@ -2444,43 +2357,32 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     checkPBProximity();
   };
 
-  game.onPerfect = () => {
-    audio.perfect();
-    haptic('perfect', save);
-  };
-
-  game.onStreak = (streak) => {
-    haptic(streak >= 10 ? 'streak10' : 'streak5', save);
-  };
+  /* One impact includes perfect, multiplier and combo accents. */
+  game.onPerfect = null;
+  game.onStreak = null;
 
   game.onMultiplierChange = (mult) => {
-    if (mult > 1) audio.multiplierUp(mult);
     if (typeof effects.updateMultiplierRing === 'function') effects.updateMultiplierRing(mult);
     updateHUD();
   };
 
   game.onRush = () => {
-    audio.rush();
-    haptic('rush', save);
     showGameNotice(t('rush'), { kind: 'rush', importance: 1, duration: 900 });
   };
 
   game.onFeverStart = () => {
-    audio.feverStart();
-    haptic('fever', save);
-    effects.startFever();
+    livingArena.setEnergy(game.streak, true);
+    audio.feverStart(true);
     showGameNotice(t('fever'), { kind: 'fever', importance: 1, duration: 900 });
   };
 
   game.onFeverEnd = () => {
-    audio.feverEnd();
-    effects.stopFever();
+    livingArena.setEnergy(game.streak, false);
+    audio.feverEnd(true);
     showGameNotice(t('fever_cooldown'), { kind: 'cooldown', duration: 1000 });
   };
 
   game.onComboMilestone = (streak, bonusPoints) => {
-    haptic('combo', save);
-    if (typeof audio.comboMilestone === 'function') audio.comboMilestone(streak);
     effects.comboMilestone(streak, bonusPoints);
   };
 
@@ -2488,20 +2390,16 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   game.onScoreMilestone = null;
 
   /* v19: Streak break feedback */
-  game.onStreakBreak = (lostStreak) => {
-    if (typeof audio.streakBreak === 'function') audio.streakBreak(lostStreak);
-    haptic(lostStreak >= 10 ? 'heartLost' : 'wrong', app.save);
-  };
+  game.onStreakBreak = null;
 
   /* Combo decay: update streak HUD as combo ticks down */
   game.onComboDecay = (newStreak) => {
+    livingArena.setEnergy(newStreak, game.feverActive);
     const streakEl = document.getElementById('hudStreak');
     if (streakEl) streakEl.textContent = newStreak > 0 ? newStreak : '';
   };
 
   game.onEndlessMiss = (livesLeft) => {
-    haptic('heartLost', save);
-    if (typeof audio.endlessMiss === 'function') audio.endlessMiss(livesLeft);
     if (typeof effects.endlessHeartLost === 'function') effects.endlessHeartLost(livesLeft);
     updateEndlessLives();
     effects.scorePop(window.innerWidth / 2, window.innerHeight / 2 - 60,
@@ -2551,8 +2449,6 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   };
 
   game.onEndlessLifeEarned = (livesLeft) => {
-    haptic('combo', save);
-    if (typeof audio.correct === 'function') audio.correct(10);
     effects.scorePop(
       window.innerWidth / 2,
       window.innerHeight / 2 - 60,
@@ -2574,8 +2470,6 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   /* ═══ Anti-frustration callbacks (v22) ═══ */
   game.onStreakProtected = (brokenStreak) => {
-    haptic('warn', save);
-    if (typeof audio.streakProtected === 'function') audio.streakProtected();
     effects.scorePop(
       window.innerWidth / 2,
       window.innerHeight / 2 - 60,
@@ -2599,16 +2493,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   };
 
   game.onWissenLevelUp = (level) => {
-    haptic('combo', save);
-    if (typeof audio.wissenLevelUp === 'function') audio.wissenLevelUp(level);
-    const gameEl = document.getElementById('game');
-    if (!gameEl) return;
-    const el = document.createElement('div');
-    el.className = 'wissen-level-up';
-    el.textContent = t('wissen_level_up', { n: level });
-    gameEl.appendChild(el);
-    setTimeout(() => el.remove(), 1500);
-    effects.flash('#a78bfa30', 300);
+    showGameNotice(t('wissen_level_up', { n: level }), { importance: 2, duration: 1000 });
   };
 
   game.onCompetitionComplete = null;
@@ -2701,9 +2586,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     const cy = window.innerHeight / 2;
     if (result.correct && result.sequenzComplete) {
       /* Full sequence reproduced — celebrate */
-      audio.correct(result.streak);
       effects.scorePop(cx, cy + 80, `+${result.points}`, '#F4F7FC', false);
-      haptic('combo', save);
     } else if (result.correct && !result.sequenzComplete) {
       /* Correct step — small confirmation */
       const corner = $(`.corner-shape[data-dir="${result.direction}"]`);
@@ -2711,15 +2594,12 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
         corner.classList.add('corner-correct');
         setTimeout(() => corner.classList.remove('corner-correct'), 300);
       }
-      audio.correct(0);
-      haptic('correct', save);
     } else {
       /* Wrong step */
-      audio.wrong();
-      haptic('wrong', save);
       if (result.expected) showNearMiss(result.expected);
     }
 
+    playGameImpact(result, game, audio, save);
     /* ── Sequenz Mode Mastery: track round result ── */
     if (game.mode === 'sequenz' && app.mastery && !game.practice) {
       const seqMResult = trackSequenzResult(app.mastery, result, game);
@@ -2765,11 +2645,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
         const r = stableRect(corner);
         effects.ripple(r.left + r.width / 2, r.top + r.height / 2,
           game.cornerMap[dir]?.color || '#fff');
-        corner.classList.remove('corner-tapped');
-        requestAnimationFrame(() => corner.classList.add('corner-tapped'));
-        setTimeout(() => corner.classList.remove('corner-tapped'), 350);
       }
-      haptic('hover', save);
       game.handleSequenzInput(dir);
       return;
     }
@@ -2779,11 +2655,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       const r = stableRect(corner);
       effects.ripple(r.left + r.width / 2, r.top + r.height / 2,
         game.cornerMap[dir]?.color || '#fff');
-      corner.classList.remove('corner-tapped');
-      requestAnimationFrame(() => corner.classList.add('corner-tapped'));
-      setTimeout(() => corner.classList.remove('corner-tapped'), 350);
     }
-    haptic('hover', save);
     const result = game.handleSwipe(dir, ts, stimulusId);
     effects.trailEnd();
   };
@@ -2812,7 +2684,6 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     effects.trailStart(x, y, color);
     effects.ripple(x, y, color);
     if (typeof audio.swipeStart === 'function') audio.swipeStart();
-    haptic('hover', app.save);
   };
   swipe.onTrailMove = (x, y) => { if (!game.paused) effects.trailMove(x, y); };
   swipe.onTrailEnd = () => { effects.trailEnd(); };
@@ -2826,6 +2697,8 @@ export function pauseGame() {
   const { game, audio } = app;
   if (!game.running || game.paused) return;
   game.pause();
+  cancelHaptics();
+  livingArena.setActive(false);
   setGameplayPerformanceActive(false);
   audio.cancelSfx?.();
   audio.stopMusic();
@@ -2850,6 +2723,7 @@ export function reopenPauseMenu() {
 export function resumeGame() {
   const { game, audio } = app;
   game.resume();
+  livingArena.setActive(game.running && !game.paused);
   setGameplayPerformanceActive(game.running && !game.paused);
   audio.startMusic();
   /* Memo re-reveal is handled by the engine's resume() via callbacks */

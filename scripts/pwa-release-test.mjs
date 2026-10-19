@@ -120,6 +120,15 @@ async function run() {
       await loadTrack(page, track);
       console.log(`PASS offline music: ${track}`);
     }
+    for (const file of ['privacy-policy.html', 'terms-of-service.html']) {
+      for (const lang of ['de', 'en']) {
+        await page.goto(new URL(`${file}?lang=${lang}`, base).href, { waitUntil: 'domcontentloaded' });
+        await page.waitForFunction(language => document.documentElement.lang === language && document.querySelector(`article[lang="${language}"]:not([hidden])`), lang);
+        assert.equal(await page.locator('article:not([hidden]) h1').count(), 1, 'Offline legal navigation must not fall back to the game');
+        assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor), 'rgb(8, 12, 20)');
+      }
+    }
+    console.log('PASS offline bilingual legal documents and their own stylesheet/script');
     assert.deepEqual(errors, [], `PWA release must not emit browser errors: ${errors.join('; ')}`);
     console.log('PWA release tests passed without browser errors.');
   } finally {

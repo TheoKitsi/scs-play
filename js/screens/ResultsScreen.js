@@ -133,9 +133,19 @@ export async function showResults(stats, canContinue = false) {
 
   if (resultGeneration !== _resultGeneration) return;
 
+  const empty = !(Number(stats.total) > 0);
+  $('#results').dataset.resultState = canContinue ? 'continue' : empty ? 'empty'
+    : stats.playType === 'competition' ? 'competition' : stats.isDaily ? 'daily' : isNewPB ? 'record' : 'complete';
+  setText('#resSummary', t(canContinue ? (save.getLives() > 0 ? 'result_continue_help' : 'result_no_lives')
+    : empty ? 'result_empty_help' : 'result_round_help', { correct: stats.correct, total: stats.total }));
+
   const headingEl = $('[data-i18n="game_over"]');
   if (headingEl) {
-    if (stats.isDaily && isQualifiedRound(stats)) {
+    if (canContinue) {
+      headingEl.textContent = t('continue_title');
+    } else if (empty) {
+      headingEl.textContent = t('result_empty_title');
+    } else if (stats.isDaily && isQualifiedRound(stats)) {
       headingEl.textContent = t('daily_complete');
     } else {
       headingEl.textContent = stats.playType === 'endless' ? t('endless_over') : t('game_over');
@@ -185,16 +195,16 @@ export async function showResults(stats, canContinue = false) {
 
   const scoreEl = $('#resScore');
   if (scoreEl) scoreEl.classList.remove('score-complete');
-  if (scoreEl && effects && typeof effects.scoreCountUp === 'function') {
-      _resultCountUpCancel = effects.scoreCountUp(scoreEl, 0, stats.score, CONFIG.RESULTS_COUNTUP_MS);
-      scheduleResult(resultGeneration, () => scoreEl.classList.add('score-complete'), CONFIG.RESULTS_COUNTUP_MS + 50);
+  if (!empty && scoreEl && effects && typeof effects.scoreCountUp === 'function') {
+    _resultCountUpCancel = effects.scoreCountUp(scoreEl, 0, stats.score, CONFIG.RESULTS_COUNTUP_MS);
+    scheduleResult(resultGeneration, () => scoreEl.classList.add('score-complete'), CONFIG.RESULTS_COUNTUP_MS + 50);
   } else {
-    setText('#resScore', stats.score.toLocaleString());
+    setText('#resScore', empty ? '—' : stats.score.toLocaleString());
     if (scoreEl) scoreEl.classList.add('score-complete');
   }
 
   setText('#resBestStreak', stats.streak);
-  setText('#resAccuracy', stats.accuracy + '%');
+  setResultValue('#resAccuracy', stats.accuracy + '%', !empty);
   const hasReactionData = Number(stats.correct) > 0
     && Number.isFinite(Number(stats.avgReaction))
     && Number(stats.avgReaction) > 0;
@@ -281,8 +291,12 @@ export async function showResults(stats, canContinue = false) {
     if (resNormalBtns) resNormalBtns.style.display = 'none';
     if (resContinue) {
       resContinue.style.display = 'block';
-      setText('#resContinueDesc', t('continue_desc', { n: CONFIG.CONTINUE_EXTRA_TIME }));
       const lives = save.getLives();
+      const description = $('#resContinueDesc');
+      if (description) {
+        description.hidden = lives <= 0;
+        description.textContent = lives > 0 ? t('continue_desc', { n: CONFIG.CONTINUE_EXTRA_TIME }) : '';
+      }
       const btnUse = $('#btnResContinueUse');
       if (lives > 0) {
         if (btnUse) { btnUse.style.display = ''; btnUse.textContent = `${t('continue_btn')} (${t('continue_lives', { n: lives })})`; }
@@ -317,8 +331,8 @@ export async function showResults(stats, canContinue = false) {
   }
   updateLivesDisplay();
   const xpSection = $('#resXPSection');
-  if (xpSection) xpSection.hidden = canContinue;
-  const countupDuration = CONFIG.RESULTS_COUNTUP_MS || 1200;
+  if (xpSection) xpSection.hidden = canContinue || (gameXPEarned <= 0 && fireEarned <= 0);
+  const countupDuration = empty ? 0 : CONFIG.RESULTS_COUNTUP_MS || 1200;
   const statsDelay = CONFIG.RESULTS_STATS_DELAY || 400;
   const buttonsDelay = CONFIG.RESULTS_BUTTONS_DELAY || 800;
 

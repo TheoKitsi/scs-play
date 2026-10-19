@@ -19,7 +19,7 @@ mkdirSync(out, { recursive: true });
 
 // â”€â”€ 1. Bundle JS â”€â”€
 const jsResult = await esbuild.build({
-  entryPoints: { 'app.bundle': resolve(root, 'js/app.js') },
+  entryPoints: { 'app.bundle': resolve(root, 'js/app.js'), legal: resolve(root, 'js/legal.js') },
   bundle: true,
   splitting: true,
   minify: true,
@@ -42,6 +42,7 @@ const cssResult = await esbuild.build({
   outfile: resolve(out, 'css/style.bundle.css'),
   metafile: true,
 });
+await esbuild.build({ entryPoints: [resolve(root, 'css/legal.css')], minify: true, outfile: resolve(out, 'css/legal.css') });
 
 // â”€â”€ 3. Copy static assets â”€â”€
 const skip = new Set([
@@ -89,6 +90,7 @@ const bundledAssets = `const ASSETS = [
   './privacy-policy.html',
   './terms-of-service.html',
   './css/style.bundle.css',
+  './css/legal.css',
 ${bundledJsAssets.join(',\n')},
   './manifest.json',
   './img/icon-192.svg',
@@ -105,7 +107,7 @@ writeFileSync(resolve(out, 'sw.js'), sw);
 
 // â”€â”€ 5. Report sizes â”€â”€
 const jsOutputs = jsResult.metafile.outputs;
-const entryOutput = Object.keys(jsOutputs).find(path => jsOutputs[path].entryPoint);
+const entryOutput = Object.keys(jsOutputs).find(path => jsOutputs[path].entryPoint?.replaceAll('\\', '/').endsWith('js/app.js'));
 const initialOutputs = new Set();
 function collectStaticImports(path) {
   if (!path || initialOutputs.has(path)) return;

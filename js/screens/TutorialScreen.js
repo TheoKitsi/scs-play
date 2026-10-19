@@ -6,12 +6,28 @@
 import { t }                       from '../i18n.js';
 import { $, $$, showScreen } from '../helpers/dom.js';
 import app                          from '../appState.js';
+import { CONFIG } from '../config.js';
+import { shapeSVG } from '../renderers/shapes.js';
+import { icon } from '../renderers/icons.js';
 
 let _step = 0;
 let _tryBound = false;
+let _advanceTimer = null;
 
 export function showTutorial() {
+  clearTimeout(_advanceTimer);
   _step = 0;
+  const colors = CONFIG.COLORS[app.colorblind ? 'colorblind' : 'normal'];
+  for (const selector of ['.tut-corner', '.tut-try-corner']) {
+    $$(selector).forEach((corner, index) => {
+      corner.innerHTML = shapeSVG('square', colors[index], 48);
+      const dir = corner.dataset.tutorialDir;
+      if (dir) corner.setAttribute('aria-label', t(`direction_${dir}`));
+    });
+  }
+  $$('.tut-shape-dot').forEach(el => { el.innerHTML = shapeSVG('square', colors[0], 48); });
+  $('.tut-speed-icon').innerHTML = icon('bolt');
+  $('.tut-x-fire').innerHTML = `${icon('fire')} ×5`;
   showScreen('tutorial', app);
   renderStep();
 }
@@ -26,6 +42,10 @@ function _bindTrySwipe() {
 
   const area = $('#tutTryArea');
   if (!area) return;
+  area.addEventListener('click', event => {
+    const dir = event.target.closest('[data-tutorial-dir]')?.dataset.tutorialDir;
+    if (event.detail === 0 && dir && _step === 1) _showTryFeedback(dir === 'ul', dir);
+  });
 
   area.addEventListener('pointerdown', (e) => {
     _tryStartX = e.clientX;
@@ -105,8 +125,8 @@ function _showTryFeedback(correct, dir) {
   }
 
   if (feedback) {
-    feedback.textContent = correct ? '✅ ' + (t('correct') || 'Richtig!') : (t('tutorial_try_again') || '↖ Oben links!');
-    feedback.style.color = correct ? 'var(--success)' : 'var(--warning)';
+    feedback.textContent = correct ? t('correct') : t('tutorial_try_again');
+    feedback.style.color = 'var(--text)';
     feedback.classList.remove('show');
     requestAnimationFrame(() => feedback.classList.add('show'));
     setTimeout(() => feedback.classList.remove('show'), 1200);
@@ -116,8 +136,9 @@ function _showTryFeedback(correct, dir) {
     if (hint) hint.style.display = 'none';
     if (app.audio) app.audio.correct(1);
     /* Auto-advance to next step after success */
-    setTimeout(() => {
-      if (_step === 1) {
+    clearTimeout(_advanceTimer);
+    _advanceTimer = setTimeout(() => {
+      if (_step === 1 && app.currentScreen === 'tutorial') {
         _step++;
         renderStep();
       }
@@ -134,6 +155,8 @@ function renderStep() {
   const nextBtn = $('#btnTutorialNext');
 
   slides.forEach((s, i) => {
+    s.inert = i !== _step;
+    s.setAttribute('aria-hidden', String(i !== _step));
     s.classList.remove('active', 'exit-left');
     if (i === _step) s.classList.add('active');
     else if (i < _step) s.classList.add('exit-left');

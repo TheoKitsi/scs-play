@@ -2,6 +2,7 @@ import { t } from '../i18n.js';
 import app from '../appState.js';
 import { $ } from './dom.js';
 import { dismissTopModal } from './modal.js';
+import { cancelHaptics } from './haptics.js';
 
 let wakeLock = null;
 let deferredInstall = null;
@@ -80,6 +81,7 @@ export function initOfflineIndicator() {
 
 export function initVisibilityPause(pauseGame) {
   document.addEventListener('visibilitychange', () => {
+    if (document.hidden) cancelHaptics();
     if (document.hidden && app.currentScreen === 'game' && app.game.running && !app.game.paused) {
       pauseGame();
     }

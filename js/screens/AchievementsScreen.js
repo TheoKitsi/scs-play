@@ -5,6 +5,7 @@
 import { t, getLanguage }   from '../i18n.js';
 import { $, $$, showScreen } from '../helpers/dom.js';
 import app                    from '../appState.js';
+import { icon } from '../renderers/icons.js';
 import {
   generateAchievements, getChainIndex, getChainProgress,
   getProgress, getAchById, CATEGORIES, TIERS
@@ -141,7 +142,7 @@ function renderCategories(lang, earned, saveData, animate) {
         <div class="ach-cat-right">
           <span class="ach-cat-counter">${_filter === 'close' ? t(filtered.length === 1 ? 'ach_goal_one' : 'ach_goal_many', { n: filtered.length }) : t(catEarned === 1 ? 'ach_done_one' : 'ach_done_many', { n: catEarned })}</span>
           <div class="ach-cat-bar"><div class="ach-cat-bar-fill" style="width:${catPct}%"></div></div>
-          <span class="ach-cat-arrow">${isCollapsed ? '\u25B6' : '\u25BC'}</span>
+          <span class="ach-cat-arrow">${icon('chevron')}</span>
         </div>
       </button>
       <div class="ach-cat-body" id="${bodyId}" style="${isCollapsed ? 'display:none' : ''}">
@@ -243,7 +244,7 @@ function _renderChain(chainKey, filteredAchs, earned, saveData, lang) {
     if (isEarned) {
       return `
         <div class="ach-node earned" title="${desc}">
-          <span class="ach-node-check" style="color:${tierColor}">\u2713</span>
+          <span class="ach-node-check" style="color:${tierColor}">${icon('check')}</span>
           <span class="ach-node-name">${name}</span>
           <span class="ach-node-tier" style="color:${tierColor}">${tierName}</span>
         </div>`;
@@ -253,7 +254,7 @@ function _renderChain(chainKey, filteredAchs, earned, saveData, lang) {
     const pct = Math.round(p.pct * 100);
     return `
       <div class="ach-node locked" title="${desc}">
-        <span class="ach-node-lock">\uD83D\uDD12</span>
+        <span class="ach-node-lock">${icon('lock')}</span>
         <span class="ach-node-name">${name}</span>
         <span class="ach-node-tier">${tierName}</span>
         <div class="ach-node-minibar"><div class="ach-node-minibar-fill" style="width:${pct}%"></div></div>

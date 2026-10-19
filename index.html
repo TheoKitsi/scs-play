@@ -45,9 +45,7 @@
 <!-- SVG Icon Sprite (hidden) -->
 <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" focusable="false">
   <symbol id="icon-trophy" viewBox="0 0 24 24">
-    <path fill="currentColor" d="M7 4V3a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4H11A4 4 0 0 1 7 4z"></path>
-    <path fill="currentColor" d="M5 8v2a5 5 0 0 0 5 5h4a5 5 0 0 0 5-5V8H5z"></path>
-    <path fill="currentColor" d="M9 21h6v-2H9v2z"></path>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M7 3h10v6a5 5 0 0 1-10 0V3ZM7 5H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 2v6m-4 1h8"/>
   </symbol>
   <symbol id="icon-heart" viewBox="0 0 24 24">
     <path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -92,7 +90,7 @@
     <path fill="currentColor" d="M12 23c-3.866 0-7-3.358-7-7.5 0-3.336 2.178-6.318 4.5-8.5.372-.35.978-.015.894.493C10.1 9.52 11.567 11 13 11c.778 0 1.5-.334 2-1 .312-.416.92-.37 1.09.095C17.327 13.1 19 15.378 19 17.5c0 2.761-1.79 5.5-7 5.5z"/>
   </symbol>
   <symbol id="icon-star" viewBox="0 0 24 24">
-    <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
   </symbol>
   <symbol id="icon-refresh" viewBox="0 0 24 24">
     <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M1 4v6h6M23 20v-6h-6"/>
@@ -103,26 +101,11 @@
 <main id="appMain" tabindex="-1">
 <!-- ═══════ BOOT ═══════ -->
 <div id="boot" class="screen active">
-  <div class="boot-bg">
-    <div class="boot-orb orb-1"></div>
-    <div class="boot-orb orb-2"></div>
-    <div class="boot-orb orb-3"></div>
-    <div class="boot-orb orb-4"></div>
-  </div>
   <div class="boot-content">
     <div class="scs-logo" aria-label="SCS Play">
-      <div class="logo-grid">
-        <div class="logo-cell c1"><span>S</span></div>
-        <div class="logo-cell c2"><span>C</span></div>
-        <div class="logo-cell c3"><span>S</span></div>
-        <div class="logo-cell c4"><span>P</span></div>
-        <div class="logo-cell c5"><span>L</span></div>
-        <div class="logo-cell c6"><span>A</span></div>
-        <div class="logo-cell c7"><span>Y</span></div>
-      </div>
+      <div class="brand-scene" data-brand-scene></div>
+      <h1 class="brand-name">SCS Play</h1>
       <div class="logo-subtitle" data-i18n="app_sub">Sortieren · Denken · Reagieren</div>
-      <div class="logo-version">v2.0</div>
-      <div class="logo-ring"></div>
     </div>
     <div class="boot-progress">
       <div id="bootProgressFill" class="boot-progress-fill"></div>
@@ -133,26 +116,11 @@
 
 <!-- ═══════ AUTH ═══════ -->
 <div id="auth" class="screen">
-  <div class="auth-bg">
-    <div class="auth-orb auth-orb-1"></div>
-    <div class="auth-orb auth-orb-2"></div>
-    <div class="auth-orb auth-orb-3"></div>
-    <div class="auth-orb auth-orb-4"></div>
-  </div>
   <div class="screen-content auth-content">
     <div class="auth-brand" aria-label="SCS Play">
-      <div class="brand-row">
-        <span class="brand-cell bc1">S</span>
-        <span class="brand-cell bc2">C</span>
-        <span class="brand-cell bc3">S</span>
-      </div>
-      <div class="brand-row">
-        <span class="brand-cell bc4">P</span>
-        <span class="brand-cell bc5">L</span>
-        <span class="brand-cell bc6">A</span>
-        <span class="brand-cell bc7">Y</span>
-      </div>
-      <div class="brand-ring"></div>
+      <div class="brand-scene" data-brand-scene></div>
+      <h1 class="brand-name">SCS Play</h1>
+      <p class="brand-tagline" data-i18n="app_sub">Sortieren · Denken · Reagieren</p>
     </div>
 
     <button id="btnGuest" class="btn btn-primary btn-guest-hero">
@@ -203,6 +171,7 @@
           <button type="button" class="resource-pill" id="homeLivesBadge" data-i18n-aria="lives_balance" aria-label="Leben">
             <svg class="ui-icon" viewBox="0 0 24 24" style="color:var(--color-heart);width:16px;height:16px"><use href="#icon-heart"></use></svg>
             <span id="homeLivesCount">3</span>
+            <span class="resource-label" data-i18n="reserve_lives">Vorrat</span>
           </button>
           <div class="resource-pill" id="homeFireBadge" data-i18n-aria="fire_balance" aria-label="Fire-Punkte">
             <svg class="ui-icon" viewBox="0 0 24 24" style="color:var(--color-fire);width:16px;height:16px"><use href="#icon-fire"></use></svg>
@@ -278,7 +247,6 @@
 
     <!-- ═══ BOTTOM SHEET — scrollable lower section ═══ -->
     <div class="home-bottom-sheet" id="homeBottomSheet">
-      <div class="sheet-handle"></div>
 
       <!-- MODE CAROUSEL (hidden — used as SVG template source) -->
       <div class="mode-carousel mode-carousel--hidden" id="modeCarousel" role="group" aria-label="Spielmodus">
@@ -497,10 +465,10 @@
       <div class="tutorial-slide" data-step="1">
         <div class="tut-visual tut-try-area" id="tutTryArea">
           <div class="tut-try-corners">
-            <span class="tut-try-corner tut-tc-ul"></span>
-            <span class="tut-try-corner tut-tc-ur"></span>
-            <span class="tut-try-corner tut-tc-dl"></span>
-            <span class="tut-try-corner tut-tc-dr"></span>
+            <button type="button" class="tut-try-corner tut-tc-ul" data-tutorial-dir="ul"></button>
+            <button type="button" class="tut-try-corner tut-tc-ur" data-tutorial-dir="ur"></button>
+            <button type="button" class="tut-try-corner tut-tc-dl" data-tutorial-dir="dl"></button>
+            <button type="button" class="tut-try-corner tut-tc-dr" data-tutorial-dir="dr"></button>
           </div>
           <div class="tut-try-center" id="tutTryCenter">
             <span class="tut-shape-dot tut-dot-red" id="tutTryDot"></span>
@@ -556,7 +524,10 @@
 
   <!-- Neutral scene geometry. Directional confirmation is only shown after input. -->
   <div id="resonanceStage" class="resonance-stage" aria-hidden="true">
-    <span class="resonance-orbit resonance-orbit--inner"></span>
+    <div class="arena-scenery"></div>
+    <span class="arena-light arena-light--left"></span>
+    <span class="arena-light arena-light--right"></span>
+    <span class="arena-signal"></span>
     <svg class="arena-routes" viewBox="0 0 100 100" preserveAspectRatio="none">
       <path data-arena-dir="ul" d="M50 50 0 0"/><path data-arena-dir="ur" d="M50 50 100 0"/>
       <path data-arena-dir="dl" d="M50 50 0 100"/><path data-arena-dir="dr" d="M50 50 100 100"/>
@@ -579,7 +550,7 @@
         <span id="hudScore" class="hud-value">0</span>
       </div>
       <div class="hud-score-group">
-        <span class="hud-label" data-i18n="multiplier">Multiplikator</span>
+        <span class="hud-label" data-i18n="hud_factor">Faktor</span>
         <span id="hudMultiplier" class="hud-multiplier">x1</span>
       </div>
       <div class="hud-score-group">
@@ -603,11 +574,9 @@
   <!-- PB Proximity -->
   <div id="pbProximity" class="pb-proximity"></div>
 
-  <!-- Rush / Fever / Combo text overlays -->
+  <!-- Sequence watch/go cues; gameplay notices stay in the footer. -->
   <div id="rushText" class="rush-text"></div>
-  <div id="feverText" class="fever-text"></div>
   <div id="comboText" class="combo-text"></div>
-  <div id="shuffleText" class="shuffle-text"></div>
   <div id="gameNotice" class="game-notice" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- Practice markers -->
@@ -672,6 +641,7 @@
   <div class="screen-content results-content">
     <div class="results-panel">
       <h2 data-i18n="game_over">ZEIT ABGELAUFEN!</h2>
+      <p id="resSummary" class="results-summary"></p>
     <div id="resMilestone" class="results-milestone" role="status" hidden></div>
 
     <!-- Phase 1: Score (counts up immediately) -->
@@ -756,20 +726,8 @@
 <!-- ═══════ LEADERBOARD ═══════ -->
 <div id="leaderboard" class="screen">
   <div class="screen-content">
-    <div class="screen-header"><h2 data-i18n="leaderboard">Bestleistungen</h2></div>
-    <!-- Mode filter -->
-    <div id="lbModeFilters" class="lb-mode-tabs" role="group" aria-label="Spielmodus">
-      <button class="lb-mode-btn selected" data-mode="klassik" data-i18n="mode_klassik">KLASSIK</button>
-      <button class="lb-mode-btn" data-mode="beginner" data-i18n="mode_beginner">FORMEN</button>
-      <button class="lb-mode-btn" data-mode="expert" data-i18n="mode_expert">EXPERT</button>
-      <button class="lb-mode-btn" data-mode="mathe" data-i18n="mode_mathe">MATHE</button>
-      <button class="lb-mode-btn" data-mode="wissen" data-i18n="mode_wissen">WISSEN</button>
-      <button class="lb-mode-btn" data-mode="memo" data-i18n="mode_memo">MEMO</button>
-      <button class="lb-mode-btn" data-mode="sequenz" data-i18n="mode_sequenz">SEQUENZ</button>
-      <button class="lb-mode-btn" data-mode="stroop" data-i18n="mode_stroop">STROOP</button>
-      <button class="lb-mode-btn" data-mode="fokus" data-i18n="mode_fokus">FOKUS</button>
-      <button class="lb-mode-btn" data-mode="chaos" data-i18n="mode_chaos">CHAOS</button>
-    </div>
+    <div class="screen-header"><div><h2 data-i18n="leaderboard">Bestleistungen</h2><p class="screen-subtitle" data-i18n="lb_local_help">Deine Ergebnisse auf diesem Gerät.</p></div></div>
+    <label class="lb-mode-select"><span data-i18n="select_mode">Modus wählen</span><select id="lbModeSelect"></select></label>
     <!-- Play type filter -->
     <div id="lbFilters" class="lb-filter-tabs" role="group" aria-label="Spielart">
       <button class="lb-filter-btn selected" data-filter="blitz" data-i18n="play_blitz">Blitz</button>
@@ -811,6 +769,7 @@
         <legend data-i18n="settings_accessibility">Anzeige & Bedienung</legend>
         <label class="setting-row"><span class="setting-copy"><span data-i18n="colorblind_mode">Farbenblind-Modus</span><small data-i18n="settings_colorblind_help">Zusätzliche Muster und unterscheidbare Farben.</small></span><input id="toggleColorblind" type="checkbox"></label>
         <label class="setting-row"><span class="setting-copy"><span data-i18n="reduced_motion">Reduzierte Animationen</span><small data-i18n="settings_motion_help">Ruhigere Effekte, gleiches Spieltempo.</small></span><input id="toggleMotion" type="checkbox"></label>
+        <label class="setting-row"><span class="setting-copy"><span data-i18n="settings_depth">Beweglicher Hintergrund</span><small data-i18n="settings_depth_help">Die Bühne folgt leicht deiner Bewegung. Alle Spielziele bleiben fest.</small><small id="depthStatus" role="status"></small></span><input id="toggleDepth" type="checkbox" aria-describedby="depthStatus"></label>
         <label class="setting-row"><span data-i18n="haptics">Haptik</span><input id="toggleHaptics" type="checkbox"></label>
       </fieldset>
       <fieldset class="setting-group">
@@ -856,6 +815,7 @@
           <span data-i18n="avatar_upload_choose">Bild w&#228;hlen</span>
         </label>
         <button id="btnAvatarRemovePhoto" class="btn btn-ghost btn-sm" data-i18n="avatar_upload_remove" hidden>Foto entfernen</button>
+        <p id="avatarUploadStatus" class="screen-subtitle" role="status"></p>
       </div>
     </div>
     <h3 class="avatar-section-title" data-i18n="avatar_icon">Symbol w&#228;hlen</h3>
@@ -899,6 +859,7 @@
   <div class="screen-content">
     <div class="screen-header"><h2 data-i18n="engagement_report_title">Spielanalyse</h2></div>
     <div class="er-content">
+      <p class="screen-subtitle" data-i18n="insights_note">Diese Übersicht beschreibt deine Spielaktivität, nicht deinen Spaß oder deine Fähigkeiten.</p>
       <!-- Summary header -->
       <div id="erSummary" class="er-summary"></div>
       <!-- Big score circle -->
