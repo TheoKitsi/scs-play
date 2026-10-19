@@ -36,6 +36,10 @@ for (const mode of ['klassik', 'mathe', 'memo', 'stroop']) {
   reset(); playGameImpact(result, { ...game, mode }, audio, save); notes.push(voices[0][0]);
 }
 assert.equal(new Set(notes).size, 4, 'World families must have their own contact timbre/register');
+const registers = ['klassik', 'beginner', 'expert', 'mathe', 'wissen', 'memo', 'sequenz', 'stroop', 'fokus', 'chaos'].map(mode => {
+  reset(); playGameImpact(result, { ...game, mode }, audio, save); return voices[0][0];
+});
+assert.equal(new Set(registers).size, 10, 'Each live mode has a distinct, restrained contact register');
 reset();
 playGameImpact({ ...result, correct: false, direction: 'ur' }, game, audio, save);
 assert.equal(voices.length, 2);

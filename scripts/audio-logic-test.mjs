@@ -166,3 +166,47 @@ assert.equal(tensionStops, 1, 'Muting must stop active tension audio');
 assert.equal(muted._sfxGain.gain.value, 0, 'Muting must silence active SFX immediately');
 
 console.log('Audio logic regression tests passed.');
+
+// Normal file playback, not just procedural fallback, gets a beat-aligned mix.
+const phaseAudio = new AudioManager();
+phaseAudio._musicRunning = true;
+phaseAudio._musicFilePlaying = true;
+phaseAudio._musicAudio = { currentTime: 3.1, playbackRate: 1.02, volume: 0, pause() {} };
+phaseAudio._baseTempo = 120;
+const nativeSet = globalThis.setTimeout, nativeClear = globalThis.clearTimeout;
+const pending = new Map();
+let nextTimer = 0;
+globalThis.setTimeout = (callback, delay) => { pending.set(++nextTimer, { callback, delay }); return nextTimer; };
+globalThis.clearTimeout = id => pending.delete(id);
+let mixes = 0;
+phaseAudio._applyMusicIntensity = () => { mixes++; };
+try {
+  phaseAudio.setArenaPhase('rush');
+  assert.equal(mixes, 0, 'An event cannot retime the source halfway through a beat');
+  assert.ok(Math.abs([...pending.values()][0].delay - 400 / 1.02) < 1, 'Delay comes from the real file playhead and playback rate');
+  phaseAudio.setArenaPhase('fever');
+  assert.equal(pending.size, 1, 'Rapid transitions coalesce rather than stacking sounds/timers');
+  const transition = [...pending.values()][0]; pending.clear(); transition.callback();
+  assert.equal(phaseAudio._arenaPhase, 'fever');
+  assert.equal(mixes, 1);
+  phaseAudio.setArenaPhase('cooldown');
+  phaseAudio.stopMusic();
+  assert.equal(pending.size, 0, 'Leaving/pausing/hiding cancels the phase finisher');
+  assert.equal(phaseAudio._arenaPhase, 'calm');
+} finally { globalThis.setTimeout = nativeSet; globalThis.clearTimeout = nativeClear; }
+
+const fileGraph = new AudioManager();
+const cutoffs = [];
+let sources = 0;
+fileGraph.ctx = { currentTime: 5, destination: {},
+  createBiquadFilter: () => ({ type: '', Q: { value: 0 }, frequency: { setTargetAtTime: value => cutoffs.push(value) }, connect() {} }),
+  createMediaElementSource: () => { sources++; return { connect() {}, disconnect() {} }; } };
+fileGraph._connectMusicFile(); fileGraph._connectMusicFile();
+assert.equal(sources, 1, 'One reusable file routing graph, never a new graph per phase');
+fileGraph._arenaPhase = 'watch'; fileGraph._applyMusicMix();
+assert.equal(cutoffs.at(-1), 3400, 'Memory watch materially softens normal file playback');
+fileGraph._arenaPhase = 'rush'; fileGraph._applyMusicMix();
+assert.equal(cutoffs.at(-1), 16000, 'Rush opens the same file rather than creating a competing track');
+const unsupportedGraph = new AudioManager();
+assert.doesNotThrow(() => unsupportedGraph._connectMusicFile(), 'No Web Audio leaves ordinary file playback usable');
+console.log('PASS beat-aligned/coalesced file transitions, reusable EQ graph, bounded gains and cancellation');

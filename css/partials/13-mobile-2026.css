@@ -523,7 +523,6 @@ button:focus-visible,.btn:focus-visible{
 .hud-value,.hud-multiplier{font-family:var(--font-display);font-size:1.25rem;font-weight:500;letter-spacing:-.02em;text-shadow:none;font-variant-numeric:tabular-nums}
 #hudScore{font-size:1.5rem}
 #hudMultiplier{color:var(--text-dim)}
-.hud-fever{padding:6px;font-size:.75rem}
 #game .mode-metric{position:absolute;top:auto!important;left:50%;right:auto;bottom:calc(12px + var(--bottom-inset));transform:translateX(-50%);max-width:90%;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:8px;color:var(--text-dim)}
 #game .mode-metric :is([class$="-label"],[class$="-val"],[class$="-count"]){font-size:.75rem;color:var(--text-dim);text-shadow:none}
 #game .expert-compass-ring.mode-metric{width:auto;height:24px;border:0;background:none;border-radius:0;gap:4px}
@@ -605,14 +604,6 @@ body.mode-ultra #game .corner-shape[data-dir="nnw"]{--slot-x:calc(50% - var(--ar
    equation, not like a caption. Scoped to Mathe so long word answers keep
    their own sizing. */
 body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px)!important}
-.rush-text,.combo-text{
-  font-family:inherit;
-  max-width:80vw;
-  font-size:clamp(1.1rem,4vw,1.5rem);
-  letter-spacing:.01em;
-  top:calc(var(--arena-cy) - 15%);
-}
-
 .results-mastery--empty{
   padding:14px 16px;
   border-color:rgba(167,139,250,.16);

@@ -1,4 +1,5 @@
 import { arenaWorld, arenaBlueprint } from '../renderers/arenaWorld.js';
+import { arenaEnergy } from './arenaPhase.js';
 
 /* Decoration only. No persistent frame loop or game-engine timers. Optional
    pointer depth coalesces events into one frame and never reads hit geometry. */
@@ -62,6 +63,7 @@ function clearConfirmation() {
   impulse?.cancel();
   impulse = null;
   stage?.removeAttribute('data-confirmed-direction');
+  stage?.removeAttribute('data-impact');
   stage?.classList.remove('resonance-hit');
 }
 
@@ -89,6 +91,8 @@ export const livingArena = {
     if (root) {
       root.dataset.world = world.id;
       root.dataset.energy = 'calm';
+      root.dataset.phase = 'calm';
+      root.parentElement.dataset.arenaMode = world.id;
       if (scenery) scenery.innerHTML = arenaBlueprint(world.id);
     }
     syncDepth();
@@ -101,10 +105,12 @@ export const livingArena = {
 
   setEnergy(streak = 0, fever = false) {
     if (!stage) return;
-    const reading = world.family === 'think';
-    const energy = fever ? 'fever' : streak >= 30 ? 'surge'
-      : streak >= (reading ? 18 : 15) ? 'charged' : streak >= (reading ? 8 : 5) ? 'flow' : 'calm';
+    const energy = arenaEnergy(world.id, streak, fever);
     if (stage.dataset.energy !== energy) stage.dataset.energy = energy;
+  },
+
+  setPhase(phase) {
+    if (stage && stage.dataset.phase !== phase) stage.dataset.phase = phase;
   },
 
   setActive(value) {
@@ -125,11 +131,12 @@ export const livingArena = {
 
   /* Coordinates come from the game's existing cached geometry, and are only
      requested on high quality. The impulse is cancelled BEFORE every spawn. */
-  confirm(direction, getDisplacement) {
+  confirm(direction, getDisplacement, quality = 'good') {
     clearConfirmation();
     if (!active || !stage || document.hidden || !direction) return;
     stage.dataset.confirmedDirection = direction;
     stage.classList.add('resonance-hit');
+    stage.dataset.impact = quality;
     if (motionAllowed() && document.body.dataset.perfMode === 'high' && signal?.animate) {
       const point = getDisplacement?.();
       if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
@@ -155,6 +162,9 @@ export const livingArena = {
     stage?.removeAttribute('data-live');
     stage?.removeAttribute('data-energy');
     stage?.removeAttribute('data-world');
+    stage?.removeAttribute('data-phase');
+    stage?.removeAttribute('data-impact');
+    stage?.parentElement?.removeAttribute('data-arena-mode');
     if (scenery) scenery.replaceChildren();
     listeners?.abort();
     listeners = null;

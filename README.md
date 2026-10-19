@@ -51,6 +51,8 @@ npm run visual-review
 | `npm run usability-release-test` | Compiled DE/EN reflow at 320px through desktop, 16/32px root-font stress, landscape menus, section navigation, local font decoding/real weight rendering, preview motion cleanup, localized live color names and four ways of finishing a wheel spin without duplicate rewards. Defaults to Chromium; `SCS_BROWSERS=chromium,firefox,webkit` expands coverage. |
 | `npm run round-finale-logic-test` | Scoped/bounded personal-best references, raw/bonus separation, DE/EN highlights and self-paced practice-only scheduler/Sequence guards. |
 | `npm run round-finale-release-test` | Compiled natural timeout, single finale, same-card settlement, immediate actions, optional comparison, practice, single-charge continuation, restored Memo/input and cancel/refund paths. Supports `SCS_BASE` and `SCS_BROWSERS`. |
+| `npm run arena-phase-logic-test` | Read-only phase priority, actual Rush item count, paused Fever remainder, cooldown and protected memory phases; no engine mutation. |
+| `npm run arena-experience-release-test` | Compiled ten-world fixtures, real accepted controls, fixed target rectangles, Memo/Sequence phase transitions, compact rule icons and enlarged narrow HUD. Supports `SCS_BASE`, `SCS_BROWSERS`, `SCS_REVIEW_OUT`; `SCS_ARENA_ROOT`/`--baseline` archive comparable frozen presentation fixtures, not earned rounds/FPS. |
 | `npm run presentation-release-test` | Check the ten mode layouts, mode catalog, themes, settings, motion preferences and feedback on phone/desktop viewports. |
 | `npm run perf-benchmark` | Play a round with a scripted fast player under CPU throttling and report frame times, long tasks and style/layout cost per pace bucket (see flags in the script header). |
 | `npm run performance-release-test` | Deterministic resource/work limits for particles, trails, input geometry, motion and the frame-rate governor. |
@@ -112,6 +114,14 @@ Changing palette/language from a paused round now refreshes the current display 
 Shop thumbnails have a visible Preview caption. The enlarged scene uses the real material shapes, active trail and theme declarations. An explicitly requested 750ms example animation has at most two transform/opacity animations, never starts a game, cannot buy/equip a design and cancels on close, hiding, low quality or motion reduction. It remains an illustrative example, not a promise of a fully simulated round. Wheel Skip, Escape/Back or newly enabled reduced motion finish the already-picked spin; the transaction stays busy until its one reward is saved. A root-screen history guard keeps browser Back inside the wheel flow.
 
 Outfit and Space Grotesk are self-hosted Latin WOFF2 cuts with their OFL license, precached for offline use. Static cuts deliberately avoid incorrectly rendered variable weight axes observed in Windows WebKit. The game adds no runtime raster probe or font-CDN request. Its German/English privacy text reflects this resource change, not a professional legal sign-off. Missing/unavailable Web Audio no longer blocks app startup; supported file music remains independent of synth availability.
+
+## Live Arena Experience
+
+All ten live modes use their own station chassis and architectural relief: a precision color deck, chamfered shape stations, radial Expert instrument, restrained math/knowledge consoles, memory cells/Sequence pads and distinct Stroop/Focus/Chaos frames. Shared inset faces, narrow highlights and contact shadows preserve exact answer colors and a clear stimulus center. There are no new moving targets, WebGL dependencies or full-screen particle celebrations.
+
+The multiplier group also shows the current phase: real Rush item count, Flow/strong streaks, Fever/cooldown, or memory Watch/Recall/Ready. It is read-only and does not add a timer or waiting period. Rule/orientation notices outrank reward notices. Accepted contact uses one shared good/perfect/bonus classification for local visual response, a short mode-specific sound and existing independent haptic settings. Sequence points appear at the answered target; its Watch/Go text no longer spins over the task.
+
+Music transitions coalesce at the next track beat. With Web Audio, normal MP3 playback gains a reusable quiet/open EQ as well as the mix changes; there are no extra stems/tracks/downloads and no claim of separately remixing instruments inside a file. The procedural fallback follows the same phases; ordinary file playback remains available without Web Audio. Answer sounds remain immediate. Pause/hiding/navigation cancels pending music/visual work. Low quality/reduced motion retains essential static phase/Sequence cues, while the existing two-light and optional default-off depth policies are preserved.
 
 ## Complete Round Flow
 

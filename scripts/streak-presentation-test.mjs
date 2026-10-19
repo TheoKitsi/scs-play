@@ -42,6 +42,8 @@ async function review(viewport, mode = 'klassik') {
       const problems = [];
       const gaps = [];
       const energies = new Set();
+      const phases = new Set();
+      const rushItems = new Set();
       let impacts = 0;
       const originalImpact = app.audio.gameImpact;
       app.audio.gameImpact = function (...args) { impacts++; return originalImpact.apply(this, args); };
@@ -59,7 +61,8 @@ async function review(viewport, mode = 'klassik') {
           if (error) reject(error);
           else resolve({ counters, problems, gaps, answers, impacts, energies: [...energies], wrong: game.wrong,
             dynamicComboStyles: Boolean(document.querySelector('#combo-milestone-kf')),
-            centerCelebrations: document.querySelectorAll('.combo-milestone,.shuffle-explain,.rush-warning').length,
+            phases: [...phases], rushItems: [...rushItems],
+            centerCelebrations: document.querySelectorAll('.combo-milestone,.shuffle-explain,.rush-warning,#comboText,#rushText').length,
             noticeCount: document.querySelectorAll('#gameNotice').length });
         }
         for (const [key, event] of [['onComboMilestone', 'combo'], ['onCornerShuffle', 'shuffle'], ['onRush', 'rush'], ['onFeverEnd', 'cooldown']]) {
@@ -79,6 +82,12 @@ async function review(viewport, mode = 'klassik') {
             const center = document.querySelector('#centerShape');
             const stage = document.querySelector('#resonanceStage');
             energies.add(stage.dataset.energy);
+            phases.add(stage.dataset.phase);
+            if (game.inRush) {
+              rushItems.add(game._rushIndex);
+              if (stage.dataset.phase !== 'rush') problems.push('Rush presentation ended before its actual final item');
+              if (!document.querySelector('#arenaPhaseLabel').textContent.startsWith(`Rush ${game._rushIndex}/`)) problems.push('Rush count does not match the current emitted item');
+            } else if (stage.dataset.phase === 'rush') problems.push('Rush presentation survived the resolved final item');
             if (stage.dataset.confirmedDirection) problems.push('previous answer hint survived into the next stimulus');
             if (document.querySelector('.fever-overlay')) problems.push('legacy full-screen fever overlay must not stack on stage lighting');
             if (!center.querySelector('.material-shape')) problems.push('missing material on first frame');
@@ -109,6 +118,8 @@ async function review(viewport, mode = 'klassik') {
     assert.equal(result.wrong, 0);
     assert.equal(result.impacts, 100, 'Exactly one material sound event per accepted answer');
     for (const energy of ['calm', 'flow', 'fever']) assert.ok(result.energies.includes(energy), `${energy} must appear in real gameplay`);
+    for (const phase of ['calm', 'flow', 'rush', 'fever', 'cooldown']) assert.ok(result.phases.includes(phase), `${phase} must appear in real gameplay`);
+    assert.deepEqual(result.rushItems.sort(), [1, 2], 'Both real Rush tasks, not a fixed announcement duration');
     assert.deepEqual(result.problems, []);
     for (const event of ['combo', 'shuffle', 'rush', 'cooldown']) assert.ok(result.counters[event] > 0, `${event} must be exercised`);
     assert.ok(Math.max(...result.gaps) < 1000, 'No multi-second blank field in the real UI');

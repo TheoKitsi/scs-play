@@ -1,7 +1,7 @@
 ﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SCS Play â€” Service Worker
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-const CACHE = 'scs-v65';
+const CACHE = 'scs-v66';
 const ASSETS = [
   './',
   './index.html',
@@ -72,6 +72,7 @@ const ASSETS = [
   './js/renderers/modeArtwork.js',
   './js/renderers/designPreview.js',
   './js/helpers/roundCue.js',
+  './js/helpers/arenaPhase.js',
   './js/helpers/bestRun.js',
   './js/helpers/roundSummary.js',
   './js/renderers/arenaWorld.js',

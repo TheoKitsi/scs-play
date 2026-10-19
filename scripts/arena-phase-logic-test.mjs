@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+globalThis.location = { hostname: 'localhost' };
+const { arenaPhase, arenaEnergy } = await import('../js/helpers/arenaPhase.js');
+const { CONFIG } = await import('../js/config.js');
+const now = 10000;
+const base = { mode: 'klassik', streak: 0, feverActive: false, _feverCooldownUntil: 0 };
+assert.deepEqual([0, 5, 15, 30].map(streak => arenaEnergy('klassik', streak)), ['calm', 'flow', 'charged', 'surge']);
+assert.equal(arenaEnergy('mathe', 7), 'calm');
+assert.equal(arenaEnergy('mathe', 8), 'flow');
+assert.equal(arenaEnergy('wissen', 18), 'charged');
+assert.equal(arenaPhase(base, now).phase, 'calm');
+assert.equal(arenaPhase({ ...base, streak: 30, _feverCooldownUntil: now + 1 }, now).phase, 'cooldown');
+assert.equal(arenaPhase({ ...base, streak: 30, _feverCooldownUntil: now }, now).phase, 'surge', 'Cooldown has no presentation-owned delay');
+assert.equal(arenaPhase({ ...base, feverActive: true, _feverStartedAt: now - 1000 }, now).progress, (CONFIG.FEVER_DURATION - 1000) / CONFIG.FEVER_DURATION);
+assert.equal(arenaPhase({ ...base, feverActive: true, paused: true, _feverRemainingMs: 1000 }, now).progress, 1000 / CONFIG.FEVER_DURATION);
+for (let index = 0; index <= CONFIG.RUSH_COUNT; index++) {
+  const state = arenaPhase({ ...base, inRush: true, _rushIndex: index, feverActive: true }, now);
+  assert.equal(state.phase, 'rush');
+  assert.equal(state.n, index);
+  assert.equal(state.progress, index / CONFIG.RUSH_COUNT, 'Progress counts engine-emitted items, never invented time');
+}
+assert.equal(arenaPhase({ ...base, inRush: true, _shuffleInProgress: true }, now).phase, 'shuffle', 'Orientation takes priority over rewards');
+assert.equal(arenaPhase({ ...base, mode: 'memo', _memoPhase: 'reveal', inRush: true }, now).phase, 'watch');
+assert.equal(arenaPhase({ ...base, mode: 'memo', _memoPhase: 'playing' }, now).phase, 'recall');
+const sequence = { ...base, mode: 'sequenz', _seqPattern: ['ul', 'dr', 'ur'], _seqPhase: 'go', _seqInputIndex: 1 };
+assert.deepEqual(arenaPhase(sequence, now), { phase: 'recall', n: 1, total: 3, progress: 1 / 3 });
+assert.equal(JSON.stringify(arenaPhase({ ...sequence, _seqPhase: 'watch' }, now)).includes('ul'), false, 'No direction data leaves the phase presenter');
+assert.equal(JSON.stringify(arenaPhase(sequence, now)).includes('dr'), false);
+const snapshot = JSON.stringify(sequence);
+for (let i = 0; i < 100; i++) arenaPhase(sequence, now);
+assert.equal(JSON.stringify(sequence), snapshot, 'Presentation never mutates engine state');
+console.log('PASS read-only arena priorities, real Rush count, paused Fever progress, cooldown and protected memory phases');

@@ -7,7 +7,8 @@ import { CONFIG }           from '../config.js';
 import { t, getLanguage }   from '../i18n.js';
 import { $, $$, setText, hexToRgba, showScreen } from '../helpers/dom.js';
 import { haptic, cancelHaptics } from '../helpers/haptics.js';
-import { playGameImpact } from '../helpers/gameFeedback.js';
+import { playGameImpact, impactQuality } from '../helpers/gameFeedback.js';
+import { arenaPhase } from '../helpers/arenaPhase.js';
 import { closeModal, openModal } from '../helpers/modal.js';
 import { shapeSVG }         from '../renderers/shapes.js';
 import { SwipeHandler }     from '../input.js';
@@ -473,9 +474,10 @@ function _getHudEls() {
       mult: $('#hudMultiplier'),
       streak: $('#hudStreak'),
       timer: $('#hudTimer'),
-      fever: $('#hudFever'),
       timerFill: $('#timerBarFill'),
       game: $('#game'),
+      phase: $('#arenaPhase'),
+      phaseLabel: $('#arenaPhaseLabel'),
     };
   }
   return _hudCache;
@@ -492,6 +494,26 @@ const INTENSITY_CLASSES = ['intensity-low','intensity-mid','intensity-high','int
   'edge-glow-warm','edge-glow-hot','edge-glow-fire','action-climax','action-climax-peak'];
 function updateIntensity() {
   livingArena.setEnergy(app.game.streak, app.game.feverActive);
+  syncArenaPhase();
+}
+
+function syncArenaPhase() {
+  const { game, audio } = app;
+  if (!game.running) return;
+  const state = arenaPhase(game);
+  livingArena.setPhase(state.phase);
+  audio.setArenaPhase(state.phase);
+  const { phase, phaseLabel } = _getHudEls();
+  if (!phase) return;
+  const label = t(state.phase === 'calm' ? 'hud_factor' : `arena_${state.phase}`);
+  const text = state.phase === 'rush' ? `${label} ${state.n}/${state.total}` : label;
+  if (phaseLabel.textContent !== text) phaseLabel.textContent = text;
+  if (phase.dataset.phase !== state.phase) phase.dataset.phase = state.phase;
+  const progress = String(Math.round(state.progress * 10) / 10);
+  if (phase.style.getPropertyValue('--phase-progress') !== progress) phase.style.setProperty('--phase-progress', progress);
+  const description = state.phase === 'calm' ? `${label} ${game.multiplier}`
+    : t('arena_factor_state', { n: game.multiplier, state: text });
+  if (phase.getAttribute('aria-label') !== description) phase.setAttribute('aria-label', description);
 }
 
 let _timerBarState = '';
@@ -579,9 +601,6 @@ function _updateHUDInner() {
     }
   }
 
-  const feverEl = hud.fever;
-  if (feverEl) feverEl.classList.toggle('active', game.feverActive);
-
   updateTimerBar();
   updateIntensity();
 }
@@ -633,6 +652,30 @@ function showNearMiss(correctDir) {
     textEl.classList.add('correct-flash');
     setTimeout(() => textEl.classList.remove('correct-flash'), 400);
   }
+}
+
+function confirmAnswer(result) {
+  const direction = result.expected || result.direction;
+  const corner = $(`.corner-shape[data-dir="${direction}"]`);
+  const quality = impactQuality(result);
+  livingArena.confirm(direction, () => {
+    if (!corner) return null;
+    const from = stableRect($('#centerPlatform'));
+    const to = stableRect(corner);
+    return { x: to.left + to.width / 2 - from.left - from.width / 2,
+      y: to.top + to.height / 2 - from.top - from.height / 2 };
+  }, quality);
+  if (corner) {
+    clearTimeout(corner._answerFeedbackTimer);
+    corner.classList.remove('corner-wrong');
+    corner.classList.add('corner-correct');
+    corner.dataset.impact = quality;
+    corner._answerFeedbackTimer = setTimeout(() => {
+      corner.classList.remove('corner-correct');
+      corner.removeAttribute('data-impact');
+    }, 260);
+  }
+  if (result.points > 0) cornerScorePop(direction, `${result.bonus ? '✦ ' : ''}+${result.points}`);
 }
 
 /* ═══════ Corner score pop — pooled ═══════ */
@@ -2018,6 +2061,11 @@ function updateModeMasteryAfterAnswer(game, result) {
 
 function cleanupGameClasses() {
   clearGameNotice();
+  const phase = $('#arenaPhase');
+  phase?.removeAttribute('data-phase');
+  phase?.removeAttribute('aria-label');
+  phase?.style.removeProperty('--phase-progress');
+  setText('#arenaPhaseLabel', t('hud_factor'));
   for (const el of _cornerPopPool) {
     clearTimeout(el._hideTimeout);
     if (el._showRafId) cancelAnimationFrame(el._showRafId);
@@ -2040,6 +2088,7 @@ function cleanupGameClasses() {
   $$('.corner-shape').forEach(el => {
     clearTimeout(el._answerFeedbackTimer);
     el._answerFeedbackTimer = null;
+    el.removeAttribute('data-impact');
     el.classList.remove('memo-covered', 'memo-revealing', 'sequenz-flash', 'corner-correct',
       'corner-tapped', 'corner-wrong', 'corner-matched', 'corner-destination-flash',
       'near-miss-hint', 'shuffle-warn', 'shuffle-done');
@@ -2143,6 +2192,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
 
   setText('#hudScore', '0');
   setText('#hudMultiplier', 'x1');
+  setText('#arenaPhaseLabel', t('hud_factor'));
   setText('#hudStreak', '0');
   $('#pbProximity')?.classList.remove('visible', 'new-pb');
 
@@ -2285,6 +2335,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   };
 
   game.onCornerShuffleWarn = () => {
+    syncArenaPhase();
     showGameNotice(t('shuffle'), { kind: 'shuffle', importance: 3, duration: 900 });
     /* Pulse all active corners */
     $$('.corner-shape').forEach(el => {
@@ -2296,6 +2347,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   };
 
   game.onCornerShuffle = (cornerMap) => {
+    syncArenaPhase();
     /* Force full re-render of corners with new layout */
     for (const k in _prevCornerState) delete _prevCornerState[k];
     renderCorners(cornerMap, true);
@@ -2313,12 +2365,14 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   game.onMemoPreview = (cornerMap, durationMs) => {
     if (runId !== _gameRunId) return;
     renderCorners(cornerMap, true);
+    syncArenaPhase();
     /* Corners are already visible from renderCorners — add a pulse to draw attention */
-    $$('.corner-shape').forEach(el => {
-      if (el.style.display === 'none') return;
+    Object.entries(cornerMap).forEach(([dir, info]) => {
+      const el = $(`.corner-shape[data-dir="${dir}"]`);
+      if (!el) return;
       el.classList.remove('memo-covered', 'memo-revealing');
       el.classList.add('memo-revealing');
-      el.setAttribute('aria-label', getMemoCornerLabel(el.dataset.dir, cornerMap[el.dataset.dir]));
+      el.setAttribute('aria-label', getMemoCornerLabel(dir, info));
     });
     setTimeout(() => {
       if (runId !== _gameRunId) return;
@@ -2328,22 +2382,26 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   game.onMemoCover = () => {
     if (runId !== _gameRunId) return;
-    $$('.corner-shape').forEach(el => {
-      if (el.style.display === 'none') return;
+    syncArenaPhase();
+    Object.entries(game.cornerMap).forEach(([dir, info]) => {
+      const el = $(`.corner-shape[data-dir="${dir}"]`);
+      if (!el) return;
       el.classList.remove('memo-revealing');
       el.classList.add('memo-covered');
-      el.setAttribute('aria-label', getMemoCornerLabel(el.dataset.dir, game.cornerMap[el.dataset.dir], true));
+      el.setAttribute('aria-label', getMemoCornerLabel(dir, info, true));
     });
   };
 
   game.onMemoReveal = (cornerMap, durationMs) => {
     if (runId !== _gameRunId) return;
     renderCorners(cornerMap, true);
-    $$('.corner-shape').forEach(el => {
-      if (el.style.display === 'none') return;
+    syncArenaPhase();
+    Object.entries(cornerMap).forEach(([dir, info]) => {
+      const el = $(`.corner-shape[data-dir="${dir}"]`);
+      if (!el) return;
       el.classList.remove('memo-covered');
       el.classList.add('memo-revealing');
-      el.setAttribute('aria-label', getMemoCornerLabel(el.dataset.dir, cornerMap[el.dataset.dir]));
+      el.setAttribute('aria-label', getMemoCornerLabel(dir, info));
     });
     setTimeout(() => {
       if (runId !== _gameRunId) return;
@@ -2363,10 +2421,12 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   };
 
   game.onSpawn = (shape) => {
+    syncArenaPhase();
     livingArena.clearConfirmation();
     $$('.corner-correct,.corner-wrong', $('#game')).forEach(corner => {
       clearTimeout(corner._answerFeedbackTimer);
       corner.classList.remove('corner-correct', 'corner-wrong');
+      corner.removeAttribute('data-impact');
     });
     renderCenter(shape);
 
@@ -2376,26 +2436,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     syncGameplayMusicIntensity(game, result);
 
     if (result.correct) {
-      /* One local impact. Neither the arena nor the next stimulus moves. */
-      const corner = $(`.corner-shape[data-dir="${result.expected}"]`);
-      livingArena.confirm(result.expected, () => {
-        if (!corner) return null;
-        const from = stableRect($('#centerPlatform'));
-        const to = stableRect(corner);
-        return { x: to.left + to.width / 2 - from.left - from.width / 2,
-          y: to.top + to.height / 2 - from.top - from.height / 2 };
-      });
-      if (corner) {
-        clearTimeout(corner._answerFeedbackTimer);
-        corner.classList.remove('corner-wrong');
-        corner.classList.add('corner-correct');
-        corner._answerFeedbackTimer = setTimeout(() => corner.classList.remove('corner-correct'), 260);
-      }
-      cornerScorePop(result.expected, `${result.bonus ? '✦ ' : ''}+${result.points}`);
-      if (result.bonus && !isTextHeavyMode() && !game.inRush && !effects.lowPerf) {
-        const r = stableRect(corner || $('#centerPlatform'));
-        effects.particles(r.left + r.width / 2, r.top + r.height / 2, '#F4F7FC', 4);
-      }
+      confirmAnswer(result);
     } else {
       if (!result.autoMiss) {
         if (result.expected) showNearMiss(result.expected);
@@ -2432,18 +2473,21 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   };
 
   game.onRush = () => {
+    syncArenaPhase();
     showGameNotice(t('rush'), { kind: 'rush', importance: 1, duration: 900 });
   };
 
   game.onFeverStart = () => {
     livingArena.setEnergy(game.streak, true);
     audio.feverStart(true);
+    syncArenaPhase();
     showGameNotice(t('fever'), { kind: 'fever', importance: 1, duration: 900 });
   };
 
   game.onFeverEnd = () => {
     livingArena.setEnergy(game.streak, false);
     audio.feverEnd(true);
+    syncArenaPhase();
     showGameNotice(t('fever_cooldown'), { kind: 'cooldown', duration: 1000 });
   };
 
@@ -2460,6 +2504,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   /* Combo decay: update streak HUD as combo ticks down */
   game.onComboDecay = (newStreak) => {
     livingArena.setEnergy(newStreak, game.feverActive);
+    syncArenaPhase();
     const streakEl = document.getElementById('hudStreak');
     if (streakEl) streakEl.textContent = newStreak > 0 ? newStreak : '';
   };
@@ -2591,21 +2636,9 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   /* ── Sequenz (Simon Says) callbacks ── */
   game.onSequenzRoundStart = (round, seqLen) => {
     if (runId !== _gameRunId) return;
-    /* Show "MERKEN!" watch overlay */
-    const comboEl = $('#comboText');
-    if (comboEl) {
-      comboEl.textContent = t('sequenz_watch');
-      comboEl.classList.remove('active');
-      requestAnimationFrame(() => { if (runId === _gameRunId) comboEl.classList.add('active'); });
-    }
-    /* Show round badge */
-    const rushEl = $('#rushText');
-    if (rushEl) {
-      rushEl.textContent = t('sequenz_round', { n: round + 1 });
-      rushEl.classList.remove('active');
-      requestAnimationFrame(() => { if (runId === _gameRunId) rushEl.classList.add('active'); });
-      setTimeout(() => { if (runId === _gameRunId) rushEl.classList.remove('active'); }, 1500);
-    }
+    livingArena.clearConfirmation();
+    syncArenaPhase();
+    showGameNotice(t('sequenz_watch'), { kind: 'memory', importance: 3, duration: 900 });
     /* Show round + sequence length in center platform */
     const center = $('#centerShape');
     if (center) {
@@ -2617,6 +2650,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   game.onSequenzFlash = (dir, index, total, flashMs) => {
     if (runId !== _gameRunId) return;
+    syncArenaPhase();
     const corner = $(`.corner-shape[data-dir="${dir}"]`);
     if (!corner) return;
     /* Bright pulse on the flashed corner */
@@ -2624,7 +2658,6 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     requestAnimationFrame(() => {
       if (runId !== _gameRunId) return;
       corner.classList.add('sequenz-flash');
-      corner.style.setProperty('--seq-flash-ms', `${flashMs}ms`);
     });
     setTimeout(() => {
       if (runId === _gameRunId) corner.classList.remove('sequenz-flash');
@@ -2636,32 +2669,16 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   game.onSequenzReady = (seqLen) => {
     if (runId !== _gameRunId) return;
-    /* Switch from WATCH to GO overlay */
-    const comboEl = $('#comboText');
-    if (comboEl) {
-      comboEl.textContent = t('sequenz_go');
-      comboEl.classList.remove('active');
-      requestAnimationFrame(() => { if (runId === _gameRunId) comboEl.classList.add('active'); });
-      setTimeout(() => { if (runId === _gameRunId) comboEl.classList.remove('active'); }, 1200);
-    }
+    syncArenaPhase();
+    showGameNotice(t('sequenz_go'), { kind: 'memory', importance: 3, duration: 900 });
     haptic('correct', save);
   };
 
   game.onSequenzResult = (result) => {
     if (runId !== _gameRunId) return;
     syncGameplayMusicIntensity(game, result);
-    const cx = window.innerWidth / 2;
-    const cy = window.innerHeight / 2;
-    if (result.correct && result.sequenzComplete) {
-      /* Full sequence reproduced — celebrate */
-      effects.scorePop(cx, cy + 80, `+${result.points}`, '#F4F7FC', false);
-    } else if (result.correct && !result.sequenzComplete) {
-      /* Correct step — small confirmation */
-      const corner = $(`.corner-shape[data-dir="${result.direction}"]`);
-      if (corner) {
-        corner.classList.add('corner-correct');
-        setTimeout(() => corner.classList.remove('corner-correct'), 300);
-      }
+    if (result.correct) {
+      confirmAnswer(result);
     } else {
       /* Wrong step */
       if (result.expected) showNearMiss(result.expected);
@@ -2850,6 +2867,7 @@ export function resumeGame() {
   setGameplayPerformanceActive(game.running && !game.paused);
   audio.startMusic();
   /* Memo re-reveal is handled by the engine's resume() via callbacks */
+  updateHUD();
   closeModal($('#pauseOverlay'));
 }
 

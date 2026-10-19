@@ -12,6 +12,19 @@ const WORLDS = {
   chaos: { family: 'reflex', path: 'M12 32V18H34L40 24H60L66 18H88V32M12 68V82H34L40 76H60L66 82H88V68M8 40L18 34V46L8 52ZM82 54L92 48V60L82 66ZM30 12L36 18M64 82L70 88M70 12L64 18M36 82L30 88' },
 };
 const ALIASES = { ultra: 'expert', algebra: 'mathe', worte: 'wissen', hauptstaedte: 'wissen' };
+// Opaque architectural relief, drawn once. No stimulus/target data is accepted.
+const DECKS = {
+  klassik: 'M4 12H96V88H4ZM8 16V84H92V16Z',
+  beginner: 'M14 4H86L98 16V84L86 96H14L2 84V16ZM17 9L7 19V81L17 91H83L93 81V19L83 9Z',
+  expert: 'M28 3H72L97 28V72L72 97H28L3 72V28ZM30 9L9 30V70L30 91H70L91 70V30L70 9Z',
+  mathe: 'M2 8H98V92H2ZM6 15V88H94V15Z',
+  wissen: 'M2 10Q27 4 48 12L50 15L52 12Q73 4 98 10V91Q74 85 52 93H48Q26 85 2 91ZM7 16V85Q27 80 46 87V18Q27 10 7 16ZM54 18V87Q73 80 93 85V16Q73 10 54 18Z',
+  memo: 'M8 3H92V32H8ZM12 7V28H88V7ZM8 68H92V97H8ZM12 72V93H88V72Z',
+  sequenz: 'M3 3H31V31H3ZM8 8V26H26V8ZM69 3H97V31H69ZM74 8V26H92V8ZM3 69H31V97H3ZM8 74V92H26V74ZM69 69H97V97H69ZM74 74V92H92V74Z',
+  stroop: 'M2 10H98V18H2ZM2 82H98V90H2ZM2 30H6V70H2ZM94 30H98V70H94Z',
+  fokus: 'M50 2A48 48 0 1 0 50 98A48 48 0 1 0 50 2ZM50 7A43 43 0 1 1 50 93A43 43 0 1 1 50 7Z',
+  chaos: 'M2 8H36L42 14H62L68 8H98V27H93V14H71L65 20H39L33 14H7V27H2ZM2 73H7V86H29L35 80H61L67 86H93V73H98V92H64L58 86H38L32 92H2Z',
+};
 
 export function arenaWorld(mode) {
   const id = Object.hasOwn(WORLDS, mode) ? mode : Object.hasOwn(ALIASES, mode) ? ALIASES[mode] : 'klassik';
@@ -20,5 +33,5 @@ export function arenaWorld(mode) {
 
 export function arenaBlueprint(mode) {
   const world = arenaWorld(mode);
-  return `<svg class="arena-blueprint" data-world="${world.id}" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="${world.path}"/></svg>`;
+  return `<svg class="arena-blueprint" data-world="${world.id}" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="world-engraving" d="${world.path}"/><path class="world-deck" fill-rule="evenodd" d="${DECKS[world.id]}"/></svg>`;
 }
