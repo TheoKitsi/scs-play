@@ -14,6 +14,8 @@ import { checkOnboardingHints } from '../helpers/onboardingHints.js';
 import { getOrSeedQuests, countCompleted as questsCompleted } from '../services/DailyQuestService.js';
 import { DAILY_REWARD } from '../services/ProgressionService.js';
 import { modePreview } from '../renderers/modePreview.js';
+import { arenaWorld } from '../renderers/arenaWorld.js';
+import { icon } from '../renderers/icons.js';
 import { openModal, closeModal } from '../helpers/modal.js';
 import app                   from '../appState.js';
 
@@ -160,7 +162,8 @@ function openModePicker() {
       const unlocked = app.save.isModeUnlocked(mode);
       return `<button type="button" class="mode-choice${unlocked ? '' : ' mode-choice--locked'}" data-mode-choice="${mode}" aria-pressed="${mode === selected}">
         ${getModeSVG(mode)}<span class="mode-choice-name">${t(`mode_${mode}`)}</span>
-        <span class="mode-choice-meta">${unlocked ? t(MODE_SKILL_KEYS[mode]) : t('mode_locked', { n: getUnlockLevel(mode) })}</span>
+        <span class="mode-choice-task">${t(`task_${mode}`)}</span>
+        <span class="mode-choice-meta">${unlocked ? t(`world_${arenaWorld(mode).id}`) : `${icon('lock')}${t('mode_locked', { n: getUnlockLevel(mode) })}`}</span>
       </button>`;
     }).join('')}</div></section>`).join('');
   openModal($('#modePicker'), {
@@ -186,9 +189,8 @@ function buildSlide(mode) {
     const lvProgress = save.getModeLevelProgress ? save.getModeLevelProgress(mode) : 0;
     const lvPct = Math.round(Math.min(1, Math.max(0, lvProgress)) * 100);
     const modeName = t(`mode_${mode}`);
-    const skillName = t(MODE_SKILL_KEYS[mode] || 'skill_reaction');
     slide.innerHTML = `
-      <span class="hero-slide-kicker"><span>${t('hero_selected')}</span><span aria-hidden="true">·</span>${skillName}</span>
+      <span class="hero-slide-kicker">${t(`world_${arenaWorld(mode).id}`)}</span>
       <div class="hero-slide-visual" style="--slide-aura:${aura}">${getModeSVG(mode)}</div>
       <span class="hero-slide-name">${modeName}</span>
       <span class="hero-slide-desc">${t(MODE_DESC_KEYS[mode] || 'mode_klassik_desc')}</span>
@@ -208,16 +210,17 @@ function buildSlide(mode) {
           return '';
         })()}
       </div>
-      <div class="hero-slide-level-bar"><div class="hero-slide-level-fill" style="width:${lvPct}%"></div></div>`;
+      ${lv > 0 ? `<div class="hero-slide-level-bar" role="progressbar" aria-label="${t('hero_progress')}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${lvPct}"><div class="hero-slide-level-fill" style="width:${lvPct}%"></div></div>` : ''}`;
   } else {
     const unlockLv = getUnlockLevel(mode);
     const skillName = t(MODE_SKILL_KEYS[mode] || 'skill_reaction');
     slide.innerHTML = `
       <div class="hero-slide-locked">
         <span class="hero-slide-kicker">${skillName}</span>
-        <div class="hero-slide-visual" style="filter:grayscale(1) brightness(0.5)">${getModeSVG(mode)}</div>
-        <span class="hero-slide-name" style="opacity:0.5">${t(`mode_${mode}`)}</span>
-        <span class="hero-slide-lock-label">Level ${unlockLv} ${t('required')}</span>
+        <div class="hero-slide-visual">${getModeSVG(mode)}</div>
+        <span class="hero-slide-name">${t(`mode_${mode}`)}</span>
+        <span class="hero-slide-desc">${t(`task_${mode}`)}</span>
+        <span class="hero-slide-lock-label">${icon('lock')}${t('mode_locked', { n: unlockLv })}</span>
       </div>`;
   }
   return slide;
@@ -270,6 +273,7 @@ function positionSlides() {
 
   // Update selected mode
   const currentMode = CONFIG.MODE_ORDER[carouselIdx];
+  $('#home')?.setAttribute('data-world-family', arenaWorld(currentMode).family);
   setText('#modePosition', `${String(carouselIdx + 1).padStart(2, '0')} / ${total}`);
   const currentSlide = slides[carouselIdx];
   const status = $('#heroCarouselStatus');

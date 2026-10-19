@@ -1,13 +1,15 @@
 ﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SCS Play â€” Service Worker
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-const CACHE = 'scs-v62';
+const CACHE = 'scs-v63';
 const ASSETS = [
   './',
   './index.html',
   './privacy-policy.html',
   './terms-of-service.html',
   './css/style.css',
+  './css/legal.css',
+  './js/legal.js',
   './css/partials/00-perf-tokens.css',
   './css/partials/01-tokens.css',
   './css/partials/02-base.css',
@@ -22,6 +24,7 @@ const ASSETS = [
   './css/partials/11-mode-mastery.css',
   './css/partials/12-polish-v18-v19.css',
   './css/partials/13-mobile-2026.css',
+  './css/partials/14-mode-worlds.css',
   './manifest.json',
   './img/icon-192.svg',
   './img/icon-512.svg',
@@ -47,9 +50,15 @@ const ASSETS = [
   './js/helpers/microFeedback.js',
   './js/helpers/engagementTracker.js',
   './js/helpers/onboardingHints.js',
+  './js/helpers/appDialog.js',
+  './js/helpers/livingArena.js',
+  './js/helpers/gameFeedback.js',
   /* â”€â”€â”€ Renderers â”€â”€â”€ */
   './js/renderers/shapes.js',
   './js/renderers/avatars.js',
+  './js/renderers/icons.js',
+  './js/renderers/modePreview.js',
+  './js/renderers/arenaWorld.js',
   /* â”€â”€â”€ Game â”€â”€â”€ */
   './js/game/GameEngine.js',
   './js/game/ModeMastery.js',
@@ -133,7 +142,14 @@ self.addEventListener('fetch', e => {
   }
   e.respondWith((async () => {
     const cache = await caches.open(CACHE).catch(() => null);
-    const cached = cache ? await cache.match(e.request).catch(() => null) : null;
+    let cached = cache ? await cache.match(e.request).catch(() => null) : null;
+    /* Language changes are client-side; their legal document is the same
+       precached file, including before that query has ever been visited. */
+    if (!cached && cache && e.request.mode === 'navigate' && /\/(privacy-policy|terms-of-service)\.html$/.test(url.pathname)) {
+      const documentUrl = new URL(url);
+      documentUrl.search = '';
+      cached = await cache.match(documentUrl.href).catch(() => null);
+    }
     if (cached) {
       if (e.request.headers.has('range') && cached.status === 200) {
         return rangeResponse(e.request, cached);

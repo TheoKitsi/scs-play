@@ -9,6 +9,8 @@ import { haptic }           from '../helpers/haptics.js';
 import { applyTheme }       from '../services/ThemeService.js';
 import app                   from '../appState.js';
 import { getBodyFx }        from '../services/EffectsService.js';
+import { appDialog } from '../helpers/appDialog.js';
+import { icon } from '../renderers/icons.js';
 
 let shopTab = 'themes';
 
@@ -50,15 +52,16 @@ function renderUnlockItems(type, focusItemId = null) {
     const isOwned = isDefault || save.hasPurchase(`${prefix}_${item.id}`);
     const isActive = item.id === activeId;
     const canAfford = fireBalance >= cost;
+    const levelReached = save.getLevel() >= item.unlockLevel;
     const previewClass = `${prefix}-preview-${item.id}`;
 
     let btnHTML = '';
     if (isActive) {
-      btnHTML = `<span class="btn-unlock btn-active" aria-label="${t('unlockable_active')}"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px"><use href="#icon-eye"></use></svg> ${t('unlockable_active')}</span>`;
+      btnHTML = `<span class="btn-unlock btn-active">${icon('check')} ${t('unlockable_active')}</span>`;
     } else if (isOwned) {
-      btnHTML = `<button class="btn-unlock btn-activate" data-id="${item.id}" data-type="${type}">${t('unlockable_activate')}</button>`;
+      btnHTML = `<button class="btn-unlock btn-activate" data-id="${item.id}" data-type="${type}" ${levelReached ? '' : 'disabled'}>${t('unlockable_activate')}</button>`;
     } else {
-      btnHTML = `<button class="btn-unlock btn-fire-buy ${canAfford ? '' : 'btn-locked'}" data-id="${item.id}" data-type="${type}" data-cost="${cost}" ${canAfford ? '' : 'disabled'} aria-label="${cost} Fire"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px"><use href="#icon-fire"></use></svg> ${cost}</button>`;
+      btnHTML = `<button class="btn-unlock btn-fire-buy ${canAfford && levelReached ? '' : 'btn-locked'}" data-id="${item.id}" data-type="${type}" data-cost="${cost}" ${canAfford && levelReached ? '' : 'disabled'} aria-label="${cost} Fire"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px"><use href="#icon-fire"></use></svg> ${cost}</button>`;
     }
 
     return `
@@ -67,6 +70,7 @@ function renderUnlockItems(type, focusItemId = null) {
         <div class="unlock-info">
           <span class="unlock-name">${t(prefix + '_' + item.id)}</span>
           <span class="unlock-desc">${t(prefix + '_' + item.id + '_desc')}</span>
+          ${levelReached ? '' : `<span class="unlock-requirement">${t('unlock_at_level', { n: item.unlockLevel + 1 })}</span>`}
         </div>
         ${btnHTML}
       </div>`;
@@ -77,7 +81,7 @@ function renderUnlockItems(type, focusItemId = null) {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
       const itemType = btn.dataset.type;
-      if (itemType === 'themes') { await save.setActiveTheme(id); applyTheme(id); app.engagement?.trackThemeChange(); }
+      if (itemType === 'themes') { if (await save.setActiveTheme(id)) applyTheme(id); app.engagement?.trackThemeChange(); }
       else { await save.setActiveTrail(id); }
       renderShopContent(id);
       audio.tap();
@@ -93,15 +97,17 @@ function renderUnlockItems(type, focusItemId = null) {
       const itemName = t(`${btn.dataset.type === 'themes' ? 'theme' : 'trail'}_${id}`);
       const balance = save.getFireBalance();
       if (balance < cost) {
-        alert(t('fire_not_enough', { cost, balance }));
+        await appDialog({ title: t('store'), message: t('fire_not_enough', { cost, balance }) });
         return;
       }
-      const confirmed = confirm(t('fire_purchase_confirm', { item: itemName, cost }));
+      const confirmed = await appDialog({ title: t('dialog_purchase'), message: t('fire_purchase_confirm', { item: itemName, cost }), confirmLabel: t('dialog_unlock'), cancelLabel: t('dialog_cancel') });
       if (!confirmed) return;
+      /* A dialog is asynchronous: another local action may already own it. */
+      if (save.hasPurchase(`${prefix}_${id}`)) return;
       const ok = await save.spendFire(cost);
       if (!ok) return;
       await save.setPurchase(`${prefix}_${id}`);
-      if (itemType === 'themes') { await save.setActiveTheme(id); applyTheme(id); }
+      if (itemType === 'themes') { if (await save.setActiveTheme(id)) applyTheme(id); }
       else { await save.setActiveTrail(id); }
       const bodyFx = getBodyFx();
       bodyFx.achievementToast(t('fire_purchase_success', { item: itemName }));

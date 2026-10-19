@@ -90,12 +90,15 @@ export function shapeSVG(shape, color, size = 48, bonus = null) {
   const id = `shape-light-${++paintId}`;
   const geometry = inner.replace(/ fill="[^"]*"| stroke="[^"]*"| stroke-width="[^"]*"/g, '');
   return `<svg class="material-shape" viewBox="0 0 ${s} ${s + 3}" width="${s}" height="${s}" aria-hidden="true" focusable="false"${bonus ? ` data-bonus="${bonus}"` : ''} xmlns="http://www.w3.org/2000/svg">
-    <defs><linearGradient id="${id}" x1="0" y1="0" x2=".65" y2="1">
-      <stop stop-color="#fff" stop-opacity=".38"/><stop offset=".36" stop-color="#fff" stop-opacity=".03"/><stop offset="1" stop-color="#000" stop-opacity=".25"/>
-    </linearGradient></defs>
+    <defs>
+      <linearGradient id="${id}" x1=".15" y1="0" x2=".85" y2="1">
+        <stop stop-color="#fff" stop-opacity=".55"/>
+        <stop offset=".36" stop-color="#fff" stop-opacity="0"/><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/>
+      </linearGradient>
+    </defs>
     <g fill="${color}" transform="translate(0 2.5)">${geometry}</g>
     <g fill="#000" opacity=".38" transform="translate(0 2.5)">${geometry}</g>
-    <g fill="${color}" stroke="#fff" stroke-opacity=".2" stroke-width=".65">${geometry}</g>
-    <g data-shape-light fill="url(#${id})">${geometry}</g>
+    <g data-material-face="" fill="${color}">${geometry}</g>
+    <g data-shape-light="" fill="url(#${id})" stroke="url(#${id})" stroke-width=".85" stroke-linejoin="round">${geometry}</g>
   </svg>`;
 }

@@ -1,5 +1,7 @@
 import { CONFIG } from '../config.js';
 import { shapeSVG } from './shapes.js';
+import { arenaWorld, arenaBlueprint } from './arenaWorld.js';
+import { directionIcon } from './icons.js';
 
 /** A small, dependency-free scene used by both mode selection surfaces. */
 export function modePreview(mode, colorblind = false) {
@@ -13,12 +15,10 @@ export function modePreview(mode, colorblind = false) {
     memo: '<span class="preview-recall">?</span>',
     sequenz: '<span class="preview-sequence"><i>1</i><i>2</i><i>3</i></span>',
     stroop: `<span class="preview-ink" style="color:${colors[1]}">Aa</span>`,
-    fokus: '<span class="preview-arrows">← <b>→</b> ←</span>',
-    chaos: '<span class="preview-switch">⇄</span>',
+    fokus: `<span class="preview-arrows">${directionIcon('←')}<b>${directionIcon('→')}</b>${directionIcon('←')}</span>`,
   };
   const content = labels[mode] || tiles;
-  return `<span class="mode-preview mode-preview--${mode}" aria-hidden="true">
-    <span class="preview-orbit"></span><span class="preview-plinth"></span>${content}
-    <span class="preview-tick preview-tick--left"></span><span class="preview-tick preview-tick--right"></span>
+  return `<span class="mode-preview mode-preview--${mode}" data-world-family="${arenaWorld(mode).family}" aria-hidden="true">
+    <span class="preview-plinth"></span>${arenaBlueprint(mode)}${content}
   </span>`;
 }

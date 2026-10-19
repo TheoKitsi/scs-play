@@ -1,16 +1,57 @@
-/* One static, achromatic floor. Light never carries an uncommitted answer. */
-.resonance-stage{contain:strict}
-.resonance-stage::before,.resonance-stage::after{content:"";position:absolute;left:50%;top:var(--arena-cy,55%);transform:translate(-50%,-50%);pointer-events:none;border-radius:50%}
-.resonance-stage::before{width:min(92vw,750px);height:65%;border:1px solid rgba(202,212,227,.07);background:radial-gradient(ellipse at 30% 15%,rgba(255,255,255,.045),transparent 64%),linear-gradient(160deg,rgba(255,255,255,.018),transparent);box-shadow:0 18px 0 rgba(0,0,0,.12),0 45px 70px rgba(0,0,0,.16)}
-.resonance-stage::after{width:min(84vw,680px);height:56%;border:1px solid rgba(202,212,227,.05)}
+/* Polished floor and two bounded studio lights. Nothing follows the stimulus;
+   both sides share a neutral light rhythm, independent of the answer. */
+.resonance-stage{contain:strict;--arena-light:202,212,227;--light-min:.3;--light-max:.55;--light-seconds:14s;--energy-fill:8%;--world-ink:.1}
+/* Decoration has no transitionend consumers. Do not inherit the global
+   accessibility shim's tiny all-property transitions when motion is toggled. */
+.resonance-stage,.resonance-stage *{transition-property:none}
+.arena-scenery{position:absolute;inset:0;pointer-events:none;contain:layout style}
+.arena-scenery::before{content:"";position:absolute;left:50%;top:var(--arena-cy,55%);transform:translate(-50%,-50%);pointer-events:none;border-radius:32%;width:min(92vw,750px);height:65%;border:1px solid rgba(var(--arena-light),.09);background:linear-gradient(150deg,rgba(255,255,255,.045),transparent 65%);box-shadow:0 6px 0 rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.07)}
+.arena-blueprint{position:absolute;left:50%;top:var(--arena-cy,55%);width:min(88vw,710px);height:58%;transform:translate(-50%,-50%);opacity:var(--world-ink);pointer-events:none}
+.arena-blueprint path{fill:none;stroke:#CAD4E3;stroke-width:1;vector-effect:non-scaling-stroke}
+.arena-light{position:absolute;top:calc(var(--arena-cy) - 24%);width:min(22vw,150px);height:min(48vh,420px);border-radius:50%;background:radial-gradient(ellipse,rgba(var(--arena-light),.16),transparent 68%);opacity:.65;pointer-events:none}
+.arena-light--left{left:max(0px,calc(50% - 400px))}
+.arena-light--right{right:max(0px,calc(50% - 400px))}
+.arena-light::after{content:"";position:absolute;left:50%;top:15%;width:2px;height:70%;border-radius:2px;background:linear-gradient(0deg,rgba(var(--arena-light),.7) var(--energy-fill),transparent 0)}
+body[data-perf-mode="high"] .resonance-stage[data-live] .arena-light{animation:arena-light-drift var(--light-seconds) ease-in-out infinite alternate}
+@keyframes arena-light-drift{from{transform:translate3d(0,10px,0) scaleY(.96);opacity:var(--light-min)}to{transform:translate3d(0,-14px,0) scaleY(1.04);opacity:var(--light-max)}}
+.resonance-stage[data-energy="flow"]{--resonance-strength:.15;--energy-fill:30%;--world-ink:.14;--light-min:.4;--light-max:.7}
+.resonance-stage[data-energy="charged"]{--resonance-strength:.19;--arena-light:220,215,192;--energy-fill:55%;--world-ink:.18;--light-max:.8;--light-seconds:12s}
+.resonance-stage[data-energy="surge"]{--resonance-strength:.23;--arena-light:236,211,152;--energy-fill:78%;--world-ink:.22;--light-min:.5;--light-max:.9;--light-seconds:10s}
+.resonance-stage[data-energy="fever"]{--resonance-strength:.27;--arena-light:246,215,143;--energy-fill:100%;--world-ink:.25;--light-min:.65;--light-max:1;--light-seconds:8s}
+.arena-signal{position:absolute;left:calc(50% - 16px);top:calc(var(--arena-cy) - 2px);width:32px;height:4px;border-radius:50%;background:linear-gradient(90deg,transparent,#E4EAF4,transparent);opacity:0}
+
+/* Only the committed target's contents spring. Button geometry never moves. */
+#game .resonance-stage[data-live]~.corner-shape.corner-correct::before{content:"";display:block;position:absolute;inset:-6px;border:1px solid #CAD4E3;border-radius:inherit;pointer-events:none;opacity:0;animation:arena-target-ring .12s ease-out}
+#game .resonance-stage[data-live]~.corner-shape.corner-correct .material-shape{transform:none;transition:none;animation:arena-target-press .12s ease-out}
+@keyframes arena-target-ring{from{transform:scale(.98);opacity:.55}to{transform:scale(1.16);opacity:0}}
+@keyframes arena-target-press{0%{transform:translateY(1px) scale(.95)}55%{transform:translateY(-1px) scale(1.025)}100%{transform:none}}
 
 /* Different rhythms, identical information hierarchy. Reading stays protected. */
-#game[data-mode-world="think"] .resonance-stage::before{border-radius:var(--radius-xl);height:66%;background:linear-gradient(rgba(202,212,227,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(202,212,227,.025) 1px,transparent 1px);background-size:36px 36px;box-shadow:none}
-#game[data-mode-world="think"] .resonance-stage::after{display:none}
-#game[data-mode-world="think"] .arena-routes{opacity:.5}
-#game[data-mode-world="think"] .resonance-orbit{display:none}
-#game[data-mode-world="memory"] .resonance-stage::after{border:1px dashed rgba(202,212,227,.12)}
-#game[data-mode-world="reflex"] .resonance-stage::before{background:radial-gradient(ellipse at 30% 15%,rgba(255,255,255,.035),transparent 64%)}
+#game[data-mode-world="think"] .arena-scenery::before{border-radius:var(--radius-xl);height:66%;background:linear-gradient(rgba(202,212,227,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(202,212,227,.025) 1px,transparent 1px);background-size:36px 36px;box-shadow:none}
+#game[data-mode-world="think"] .arena-light{opacity:.35;animation:none}
+#game[data-mode-world="memory"] .arena-scenery::before{background:linear-gradient(180deg,rgba(202,212,227,.055),transparent 30%,transparent 70%,rgba(202,212,227,.03))}
+#game[data-mode-world="reflex"] .arena-scenery::before{background:none;box-shadow:none}
+.resonance-stage[data-world="klassik"] .arena-scenery::before{border-radius:38%}
+.resonance-stage[data-world="beginner"] .arena-scenery::before{border-radius:12%;border-width:2px}
+.resonance-stage[data-world="expert"] .arena-scenery::before{border-radius:50%;height:58%}
+.resonance-stage[data-world="wissen"] .arena-scenery::before{border-radius:5% 15%;background:linear-gradient(90deg,transparent 49.8%,rgba(202,212,227,.06) 50%,transparent 50.2%)}
+.resonance-stage[data-world="memo"] .arena-scenery::before{height:58%;border-radius:24%;border-style:dashed}
+.resonance-stage[data-world="sequenz"] .arena-scenery::before{border-radius:42% 12%;height:58%}
+.resonance-stage[data-world="stroop"] .arena-scenery::before{border-radius:12%;border-inline-width:3px}
+.resonance-stage[data-world="fokus"] .arena-scenery::before{border-radius:50%;width:min(80vw,640px);height:56%}
+.resonance-stage[data-world="chaos"] .arena-scenery::before{border-radius:25% 6%;border-style:dashed}
+
+/* Selection and controls share the game's machined, softly bevelled surfaces.
+   Theme button fills/text are deliberately unchanged for contrast. */
+.mode-preview .arena-blueprint{inset:12% 0 0;top:auto;left:auto;width:100%;height:88%;transform:none;opacity:.26;z-index:-1}
+.mode-preview[data-world-family="think"] .preview-plinth{border-radius:14px}
+.mode-preview[data-world-family="memory"] .preview-plinth{border-radius:28%;box-shadow:0 7px 0 var(--scene-bg),0 15px 0 rgba(202,212,227,.04)}
+.mode-preview[data-world-family="reflex"] .preview-plinth{border-radius:20% 8%}
+#home .btn-play-fab{border-radius:var(--radius-sm);border:1px solid var(--outline)}
+.btn-primary,.btn-secondary{border-radius:var(--radius-sm);box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 2px 0 rgba(0,0,0,.15)}
+.btn-primary:active,.btn-secondary:active{box-shadow:inset 0 1px 0 rgba(0,0,0,.1)}
+.btn-pause,.pause-panel,.results-panel{box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.play-type-btn.selected,.mode-choice[aria-pressed="true"]{box-shadow:inset 0 1px 0 rgba(255,255,255,.13),inset 0 -2px 0 rgba(0,0,0,.12)}
 
 /* ── Perf tiers (runtime-governed via body[data-perf-mode]) ── */
 body[data-perf-mode="mid"] #game *,
@@ -28,5 +69,20 @@ body[data-perf-mode="low"] #home *::after{
   animation-play-state: paused !important;
 }
 body[data-perf-mode="low"] #game .corner-shape svg{filter:none}
-body[data-perf-mode="low"] .resonance-stage::before{box-shadow:none}
-body[data-perf-mode="low"] .resonance-stage.resonance-hit .resonance-orbit{animation:none}
+body[data-perf-mode="low"] .arena-scenery::before{box-shadow:none}
+body[data-perf-mode="low"] .arena-light{display:none}
+@media(forced-colors:active){.resonance-stage{display:none}}
+
+#game .chaos-stimulus{gap:14px;width:100%;padding:12px;justify-content:center}
+#game .chaos-shape,#game .chaos-corner-shape{display:block;flex:0 0 auto;text-shadow:none;filter:none;line-height:0}
+#game .chaos-shape svg,#game .chaos-corner-shape svg{width:100%;height:100%;max-width:none}
+#game .chaos-rule-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid var(--outline);border-radius:8px;background:var(--bg);color:var(--text-dim);font:600 .75rem/1.2 'Outfit',sans-serif;text-shadow:none;text-transform:none;box-shadow:none;letter-spacing:0}
+#game .chaos-rule-badge .ui-icon{width:15px;height:15px}
+#game .fokus-display{gap:8px}
+#game .fokus-display>span{display:flex;align-items:center;justify-content:center;text-shadow:none;filter:none}
+#game .fokus-display .direction-icon{width:26px;height:26px;max-width:none}
+#game .fokus-center{color:var(--text);text-shadow:none}
+#game .corner-shape[data-content="fokus"]>.direction-icon{width:30px;height:30px}
+.mode-instruction-icon{display:block;width:160px;height:130px;margin:0 auto 14px;font-size:inherit}
+.mode-instruction-title{font-family:inherit;text-transform:none;text-shadow:none;letter-spacing:-.02em}
+.mode-instruction-text{color:var(--text-dim);line-height:1.6}

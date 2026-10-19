@@ -14,6 +14,8 @@ async function review(viewport, mode = 'klassik') {
   await context.addInitScript(() => {
     localStorage.setItem('scsQa', '1');
     localStorage.setItem('scsQaPerfTier', 'high');
+    globalThis.__buzzes = [];
+    Object.defineProperty(navigator, 'vibrate', { configurable: true, value: pattern => { globalThis.__buzzes.push(pattern); return true; } });
     let seed = 1337;
     Math.random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   });
@@ -39,6 +41,10 @@ async function review(viewport, mode = 'klassik') {
       const counters = { combo: 0, shuffle: 0, rush: 0, cooldown: 0 };
       const problems = [];
       const gaps = [];
+      const energies = new Set();
+      let impacts = 0;
+      const originalImpact = app.audio.gameImpact;
+      app.audio.gameImpact = function (...args) { impacts++; return originalImpact.apply(this, args); };
       let answers = 0, inputAt = null, lastAnswerAt = null, timer = null, ended = false;
       const original = Object.fromEntries(['onSpawn', 'onResult', 'onComboMilestone', 'onCornerShuffle', 'onRush', 'onFeverEnd'].map(key => [key, game[key]]));
       const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
@@ -49,8 +55,9 @@ async function review(viewport, mode = 'klassik') {
           ended = true;
           clearTimeout(watchdog); clearTimeout(timer);
           Object.assign(game, original);
+          app.audio.gameImpact = originalImpact;
           if (error) reject(error);
-          else resolve({ counters, problems, gaps, answers, wrong: game.wrong,
+          else resolve({ counters, problems, gaps, answers, impacts, energies: [...energies], wrong: game.wrong,
             dynamicComboStyles: Boolean(document.querySelector('#combo-milestone-kf')),
             centerCelebrations: document.querySelectorAll('.combo-milestone,.shuffle-explain,.rush-warning').length,
             noticeCount: document.querySelectorAll('#gameNotice').length });
@@ -59,7 +66,9 @@ async function review(viewport, mode = 'klassik') {
           game[key] = (...args) => { counters[event]++; original[key]?.(...args); };
         }
         game.onResult = result => {
+          const beforeBuzz = globalThis.__buzzes.length;
           original.onResult?.(result);
+          if (globalThis.__buzzes.length - beforeBuzz !== 1) problems.push('answer must produce one consolidated haptic');
           if (!result.correct) return finish(new Error('A scripted correct answer was lost'));
           answers++;
           lastAnswerAt = inputAt;
@@ -68,6 +77,10 @@ async function review(viewport, mode = 'klassik') {
           if (ended) return;
           try {
             const center = document.querySelector('#centerShape');
+            const stage = document.querySelector('#resonanceStage');
+            energies.add(stage.dataset.energy);
+            if (stage.dataset.confirmedDirection) problems.push('previous answer hint survived into the next stimulus');
+            if (document.querySelector('.fever-overlay')) problems.push('legacy full-screen fever overlay must not stack on stage lighting');
             if (!center.querySelector('.material-shape')) problems.push('missing material on first frame');
             if (Number(getComputedStyle(center).opacity) < .99) problems.push('stimulus fades in instead of being readable on first frame');
             if (lastAnswerAt != null) { gaps.push(performance.now() - lastAnswerAt); lastAnswerAt = null; }
@@ -81,7 +94,9 @@ async function review(viewport, mode = 'klassik') {
             timer = setTimeout(() => {
               if (game.currentShape?.stimulusId !== item.stimulusId) return finish(new Error('Next symbol replaced before input'));
               inputAt = performance.now();
+              const beforeBuzz = globalThis.__buzzes.length;
               document.querySelector(`.corner-shape[data-dir="${item.direction}"]`).click();
+              if (globalThis.__buzzes.length - beforeBuzz !== 1) problems.push('menu/phase buzz overwrote the answer impact');
             }, 110);
           } catch (error) { finish(error); }
         });
@@ -92,6 +107,8 @@ async function review(viewport, mode = 'klassik') {
 
     assert.equal(result.answers, 100);
     assert.equal(result.wrong, 0);
+    assert.equal(result.impacts, 100, 'Exactly one material sound event per accepted answer');
+    for (const energy of ['calm', 'flow', 'fever']) assert.ok(result.energies.includes(energy), `${energy} must appear in real gameplay`);
     assert.deepEqual(result.problems, []);
     for (const event of ['combo', 'shuffle', 'rush', 'cooldown']) assert.ok(result.counters[event] > 0, `${event} must be exercised`);
     assert.ok(Math.max(...result.gaps) < 1000, 'No multi-second blank field in the real UI');
@@ -101,7 +118,7 @@ async function review(viewport, mode = 'klassik') {
     await page.evaluate(() => document.querySelector('#btnPauseQuit').click());
     assert.equal(await page.locator('#gameNotice').textContent(), '');
     assert.deepEqual(errors, []);
-    console.log(`PASS ${mode} ${viewport.width}×${viewport.height}: 100 flawless answers, all phase events, first-frame visibility, unobstructed targets; max painted successor gap ${Math.round(Math.max(...result.gaps))}ms`);
+    console.log(`PASS ${mode} ${viewport.width}×${viewport.height}: 100 flawless answers, single sound/haptic, peripheral energy, first-frame visibility, unobstructed targets; max painted successor gap ${Math.round(Math.max(...result.gaps))}ms`);
   } finally {
     await context.close();
   }

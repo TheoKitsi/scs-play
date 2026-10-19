@@ -255,10 +255,10 @@ async function run() {
   assert(cleanModeSwitch.chaosActive && cleanModeSwitch.memoInactive, 'Chaos replaces the Memo body mode');
   assert(cleanModeSwitch.memoCornersCleared && cleanModeSwitch.memoHudCleared, 'Memo presentation is cleared before Chaos');
   await page.evaluate(() => globalThis.__SCS_QA__.triggerChaosRuleSwitch());
-  assert(await visible('.chaos-rule-banner', 1000), 'Chaos rule switch banner appears');
+  assert(await visible('#gameNotice.visible', 1000), 'Chaos rule change appears in the peripheral notice');
   await page.evaluate(() => document.querySelector('#btnPauseQuit')?.click());
   assert(await hasActiveClass('#home', 3000), 'Chaos quit returns home');
-  assert(!await page.locator('.chaos-rule-banner').count(), 'Chaos rule switch banner is removed on quit');
+  assert(!await page.locator('#gameNotice.visible').count(), 'Chaos rule notice is cleared on quit');
 
   // ─── 8d) Leaving Sequenz during watch clears timed feedback ───
   console.log('\n8d. Sequenz watch to Math transition cleanup');

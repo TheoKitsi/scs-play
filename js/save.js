@@ -91,6 +91,7 @@ function defaults() {
     settings: {
       colorblind: false,
       reducedMotion: false,
+      arenaDepth: false,
       haptics: true,
       sound: true,
       music: true,
@@ -678,7 +679,7 @@ export class SaveService {
 
   /* ─── Avatar (v7) ─── */
   getAvatar() {
-    const a = this.data.avatar || { icon: 'circle', colorIndex: 0 };
+    const a = { ...(this.data.avatar || { icon: 'circle', colorIndex: 0 }) };
     // Include photo from separate key (too large for avatar object in some saves)
     if (this.data.avatarPhoto) a.photo = this.data.avatarPhoto;
     return a;
@@ -693,6 +694,7 @@ export class SaveService {
   }
   async removeAvatarPhoto() {
     delete this.data.avatarPhoto;
+    if (this.data.avatar) delete this.data.avatar.photo;
     await this.save();
   }
 

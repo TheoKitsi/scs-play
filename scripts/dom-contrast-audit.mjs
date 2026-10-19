@@ -139,10 +139,24 @@ async function run() {
   failures.push(...await scan(page, 'auth'));
 
   await clickIfPresent(page, '#btnGuest', 1200);
+  for (let i = 0; i < 3; i++) {
+    if (!await page.locator('.onboarding-overlay.active .onboarding-btn-ok').isVisible()) break;
+    await page.locator('.onboarding-overlay.active .onboarding-btn-ok').click();
+    await page.waitForTimeout(500);
+  }
   await clickIfPresent(page, '#btnAllModes', 500);
   failures.push(...await scan(page, 'mode catalog'));
   await clickIfPresent(page, '#btnCloseModes', 400);
   failures.push(...await scan(page, 'home'));
+  await clickIfPresent(page, '#homeLivesBadge', 300);
+  failures.push(...await scan(page, 'application dialog'));
+  await page.keyboard.press('Escape');
+  await clickIfPresent(page, '#btnWheel', 400);
+  failures.push(...await scan(page, 'wheel'));
+  await clickIfPresent(page, '#btnWheelClose', 300);
+  await clickIfPresent(page, '#homeAvatar', 500);
+  failures.push(...await scan(page, 'avatar'));
+  await forceHome(page);
 
   for (const theme of ['neon', 'ocean', 'sunset', 'forest', 'cosmic', 'retro', 'crystal']) {
     await page.evaluate(theme => {
@@ -150,6 +164,9 @@ async function run() {
       document.body.classList.add(`theme-${theme}`);
     }, theme);
     failures.push(...await scan(page, `home / ${theme}`));
+    await clickIfPresent(page, '#btnWheel', 200);
+    failures.push(...await scan(page, `wheel / ${theme}`));
+    await clickIfPresent(page, '#btnWheelClose', 200);
   }
   await page.evaluate(() => { document.body.className = document.body.className.replace(/\btheme-\w+/g, '').trim(); });
 
@@ -164,12 +181,21 @@ async function run() {
     await page.waitForFunction(() => document.querySelector('#game')?.classList.contains('active'), null, { timeout: 5000 });
     await page.waitForTimeout(4200);
     failures.push(...await scan(page, 'game'));
+    await clickIfPresent(page, '#btnPause', 300);
+    failures.push(...await scan(page, 'pause'));
+    await clickIfPresent(page, '#btnResume', 200);
     await page.evaluate(() => globalThis.__SCS_QA__?.forceGameOver());
     await page.waitForFunction(() => document.querySelector('#results')?.classList.contains('active'), null, { timeout: 5000 });
     await page.waitForTimeout(1200);
     failures.push(...await scan(page, 'results'));
   }
 
+  for (const file of ['privacy-policy.html', 'terms-of-service.html']) {
+    for (const lang of ['de', 'en']) {
+      await page.goto(new URL(`${file}?lang=${lang}`, baseUrl).href, { waitUntil: 'networkidle' });
+      failures.push(...await scan(page, `${file}/${lang}`));
+    }
+  }
   await context.close();
   await browser.close();
   if (staticServer) await staticServer.close();

@@ -51,19 +51,11 @@
 /* ── Scene geometry: all routes are neutral until an answer is committed. ── */
 .resonance-stage {
   position:absolute;inset:0;z-index:2;overflow:hidden;pointer-events:none;opacity:0;
-  --resonance-strength: calc(.1 + var(--resonance-level, 0) * .12);
+  --resonance-strength: .12;
 }
 #game.active .resonance-stage { opacity:1 }
-.resonance-orbit{position:absolute;left:50%;top:var(--arena-cy,55%);border-radius:50%;transform:translate(-50%,-50%)}
-
-.resonance-orbit {
-  border:1px solid #CAD4E3;
-  opacity: var(--resonance-strength);
-  transition:opacity .3s;
-}
-.resonance-orbit--inner { width:min(53vw,250px);aspect-ratio:1 }
 .arena-routes{position:absolute;left:calc(50% - var(--arena-dx));top:calc(var(--arena-cy) - var(--arena-dy));width:calc(var(--arena-dx) * 2);height:calc(var(--arena-dy) * 2);overflow:visible}
-.arena-routes path{fill:none;stroke:#CAD4E3;stroke-opacity:.1;stroke-width:1;vector-effect:non-scaling-stroke;transition:stroke-opacity .12s}
+.arena-routes path{fill:none;stroke:#CAD4E3;stroke-opacity:0;stroke-width:1;vector-effect:non-scaling-stroke}
 .arena-route-edge{display:none}
 body.mode-expert .arena-route-edge{display:block}
 body.mode-ultra .arena-routes{display:none}
@@ -75,15 +67,6 @@ body.mode-ultra .arena-routes{display:none}
 #resonanceStage[data-confirmed-direction="down"] [data-arena-dir="down"],
 #resonanceStage[data-confirmed-direction="left"] [data-arena-dir="left"],
 #resonanceStage[data-confirmed-direction="right"] [data-arena-dir="right"]{stroke-opacity:.8;stroke-width:2}
-
-.resonance-stage.resonance-hit .resonance-orbit--inner {
-  animation:resonance-confirm .26s ease-out;
-}
-
-@keyframes resonance-confirm {
-  0% { transform:translate(-50%,-50%) scale(.98);opacity:.3 }
-  100% { transform:translate(-50%,-50%) scale(1.08);opacity:var(--resonance-strength) }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .resonance-stage.resonance-hit *{animation:none}

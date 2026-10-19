@@ -481,21 +481,6 @@
    v20 ULTRA TUNING
    ═══════════════════════════════════════════ */
 
-/* ─── Fever Cooldown indicator ─── */
-.fever-cooldown {
-  display: block !important;
-  opacity: .6;
-  font-size: .7rem;
-  letter-spacing: 1px;
-  color: var(--text-dim);
-  animation: feverCooldownFade 3s ease-out forwards;
-}
-@keyframes feverCooldownFade {
-  0%   { opacity: .6; }
-  80%  { opacity: .4; }
-  100% { opacity: 0; }
-}
-
 /* ─── Expanded CSS Containment (Phase 4.4) ─── */
 .mode-chip { contain: layout style; }
 .hud-score, .hud-timer, .hud-multiplier, .hud-streak { contain: layout style; }
@@ -626,56 +611,9 @@
 
 /* Show-correct-answer highlight */
 .corner-shape.show-correct{
-  animation:showCorrectPulse .5s ease-out;
-  border-color: rgba(16, 185, 129, 0.7) !important;
-  box-shadow: 0 0 24px rgba(16, 185, 129, 0.5), inset 0 0 12px rgba(16, 185, 129, 0.2) !important;
-}
-@keyframes showCorrectPulse{
-  0%{transform:scale(1);opacity:0.5}
-  50%{transform:scale(1.12);opacity:1}
-  100%{transform:scale(1.05);opacity:0.8}
-}
-
-/* Rush incoming warning */
-.rush-warning{
-  position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  z-index:45;pointer-events:none;
-  font-family:'Space Grotesk',system-ui,sans-serif;
-  font-size:1.6rem;font-weight:900;
-  color:var(--warning, #FFA502);
-  text-shadow: 0 0 16px currentColor, 0 2px 6px rgba(0,0,0,0.6);
-  animation:rushWarnPulse 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  will-change:transform,opacity;
-}
-@keyframes rushWarnPulse{
-  0%{transform:translate(-50%,-50%) scale(0.5);opacity:0}
-  30%{transform:translate(-50%,-50%) scale(1.2);opacity:1}
-  60%{transform:translate(-50%,-50%) scale(0.95);opacity:1}
-  80%{transform:translate(-50%,-50%) scale(1.05);opacity:0.8}
-  100%{transform:translate(-50%,-50%) scale(1);opacity:0}
-}
-
-/* Shuffle explanation tooltip */
-.shuffle-explain{
-  position:absolute;top:42%;left:50%;
-  transform:translate(-50%,-50%);
-  z-index:50;pointer-events:none;
-  background:rgba(15,23,42,0.92);
-  color:var(--text);
-  padding:12px 20px;border-radius:var(--radius-lg, 16px);
-  border:1px solid rgba(255,255,255,0.12);
-  font-size:0.9rem;font-weight:600;
-  text-align:center;max-width:280px;
-  box-shadow:0 8px 32px rgba(0,0,0,0.5);
-  animation:shuffleExplainIn 2.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  will-change:transform,opacity;
-}
-@keyframes shuffleExplainIn{
-  0%{transform:translate(-50%,-50%) scale(0.8) translateY(12px);opacity:0}
-  15%{transform:translate(-50%,-50%) scale(1) translateY(0);opacity:1}
-  75%{transform:translate(-50%,-50%) scale(1) translateY(0);opacity:1}
-  100%{transform:translate(-50%,-50%) scale(0.95) translateY(-8px);opacity:0}
+  animation:none!important;
+  outline:2px dashed #CAD4E3;
+  outline-offset:3px;
 }
 
 /* Wissen level-up flash */

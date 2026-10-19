@@ -115,15 +115,8 @@ Secondary: Game > Educational
 - Store icon: `img/store-icon-512.png` (512 x 512)
 - Feature graphic: `img/feature-graphic-1024x500.png` (1024 x 500)
 
-Use only screenshots from `screenshots/small-android/`; their 360 x 640 ratio is Play-compatible. The Galaxy S25 captures are for internal visual review and exceed a 2:1 aspect ratio.
+Refresh the icon, feature graphic and Android launch assets with `npm run brand:generate` before preparing a release. This generates local files only; it does not publish the store listing.
 
-Recommended phone screenshots:
+The current `npm run visual-review` archive is an **internal QA gallery**, not a store screenshot set: populated records, analysis and some result states use explicit fixtures. Do not publish fabricated scores, rewards or progress as genuine gameplay. Capture real interactions and earned results from the final packaged release instead.
 
-1. `01-boot-auth.png` - immediate guest entry
-2. `02-home-top.png` - focused mode selection
-3. `08-game-active.png` - active gameplay
-4. `10-game-instruction.png` - mode onboarding
-5. `10-results.png` - results and mastery
-6. `04-achievements.png` - achievement progression
-7. `05-store.png` - earned visual collection
-8. `06-settings-bottom.png` - controls and legal links
+Use 360 x 640 (or another Play-compatible ratio) for submission captures. The 412 x 915 review viewport exceeds a 2:1 aspect ratio. Suitable real screens include guest entry, mode selection, active gameplay, mode instructions, an earned result, achievements, the design shop and display/audio settings. Check the installed launcher and cold start on Android too; a browser-converted native-vector preview is not a device screenshot.

@@ -4,6 +4,8 @@
    player enjoyment. All data local-only.
    ═══════════════════════════════════════ */
 
+import { t, getLanguage } from '../i18n.js';
+
 const MAX_SESSIONS = 50;
 const MAX_FEEDBACK = 100;
 const RETURN_DAYS_WINDOW = 30;
@@ -470,28 +472,25 @@ export class EngagementTracker {
   }
 
   exportText() {
-    const { score, label, signals } = this.computeEngagementScore();
+    const { score, signals } = this.computeEngagementScore();
     const lines = [
-      '=== SCS Play — Engagement Report ===',
-      `Erstellt: ${new Date().toLocaleString('de-DE')}`,
-      `Datengrundlage: ${signals.totalSessions} Sessions, ${signals.totalGames} Spiele, seit ${signals.firstSeen?.slice(0, 10) || '?'}`,
+      `SCS Play — ${t('engagement_report_title')}`,
+      new Date().toLocaleString(getLanguage()),
+      t('insights_note'),
+      `${t('er_basis')}: ${signals.totalSessions} ${t('er_sessions_unit')}, ${signals.totalGames} ${t('er_games')}, ${t('er_since')} ${signals.firstSeen?.slice(0, 10) || '—'}`,
       '',
-      `ENGAGEMENT-SCORE: ${score !== null ? score + ' / 100' : 'Nicht genug Daten'}`,
+      `${t('er_activity')}: ${score !== null ? score + ' / 100' : t('er_no_data')}`,
       '',
-      '--- Signale ---',
-      `Rückkehr: ${signals.activeDaysPerWeek} Tage/Woche`,
-      `Sessions: Ø ${signals.avgSessionMin} Min. (Median: ${signals.medianSessionMin} Min.)`,
-      `Lernkurve: ${signals.avgScoreTrend > 0 ? '+' : ''}${(signals.avgScoreTrend * 100).toFixed(1)}%`,
-      `Retry-Rate: ${(signals.retryRate * 100).toFixed(0)}%`,
-      `Abbruch-Rate: ${(signals.quitRate * 100).toFixed(0)}% (Mid-Game: ${signals.midGameQuits}, Pause: ${signals.pauseToQuit}, Früh: ${signals.earlyQuits})`,
-      `Modi gespielt: ${signals.modesPlayed}`,
-      `Features entdeckt: ${signals.featuresAdopted}`,
+      `${t('er_retention')}: ${signals.activeDaysPerWeek} ${t('er_days_week')}`,
+      `${t('er_sessions')}: Ø ${signals.avgSessionMin} min`,
+      `${t('er_score_trend')}: ${signals.avgScoreTrend > 0 ? '+' : ''}${(signals.avgScoreTrend * 100).toFixed(1)}%`,
+      `${t('er_retry')}: ${(signals.retryRate * 100).toFixed(0)}%`,
+      `${t('er_quits')}: ${(signals.quitRate * 100).toFixed(0)}%`,
+      `${t('er_modes')}: ${signals.modesPlayed}`,
       '',
-      '--- Spieler-Feedback ---',
-      `Durchschnitt: ${signals.avgRating} / 4`,
-      `Einträge: ${signals.feedbackCount} (Skip-Rate: ${(signals.skipRate * 100).toFixed(0)}%)`,
-      '',
-      '=== Ende ==='
+      t('er_feedback'),
+      `${t('er_avg_rating')}: ${signals.avgRating || '—'} / 4`,
+      `${t('er_entries')}: ${signals.feedbackCount}`,
     ];
     return lines.join('\n');
   }

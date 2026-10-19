@@ -25,7 +25,7 @@ npm run build:prod
 npx serve docs
 ```
 
-The automated smoke and visual scripts start their own local static server unless `SCS_BASE` is set:
+The smoke script starts a production server (or uses `SCS_BASE`). The visual review serves local source and runs the asserted surface-state gallery:
 
 ```bash
 npm run smoke-test
@@ -44,10 +44,16 @@ npm run visual-review
 | `npm run service-worker-test` | Regression coverage for cached media ranges, cache failures, and scoped worker lifecycle. |
 | `npm run pwa-release-test` | Real-browser checks for all music tracks, range responses, and offline loading; supports `SCS_BASE`. |
 | `npm run reward-release-test` | A real first round, quiet results, reward limits, and existing-save migration; supports `SCS_BASE`. |
-| `npm run visual-review` | Capture phone and desktop screenshots, including the mode catalog, for manual review. |
+| `npm run earned-progress-release-test` | Six naturally timed rounds on a fresh guest profile, real life continuation, earned records/milestones/analysis and reload persistence. No seeded scores or clock overrides; allows about four minutes and supports `SCS_BASE`. |
+| `npm run visual-review` | Capture the asserted phone/desktop surface gallery to `%LOCALAPPDATA%/Temp/opencode/scs-surface-review`; override with `SCS_REVIEW_OUT` and optionally `SCS_REVIEW_VIEW=phone\|small\|desktop`. |
+| `npm run surface-release-test` | Local-source navigation and state-gallery checks: dialogs, purchases/level requirements, photos/errors, keyboard tutorial, results, wheel/motion, notifications, themes, language and legal documents. Some uncommon states use explicitly seeded fixtures. |
 | `npm run presentation-release-test` | Check the ten mode layouts, mode catalog, themes, settings, motion preferences and feedback on phone/desktop viewports. |
 | `npm run perf-benchmark` | Play a round with a scripted fast player under CPU throttling and report frame times, long tasks and style/layout cost per pace bucket (see flags in the script header). |
 | `npm run performance-release-test` | Deterministic resource/work limits for particles, trails, input geometry, motion and the frame-rate governor. |
+| `npm run living-arena-test` | Bounded studio lights/answer impulses, stable hit areas, pause/tier/motion cleanup, all 12 silhouettes and exact normal/colorblind face colors. |
+| `npm run brand:generate` | Refresh web/store PNGs and Android legacy/adaptive/splash rasters from the shared material icon. |
+| `npm run brand-assets-test` | Check icon master consistency, raster palette/dimensions, native XML sources and adaptive safe-zone geometry. Not an Android device test. |
+| `npm run game-feedback-test` | World/phase contact sounds, immediate bounded voices, one short answer haptic, independent preferences and blocked-device safety. |
 | `npm run streak-flow-test` | Virtual-clock regression: 100 correct answers in five modes, phase overlap, Rush deadlines and pause cleanup. |
 | `npm run streak-presentation-test` | Real-browser flawless streaks through combo, Shuffle, Rush and cooldown; first-frame symbol visibility and unobstructed targets. |
 | `npm run verify` | Full local gate: static checks, logic/service worker tests, contrast, build, PWA/offline checks, DOM contrast, and smoke. |
@@ -81,6 +87,14 @@ UI colors are defined in `css/partials/01-tokens.css` and the theme definitions 
 Performance tiers share one policy for CSS and effects. Short particle trajectories are baked into compositor animations; input bounds and material nodes are reused, and unchanged HUD values are not rewritten. The trail canvas is capped at 2× / 1.5× / 1× resolution for high / mid / low tiers and clears only its previous drawn bounds. The governor samples active gameplay, not menus or pauses, and keeps downgrade decisions within the current tab session. See `BUILD.md` for repeatable benchmarks; emulated FPS is not an Android device guarantee.
 
 Gameplay notices are a single compact footer status, not center-screen celebrations. Combo/fever/cooldown text never holds the next item or injects a stylesheet mid-round. A stimulus is fully opaque on its first frame. Rush uses the same single spawn scheduler as normal play: a correct answer advances promptly, while unanswered items retain their minimum answer window. Shuffle keeps its short orientation cue, without an extra post-animation wait.
+
+The Living Arena adds neutral clearcoat/rim materials and ten distinct architectural worlds, mirrored in the mode selector. Two small studio lights replace the previous floating dots. Five peripheral energy stages build with a streak, without a full-screen glow or center-screen celebration. Reading worlds remain restrained. Correct answers emit one short, reusable light impulse and a local target ring/spring. These never move hit areas, hold a successor or persist into the next stimulus.
+
+Optional **Moving background** in Settings is off by default: primary mouse/touch movement shifts only the backdrop by at most ±4/3 pixels, on high quality with motion allowed. Its status explains when motion/quality settings suspend it. Inputs are coalesced into one frame; idle gameplay adds no depth loop. Pause, visibility, tier/motion changes and release reset the scenery. World-specific contact sounds and short haptics share the accepted-answer event rather than stacking perfect/combo/menu buzzes. Sound, music and vibration keep independent controls. No 3D engine, sensor permission or runtime dependency is required.
+
+The surface-coherence pass reuses material objects in branding, tutorials and Chaos, with shared vector UI icons. Chaos size ratios and all task colors stay intact. A single world silhouette replaces stacked decorative rings; routes are invisible until confirmation. The desktop selector uses a composed two-column stage, the catalog describes tasks as well as worlds, and settings group related controls rather than boxing every row. Results distinguish unanswered rounds, continuation, records and completed rounds, without fake zero-XP rewards. Reserve lives are explained separately from Endless round lives.
+
+Shop confirmations and manual-share fallbacks use a bounded, accessible in-app dialog with cancel-on-Escape/Back and focus restoration, not browser alerts/prompts. The shop discloses the existing service-level unlock requirements before spending currency. Start-up has no cosmetic minimum wait. Web/store icons, native launcher rasters and splash art share the material silhouettes; the Android API-24 robot override and white Capacitor splash are replaced. Legal pages share a readable dark layout, German/English versions and an offline-capable language switch; the original English legal content is retained. Game insights and its text export describe activity rather than claiming to measure enjoyment or ability. Visual review is not a substitute for physical Android testing or legal review of translations.
 
 ## Lean Progression
 

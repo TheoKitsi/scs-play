@@ -3,7 +3,8 @@
    Filtered score lists with modes + play types.
    ═══════════════════════════════════════ */
 import { t }                from '../i18n.js';
-import { $, $$, showScreen } from '../helpers/dom.js';
+import { $, $$, showScreen, escHTML } from '../helpers/dom.js';
+import { CONFIG } from '../config.js';
 import { avatarHTML }        from '../renderers/avatars.js';
 import app                   from '../appState.js';
 
@@ -49,11 +50,10 @@ function renderLeaderboard() {
   }
 
   const avatar = save.getAvatar();
-  const medals = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'];
   const medalLabels = [t('medal_place_1'), t('medal_place_2'), t('medal_place_3')];
 
   list.innerHTML = scores.slice(0, 20).map((s, i) => {
-    const medal = i < 3 ? `<span class="lb-rank-icon" role="img" aria-label="${medalLabels[i]}">${medals[i]}</span>` : `<span class="lb-rank-num">#${i + 1}</span>`;
+    const medal = `<span class="lb-rank-num"${i < 3 ? ` aria-label="${medalLabels[i]}"` : ''}>${String(i + 1).padStart(2, '0')}</span>`;
     const relDate = relativeDate(s.date);
 
     return `
@@ -61,8 +61,8 @@ function renderLeaderboard() {
         ${medal}
         <div class="score-avatar">${avatarHTML(avatar)}</div>
         <div class="score-info">
-           <span class="score-name">${save.data?.displayName || t('lb_me')}</span>
-           <span class="score-detail">${s.accuracy ?? '\u2014'}% \u00B7 ${s.streak ?? 0}\uD83D\uDD25 \u00B7 ${relDate}</span>
+           <span class="score-name">${escHTML(save.data?.displayName || t('lb_me'))}</span>
+           <span class="score-detail">${s.accuracy ?? '\u2014'}% · ${t('combo')} ${s.streak ?? 0} · ${relDate}</span>
         </div>
         <div class="score-big score-big-own">
            ${s.score.toLocaleString()}
@@ -80,11 +80,11 @@ export function showLeaderboard() {
     _lbInitialized = true;
   }
 
-  $$('.lb-mode-btn').forEach(btn => {
-    btn.classList.toggle('selected', btn.dataset.mode === lbMode);
-    btn.setAttribute('aria-pressed', String(btn.dataset.mode === lbMode));
-    btn.onclick = () => { lbMode = btn.dataset.mode; $$('.lb-mode-btn').forEach(b => { b.classList.toggle('selected', b === btn); b.setAttribute('aria-pressed', String(b === btn)); }); renderLeaderboard(); audio.tap(); };
-  });
+  const modeSelect = $('#lbModeSelect');
+  modeSelect.innerHTML = CONFIG.MODE_ORDER.map(mode => `<option value="${mode}">${t(`mode_${mode}`)}</option>`).join('');
+  if (!CONFIG.MODE_ORDER.includes(lbMode)) lbMode = 'klassik';
+  modeSelect.value = lbMode;
+  modeSelect.onchange = () => { lbMode = modeSelect.value; renderLeaderboard(); audio.tap(); };
 
   $$('.lb-filter-btn').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.filter === lbFilter);

@@ -4,6 +4,7 @@
    Viral-optimized emoji share cards.
    ═══════════════════════════════════════ */
 import { t } from '../i18n.js';
+import { appDialog } from '../helpers/appDialog.js';
 
 /* ── Emoji helpers ── */
 const MODE_EMOJI = {
@@ -28,7 +29,7 @@ function _tierEmoji(score, accuracy) {
 
 function generateShareText(stats) {
   const mode = (stats.mode || 'klassik').toLowerCase();
-  const modeName = (stats.mode || 'KLASSIK').toUpperCase();
+  const modeName = t(`mode_${mode}`);
   const playType = stats.playType || 'classic';
   const score = stats.score ? stats.score.toLocaleString() : '0';
   const acc = stats.accuracy || 0;
@@ -43,12 +44,12 @@ function generateShareText(stats) {
     `${tier} SCS PLAY ${modeE}`,
     ``,
     `${playE} ${modeName} · ${score} ${t('share_pts')}`,
-    `🔥 Streak ${streak}x · 🎯 ${acc}%`,
+    `${t('streak_label')} ${streak} · ${t('accuracy')}: ${acc}%`,
     bar,
   ];
 
   /* Mode-specific highlight */
-  if (stats.avgReaction && stats.avgReaction < 500) lines.push(`⚡ ${stats.avgReaction}ms avg`);
+  if (stats.avgReaction && stats.avgReaction < 500) lines.push(`${t('avg_reaction')}: ${stats.avgReaction} ms`);
   if (stats.isPerfectRound) lines.push(`✨ ${t('share_perfect_round')}`);
   if (streak >= 20) lines.push(`🔥 ${t('share_insane_streak', { n: streak })}`);
 
@@ -108,9 +109,12 @@ export async function shareScore(stats, getBodyFx) {
 
   for (const s of strategies) {
     if (!s.test()) continue;
-    try { await s.run(); return; } catch { /* fall through to next strategy */ }
+    try { await s.run(); return; } catch (error) {
+      if (error?.name === 'AbortError') return; // Dismissing native sharing is not a failure.
+      /* Unsupported/failed sharing may fall through to the next strategy. */
+    }
   }
 
-  _showToast(`⚠️ ${t('share_unavailable')}`);
-  prompt(t('share_copy_prompt'), text);
+  // The manual-copy dialog is the complete fallback, not a second notification.
+  await appDialog({ title: t('share_title'), message: t('share_copy_prompt'), copyText: text });
 }

@@ -13,6 +13,11 @@ const PATTERNS = {
 
   // == Gameplay Core ==
   correct:    [15],                      // Quick snap
+  impactGood: [8],                       // One precise contact, not stacked buzzes
+  impactPerfect: [12],
+  impactFlow: [14],
+  impactBonus: [10, 8, 12],
+  impactMiss: [12, 16, 12],
   perfect:    [15, 10, 25],              // Smooth rolling impact
   wrong:      [20, 30, 20, 30, 20],      // Stuttering error
   heartLost:  [60, 40, 100],             // Heavy thump
@@ -21,7 +26,7 @@ const PATTERNS = {
   streak5:    [15, 20, 25],              // Rising
   streak10:   [20, 15, 25, 15, 40],      // Rising sharp
   combo:      [30, 40, 50, 40],          // Rapid heartbeat
-  rush:       [15, 30, 15, 30, 15, 30],  // Sustained thrum
+  rush:       [10, 12, 10],              // Brief orientation cue, not sustained rumble
   fever:      [50, 20, 50, 20, 60, 10, 80], // Massive explosion intro
 
   // == Milestones & Collectibles ==
@@ -42,7 +47,7 @@ const PATTERNS = {
  */
 export function haptic(pattern = 'tap', save, intensityRamp = 1.0) {
   if (save && !save.getSetting('haptics')) return;
-  if (!navigator.vibrate) return;
+  if (typeof navigator === 'undefined' || !navigator.vibrate || (typeof document !== 'undefined' && document.hidden)) return;
   
   let p = PATTERNS[pattern] || PATTERNS.tap;
   
@@ -52,5 +57,9 @@ export function haptic(pattern = 'tap', save, intensityRamp = 1.0) {
     );
   }
 
-  navigator.vibrate(p);
+  try { navigator.vibrate(p); } catch { /* Unsupported/blocked vibration must never break input. */ }
+}
+
+export function cancelHaptics() {
+  try { globalThis.navigator?.vibrate?.(0); } catch { /* No vibration support. */ }
 }
