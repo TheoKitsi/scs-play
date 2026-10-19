@@ -250,11 +250,10 @@ export const CONFIG = {
   /* ─── Toast display (ms) ─── */
   TOAST_DURATION: 8500,
 
-  /* ─── Results stagger (ms) ─── */
-  RESULTS_COUNTUP_MS: 700,
-  RESULTS_STATS_DELAY: 140,
-  RESULTS_BUTTONS_DELAY: 120,
-  GAME_OVER_TRANSITION_MS: 550,
+  /* ─── Round presentation only (ms), never game-engine deadlines ─── */
+  RESULTS_COUNTUP_MS: 360,
+  GAME_OVER_TRANSITION_MS: 420,
+  CONTINUE_READY_MS: 300,
 
   /* ─── Boot screen (ms) ─── */
   BOOT_MIN_DISPLAY: 900,

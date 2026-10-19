@@ -81,7 +81,10 @@ try {
 
     const rush = new GameEngine();
     rush.running = true;
-    rush.practice = true;
+    rush.ranked = true;
+    // This is a scored-round Rush scheduler fixture. Isolate combo decay
+    // explicitly; practice now intentionally has no unanswered-item deadline.
+    rush._startComboDecay = () => {};
     rush.mode = mode;
     rush.rng = () => 0;
     rush._assignCorners();

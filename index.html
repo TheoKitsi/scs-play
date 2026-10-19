@@ -570,6 +570,7 @@
 
   <!-- PB Proximity -->
   <div id="pbProximity" class="pb-proximity"></div>
+  <div id="bestRunComparison" class="best-run-comparison" role="note" hidden></div>
 
   <!-- Sequence watch/go cues; gameplay notices stay in the footer. -->
   <div id="rushText" class="rush-text"></div>
@@ -631,14 +632,19 @@
   </div>
 
   <!-- CONTINUE now merged into results screen -->
+  <div id="roundCue" class="round-cue" tabindex="-1" role="status" aria-live="polite" aria-atomic="true" hidden>
+    <div class="round-cue-card"><span id="roundCueArt" aria-hidden="true"></span><p id="roundCueLabel"></p></div>
+  </div>
 </div>
 
 <!-- ═══════ RESULTS ═══════ -->
 <div id="results" class="screen">
   <div class="screen-content results-content">
     <div class="results-panel">
+      <div id="resWorld" class="result-world" aria-hidden="true"></div>
       <h2 data-i18n="game_over">ZEIT ABGELAUFEN!</h2>
       <p id="resSummary" class="results-summary"></p>
+      <p id="resHighlight" class="results-summary" hidden></p>
     <div id="resMilestone" class="results-milestone" role="status" hidden></div>
 
     <!-- Phase 1: Score (counts up immediately) -->
@@ -652,6 +658,7 @@
         <span id="resScore" class="ring-score results-score-num">0</span>
       </div>
       <span id="resMode" class="results-mode">Beginner</span>
+      <p id="resScoreBreakdown" class="results-summary" hidden></p>
     </div>
 
     <!-- Phase 2: Stats grid (fades in after count-up) -->
@@ -696,6 +703,8 @@
       <p id="resDailyGoal" class="results-daily-goal"></p>
       <p id="resRoundHelp" class="results-daily-goal"></p>
       <button id="btnShare" class="btn btn-ghost btn-share" data-i18n="share_score">Teilen</button>
+      <p id="resPracticeSuggestion" class="results-summary"></p>
+      <button id="btnPracticeResult" class="btn btn-secondary" data-i18n="round_practice">Diesen Modus üben</button>
       </div>
     </details>
 
@@ -773,6 +782,7 @@
         <label class="setting-row"><span class="setting-copy"><span data-i18n="colorblind_mode">Farbenblind-Modus</span><small data-i18n="settings_colorblind_help">Zusätzliche Muster und unterscheidbare Farben.</small></span><input id="toggleColorblind" type="checkbox"></label>
         <label class="setting-row"><span class="setting-copy"><span data-i18n="reduced_motion">Reduzierte Animationen</span><small data-i18n="settings_motion_help">Ruhigere Effekte, gleiches Spieltempo.</small></span><input id="toggleMotion" type="checkbox"></label>
         <label class="setting-row"><span class="setting-copy"><span data-i18n="settings_depth">Beweglicher Hintergrund</span><small data-i18n="settings_depth_help">Die Bühne folgt leicht deiner Bewegung. Alle Spielziele bleiben fest.</small><small id="depthStatus" role="status"></small></span><input id="toggleDepth" type="checkbox" aria-describedby="depthStatus"></label>
+        <label class="setting-row"><span class="setting-copy"><span data-i18n="settings_best_run">Bestlaufvergleich</span><small data-i18n="settings_best_run_help">Optionaler Punktevergleich in Blitz und Marathon. Nur unverlängerte Runden desselben Modus und derselben Dauer.</small></span><input id="toggleBestRun" type="checkbox"></label>
         <label class="setting-row"><span data-i18n="haptics">Haptik</span><input id="toggleHaptics" type="checkbox"></label>
       </fieldset>
       <fieldset class="setting-group" id="settingsAudio">

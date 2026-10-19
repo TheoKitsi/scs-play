@@ -59,6 +59,7 @@ export function showSettings(fromPause, showHome, showPausedGame) {
   $('#toggleColorblind').checked = save.getSetting('colorblind');
   $('#toggleMotion').checked     = save.getSetting('reducedMotion');
   $('#toggleDepth').checked      = Boolean(save.getSetting('arenaDepth'));
+  $('#toggleBestRun').checked    = Boolean(save.getSetting('bestRunGhost'));
   $('#toggleHaptics').checked    = save.getSetting('haptics');
   $('#toggleSound').checked      = save.getSetting('sound');
   $('#toggleMusic').checked      = save.getSetting('music');
@@ -118,6 +119,7 @@ export function bindSettings(showHome) {
   };
 
   bind('#toggleColorblind', 'colorblind', v => { app.colorblind = v; });
+  bind('#toggleBestRun', 'bestRunGhost');
   bind('#toggleMotion', 'reducedMotion', v => {
     applyMotionPreference(v);
     app.effects?.setReduced(v);

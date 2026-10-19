@@ -1414,13 +1414,16 @@ export class EffectsManager {
      ══════════════════════════════════════ */
   scoreCountUp(el, from, to, duration = 600, onTick = null) {
     if (!el) return () => {};
+    if (this.reduced || document.hidden || from === to) {
+      el.textContent = to.toLocaleString();
+      return () => {};
+    }
 
     const start = performance.now();
     const diff = to - from;
     let lastMilestone = -1;
     let rafId = null;
     let cancelled = false;
-    const pulseTimers = new Set();
 
     const step = () => {
       rafId = null;
@@ -1436,12 +1439,6 @@ export class EffectsManager {
       if (diff > 0) {
         const milestone = Math.floor(current / (diff * 0.1));
         if (milestone > lastMilestone) {
-          el.style.transform = 'scale(1.15)';
-          const pulseTimer = setTimeout(() => {
-            pulseTimers.delete(pulseTimer);
-            if (!cancelled) el.style.transform = '';
-          }, 80);
-          pulseTimers.add(pulseTimer);
           lastMilestone = milestone;
           if (typeof onTick === 'function') onTick(progress);
         }
@@ -1458,8 +1455,6 @@ export class EffectsManager {
     return () => {
       cancelled = true;
       if (rafId !== null) cancelAnimationFrame(rafId);
-      pulseTimers.forEach(clearTimeout);
-      pulseTimers.clear();
       el.style.transform = '';
     };
   }
@@ -1654,26 +1649,4 @@ export class EffectsManager {
     this._absorbPool = null;
   }
 
-  /* ══════════════════════════════════════
-     GAME OVER FLASH (dramatic end-of-game)
-     ══════════════════════════════════════ */
-  gameOverFlash(labelText) {
-    if (this.reduced) return;
-    /* Red flash overlay */
-    const flash = document.createElement('div');
-    flash.className = 'game-over-flash';
-    this._appendNode(document.body, flash);
-    setTimeout(() => this._removeNode(flash), 650);
-
-    /* Large text overlay */
-    if (labelText) {
-      const txt = document.createElement('div');
-      txt.className = 'game-over-text';
-      const span = document.createElement('span');
-      span.textContent = labelText;
-      txt.appendChild(span);
-      this._appendNode(document.body, txt);
-      setTimeout(() => this._removeNode(txt), 800);
-    }
-  }
 }

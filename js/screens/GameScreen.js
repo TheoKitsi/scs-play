@@ -19,6 +19,8 @@ import { arenaWorld } from '../renderers/arenaWorld.js';
 import { icon, directionIcon } from '../renderers/icons.js';
 import { modePreview } from '../renderers/modePreview.js';
 import { checkOrientation } from '../helpers/systemIntegration.js';
+import { showRoundCue, cancelRoundCue } from '../helpers/roundCue.js';
+import { createBestRun } from '../helpers/bestRun.js';
 import app                   from '../appState.js';
 import { startModeMastery, finishModeMastery } from './gameHud/modeMasteryLifecycle.js';
 import { trackKlassikAnswer, getGhostDelta, getSpeedZone } from '../game/ModeMastery.js';
@@ -41,13 +43,48 @@ const _svgCache = new Map();
 const _centerSVGCache = new Map();
 let _svgInstance = 0;
 let _gameRunId = 0;
+let _bestRun = null;
+let _continuedRun = false;
+let _endingRound = false;
+
+function lockGameScroll() {
+  document.body.style.overflow = 'hidden';
+  document.documentElement.style.overflow = 'hidden';
+  if (window.__gameScrollBlocker) window.__gameScrollBlocker.el?.removeEventListener('touchmove', window.__gameScrollBlocker.fn);
+  const el = $('#game');
+  const fn = event => event.preventDefault();
+  el?.addEventListener('touchmove', fn, { passive: false });
+  window.__gameScrollBlocker = { el, fn };
+}
+
+function updateBestRun() {
+  const el = $('#bestRunComparison');
+  if (!el) return;
+  if (!app.save.getSetting('bestRunGhost') || !app.game.running || app.game.paused || _continuedRun || app.game.practice) {
+    el.hidden = true;
+    return;
+  }
+  const delta = _bestRun?.delta();
+  const visible = _bestRun?.eligible && (delta != null || !_bestRun.hasReference);
+  el.hidden = !visible;
+  if (visible) {
+    const label = delta == null ? t('best_run_pending')
+      : t('best_run_delta', { n: `${delta >= 0 ? '+' : ''}${delta.toLocaleString()}` });
+    const amount = delta == null ? '—' : `${delta >= 0 ? '+' : ''}${delta.toLocaleString(undefined, { notation: Math.abs(delta) > 99999 ? 'compact' : 'standard', maximumFractionDigits: 1 })}`;
+    const text = t('best_run_short', { n: amount });
+    if (el.textContent !== text) { el.textContent = text; el.setAttribute('aria-label', label); }
+  }
+}
 
 function beginGameRun() {
+  cancelRoundCue();
+  app.continueStats = null;
   _gameRunId++;
   return _gameRunId;
 }
 
 function invalidateGameRun() {
+  cancelRoundCue();
   _gameRunId++;
 }
 
@@ -562,6 +599,10 @@ function updateEndlessLives() {
 
 function checkPBProximity() {
   const { game, save, audio } = app;
+  if (save.getSetting('bestRunGhost') && _bestRun?.eligible && !_continuedRun) {
+    $('#pbProximity')?.classList.remove('visible', 'new-pb');
+    return;
+  }
   const ruleset = game.isDaily ? `daily_${game.constructor.todayKey()}` : game.playType;
   const pb = save.getPB(game.mode, ruleset);
   if (pb > 0 && game.score > 0) {
@@ -2014,6 +2055,9 @@ function cleanupGameClasses() {
 }
 
 function cleanupActiveGame({ stopEngine = true } = {}) {
+  cancelRoundCue();
+  _endingRound = false;
+  if ($('#bestRunComparison')) $('#bestRunComparison').hidden = true;
   cancelHaptics();
   setGameplayPerformanceActive(false);
   const { game, audio, effects, swipe } = app;
@@ -2034,7 +2078,6 @@ function cleanupActiveGame({ stopEngine = true } = {}) {
   effects?.cleanup();
   cleanupGameClasses();
   cleanupModeHuds();
-  $('#game')?.classList.remove('game-over-freeze');
 }
 
 function restoreDailySelection() {
@@ -2140,9 +2183,9 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
   }
 
   const practiceLabel = $('#practiceLabel');
-  if (practiceLabel) practiceLabel.style.display = 'none';
+  if (practiceLabel) practiceLabel.style.display = practice ? 'block' : 'none';
   const stopBtn = $('#btnStopPractice');
-  if (stopBtn) stopBtn.style.display = 'none';
+  if (stopBtn) stopBtn.style.display = practice ? 'block' : 'none';
 
   $('#pauseOverlay')?.classList.remove('active');
 
@@ -2157,15 +2200,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
 
   showScreen('game', app);
 
-  /* Lock page scroll during gameplay */
-  document.body.style.overflow = 'hidden';
-  document.documentElement.style.overflow = 'hidden';
-
-  /* Hard-block touchmove on game element to prevent any scroll leak */
-  const gameEl = document.getElementById('game');
-  const _blockScroll = (e) => e.preventDefault();
-  if (gameEl) gameEl.addEventListener('touchmove', _blockScroll, { passive: false });
-  window.__gameScrollBlocker = { el: gameEl, fn: _blockScroll };
+  lockGameScroll();
 
   if (!practice && !save.getSetting('tutorialDone')) {
     showTutorial();
@@ -2209,6 +2244,9 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   livingArena.setActive(true);
 
   startModeMastery(app.selectedMode, app.mastery);
+  _continuedRun = false;
+  _endingRound = false;
+  _bestRun = createBestRun(game, app.mastery, game.timer);
 
   if (!practice && game.playType !== 'endless') {
     app.gameDuration = game.timer;
@@ -2229,6 +2267,8 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   /* ─── Wire game callbacks ─── */
   game.onTick = () => {
+    _bestRun?.record();
+    updateBestRun();
     const thresholds = getUrgencyThresholds();
     const textHeavy = isTextHeavyMode();
     updateHUD();
@@ -2373,6 +2413,8 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
     playGameImpact(result, game, audio, save);
     updateModeMasteryAfterAnswer(game, result);
+    _bestRun?.record();
+    updateBestRun();
 
     effects.trailComplete(result.correct);
     updateHUD();
@@ -2505,26 +2547,45 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   game.onCompetitionComplete = null;
 
-  game.onContinuePrompt = (stats) => { showContinuePrompt(stats); };
+  const presentEnd = (stats, next) => {
+    if (runId !== _gameRunId || _endingRound || app.currentScreen !== 'game') return;
+    _endingRound = true;
+    cancelHaptics();
+    setGameplayPerformanceActive(false);
+    livingArena.setActive(false);
+    swipe.unbind();
+    effects.stopAmbient();
+    effects.dangerZone?.(false);
+    const kind = stats.competitionWon ? 'win' : game.playType === 'endless' ? 'lives' : 'time';
+    audio.roundEnd(kind);
+    haptic('roundEnd', save);
+    if (game.playType !== 'endless') setText('#hudTimer', '0');
+    showRoundCue(t(kind === 'win' ? 'competition_complete' : kind === 'lives' ? 'endless_over' : 'round_time_up'), game.mode, () => {
+      if (runId !== _gameRunId || app.currentScreen !== 'game') return;
+      cleanupActiveGame({ stopEngine: false });
+      next(stats);
+    });
+  };
+
+  game.onContinuePrompt = (stats) => {
+    if (runId !== _gameRunId) return;
+    if (game.practice) { stopPractice(showHome); return; }
+    if (save.getLives() <= 0) { game.declineContinue(); return; }
+    presentEnd(stats, showContinuePrompt);
+  };
 
   game.onGameOver = (stats) => {
     if (runId !== _gameRunId) return;
-    cleanupActiveGame({ stopEngine: false });
-    if (!stats.competitionWon) audio.gameOver();
-    haptic('gameOver', save);
+    if (game.practice) { stopPractice(showHome); return; }
+    _bestRun?.finish(stats, _continuedRun);
     finishModeMastery(game.mode, app.mastery, stats, app.save);
-
-    const g = $('#game');
-    g?.classList.add('game-over-freeze');
-    if (typeof effects.gameOverFlash === 'function') {
-      effects.gameOverFlash(t('game_over'));
-    }
-    setTimeout(() => {
-      if (runId !== _gameRunId) return;
-      g?.classList.remove('game-over-freeze');
+    const finish = () => {
       restoreDailySelection();
       showResults(stats);
-    }, CONFIG.GAME_OVER_TRANSITION_MS || 550);
+    };
+    // Declining continuation settles this existing card, never a second finale.
+    if (app.currentScreen === 'results') finish();
+    else presentEnd(stats, finish);
   };
 
   /* ── Sequenz (Simon Says) callbacks ── */
@@ -2700,6 +2761,41 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   if (checkOrientation()) pauseGame();
 }
 
+export function resumeContinuedGame(cancel) {
+  const { game, save, audio, effects, swipe } = app;
+  const runId = _gameRunId;
+  _continuedRun = true;
+  document.body.classList.add(`mode-${game.mode}`);
+  $('#game').dataset.modeWorld = arenaWorld(game.mode).family;
+  livingArena.configure(game.mode, save.getSetting('arenaDepth'));
+  renderCorners(game.cornerMap, true);
+  if (game.isMemoMode) {
+    Object.entries(game.cornerMap).forEach(([dir, info]) => {
+      const corner = $(`#game .corner-shape[data-dir="${dir}"]`);
+      corner?.classList.add('memo-covered');
+      corner?.setAttribute('aria-label', getMemoCornerLabel(dir, info, true));
+    });
+  }
+  clearCenter();
+  setText('#hudTimer', String(CONFIG.CONTINUE_EXTRA_TIME));
+  showScreen('game', app);
+  lockGameScroll();
+  showRoundCue(t('round_ready'), game.mode, () => {
+    if (runId !== _gameRunId || app.currentScreen !== 'game') return;
+    effects.initTrailCanvas($('#trailCanvas'));
+    swipe.bind();
+    invalidateRects();
+    if (!game.continueGame()) return;
+    livingArena.setActive(true);
+    livingArena.setEnergy(game.streak, game.feverActive);
+    setGameplayPerformanceActive(true);
+    audio.startMusic();
+    audio.countdown(1);
+    updateHUD();
+    if (document.hidden || checkOrientation()) pauseGame();
+  }, true, cancel);
+}
+
 /* ═══════ Pause / Resume / Quit ═══════ */
 function syncPausedPresentation() {
   const { game } = app;
@@ -2720,6 +2816,7 @@ export function pauseGame() {
   const { game, audio } = app;
   if (!game.running || game.paused) return;
   game.pause();
+  updateBestRun();
   cancelHaptics();
   livingArena.setActive(false);
   setGameplayPerformanceActive(false);
@@ -2748,6 +2845,7 @@ export function resumeGame() {
   const { game, audio } = app;
   syncPausedPresentation();
   game.resume();
+  updateBestRun();
   livingArena.setActive(game.running && !game.paused);
   setGameplayPerformanceActive(game.running && !game.paused);
   audio.startMusic();

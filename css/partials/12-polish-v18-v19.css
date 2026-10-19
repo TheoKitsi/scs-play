@@ -45,16 +45,6 @@
   outline-offset:3px;
 }
 
-/* ─── Game Over Freeze: Enhanced ─── */
-.game-over-freeze{
-  animation:gameOverFreezeEnhanced .6s ease-out both!important;
-}
-@keyframes gameOverFreezeEnhanced{
-  0%{opacity:1;transform:scale(1)}
-  50%{opacity:.7;transform:scale(1.005)}
-  100%{opacity:.5;transform:scale(.98)}
-}
-
 /* ─── Results Screen: XP Ring ─── */
 .results-xp-ring{
   position:relative;display:inline-flex;align-items:center;justify-content:center;

@@ -92,6 +92,7 @@ function defaults() {
       colorblind: false,
       reducedMotion: false,
       arenaDepth: false,
+      bestRunGhost: false,
       haptics: true,
       sound: true,
       music: true,

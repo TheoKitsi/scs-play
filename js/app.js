@@ -191,6 +191,12 @@ function bindEvents() {
   $('#btnHome')?.addEventListener('click',    () => { app.engagement?.trackPostGameAction('home', wasLastGameGood()); navShowHome(); });
   $('#btnOneMore')?.addEventListener('click', () => { app.engagement?.trackPostGameAction('retry', wasLastGameGood()); app.engagement?.trackGameStart(); navStartGame(false, false); });
   $('#btnShare')?.addEventListener('click',   () => { app.engagement?.trackPostGameAction('share', wasLastGameGood()); shareScore(app.lastResultStats, getBodyFx); });
+  $('#btnPracticeResult')?.addEventListener('click', () => {
+    const stats = app.lastResultStats;
+    if (!stats || app.currentScreen !== 'results' || app.continueStats || !save.isModeUnlocked(stats.mode)) return;
+    app.selectedMode = stats.mode;
+    navStartGame(true, false);
+  });
 
   /* ─ Game controls ─ */
   $('#btnStopPractice')?.addEventListener('click', () => withGameScreen(m => m.stopPractice(navShowHome)));
@@ -207,7 +213,7 @@ function bindEvents() {
   $('#btnPauseQuit')?.addEventListener('click', () => { app.engagement?.trackPauseToQuit(); withGameScreen(m => m.quitGame(navShowHome)); });
 
   /* ─ Continue prompt ─ */
-  $('#btnResContinueUse')?.addEventListener('click', () => doContinue());
+  $('#btnResContinueUse')?.addEventListener('click', () => doContinue(cancel => withGameScreen(m => m.resumeContinuedGame(cancel))));
   $('#btnResContinueNo')?.addEventListener('click',  () => declineContinue());
   /* ─ Shop tabs ─ */
   bindShopTabs();

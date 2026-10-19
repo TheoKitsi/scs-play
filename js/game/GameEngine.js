@@ -715,6 +715,9 @@ export class GameEngine {
 
   _scheduleSpawn(delay) {
     if (!this.running || this.paused || this._shuffleInProgress) return;
+    // The optional practice entry point is self-paced. Keep its current task
+    // until an answer; scored-round deadlines and scheduler are unchanged.
+    if (this.practice && this.currentShape) return;
     clearTimeout(this._spawnTimeout);
     /* One owner for BOTH normal and Rush spawning. RUSH_DELAY is an unanswered
        item's deadline, not a forced wait after a successful answer. */
@@ -1854,7 +1857,7 @@ export class GameEngine {
     } else if (this.isBrainMode || this.isMemoMode || this.isReflexMode) {
       postAnswerDelay = Math.max(150, Math.min(400, this.spawnInterval * 0.2));
     } else {
-      postAnswerDelay = this.practice ? CONFIG.PRACTICE_INTERVAL : Math.max(80, this.spawnInterval * 0.15);
+      postAnswerDelay = this.practice ? Math.min(400, CONFIG.PRACTICE_INTERVAL) : Math.max(80, this.spawnInterval * 0.15);
     }
     if (!shouldEndGame && this._memoPhase !== 'reveal') this._scheduleSpawn(postAnswerDelay);
     if (this.onResult) this.onResult(result);
@@ -2044,6 +2047,7 @@ export class GameEngine {
 
   _startSeqInputTimeout() {
     clearTimeout(this._seqInputTimeout);
+    if (this.practice) { this._seqInputTimeout = null; return; }
     let ms = CONFIG.SEQUENZ_INPUT_TIMEOUT_MS || 4000;
     /* After difficulty plateau, progressively reduce input timeout */
     const maxLen = CONFIG.SEQUENZ_MAX_LENGTH || 20;
@@ -2172,9 +2176,11 @@ export class GameEngine {
     if (brokenStreak >= 3 && this.onStreakBreak) this.onStreakBreak(brokenStreak);
     this._addRecentResult(false, reaction);
 
-    this.endlessTotalMisses++;
-    this.endlessLives = CONFIG.ENDLESS_MAX_MISSES - this.endlessTotalMisses;
-    if (this.onEndlessMiss) this.onEndlessMiss(this.endlessLives);
+    if (!this.practice) {
+      this.endlessTotalMisses++;
+      this.endlessLives = CONFIG.ENDLESS_MAX_MISSES - this.endlessTotalMisses;
+      if (this.onEndlessMiss) this.onEndlessMiss(this.endlessLives);
+    }
 
     const fail = {
       correct: false, direction, expected, points: 0, reaction,
