@@ -15,7 +15,7 @@
       <feComposite in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1"/>
       <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <linearGradient id="material" x1=".15" y1="0" x2=".85" y2="1"><stop stop-color="#fff" stop-opacity=".55"/><stop offset=".36" stop-color="#fff" stop-opacity="0"/><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></linearGradient>
+    <linearGradient id="material" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".24"/><stop offset=".18" stop-color="#fff" stop-opacity="0"/><stop offset=".84" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>
   </defs>
 
   <!-- Background -->

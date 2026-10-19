@@ -257,7 +257,7 @@ try {
       await image.decode();
       ctx.clearRect(0, 0, 64, 67);
       ctx.drawImage(image, 0, 0, 64, 67);
-      samples.push([...ctx.getImageData(32, 32, 1, 1).data]);
+      samples.push([16, 32, 48].map(y => [...ctx.getImageData(32, y, 1, 1).data]));
     }
     const silhouettes = [];
     for (const shape of shapes) {
@@ -271,7 +271,7 @@ try {
     }
     return { samples, silhouettes };
   }, { base: server.baseUrl, palette, shapes });
-  palette.forEach((color, i) => assert.deepEqual(rendered.samples[i], [...color.slice(1).match(/../g).map(hex => parseInt(hex, 16)), 255], `${color}: center face keeps its exact answer color`));
+  palette.forEach((color, i) => rendered.samples[i].forEach(pixel => assert.deepEqual(pixel, [...color.slice(1).match(/../g).map(hex => parseInt(hex, 16)), 255], `${color}: the readable face, not just one center pixel, keeps its exact answer color`)));
   shapes.forEach((shape, i) => assert.ok(rendered.silhouettes[i] > 100, `${shape}: actual SVG rasterization retains the silhouette`));
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const osMotion = await page.evaluate(async base => {

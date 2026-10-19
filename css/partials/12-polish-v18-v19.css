@@ -1,11 +1,11 @@
 /* ─── HUD Dynamic Glow ─── */
 .hud-value.value-changed{
-  animation:hudValuePop .35s var(--ease-bounce);
-  text-shadow:0 0 12px rgba(255,255,255,.3);
+  animation:hudValuePop .16s ease-out;
+  text-shadow:none;
 }
 @keyframes hudValuePop{
   0%{transform:scale(1)}
-  40%{transform:scale(1.2)}
+  40%{transform:scale(1.03)}
   100%{transform:scale(1)}
 }
 .hud-multiplier.mult-mid{
@@ -22,7 +22,7 @@
   text-shadow: 0 0 8px rgba(255,107,53,.4);
 }
 .hud-timer.timer-critical{
-  text-shadow:0 0 12px rgba(255,71,87,.4);
+  text-shadow:none;color:#FFB8C2;
 }
 
 /* ─── Corner Shapes: Feedback only (removed infinite breathing for GPU perf) ─── */
@@ -89,13 +89,10 @@
 }
 
 /* ─── Results: Ring entrance animation ─── */
-.results-xp-ring.ring-entrance{
-  animation:ringEntrance 0.7s cubic-bezier(0.34,1.56,0.64,1);
-}
+.results-xp-ring.ring-entrance{animation:ringEntrance .18s ease-out}
 @keyframes ringEntrance{
-  0%{transform:scale(0.4) rotate(-10deg);opacity:0;filter:blur(8px) drop-shadow(0 8px 16px rgba(0,0,0,0.5))}
-  60%{transform:scale(1.08) rotate(2deg);opacity:1;filter:blur(0) drop-shadow(0 8px 16px rgba(0,0,0,0.5))}
-  100%{transform:scale(1) rotate(0);opacity:1;filter:drop-shadow(0 8px 16px rgba(0,0,0,0.5))}
+  from{transform:translateY(3px);opacity:.8}
+  to{transform:none;opacity:1}
 }
 
 /* ─── Results: Close-to-PB motivator ─── */
@@ -163,17 +160,13 @@
   box-shadow:0 0 18px rgba(255,107,53,0.24);
 }
 #game.action-climax .hud-timer{
-  transform:scale(1.03);
+  transform:none;
 }
 #game.action-climax-peak .center-platform{
   border-color:rgba(202,212,227,.5);
 }
 #game.action-climax-peak .hud-timer{
-  animation:actionTimerPulse .42s ease-in-out infinite;
-}
-@keyframes actionTimerPulse{
-  0%,100%{transform:scale(1);text-shadow:0 0 0 rgba(255,107,53,0)}
-  50%{transform:scale(1.08);text-shadow:0 0 16px rgba(255,107,53,0.45)}
+  color:#FFB8C2;
 }
 
 /* ─── Settings: Category Headers ─── */
@@ -356,77 +349,7 @@
   100% { opacity: 0; transform: translateY(-16px) scale(0.96); }
 }
 
-/* ═══════════════════════════════════════════
-   v21 FIX: End-of-round dialog — compact layout
-   Reduce padding/margins on small screens to prevent
-   content from being clipped or requiring excessive scroll.
-   ═══════════════════════════════════════════ */
-
-/* Samsung S25 Ultra non-fullscreen (~750px viewport) */
-@media(max-height:790px){
-  .results-xp-ring{width:clamp(75px,12vh,110px);height:clamp(75px,12vh,110px);margin:4px auto}
-  .results-xp-ring .ring-score{font-size:clamp(1.6rem,3.5vh,2.4rem)}
-  .results-panel{padding:14px 12px}
-  .results-grid{gap:6px}
-  .res-item{padding:8px 7px;gap:3px}
-  .results-continue{padding:12px 12px;margin-bottom:8px}
-  .results-continue-btns{gap:8px}
-  .results-continue-btns .btn-sm{padding:10px 10px;font-size:.82rem}
-  .results-buttons{gap:6px;margin-top:6px}
-  .results-buttons .btn{padding:10px 12px;font-size:.88rem}
-}
-
-/* Galaxy A54 non-fullscreen (~670px viewport) & similar */
-@media(max-height:670px){
-  .results-xp-ring{width:clamp(65px,10vh,90px);height:clamp(65px,10vh,90px);margin:3px auto}
-  .results-xp-ring .ring-score{font-size:clamp(1.3rem,2.8vh,1.8rem)}
-  .results-panel{padding:10px 8px;width:calc(100% - 20px);gap:4px}
-  .results-content h2{font-size:1rem;margin-bottom:2px}
-  .results-mode{font-size:.68rem;padding:3px 8px}
-  .results-grid{gap:4px}
-  .res-item{padding:6px 5px;gap:2px}
-  .res-label{font-size:.55rem}
-  .res-val{font-size:.88rem}
-  .results-bonus{font-size:.7rem}
-  .results-session{display:none}
-  .results-xp{margin-top:3px}
-  .xp-earned{font-size:.8rem;margin-bottom:1px}
-  .xp-next{font-size:.68rem;margin-top:1px}
-  .results-buttons{gap:5px;margin-top:4px}
-  .results-buttons .btn{padding:8px 10px;font-size:.85rem}
-  .results-continue{padding:8px 8px;margin-bottom:4px}
-  .results-continue-label{font-size:.85rem}
-  .results-continue-desc{font-size:.72rem;margin-bottom:4px}
-  .results-continue-btns{gap:5px}
-  .results-continue-btns .btn-sm{font-size:.72rem;padding:7px 6px}
-}
-
-@media(max-height:560px){
-  .results-panel{padding:8px 6px; width:calc(100% - 16px); gap:4px}
-  .results-content h2{font-size:.9rem; margin-bottom:0}
-  .results-score{margin:2px 0}
-  .results-score-num{font-size:1.8rem; padding-bottom:4px}
-  .results-xp-ring{width:80px;height:80px;margin:4px auto}
-  .results-mode{font-size:.6rem;padding:2px 6px}
-  .results-grid{gap:3px}
-  .res-item{padding:4px 4px; gap:1px}
-  .res-label{font-size:.5rem}
-  .res-val{font-size:.78rem}
-  .results-bonus{font-size:.65rem}
-  .results-xp{margin-top:2px}
-  .xp-earned{font-size:.78rem;margin-bottom:1px}
-  .xp-next{font-size:.65rem;margin-top:1px}
-  .results-session{font-size:.65rem;margin-top:1px}
-  .results-buttons{gap:4px;margin-top:4px}
-  .results-buttons .btn{padding:7px 8px; font-size:.78rem}
-  .results-pb{padding:4px 8px;font-size:.78rem;margin-top:4px}
-  .results-levelup{padding:4px 8px;font-size:.72rem;margin-top:4px}
-  .results-continue{padding:8px 8px;margin-bottom:4px}
-  .results-continue-label{font-size:.8rem}
-  .results-continue-desc{font-size:.7rem;margin-bottom:4px}
-  .results-continue-btns{gap:4px}
-  .results-continue-btns .btn-sm{font-size:.7rem;padding:6px 6px}
-}
+/* Responsive result sizing is owned by 13-mobile-2026.css. */
 
 .results-mode-level{
   display:flex;

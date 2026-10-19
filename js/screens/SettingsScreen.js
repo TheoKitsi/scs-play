@@ -55,6 +55,7 @@ export function showSettings(fromPause, showHome, showPausedGame) {
   _settingsBack = fromPause && showPausedGame ? showPausedGame : showHome;
   _backLabelKey = fromPause && showPausedGame ? 'nav_back_game' : 'nav_back_home';
   showScreen('settings', app);
+  $$('.settings-nav button').forEach(btn => btn.removeAttribute('aria-current'));
   $('#toggleColorblind').checked = save.getSetting('colorblind');
   $('#toggleMotion').checked     = save.getSetting('reducedMotion');
   $('#toggleDepth').checked      = Boolean(save.getSetting('arenaDepth'));
@@ -92,14 +93,27 @@ export function bindSettings(showHome) {
   const { save, audio } = app;
   window.addEventListener('scs:perftier', syncPresentationControls);
   window.addEventListener('scs:motionpreference', syncPresentationControls);
+  $$('.settings-nav button').forEach(button => {
+    button.addEventListener('click', () => {
+      const section = document.getElementById(button.dataset.settingsSection);
+      const heading = section?.querySelector('legend');
+      if (!heading) return;
+      $$('.settings-nav button').forEach(btn => btn.removeAttribute('aria-current'));
+      button.setAttribute('aria-current', 'true');
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+      section.scrollIntoView({ block: 'start', behavior: 'instant' });
+    });
+  });
 
   const bind = (sel, key, cb) => {
     const el = $(sel);
     if (!el) return;
     el.addEventListener('change', async () => {
       const val = el.type === 'checkbox' ? el.checked : el.value;
-      await save.setSetting(key, val);
+      const saving = save.setSetting(key, val);
       if (cb) cb(val);
+      await saving;
     });
   };
 
@@ -135,7 +149,7 @@ export function bindSettings(showHome) {
   if (langEl) {
     langEl.addEventListener('change', async () => {
       const val = langEl.value;
-      await save.setSetting('language', val);
+      const saving = save.setSetting('language', val);
       if (val === 'auto') {
         const browserLang = (navigator.language || 'de').substring(0, 2);
         setLanguage(browserLang === 'de' ? 'de' : 'en');
@@ -145,6 +159,7 @@ export function bindSettings(showHome) {
       localise(t);
       applyBackLabel();
       syncPresentationControls();
+      await saving;
     });
   }
 }

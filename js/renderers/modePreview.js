@@ -1,6 +1,7 @@
 import { CONFIG } from '../config.js';
 import { shapeSVG } from './shapes.js';
-import { arenaWorld, arenaBlueprint } from './arenaWorld.js';
+import { arenaWorld } from './arenaWorld.js';
+import { modeArtwork } from './modeArtwork.js';
 import { directionIcon } from './icons.js';
 
 /** A small, dependency-free scene used by both mode selection surfaces. */
@@ -19,6 +20,6 @@ export function modePreview(mode, colorblind = false) {
   };
   const content = labels[mode] || tiles;
   return `<span class="mode-preview mode-preview--${mode}" data-world-family="${arenaWorld(mode).family}" aria-hidden="true">
-    <span class="preview-plinth"></span>${arenaBlueprint(mode)}${content}
+    ${modeArtwork(mode)}${content}
   </span>`;
 }

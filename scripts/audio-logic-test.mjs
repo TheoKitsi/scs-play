@@ -4,6 +4,15 @@ globalThis.fetch = async () => ({ ok: true, json: async () => ({ tracks: [] }) }
 
 const { AudioManager } = await import('../js/audio.js');
 
+const unavailable = new AudioManager();
+await unavailable._loadMusicManifest();
+assert.equal(unavailable._ensure(), false, 'Missing Web Audio must not block boot or menus');
+assert.doesNotThrow(() => { unavailable.tap(); unavailable.startMusic(); });
+assert.equal(unavailable._musicRunning, false, 'No synth scheduler without a usable context');
+globalThis.AudioContext = class { constructor() { throw new Error('Audio device unavailable'); } };
+assert.equal(new AudioManager()._ensure(), false, 'Audio-context construction failure must remain non-fatal');
+delete globalThis.AudioContext;
+
 const mapping = new AudioManager();
 mapping.setMusicMode('blitz', { modeId: 'klassik' });
 assert.equal(mapping._musicFamily, 'sort', 'Classic sorting must use the sort music family');

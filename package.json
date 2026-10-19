@@ -33,8 +33,10 @@
     "living-arena-test": "node scripts/living-arena-test.mjs",
     "game-feedback-test": "node scripts/game-feedback-test.mjs",
     "surface-release-test": "node scripts/surface-release-test.mjs",
+    "precision-ui-test": "node scripts/precision-ui-test.mjs",
+    "usability-release-test": "node scripts/usability-release-test.mjs",
     "knip": "knip --no-progress",
-    "verify": "npm run knip && npm run brand-assets-test && npm run game-logic-test && npm run engine-release-test && npm run streak-flow-test && npm run mastery-release-test && npm run audio-logic-test && npm run game-feedback-test && npm run service-worker-test && npm run effects-lifecycle-test && npm run performance-release-test && npm run living-arena-test && npm run progression-logic-test && npm run contrast-audit && npm run build:prod && npm run pwa-release-test && npm run reward-release-test && npm run earned-progress-release-test && npm run contrast-audit:dom && npm run surface-release-test && npm run presentation-release-test && npm run streak-presentation-test && npm run smoke-test",
+    "verify": "npm run knip && npm run brand-assets-test && npm run game-logic-test && npm run engine-release-test && npm run streak-flow-test && npm run mastery-release-test && npm run audio-logic-test && npm run game-feedback-test && npm run service-worker-test && npm run effects-lifecycle-test && npm run performance-release-test && npm run living-arena-test && npm run progression-logic-test && npm run contrast-audit && npm run build:prod && npm run pwa-release-test && npm run reward-release-test && npm run earned-progress-release-test && npm run contrast-audit:dom && npm run surface-release-test && npm run precision-ui-test && npm run usability-release-test && npm run presentation-release-test && npm run streak-presentation-test && npm run smoke-test",
     "cap:sync": "node scripts/build-prod.mjs && npx cap sync android",
     "cap:open": "npx cap open android",
     "cap:run": "node scripts/build-prod.mjs && npx cap run android"

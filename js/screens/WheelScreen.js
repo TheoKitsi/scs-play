@@ -5,7 +5,6 @@
    ═══════════════════════════════════════ */
 import { t } from '../i18n.js';
 import { $ } from '../helpers/dom.js';
-import { EffectsManager } from '../effects.js';
 import app from '../appState.js';
 import { closeModal, openModal } from '../helpers/modal.js';
 
@@ -32,6 +31,9 @@ const SEG_ANGLE = (2 * Math.PI) / SEG_COUNT;
 
 let spinning = false;
 let currentAngle = 0;
+let finishSpinAnimation = null;
+let pointerFrame = 0;
+let restoringWheelHistory = false;
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -123,48 +125,53 @@ function pickPrize(streak = 0, bonusSpin = false) {
 }
 
 function drawWheel(canvas, angle) {
+  // Draw one crisp, themed disk on opening. Spinning transforms that bitmap;
+  // it does not repaint eight gradients/text labels on every animation frame.
+  const ratio = Math.min(2, devicePixelRatio || 1);
+  if (canvas.width !== 300 * ratio) canvas.width = canvas.height = 300 * ratio;
   const ctx = canvas.getContext('2d');
-  const cx = canvas.width / 2;
-  const cy = canvas.height / 2;
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  const paint = getComputedStyle(canvas);
+  const surface = paint.getPropertyValue('--surface').trim();
+  const card = paint.getPropertyValue('--card').trim();
+  const ink = paint.getPropertyValue('--text').trim();
+  const cx = 150;
+  const cy = 150;
   const r = cx - 8;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, 300, 300);
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.rotate(angle);
 
   for (let i = 0; i < SEG_COUNT; i++) {
     const start = i * SEG_ANGLE;
     const end = start + SEG_ANGLE;
     const prize = SEGMENTS[i];
-    const grad = ctx.createRadialGradient(0, 0, r * 0.08, 0, 0, r);
-    grad.addColorStop(0, '#263141');
-    grad.addColorStop(1, i % 2 === 0 ? '#111824' : '#192231');
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.arc(0, 0, r, start, end);
     ctx.closePath();
-    ctx.fillStyle = grad;
+    ctx.fillStyle = i % 2 === 0 ? surface : card;
     ctx.fill();
-    ctx.strokeStyle = i % 2 === 0 ? 'rgba(255,255,255,0.26)' : 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+    ctx.lineWidth = 1;
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(0, 0, r - 5, start + .035, end - .035);
+    ctx.arc(0, 0, r - 9, start + .14, end - .14);
     ctx.strokeStyle = prize.color;
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 2;
     ctx.stroke();
 
     ctx.save();
     ctx.rotate(start + SEG_ANGLE / 2);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '600 19px "Outfit", sans-serif';
+    ctx.fillStyle = ink;
+    ctx.font = '500 21px "Space Grotesk", sans-serif';
     ctx.shadowBlur = 0;
-    ctx.fillText(prize.icon, r * 0.48, -5);
-    ctx.font = '500 10px "Outfit", sans-serif';
-    ctx.fillText(prize.label(), r * 0.64, 13);
+    ctx.fillText(prize.type === 'xp' ? String(prize.amount) : prize.icon, r * 0.59, -7);
+    ctx.font = '400 11px "Outfit", sans-serif';
+    ctx.fillText(prize.label().replace(/^\d+\s*/, ''), r * 0.59, 13);
     ctx.restore();
   }
 
@@ -187,25 +194,32 @@ function drawWheel(canvas, angle) {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  const centerGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 28);
-  centerGrad.addColorStop(0, '#3B4658');
-  centerGrad.addColorStop(1, '#111824');
   ctx.beginPath();
-  ctx.arc(0, 0, 26, 0, 2 * Math.PI);
-  ctx.fillStyle = centerGrad;
+  ctx.arc(0, 0, 25, 0, 2 * Math.PI);
+  ctx.fillStyle = surface;
   ctx.fill();
   ctx.strokeStyle = '#A9B4C5';
   ctx.lineWidth = 1;
   ctx.stroke();
 
+  ctx.beginPath();
+  ctx.moveTo(-6, 0); ctx.lineTo(6, 0);
+  ctx.moveTo(0, -6); ctx.lineTo(0, 6);
+  ctx.strokeStyle = ink;
+  ctx.stroke();
+
   ctx.restore();
+  canvas.style.transform = `rotate(${angle}rad)`;
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', SEGMENTS.map(prize => prize.label()).join(', '));
 }
 
 function pulsePointer() {
   const pointer = $('#wheelPointer');
   if (!pointer) return;
   pointer.classList.remove('ticking');
-  requestAnimationFrame(() => pointer.classList.add('ticking'));
+  cancelAnimationFrame(pointerFrame);
+  pointerFrame = requestAnimationFrame(() => { pointerFrame = 0; pointer.classList.add('ticking'); });
   clearTimeout(pointer._tickTimer);
   pointer._tickTimer = setTimeout(() => pointer.classList.remove('ticking'), 140);
 }
@@ -215,26 +229,46 @@ function spinWheel(prizeIdx, bonusSpin = false) {
     const canvas = $('#wheelCanvas');
     if (!canvas) return resolve();
 
-    spinning = true;
+    const spinBtn = $('#btnWheelSpin');
+    if (spinBtn) spinBtn.disabled = true;
     const closeBtn = $('#btnWheelClose');
     if (closeBtn) { closeBtn.disabled = true; closeBtn.setAttribute('aria-disabled', 'true'); }
     const targetAngle = -(prizeIdx * SEG_ANGLE + SEG_ANGLE / 2) - Math.PI / 2;
     const fullRotations = (bonusSpin ? 4 : 6) + Math.floor(Math.random() * 2);
     const totalAngle = fullRotations * 2 * Math.PI + (targetAngle - (currentAngle % (2 * Math.PI)));
     const endAngle = currentAngle + totalAngle;
-    if (document.body.hasAttribute('data-reduced-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const skip = $('#btnWheelSkip');
+    let frameId = 0;
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      cancelAnimationFrame(frameId);
+      cancelAnimationFrame(pointerFrame);
+      pointerFrame = 0;
+      const pointer = $('#wheelPointer');
+      clearTimeout(pointer?._tickTimer);
+      pointer?.classList.remove('ticking');
+      finishSpinAnimation = null;
       currentAngle = endAngle;
-      drawWheel(canvas, endAngle);
-      spinning = false;
-      if (closeBtn) { closeBtn.disabled = false; closeBtn.removeAttribute('aria-disabled'); }
-      return resolve();
+      canvas.style.transform = `rotate(${endAngle}rad)`;
+      if (skip) skip.hidden = true;
+      resolve();
+    };
+    finishSpinAnimation = finish;
+    if (document.hidden || document.body.hasAttribute('data-reduced-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      finish();
+      return;
     }
+    if (skip) { skip.hidden = false; skip.focus(); }
     const duration = (bonusSpin ? 3200 : 4200) + Math.random() * 900;
 
     let lastTickSegment = -1;
     const start = performance.now();
 
     function frame(now) {
+      if (finished) return;
+      if (document.hidden || document.body.hasAttribute('data-reduced-motion')) return finish();
       const elapsed = now - start;
       const progress = document.hidden ? 1 : Math.min(1, elapsed / duration);
       const tEase = 1 - progress;
@@ -249,19 +283,16 @@ function spinWheel(prizeIdx, bonusSpin = false) {
         if (app.audio) app.audio.tap();
       }
 
-      drawWheel(canvas, angle);
+      canvas.style.transform = `rotate(${angle}rad)`;
 
       if (progress < 1) {
-        requestAnimationFrame(frame);
+        frameId = requestAnimationFrame(frame);
       } else {
-        currentAngle = endAngle;
-        spinning = false;
-        if (closeBtn) { closeBtn.disabled = false; closeBtn.removeAttribute('aria-disabled'); }
-        resolve();
+        finish();
       }
     }
 
-    requestAnimationFrame(frame);
+    frameId = requestAnimationFrame(frame);
   });
 }
 
@@ -430,15 +461,25 @@ function revealResult(result, bonusSpin) {
     resultCard.style.setProperty('--wheel-win-color', prize.color);
     resultCard.classList.add('revealed');
     resultCard.classList.toggle('premium', prize.type === 'jackpot' || Boolean(milestoneBonus));
+    resultCard.focus({ preventScroll: true });
   }
 }
 
 function showWheel() {
   const overlay = $('#wheelOverlay');
-  if (!overlay) return;
+  if (!overlay || restoringWheelHistory || overlay.classList.contains('active')) return;
+  // The wheel opens on the root screen: without its own same-document entry,
+  // browser Back could leave the app before the modal back handler runs.
+  history.pushState({ ...history.state, scsWheel: true }, '', location.href);
   openModal(overlay, {
     initialFocus: '#btnWheelClose',
-    canDismiss: () => !spinning,
+    canDismiss: () => {
+      if (spinning) {
+        finishSpinAnimation?.();
+        if (!history.state?.scsWheel) history.pushState({ ...history.state, scsWheel: true }, '', location.href);
+      }
+      return !spinning;
+    },
     onDismiss: hideWheel,
   });
 
@@ -454,6 +495,10 @@ function hideWheel() {
   const overlay = $('#wheelOverlay');
   if (!overlay?.classList.contains('active') || spinning) return;
   closeModal(overlay);
+  if (history.state?.scsWheel) {
+    restoringWheelHistory = true;
+    history.back();
+  }
 }
 
 export function updateWheelCard() {
@@ -461,8 +506,21 @@ export function updateWheelCard() {
 }
 
 export function bindWheel() {
+  if (history.state?.scsWheel) {
+    const state = { ...history.state };
+    delete state.scsWheel;
+    history.replaceState(state, '', location.href);
+  }
+  window.addEventListener('popstate', event => {
+    if (!restoringWheelHistory) return;
+    restoringWheelHistory = false;
+    event.stopImmediatePropagation();
+  }, true);
   $('#btnWheel')?.addEventListener('click', () => showWheel());
   $('#btnWheelClose')?.addEventListener('click', () => hideWheel());
+  $('#btnWheelSkip')?.addEventListener('click', () => finishSpinAnimation?.());
+  window.addEventListener('scs:motionpreference', ({ detail }) => { if (detail?.reduced) finishSpinAnimation?.(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) finishSpinAnimation?.(); });
 
   $('#btnWheelSpin')?.addEventListener('click', async () => {
     if (spinning || !canSpinNow()) return;
@@ -473,33 +531,37 @@ export function bindWheel() {
     const upcomingStreak = getUpcomingSpinStreak();
     const prizeIdx = pickPrize(upcomingStreak, bonusSpin);
 
+    // Busy spans animation AND persistence. Repeated Skip/Back/clicks must not
+    // open a second transaction while the original prize is being credited.
+    spinning = true;
     renderWheelStatus();
-    await spinWheel(prizeIdx, bonusSpin);
+    try {
+      await spinWheel(prizeIdx, bonusSpin);
 
-    save.data.wheelSpinsToday = (save.data.wheelSpinsToday || 0) + 1;
-    if (!bonusSpin) {
-      const wasYesterday = save.data.lastWheelDate && isConsecutiveDay(save.data.lastWheelDate, today);
-      save.data.lastWheelSpin = today;
-      save.data.wheelStreak = wasYesterday ? (save.data.wheelStreak || 0) + 1 : 1;
-      save.data.lastWheelDate = today;
-    } else {
-      save.data.wheelBonusSpinUsedDate = today;
+      save.data.wheelSpinsToday = (save.data.wheelSpinsToday || 0) + 1;
+      if (!bonusSpin) {
+        const wasYesterday = save.data.lastWheelDate && isConsecutiveDay(save.data.lastWheelDate, today);
+        save.data.lastWheelSpin = today;
+        save.data.wheelStreak = wasYesterday ? (save.data.wheelStreak || 0) + 1 : 1;
+        save.data.lastWheelDate = today;
+      } else {
+        save.data.wheelBonusSpinUsedDate = today;
+      }
+
+      const effectiveStreak = bonusSpin ? Math.max(1, save.data.wheelStreak || 1) : (save.data.wheelStreak || upcomingStreak);
+      await save.save();
+
+      const result = await awardPrize(prizeIdx, effectiveStreak, !bonusSpin);
+      revealResult(result, bonusSpin);
+
+      renderPrizeStrip();
+      if (app.audio) app.audio.tap();
+    } finally {
+      spinning = false;
+      const close = $('#btnWheelClose');
+      if (close) { close.disabled = false; close.removeAttribute('aria-disabled'); }
+      renderWheelStatus();
     }
-
-    const effectiveStreak = bonusSpin ? Math.max(1, save.data.wheelStreak || 1) : (save.data.wheelStreak || upcomingStreak);
-    await save.save();
-
-    const result = await awardPrize(prizeIdx, effectiveStreak, !bonusSpin);
-    revealResult(result, bonusSpin);
-
-    if (result.prize.type === 'jackpot' || result.milestoneBonus?.type === 'life') {
-      const fx = new EffectsManager(document.body);
-      fx.confetti();
-    }
-
-    renderPrizeStrip();
-    renderWheelStatus();
-    if (app.audio) app.audio.tap();
   });
 
   $('#wheelOverlay')?.addEventListener('click', (e) => {

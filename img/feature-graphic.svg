@@ -9,7 +9,7 @@
       <stop offset="0%" stop-color="#CAD4E3" stop-opacity="0.06"/>
       <stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="material" x1=".15" y1="0" x2=".85" y2="1"><stop stop-color="#fff" stop-opacity=".55"/><stop offset=".36" stop-color="#fff" stop-opacity="0"/><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></linearGradient>
+    <linearGradient id="material" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".24"/><stop offset=".18" stop-color="#fff" stop-opacity="0"/><stop offset=".84" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>
   </defs>
 
   <!-- Background -->
@@ -33,6 +33,6 @@
   <polygon points="845,310 860,355 905,360 872,388 882,432 845,412 808,432 818,388 785,360 830,355" fill="#FFA502"/>
   <polygon points="845,310 860,355 905,360 872,388 882,432 845,412 808,432 818,388 785,360 830,355" fill="url(#material)"/>
 
-  <text x="512" y="235" fill="#F4F7FC" font-family="'Outfit','Segoe UI',sans-serif" font-size="68" font-weight="700" text-anchor="middle" letter-spacing="-3">SCS Play</text>
+  <text x="512" y="235" fill="#F4F7FC" font-family="'Space Grotesk','Segoe UI',sans-serif" font-size="68" font-weight="500" text-anchor="middle" letter-spacing="-3">SCS Play</text>
   <text x="512" y="280" fill="#C4CEDD" font-family="'Outfit','Segoe UI',sans-serif" font-size="22" font-weight="400" text-anchor="middle">Sort · Think · React</text>
 </svg>

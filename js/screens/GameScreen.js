@@ -18,6 +18,7 @@ import { livingArena } from '../helpers/livingArena.js';
 import { arenaWorld } from '../renderers/arenaWorld.js';
 import { icon, directionIcon } from '../renderers/icons.js';
 import { modePreview } from '../renderers/modePreview.js';
+import { checkOrientation } from '../helpers/systemIntegration.js';
 import app                   from '../appState.js';
 import { startModeMastery, finishModeMastery } from './gameHud/modeMasteryLifecycle.js';
 import { trackKlassikAnswer, getGhostDelta, getSpeedZone } from '../game/ModeMastery.js';
@@ -113,15 +114,23 @@ const CHAOS_SIZE_MAP = { tiny: '0.7rem', small: '1.2rem', medium: '2rem', large:
 const COLORBLIND_MARKS = {
   'diagonal-stripes': '///', dots: '•••', crosshatch: '+++', 'horizontal-stripes': '===',
 };
+const PALETTE_NAMES = ['red', 'blue', 'green', 'orange', 'pink', 'indigo', 'mint', 'gold', 'lilac', 'cyan', 'rose', 'cream'];
+const ACCESSIBLE_PALETTE_NAMES = ['coral', 'violet', 'gray', 'cyan', 'red', 'slate', 'sky', 'gold', 'charcoal', 'orange', 'plum', 'berry'];
+let cornerLanguage = null;
+let cornerColorblind = null;
 
 function getColorName(hex) {
   const color = CONFIG.STROOP_COLORS_4?.find(entry => entry.hex === hex);
-  return color?.[`name_${getLanguage()}`] || color?.name_en || hex;
+  if (color) return color[`name_${getLanguage()}`] || color.name_en;
+  const normal = CONFIG.COLORS.normal.indexOf(hex);
+  const accessible = CONFIG.COLORS.colorblind.indexOf(hex);
+  const name = normal >= 0 ? PALETTE_NAMES[normal] : ACCESSIBLE_PALETTE_NAMES[accessible];
+  return name ? t(`color_name_${name}`) : hex;
 }
 
-export function getGameplayCornerLabel(dir, info) {
+export function getGameplayCornerLabel(dir, info, mode = app.game?.mode) {
   const direction = t(`direction_${dir}`);
-  if (info.type === 'stroop') return `${direction}: ${info.display || getColorName(info.value)}`;
+  if (info.type === 'stroop') return `${direction}: ${getColorName(info.value) || info.display}`;
   if (info.type === 'chaos') {
     return t('chaos_corner_label', {
       direction,
@@ -130,7 +139,15 @@ export function getGameplayCornerLabel(dir, info) {
       size: t(`chaos_size_${info.size}`),
     });
   }
-  return String(info.display ?? info.value ?? info.shape ?? direction);
+  if (mode === 'klassik') return `${direction}: ${getColorName(app.colorblind ? info.colorblind : info.color)}`;
+  const label = info.shape ? t(`memo_symbol_${info.shape}`) : info.display ?? info.value;
+  return label == null ? direction : `${direction}: ${label}`;
+}
+
+/** Describe only what is visible, never the correct target's direction. */
+export function getGameplayStimulusLabel(data, mode, colorblind = false) {
+  if (mode === 'klassik') return t('game_color_stimulus', { color: getColorName(colorblind ? data.colorblind : data.color) });
+  return String(data.display ?? (data.shape ? t(`memo_symbol_${data.shape}`) : data.value) ?? t('game_shape'));
 }
 
 function appendColorblindMark(element, pattern) {
@@ -145,6 +162,7 @@ function appendColorblindMark(element, pattern) {
 function announceStimulus(label) {
   const platform = $('#centerPlatform');
   const live = $('#a11yLive');
+  platform?.removeAttribute('data-i18n-aria');
   platform?.setAttribute('aria-label', label);
   if (live) live.textContent = label;
 }
@@ -152,6 +170,8 @@ function announceStimulus(label) {
 function renderCorners(cornerMap, forceAll = false) {
   const { game } = app;
   const isText = game.contentType !== 'shape';
+  cornerLanguage = getLanguage();
+  cornerColorblind = app.colorblind;
 
   /* Full reset only when necessary (first render or mode change) */
   if (forceAll || !Object.keys(_prevCornerState).length) {
@@ -175,6 +195,9 @@ function renderCorners(cornerMap, forceAll = false) {
 
     const el = $(`.corner-shape[data-dir="${dir}"]`);
     if (!el) return;
+    // Live task names belong to the renderer, not the shell's direction-only
+    // fallback. A global language pass must not erase color/shape information.
+    el.removeAttribute('data-i18n-aria');
     el.setAttribute('aria-label', getGameplayCornerLabel(dir, info));
     el.dataset.content = info.type || 'shape';
     el.style.setProperty('--target-color', color);
@@ -231,7 +254,7 @@ function renderCenter(shapeData) {
   const platform = $('#centerPlatform');
   if (!center || !shapeData) return;
   const color = app.colorblind ? shapeData.colorblind : shapeData.color;
-  announceStimulus(String(shapeData.display ?? shapeData.shape ?? shapeData.value ?? t('game_shape')));
+  announceStimulus(getGameplayStimulusLabel(shapeData, app.game.mode, app.colorblind));
   /* The plinth always uses neutral CSS materials, never an answer-derived tint. */
   platform?.classList.add('platform-active');
 
@@ -2402,8 +2425,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   game.onEndlessMiss = (livesLeft) => {
     if (typeof effects.endlessHeartLost === 'function') effects.endlessHeartLost(livesLeft);
     updateEndlessLives();
-    effects.scorePop(window.innerWidth / 2, window.innerHeight / 2 - 60,
-      t('endless_miss', { n: livesLeft }), '#FF4757', true);
+    showGameNotice(t('endless_miss', { n: livesLeft }), { kind: 'life', importance: 2, duration: 900 });
   };
 
   /* ── Streak Time Bonus visual feedback ── */
@@ -2449,15 +2471,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   };
 
   game.onEndlessLifeEarned = (livesLeft) => {
-    effects.scorePop(
-      window.innerWidth / 2,
-      window.innerHeight / 2 - 60,
-      t('life_earned') || '+1',
-      'var(--color-heart, #FF6B81)',
-      true
-    );
-    effects.flash('#FF6B8140', 250);
-    if (typeof effects.confetti === 'function') effects.confetti(6);
+    showGameNotice(t('life_earned'), { kind: 'life', importance: 2, duration: 900 });
     const livesContainer = document.getElementById('hudEndlessLives');
     if (livesContainer) {
       livesContainer.classList.remove('life-earned-pulse');
@@ -2470,14 +2484,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   /* ═══ Anti-frustration callbacks (v22) ═══ */
   game.onStreakProtected = (brokenStreak) => {
-    effects.scorePop(
-      window.innerWidth / 2,
-      window.innerHeight / 2 - 60,
-      t('streak_warning', { n: brokenStreak }),
-      '#FFA502',
-      true
-    );
-    effects.flash('#FFA50230', 250);
+    showGameNotice(t('streak_warning', { n: brokenStreak }), { kind: 'streak', importance: 2, duration: 900 });
   };
 
   game.onShowCorrectAnswer = (correctDir, durationMs) => {
@@ -2690,9 +2697,25 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   updateHUD();
   if (game.playType === 'endless') updateEndlessLives();
+  if (checkOrientation()) pauseGame();
 }
 
 /* ═══════ Pause / Resume / Quit ═══════ */
+function syncPausedPresentation() {
+  const { game } = app;
+  if (!game.running || (cornerLanguage === getLanguage() && cornerColorblind === app.colorblind)) return;
+  renderCorners(game.cornerMap, true);
+  if (game.isMemoMode) {
+    Object.entries(game.cornerMap).forEach(([dir, info]) => {
+      const corner = $(`#game .corner-shape[data-dir="${dir}"]`);
+      corner?.setAttribute('aria-label', getMemoCornerLabel(dir, info, corner.classList.contains('memo-covered')));
+    });
+  }
+  // Sequence watch/input text has its own phase renderer. Never replace it
+  // with a generic center object or advance its pattern while changing UI.
+  if (game.mode !== 'sequenz') renderCenter(game.currentShape);
+}
+
 export function pauseGame() {
   const { game, audio } = app;
   if (!game.running || game.paused) return;
@@ -2715,6 +2738,7 @@ export function pauseGame() {
 }
 
 export function reopenPauseMenu() {
+  syncPausedPresentation();
   const overlay = $('#pauseOverlay');
   openModal(overlay, { initialFocus: '#btnResume', onDismiss: resumeGame });
   if (overlay) overlay.onclick = (event) => { if (event.target === overlay) resumeGame(); };
@@ -2722,6 +2746,7 @@ export function reopenPauseMenu() {
 
 export function resumeGame() {
   const { game, audio } = app;
+  syncPausedPresentation();
   game.resume();
   livingArena.setActive(game.running && !game.paused);
   setGameplayPerformanceActive(game.running && !game.paused);

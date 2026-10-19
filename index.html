@@ -22,11 +22,8 @@
   <link rel="dns-prefetch" href="https://firestore.googleapis.com">
   <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com">
 
-  <!-- Modern Fonts (non-blocking) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-  <noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet"></noscript>
+  <!-- Self-hosted Latin fonts: DE/EN and offline, no font CDN. -->
+  <link rel="preload" href="fonts/outfit-400.woff2" as="font" type="font/woff2" crossorigin>
   
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="img/icon-192.svg" type="image/svg+xml">
@@ -764,22 +761,28 @@
 <div id="settings" class="screen">
   <div class="screen-content">
     <div class="screen-header"><h2 data-i18n="settings">Einstellungen</h2></div>
+    <div class="settings-layout">
+    <nav class="settings-nav" data-i18n-aria="settings_sections" aria-label="Einstellungsbereiche">
+      <button type="button" data-settings-section="settingsDisplay" aria-controls="settingsDisplay" data-i18n="settings_accessibility">Anzeige & Bedienung</button>
+      <button type="button" data-settings-section="settingsAudio" aria-controls="settingsAudio" data-i18n="settings_audio">Audio</button>
+      <button type="button" data-settings-section="settingsProfile" aria-controls="settingsProfile" data-i18n="settings_profile">Profil & Sprache</button>
+    </nav>
     <div class="settings-list">
-      <fieldset class="setting-group">
+      <fieldset class="setting-group" id="settingsDisplay">
         <legend data-i18n="settings_accessibility">Anzeige & Bedienung</legend>
         <label class="setting-row"><span class="setting-copy"><span data-i18n="colorblind_mode">Farbenblind-Modus</span><small data-i18n="settings_colorblind_help">Zusätzliche Muster und unterscheidbare Farben.</small></span><input id="toggleColorblind" type="checkbox"></label>
         <label class="setting-row"><span class="setting-copy"><span data-i18n="reduced_motion">Reduzierte Animationen</span><small data-i18n="settings_motion_help">Ruhigere Effekte, gleiches Spieltempo.</small></span><input id="toggleMotion" type="checkbox"></label>
         <label class="setting-row"><span class="setting-copy"><span data-i18n="settings_depth">Beweglicher Hintergrund</span><small data-i18n="settings_depth_help">Die Bühne folgt leicht deiner Bewegung. Alle Spielziele bleiben fest.</small><small id="depthStatus" role="status"></small></span><input id="toggleDepth" type="checkbox" aria-describedby="depthStatus"></label>
         <label class="setting-row"><span data-i18n="haptics">Haptik</span><input id="toggleHaptics" type="checkbox"></label>
       </fieldset>
-      <fieldset class="setting-group">
+      <fieldset class="setting-group" id="settingsAudio">
         <legend data-i18n="settings_audio">Audio</legend>
         <label class="setting-row"><span data-i18n="sound">Sound</span><input id="toggleSound" type="checkbox" aria-controls="rangeSfxVolume"></label>
         <label class="setting-row setting-volume"><span data-i18n="sfx_volume">Effektlautstärke</span><input id="rangeSfxVolume" type="range" min="0" max="100" step="5"><output id="sfxVolumeValue" for="rangeSfxVolume">80%</output></label>
         <label class="setting-row"><span data-i18n="music">Musik</span><input id="toggleMusic" type="checkbox" aria-controls="rangeMusicVolume"></label>
         <label class="setting-row setting-volume"><span data-i18n="music_volume">Musiklautstärke</span><input id="rangeMusicVolume" type="range" min="0" max="100" step="5"><output id="musicVolumeValue" for="rangeMusicVolume">70%</output></label>
       </fieldset>
-      <fieldset class="setting-group">
+      <fieldset class="setting-group" id="settingsProfile">
         <legend data-i18n="settings_profile">Profil & Sprache</legend>
         <label class="setting-row">
           <span data-i18n="language">Sprache</span>
@@ -787,6 +790,7 @@
         </label>
         <button id="btnAvatar" class="btn btn-secondary" data-i18n="avatar_change">Avatar ändern</button>
       </fieldset>
+    </div>
     </div>
     <button id="btnEngagementReport" class="btn btn-secondary" style="margin-top:8px" data-i18n="engagement_report_btn"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" style="width:18px;height:18px"><path fill="currentColor" d="M4 13h3v7H4zm6-5h3v12h-3zm6-5h3v17h-3z"/></svg> Spielanalyse</button>
     <div class="legal-links" aria-label="Rechtliches">
@@ -922,7 +926,7 @@
 
 <div id="wheelOverlay" class="wheel-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="wheelHeading" hidden inert>
   <div class="wheel-panel">
-    <button class="wheel-close" id="btnWheelClose" aria-label="Gl&uuml;cksrad schlie&szlig;en">&times;</button>
+    <button class="wheel-close" id="btnWheelClose" data-i18n-aria="wheel_close" aria-label="Gl&uuml;cksrad schlie&szlig;en">&times;</button>
     <h2 class="wheel-heading" id="wheelHeading" data-i18n="wheel_title">GL&Uuml;CKSRAD</h2>
     <p class="wheel-subtitle" id="wheelSubtitle" data-i18n="wheel_subtitle">T&auml;glich drehen, Serie halten, Bonus sichern.</p>
     <div class="wheel-meta">
@@ -934,22 +938,22 @@
       <canvas id="wheelCanvas" width="300" height="300"></canvas>
       <div id="wheelPointer" class="wheel-pointer"></div>
     </div>
-    <div class="wheel-result-card" id="wheelResultCard">
+    <div class="wheel-result-card" id="wheelResultCard" role="status" aria-live="polite" tabindex="-1">
       <div class="wheel-result-title" id="wheelResultTitle"></div>
       <div class="wheel-result" id="wheelResult"></div>
       <div class="wheel-result-extra" id="wheelResultExtra"></div>
     </div>
     <div class="wheel-actions">
       <button id="btnWheelSpin" class="btn-wheel-spin" data-i18n="wheel_spin">DREHEN!</button>
+      <button id="btnWheelSkip" class="btn btn-secondary" data-i18n="wheel_skip" hidden>Animation überspringen</button>
     </div>
     <div class="wheel-status-note" id="wheelStatusNote"></div>
   </div>
 </div>
 
 <!-- ═══════ LANDSCAPE WARNING ═══════ -->
-<div id="landscapeWarning" class="landscape-warning">
-  <div class="landscape-icon"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-device"></use></svg></div>
-  <p data-i18n="rotate_device">Bitte drehe dein Ger&#228;t ins Hochformat</p>
+<div id="landscapeWarning" class="landscape-warning" role="status" hidden>
+  <p data-i18n="arena_portrait_hint">Die Arena ist für Hochformat optimiert. Die Pause bleibt bedienbar.</p>
 </div>
 
 <!-- Scripts -->

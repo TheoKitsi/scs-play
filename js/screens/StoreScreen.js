@@ -4,15 +4,93 @@
    ═══════════════════════════════════════ */
 import { CONFIG }           from '../config.js';
 import { t }                from '../i18n.js';
-import { $, $$, showScreen } from '../helpers/dom.js';
+import { $, $$, showScreen, escHTML } from '../helpers/dom.js';
 import { haptic }           from '../helpers/haptics.js';
 import { applyTheme }       from '../services/ThemeService.js';
 import app                   from '../appState.js';
 import { getBodyFx }        from '../services/EffectsService.js';
 import { appDialog } from '../helpers/appDialog.js';
 import { icon } from '../renderers/icons.js';
+import { designPreview } from '../renderers/designPreview.js';
+import { openModal, closeModal } from '../helpers/modal.js';
 
 let shopTab = 'themes';
+let previewRoot = null;
+let previewAnimations = [];
+let previewRun = 0;
+
+function stopPreviewMotion() {
+  previewRun++;
+  previewAnimations.forEach(animation => animation.cancel());
+  previewAnimations = [];
+  const button = previewRoot?.querySelector('#btnPlayDesignDemo');
+  if (button) { button.disabled = previewMotionBlocked(); button.textContent = t('design_demo'); }
+}
+
+function previewMotionBlocked() {
+  return document.body.hasAttribute('data-reduced-motion') || document.body.dataset.perfMode === 'low';
+}
+
+function closeDesignPreview(restoreFocus = true) {
+  stopPreviewMotion();
+  closeModal(previewRoot, { restoreFocus });
+}
+
+function playDesignDemo() {
+  stopPreviewMotion();
+  if (previewMotionBlocked() || document.hidden) return;
+  const run = previewRun;
+  const scene = previewRoot.querySelector('.design-preview');
+  const { width, height } = scene.getBoundingClientRect();
+  const button = previewRoot.querySelector('#btnPlayDesignDemo');
+  button.disabled = true;
+  button.textContent = t('design_demo_playing');
+  // One user-requested compositor demonstration, never a looping mini-game.
+  previewAnimations = [
+    scene.querySelector('.design-object').animate([
+      { transform: 'none', opacity: 1 },
+      { transform: `translate(${-85 / 240 * width}px,${35 / 156 * height}px) scale(.75)`, opacity: 1, offset: .8 },
+      { transform: `translate(${-85 / 240 * width}px,${35 / 156 * height}px) scale(.75)`, opacity: 0 },
+    ], { duration: 750, easing: 'cubic-bezier(.2,.6,.3,1)' }),
+    scene.querySelector('.design-trace').animate([{ opacity: 0 }, { opacity: .8, offset: .6 }, { opacity: 0 }], { duration: 750 }),
+  ];
+  Promise.allSettled(previewAnimations.map(animation => animation.finished)).then(() => {
+    if (run === previewRun) stopPreviewMotion();
+  });
+}
+
+function showDesignPreview(type, id) {
+  if (!previewRoot) {
+    previewRoot = document.createElement('div');
+    previewRoot.id = 'designPreviewOverlay';
+    previewRoot.className = 'app-dialog-overlay';
+    previewRoot.hidden = previewRoot.inert = true;
+    previewRoot.setAttribute('aria-labelledby', 'designPreviewTitle');
+    previewRoot.setAttribute('aria-describedby', 'designPreviewNote');
+    previewRoot.innerHTML = '<section class="app-dialog-panel"><h2 id="designPreviewTitle"></h2><div id="designPreviewScene"></div><p id="designPreviewNote"></p><p id="designPreviewMotionNote" hidden></p><button type="button" id="btnPlayDesignDemo" class="btn btn-secondary"></button><button type="button" id="btnCloseDesignPreview" class="btn btn-secondary"></button></section>';
+    document.body.appendChild(previewRoot);
+    previewRoot.querySelector('#btnCloseDesignPreview').addEventListener('click', () => closeDesignPreview());
+    previewRoot.querySelector('#btnPlayDesignDemo').addEventListener('click', playDesignDemo);
+    previewRoot.addEventListener('click', event => { if (event.target === previewRoot) closeDesignPreview(); });
+    window.addEventListener('scs:screenchange', () => closeDesignPreview(false));
+    const syncMotion = () => {
+      stopPreviewMotion();
+      previewRoot.querySelector('#designPreviewMotionNote').hidden = !document.body.hasAttribute('data-reduced-motion');
+    };
+    window.addEventListener('scs:motionpreference', syncMotion);
+    window.addEventListener('scs:perftier', syncMotion);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stopPreviewMotion(); });
+  }
+  const name = t(`${type === 'themes' ? 'theme' : 'trail'}_${id}`);
+  previewRoot.querySelector('h2').textContent = t('design_preview_item', { item: name });
+  previewRoot.querySelector('#designPreviewScene').innerHTML = designPreview(type, id, app.save.getActiveTheme(), app.save.getSetting('colorblind'), app.save.getActiveTrail());
+  previewRoot.querySelector('#designPreviewNote').textContent = t('design_preview_detail');
+  previewRoot.querySelector('#designPreviewMotionNote').textContent = t('design_demo_static');
+  previewRoot.querySelector('#designPreviewMotionNote').hidden = !document.body.hasAttribute('data-reduced-motion');
+  previewRoot.querySelector('#btnCloseDesignPreview').textContent = t('dialog_ok');
+  stopPreviewMotion();
+  openModal(previewRoot, { initialFocus: '#btnCloseDesignPreview', onDismiss: () => closeDesignPreview() });
+}
 
 function updateShopLives() {
   const { save } = app;
@@ -53,7 +131,6 @@ function renderUnlockItems(type, focusItemId = null) {
     const isActive = item.id === activeId;
     const canAfford = fireBalance >= cost;
     const levelReached = save.getLevel() >= item.unlockLevel;
-    const previewClass = `${prefix}-preview-${item.id}`;
 
     let btnHTML = '';
     if (isActive) {
@@ -66,7 +143,7 @@ function renderUnlockItems(type, focusItemId = null) {
 
     return `
       <div class="unlock-item ${isActive ? 'active-item' : ''} ${!isOwned && !isDefault ? 'locked-item' : ''} ${isActive ? 'premium-glow-item' : ''}" data-item-id="${item.id}" tabindex="-1">
-        <div class="unlock-preview ${previewClass}${type === 'trails' ? ' trail-anim' : ''}"></div>
+        <button type="button" class="unlock-preview" data-preview-id="${item.id}" aria-label="${escHTML(t('design_preview_item', { item: t(prefix + '_' + item.id) }))}" aria-haspopup="dialog">${designPreview(type, item.id, save.getActiveTheme(), save.getSetting('colorblind'), save.getActiveTrail())}<span class="unlock-preview-label">${icon('eye')}${t('design_preview')}</span></button>
         <div class="unlock-info">
           <span class="unlock-name">${t(prefix + '_' + item.id)}</span>
           <span class="unlock-desc">${t(prefix + '_' + item.id + '_desc')}</span>
@@ -75,6 +152,10 @@ function renderUnlockItems(type, focusItemId = null) {
         ${btnHTML}
       </div>`;
   }).join('');
+
+  $$('[data-preview-id]', list).forEach(button => {
+    button.addEventListener('click', () => showDesignPreview(type, button.dataset.previewId));
+  });
 
   /* Activate owned items */
   $$('.btn-activate', list).forEach(btn => {
@@ -111,7 +192,6 @@ function renderUnlockItems(type, focusItemId = null) {
       else { await save.setActiveTrail(id); }
       const bodyFx = getBodyFx();
       bodyFx.achievementToast(t('fire_purchase_success', { item: itemName }));
-      bodyFx.confetti(80, 2000);
       haptic('purchase', save);
       renderShopContent(id);
       updateShopLives();
@@ -148,17 +228,13 @@ export function showStore(showHome) {
 export function bindShopTabs() {
   const { audio, save } = app;
   const tabs = $$('.shop-tab');
-  const selectTab = (tab, event) => {
+  const selectTab = (tab) => {
     shopTab = tab.dataset.tab;
     renderShopTabs();
     renderShopContent();
     updateShopLives();
     audio.tap();
     haptic('tap', save);
-    const bodyFx = getBodyFx();
-    if (event?.clientX && event?.clientY && bodyFx) {
-      bodyFx.ripple(event.clientX, event.clientY, '#00ffff');
-    }
   };
 
   tabs.forEach((tab, index) => {

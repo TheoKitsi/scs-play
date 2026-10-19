@@ -11,6 +11,7 @@ const MIME_TYPES = {
   '.svg': 'image/svg+xml',
   '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.mp3': 'audio/mpeg',
+  '.woff2': 'font/woff2',
 };
 
 function resolveRequest(root, requestUrl) {

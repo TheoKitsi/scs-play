@@ -188,6 +188,15 @@ export async function runSurfaceReview({ out = process.env.SCS_REVIEW_OUT || '',
         await page.locator('#btnTutorialNext').click();
         await page.waitForFunction(() => globalThis.__SCS_QA__.gameState()?.stimulusId != null);
         await shot('29-game');
+        await page.evaluate(async () => {
+          const { default: app } = await import('/js/appState.js');
+          app.game.onEndlessLifeEarned(5);
+          app.game.onEndlessMiss(4);
+          app.game.onStreakProtected(10);
+        });
+        assert.equal(await page.locator('#gameNotice').getAttribute('data-kind'), 'streak');
+        assert.equal(await page.locator('#game .flash-overlay,#game .confetti-piece').count(), 0, 'Life/streak presentation does not allocate full-screen celebration layers');
+        await shot('29-peripheral-status');
         await page.locator('#btnPause').click(); await shot('30-pause');
         await page.locator('#btnPauseSettings').click();
         assert.match(await page.locator('#settings .btn-back-bottom').textContent(), /Spiel/);
@@ -343,7 +352,13 @@ export async function runSurfaceReview({ out = process.env.SCS_REVIEW_OUT || '',
         await back('settings'); await shot('38-home-en');
         if (view.width < 768) {
           await page.setViewportSize({ width: view.height, height: view.width });
-          await page.locator('#landscapeWarning.active').waitFor(); await shot('38-landscape');
+          assert.equal(await page.locator('#landscapeWarning').isVisible(), false, 'Landscape must not block the home screen');
+          await shot('38-landscape');
+          await page.locator('#btnSettings').click();
+          assert.equal(await page.locator('#settings.active').count(), 1);
+          assert.equal(await page.locator('#landscapeWarning').isVisible(), false, 'Settings stay operable in landscape');
+          await shot('38-landscape-settings');
+          await back('settings');
           await page.setViewportSize({ width: view.width, height: view.height });
         }
         assert.deepEqual(nativeDialogs, [], 'No browser alert/confirm/prompt may interrupt the UI');

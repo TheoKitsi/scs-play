@@ -9,13 +9,15 @@ globalThis.localStorage = {
   removeItem: key => storage.delete(key),
   clear: () => storage.clear()
 };
-globalThis.document = { addEventListener() {} };
+globalThis.document = { documentElement: {}, addEventListener() {} };
 
 const { GameEngine } = await import('../js/game/GameEngine.js');
 const { SaveService } = await import('../js/save.js');
 const { CONFIG } = await import('../js/config.js');
 const { SwipeHandler } = await import('../js/input.js');
-const { getCornerRenderKey, getGameplayCornerLabel, getMemoCornerLabel, isCurrentSequenzGesture } = await import('../js/screens/GameScreen.js');
+const { getCornerRenderKey, getGameplayCornerLabel, getGameplayStimulusLabel, getMemoCornerLabel, isCurrentSequenzGesture } = await import('../js/screens/GameScreen.js');
+const { setLanguage } = await import('../js/i18n.js');
+const { default: app } = await import('../js/appState.js');
 const {
   ModeMastery,
   endMemoGame,
@@ -69,6 +71,30 @@ assert.equal(
   'Unten links: GRÜN, Dreieck, klein',
   'Chaos targets must expose every potentially active matching property'
 );
+
+for (const lang of ['de', 'en']) {
+  setLanguage(lang);
+  for (const colorblind of [false, true]) {
+    app.colorblind = colorblind;
+    const labels = CONFIG.COLORS.normal.map((color, i) => {
+      const data = { shape: 'square', color, colorblind: CONFIG.COLORS.colorblind[i] };
+      const label = getGameplayCornerLabel('ul', data, 'klassik');
+      const stimulus = getGameplayStimulusLabel({ ...data, direction: 'ul' }, 'klassik', colorblind);
+      assert.doesNotMatch(label, /square|Quadrat|#[0-9a-f]{6}/i, 'Color targets describe their displayed color, not identical squares or hex');
+      assert.ok(stimulus.startsWith(lang === 'de' ? 'Farbe: ' : 'Color: '));
+      assert.doesNotMatch(stimulus, /links|Upper|ul/, 'The stimulus must never announce the correct direction');
+      return label;
+    });
+    assert.equal(new Set(labels).size, 12, 'All normal/accessible palette colors have unique localized labels');
+  }
+  CONFIG.SHAPES_ULTRA.forEach(shape => {
+    const label = getGameplayStimulusLabel({ shape }, 'expert');
+    assert.doesNotMatch(label, /memo_symbol_/);
+    assert.ok(getGameplayCornerLabel('ur', { shape }, 'expert').endsWith(`: ${label}`));
+  });
+}
+setLanguage('de');
+app.colorblind = false;
 
 const sequenceGestureState = { _seqPhase: 'go', _seqRound: 2 };
 assert.equal(isCurrentSequenzGesture({ phase: 'watch', round: 2 }, sequenceGestureState), false,

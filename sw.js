@@ -1,7 +1,7 @@
 ﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SCS Play â€” Service Worker
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-const CACHE = 'scs-v63';
+const CACHE = 'scs-v64';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,17 @@ const ASSETS = [
   './terms-of-service.html',
   './css/style.css',
   './css/legal.css',
+  './fonts/outfit-300.woff2',
+  './fonts/outfit-400.woff2',
+  './fonts/outfit-500.woff2',
+  './fonts/outfit-600.woff2',
+  './fonts/outfit-700.woff2',
+  './fonts/outfit-800.woff2',
+  './fonts/outfit-900.woff2',
+  './fonts/space-grotesk-400.woff2',
+  './fonts/space-grotesk-500.woff2',
+  './fonts/space-grotesk-600.woff2',
+  './fonts/space-grotesk-700.woff2',
   './js/legal.js',
   './css/partials/00-perf-tokens.css',
   './css/partials/01-tokens.css',
@@ -58,6 +69,8 @@ const ASSETS = [
   './js/renderers/avatars.js',
   './js/renderers/icons.js',
   './js/renderers/modePreview.js',
+  './js/renderers/modeArtwork.js',
+  './js/renderers/designPreview.js',
   './js/renderers/arenaWorld.js',
   /* â”€â”€â”€ Game â”€â”€â”€ */
   './js/game/GameEngine.js',
