@@ -546,16 +546,16 @@
         <span class="hud-label" data-i18n="score">Punkte</span>
         <span id="hudScore" class="hud-value">0</span>
       </div>
-      <div class="hud-score-group">
-        <span class="hud-label" data-i18n="hud_factor">Faktor</span>
+      <div id="arenaPhase" class="hud-score-group arena-phase" role="note">
+        <span id="arenaPhaseLabel" class="hud-label">Faktor</span>
         <span id="hudMultiplier" class="hud-multiplier">x1</span>
+        <span class="arena-phase-meter" aria-hidden="true"><i></i></span>
       </div>
       <div class="hud-score-group">
         <span class="hud-label" data-i18n="streak_label">Streak</span>
         <span id="hudStreak" class="hud-value">0</span>
       </div>
     </div>
-    <div id="hudFever" class="hud-fever"><svg class="ui-icon" viewBox="0 0 24 24" style="fill:currentColor;width:14px;height:14px;vertical-align:middle"><use href="#icon-fire"></use></svg> FEVER</div>
     <!-- Endless lives display -->
     <div id="hudEndlessLives" class="hud-endless-lives" style="display:none">
       <span class="endless-heart"><svg class="ui-icon" viewBox="0 0 24 24" style="color:var(--color-heart)"><use href="#icon-heart"></use></svg></span>
@@ -572,9 +572,7 @@
   <div id="pbProximity" class="pb-proximity"></div>
   <div id="bestRunComparison" class="best-run-comparison" role="note" hidden></div>
 
-  <!-- Sequence watch/go cues; gameplay notices stay in the footer. -->
-  <div id="rushText" class="rush-text"></div>
-  <div id="comboText" class="combo-text"></div>
+  <!-- Phase status stays in the HUD; urgent notices stay in the footer. -->
   <div id="gameNotice" class="game-notice" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- Practice markers -->

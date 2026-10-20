@@ -284,8 +284,39 @@ try {
     return result;
   }, server.baseUrl);
   assert.equal(osMotion, true, 'OS motion reduction must work even before the body flag updates');
+  await page.locator('.corner-shape').click(); // Browser user activation for Web Audio.
+  const fileMusic = await page.evaluate(async base => {
+    const { AudioManager } = await import(`${base}/js/audio.js`);
+    const audio = new AudioManager();
+    await audio._loadMusicManifest();
+    audio.setMusicMode('blitz', { modeId: 'klassik' });
+    audio.startMusic();
+    const until = async predicate => {
+      for (let i = 0; i < 100; i++) { if (predicate()) return; await new Promise(resolve => setTimeout(resolve, 30)); }
+      throw new Error('Actual file/music graph did not reach its phase');
+    };
+    try {
+      await until(() => audio._musicFilePlaying && audio._musicAudio.currentTime > 0);
+      const source = audio._fileSource, filter = audio._fileFilter;
+      audio.setArenaPhase('watch');
+      await until(() => audio._arenaPhase === 'watch');
+      await new Promise(resolve => setTimeout(resolve, 350));
+      const quiet = filter.frequency.value < 6000;
+      audio.setArenaPhase('rush');
+      await until(() => audio._arenaPhase === 'rush');
+      await new Promise(resolve => setTimeout(resolve, 350));
+      const open = filter.frequency.value > 14000;
+      const reused = audio._fileSource === source && audio._fileFilter === filter;
+      audio.setArenaPhase('cooldown');
+      audio.stopMusic();
+      return { quiet, open, reused, silent: audio._musicAudio.paused, cancelled: audio._phaseTimer === null,
+        runningContext: audio.ctx.state === 'running' };
+    } finally { audio.stopMusic(); await audio.ctx?.close(); }
+  }, server.baseUrl);
+  for (const [key, value] of Object.entries(fileMusic)) assert.equal(value, true, `Actual HTML audio routing: ${key}`);
   assert.deepEqual(errors, []);
   console.log('PASS all 12 material silhouettes, exact normal/colorblind face colors, OS reduced motion');
+  console.log('PASS actual file playback through one reusable EQ graph, beat-coalesced quiet/open phases and stop cancellation (not a listening/device test)');
 } finally {
   await context.close();
   await browser.close();

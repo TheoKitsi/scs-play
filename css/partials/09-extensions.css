@@ -438,14 +438,12 @@ body.mode-worte .center-platform{
   .corner-shape{width:52px;height:52px}
   .corner-shape svg{width:28px;height:28px}
   .center-platform{width:90px !important;height:90px !important}
-  .center-shape svg,.center-shape > svg{width:60px !important;height:60px !important}
   /* HUD condensed */
   .hud-scores{padding:4px 2px}
   .hud-score-group{min-width:44px}
   .hud-value{font-size:.95rem}
   .hud-label{font-size:.55rem}
   .hud-timer{font-size:1.1rem;min-width:36px}
-  .hud-fever{font-size:.6rem}
   /* Toast narrower */
   .achievement-toast,.toast{font-size:.85rem;padding:10px 12px;gap:6px}
   /* Results compact */

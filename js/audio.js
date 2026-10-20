@@ -20,6 +20,13 @@ export class AudioManager {
     this._musicBeat = 0;
     this._feverMode = false;
     this._musicIntensity = 0;
+    this._arenaPhase = 'calm';
+    this._requestedArenaPhase = 'calm';
+    this._phaseTimer = null;
+    this._fileSource = null;
+    this._fileFilter = null;
+    this._fileFilterTried = false;
+    this._musicEpoch = 0;
     this._lastIntensityUpdate = -Infinity;
     this._intensityThrottleMs = 450;
 
@@ -390,18 +397,20 @@ export class AudioManager {
       return;
     }
     const family = this._resolveMusicFamily(mode);
-    const [root, type, duration, volume] = ({
+    const [familyRoot, type, duration, volume] = ({
       sort: [440, 'triangle', .085, .09],
       think: [392, 'sine', .075, .075],
       memory: [523.25, 'sine', .1, .07],
       reflex: [329.63, 'triangle', .075, .095],
     })[family];
+    const root = ({ klassik: 440, beginner: 466.16, expert: 415.3, wissen: 349.23,
+      sequenz: 587.33, fokus: 369.99, chaos: 311.13 })[mode] || familyRoot;
     const level = fever ? 4 : streak >= 30 ? 3 : streak >= (family === 'think' ? 18 : 15) ? 2
       : streak >= (family === 'think' ? 8 : 5) ? 1 : 0;
     const base = root * [1, 1.12246, 1.25992, 1.33484, 1.49831][level];
     const pan = ({ ul: -.28, dl: -.28, left: -.28, nnw: -.28, wsw: -.28,
       ur: .28, dr: .28, right: .28, ene: .28, sse: .28 })[direction] || 0;
-    this._play(base, type, duration, volume, 0, pan, .003);
+    this._play(base, type, duration, volume * (quality === 'good' ? .9 : 1), 0, pan, .003);
     this._play(base / 2, 'sine', .055, .035, 0, pan, .003);
     if (quality === 'perfect' || quality === 'bonus') {
       this._play(base * (quality === 'bonus' ? 2.5 : 2), 'sine', .06, .03, 0, pan, .003);
@@ -536,15 +545,13 @@ export class AudioManager {
     if (!quiet) [262, 330, 392, 523, 659, 784].forEach((f, i) => {
       this._scheduleSfx(() => this._play(f, 'sawtooth', 0.12, 0.08), i * 40);
     });
-    this._musicTempo = this._baseTempo + 18;
-    if (this._musicAudio) this._musicAudio.playbackRate = 1.04;
-    this._applyMusicMix();
+    if (!quiet) this.setArenaPhase('fever');
   }
 
   /** Fever mode ended — gentle descending resolve. */
   feverEnd(quiet = false) {
     this._feverMode = false;
-    this._applyMusicIntensity();
+    if (!quiet) this.setArenaPhase('cooldown');
     if (!quiet) {
       this._play(400, 'sine', 0.3, 0.08);
       this._play(300, 'sine', 0.4, 0.06);
@@ -1070,12 +1077,15 @@ export class AudioManager {
   }
 
   _getMusicArrangement() {
-    const level = this._feverMode ? 3 : this._musicIntensity;
+    const level = ['rush', 'fever'].includes(this._arenaPhase) ? 3 : this._musicIntensity;
     if (this._musicMode === 'menu') {
       return { kick: false, hatEvery: null, melodyInterval: 4, padCycle: 16, repeatMotif: false, extraPercussion: false, offbeatBass: false };
     }
     if (this._musicFamily === 'think') {
       return { kick: level >= 2, hatEvery: level >= 3 ? 4 : null, melodyInterval: level >= 2 ? 4 : 8, padCycle: 16, repeatMotif: false, extraPercussion: false, offbeatBass: false };
+    }
+    if (this._arenaPhase === 'watch') {
+      return { kick: false, hatEvery: null, melodyInterval: 8, padCycle: 16, repeatMotif: true, extraPercussion: false, offbeatBass: false };
     }
     if (this._musicFamily === 'memory') {
       return { kick: level >= 1, hatEvery: level >= 3 ? 4 : null, melodyInterval: 4, padCycle: 16, repeatMotif: true, extraPercussion: level >= 3, offbeatBass: false };
@@ -1094,7 +1104,8 @@ export class AudioManager {
   }
 
   _applyMusicMix() {
-    const level = this._feverMode ? 3 : this._musicIntensity;
+    const level = ['rush', 'fever'].includes(this._arenaPhase) ? 3 : this._musicIntensity;
+    const quiet = ['watch', 'shuffle', 'cooldown', 'ready'].includes(this._arenaPhase);
     const familyMix = {
       sort:   { rhythm: 1 + level * 0.08, melody: 0.95 + level * 0.08, pad: 1 - level * 0.08 },
       think:  { rhythm: 0.62 + level * 0.04, melody: 0.82 + level * 0.05, pad: 1.18 - level * 0.04 },
@@ -1107,14 +1118,61 @@ export class AudioManager {
       if (typeof node.gain.setTargetAtTime === 'function') node.gain.setTargetAtTime(value, t, 0.12);
       else node.gain.value = value;
     };
-    setGain(this._musicGain, 0.18 * this._musicVolume * familyMix.rhythm);
+    setGain(this._musicGain, 0.18 * this._musicVolume * familyMix.rhythm * (quiet ? .72 : 1));
     setGain(this._melodyGain, 0.12 * this._musicVolume * familyMix.melody);
     setGain(this._padGain, 0.08 * this._musicVolume * familyMix.pad);
-    this._musicFileVolume = Math.min(1, this._musicVolume * 0.55 * (0.9 + level * 0.045));
+    this._musicFileVolume = Math.min(1, this._musicVolume * 0.55 * (0.9 + level * 0.045) * (quiet ? .82 : 1));
+    const cutoff = this._musicMode === 'menu' ? 20000 : ({ watch: 3400, shuffle: 4800, cooldown: 5400,
+      ready: 6000, calm: 7200, flow: 9600, charged: 12000, surge: 14500, rush: 16000, fever: 16000, recall: 8400 })[this._arenaPhase] || 7200;
+    this._fileFilter?.frequency.setTargetAtTime(cutoff, this.ctx.currentTime, .12);
     if (this._musicAudio) {
       if (this._musicFilePlaying) this._fadeMusicFileTo(this._musicFileVolume, 300);
       else this._musicAudio.volume = this._musicFileVolume;
     }
+  }
+
+  /** Coalesce to ONE next-beat transition. File BPM matches generate-music;
+   * its own playhead/rate is the clock, never elapsed gameplay or an SFX queue. */
+  setArenaPhase(phase = 'calm') {
+    if (!['calm', 'flow', 'charged', 'surge', 'rush', 'fever', 'cooldown', 'shuffle', 'watch', 'recall', 'ready'].includes(phase)) phase = 'calm';
+    if (phase === this._requestedArenaPhase) return;
+    this._requestedArenaPhase = phase;
+    clearTimeout(this._phaseTimer);
+    this._phaseTimer = null;
+    if (!this._musicRunning || !this.musicEnabled || this._pageHidden) {
+      this._arenaPhase = phase;
+      return;
+    }
+    if (phase === this._arenaPhase) return;
+    const beat = 60 / this._baseTempo;
+    const file = this._musicFilePlaying && this._musicAudio;
+    const position = file ? file.currentTime : Math.max(0, (this.ctx?.currentTime || 0) - this._musicEpoch);
+    const delay = (Math.ceil((position + .015) / beat) * beat - position) / (file ? file.playbackRate || 1 : 1);
+    this._phaseTimer = setTimeout(() => {
+      this._phaseTimer = null;
+      if (!this._musicRunning || this._pageHidden || !this.musicEnabled) return;
+      this._arenaPhase = this._requestedArenaPhase;
+      this._applyMusicIntensity();
+    }, Math.min(700, Math.max(0, delay * 1000)));
+  }
+
+  _connectMusicFile() {
+    if (this._fileFilterTried || !this.ctx?.createMediaElementSource) return;
+    this._fileFilterTried = true;
+    try {
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.Q.value = .35;
+      this._fileSource = this.ctx.createMediaElementSource(this._musicAudio);
+      this._fileSource.connect(filter);
+      filter.connect(this.ctx.destination);
+      this._fileFilter = filter;
+    } catch {
+      // If routing was created, preserve audible fallback on that same node.
+      this._fileSource?.disconnect();
+      this._fileSource?.connect(this.ctx.destination);
+    }
+    this._applyMusicMix();
   }
 
   _resolveMusicMode(requestedMode, context = {}) {
@@ -1223,12 +1281,14 @@ export class AudioManager {
     this._musicAudio.src = url;
     this._musicAudio.currentTime = 0;
     this._musicAudio.playbackRate = 1;
+    this._connectMusicFile();
     this._musicAudio.volume = 0;
     const attempt = ++this._musicFileAttempt;
     this._musicAudio.play().then(() => {
       if (attempt !== this._musicFileAttempt) return;
       this._musicFilePlaying = true;
       this._musicFileMode = mode;
+      this._applyMusicIntensity();
       this._fadeMusicFileTo(this._musicFileVolume, 450);
     }).catch(() => {
       if (attempt !== this._musicFileAttempt) return;
@@ -1410,6 +1470,7 @@ export class AudioManager {
     if (!this.musicEnabled || this._pageHidden || this._musicRunning) return;
     const synthReady = this._ensure();
     this._musicRunning = true;
+    this._musicEpoch = this.ctx?.currentTime || 0;
 
     /* Try audio file first, fall back to procedural synth */
     if (this._hasMusicFile(this._musicMode) && this._startMusicFile()) {
@@ -1862,6 +1923,9 @@ export class AudioManager {
   }
 
   stopMusic({ preserveRequest = false } = {}) {
+    clearTimeout(this._phaseTimer);
+    this._phaseTimer = null;
+    this._arenaPhase = this._requestedArenaPhase = 'calm';
     clearTimeout(this._musicEndTimer);
     this._musicEndTimer = null;
     if (!preserveRequest) this._musicRequested = false;

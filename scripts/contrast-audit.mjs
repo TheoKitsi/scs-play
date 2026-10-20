@@ -233,7 +233,8 @@ for (const theme of THEMES) {
 // The brightest endpoints of the new panel/control materials, not just their
 // opaque base colors. Normal-size captions must pass across the whole finish.
 for (const theme of [{ id: 'default', ...DARK }, ...THEMES]) {
-  for (const [material, bg] of [['panel', compositeRgba(DARK.text, .06, theme.card)], ['control', compositeRgba('#ffffff', .035, theme.card)]]) {
+  for (const [material, bg] of [['panel', compositeRgba(DARK.text, .06, theme.card)], ['control', compositeRgba('#ffffff', .035, theme.card)],
+    ['station', compositeRgba('#ffffff', .04, compositeRgba('#ffffff', .035, theme.card))]]) {
     checks.push({ label: `Material ${theme.id}: muted caption on ${material} highlight`, fg: DARK.textMuted, bg, min: 4.5, type: 'text' });
   }
 }
