@@ -2,7 +2,7 @@
   "name": "scs-play",
   "version": "2.0.0",
   "type": "module",
-  "description": "SCS Play - 10-mode reflex, focus, math, and memory game",
+  "description": "SCS Play - Prism Worlds light puzzles and ten engine-backed arcade modes",
   "private": true,
   "scripts": {
     "build": "node scripts/build-cap.mjs",
@@ -39,8 +39,11 @@
     "round-finale-release-test": "node scripts/round-finale-release-test.mjs",
     "arena-phase-logic-test": "node scripts/arena-phase-logic-test.mjs",
     "arena-experience-release-test": "node scripts/arena-experience-release-test.mjs",
+    "prism-logic-test": "node scripts/prism-logic-test.mjs",
+    "prism-release-test": "node scripts/prism-release-test.mjs",
+    "arcade-engine-release-test": "node scripts/arcade-engine-release-test.mjs",
     "knip": "knip --no-progress",
-    "verify": "npm run knip && npm run brand-assets-test && npm run game-logic-test && npm run engine-release-test && npm run streak-flow-test && npm run mastery-release-test && npm run audio-logic-test && npm run round-finale-logic-test && npm run arena-phase-logic-test && npm run game-feedback-test && npm run service-worker-test && npm run effects-lifecycle-test && npm run performance-release-test && npm run living-arena-test && npm run progression-logic-test && npm run contrast-audit && npm run build:prod && npm run pwa-release-test && npm run reward-release-test && npm run earned-progress-release-test && npm run contrast-audit:dom && npm run surface-release-test && npm run precision-ui-test && npm run usability-release-test && npm run round-finale-release-test && npm run arena-experience-release-test && npm run presentation-release-test && npm run streak-presentation-test && npm run smoke-test",
+    "verify": "npm run knip && npm run prism-logic-test && npm run brand-assets-test && npm run game-logic-test && npm run engine-release-test && npm run streak-flow-test && npm run mastery-release-test && npm run audio-logic-test && npm run round-finale-logic-test && npm run arena-phase-logic-test && npm run game-feedback-test && npm run service-worker-test && npm run effects-lifecycle-test && npm run performance-release-test && npm run living-arena-test && npm run progression-logic-test && npm run contrast-audit && npm run build:prod && npm run prism-release-test && npm run arcade-engine-release-test && npm run pwa-release-test && npm run reward-release-test && npm run earned-progress-release-test && npm run contrast-audit:dom && npm run surface-release-test && npm run precision-ui-test && npm run usability-release-test && npm run round-finale-release-test && npm run arena-experience-release-test && npm run presentation-release-test && npm run streak-presentation-test && npm run smoke-test",
     "cap:sync": "node scripts/build-prod.mjs && npx cap sync android",
     "cap:open": "npx cap open android",
     "cap:run": "node scripts/build-prod.mjs && npx cap run android"
@@ -50,8 +53,10 @@
   "license": "ISC",
   "dependencies": {
     "@capacitor/android": "^8.4.3",
+    "@capacitor/app": "8.1.2",
     "@capacitor/cli": "^8.4.3",
-    "@capacitor/core": "^8.4.3"
+    "@capacitor/core": "^8.4.3",
+    "phaser": "4.2.1"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",

@@ -56,7 +56,10 @@ try {
             await page.clock.setFixedTime(time);
             // Constant fixture RNG isolates task choice from decorative RNG
             // consumption between versions; never used in the real-play gate.
-            await page.evaluate(mode => { Math.random = () => .37; __SCS_QA__.setGameSelection(mode, 'endless'); document.querySelector('#btnPlay').click(); }, mode);
+             await page.evaluate(mode => { Math.random = () => .37; __SCS_QA__.setGameSelection(mode, 'endless'); document.querySelector('#btnPlay').click(); }, mode);
+             // Engine/module download is real asynchronous work, not part of
+             // the fixture's virtual countdown budget. Do not race cold WebKit.
+             await page.waitForSelector('#game.active,#tutorial.active');
             if (await page.locator('#modeInstructionOverlay.active').count()) await page.evaluate(() => document.querySelector('#btnStartAfterInstruction').click());
             let started = false;
             let sawWatch = false;

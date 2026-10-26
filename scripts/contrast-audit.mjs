@@ -19,6 +19,7 @@ import { readFileSync } from 'node:fs';
 // Read production tokens so the gate cannot silently audit an older palette.
 const tokenCss = readFileSync(new URL('../css/partials/01-tokens.css', import.meta.url), 'utf8');
 const themeCss = readFileSync(new URL('../css/partials/09-extensions.css', import.meta.url), 'utf8');
+const prismCss = readFileSync(new URL('../css/prism.css', import.meta.url), 'utf8');
 function cssColor(css, name, fallback) {
   const match = css.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6}|#[0-9a-f]{3})(?=[;\\s])`, 'i'));
   if (match) return match[1];
@@ -117,6 +118,13 @@ const LIGHT = {
 // type: 'text' (normal ≥4.5), 'largeText' (≥3), 'ui' (≥3), 'enhanced' (≥7)
 
 const checks = [
+  ...['pw-text', 'pw-muted', 'pw-mint'].map(token => ({ label: `Prism: ${token} on background`, fg: cssColor(prismCss, token), bg: cssColor(prismCss, 'pw-bg'), min: 4.5, type: 'text' })),
+  ...(() => {
+    const match = prismCss.match(/\.pw-primary\{background:(#[0-9a-f]+);color:(#[0-9a-f]+)/i);
+    if (!match) throw new Error('Missing Prism primary surface declarations');
+    return [{ label: 'Prism: primary button text', fg: match[2], bg: match[1], min: 4.5, type: 'text' }];
+  })(),
+  ...['#1b3343', '#162137'].map(bg => ({ label: `Prism: dialog gradient ${bg}`, fg: cssColor(prismCss, 'pw-muted'), bg, min: 4.5, type: 'text' })),
   // ══════════════════════════════════════
   //   DARK MODE
   // ══════════════════════════════════════

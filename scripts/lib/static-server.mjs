@@ -30,7 +30,10 @@ export async function startStaticServer({ root, host = '127.0.0.1', port = 3000 
     throw new Error(`Static server root does not exist: ${publicRoot}. Run npm run build:prod first.`);
   }
 
+  let networkAvailable = true;
   const server = createServer((req, res) => {
+    // Test-controlled transport failure. No response/cache/DOM is fabricated.
+    if (!networkAvailable) { req.socket.destroy(); return; }
     let filePath;
     try {
       filePath = resolveRequest(publicRoot, req.url || '/');
@@ -95,6 +98,7 @@ export async function startStaticServer({ root, host = '127.0.0.1', port = 3000 
 
   return {
     baseUrl: `http://${host}:${server.address().port}`,
+    setNetworkAvailable(available) { networkAvailable = Boolean(available); },
     async close() {
       await new Promise((resolveClose, rejectClose) => {
         server.close((err) => err ? rejectClose(err) : resolveClose());

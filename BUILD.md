@@ -23,6 +23,12 @@ The build script enforces default budgets:
 
 ## Full Local Gate
 
+The gate now also includes `prism-logic-test` (all twelve authored solutions, ray/chain rules, undo, migration and storage rollback) and `prism-release-test` (genuinely played compiled campaign, touch/tap/drag, loss/undo, storage failure/retry, replay/reload, offline play, shared puzzles and responsive layouts). `SCS_BROWSERS=chromium,firefox,webkit` expands the latter. Windows WebKit's context-level offline toggle produces an internal navigation error; its local offline test therefore disconnects the real HTTP server transport instead, requiring the service worker to supply the game. No wins or campaign records are seeded.
+
+`arcade-engine-release-test` also covers all ten existing modes on the new hybrid stage with real timed input, fixed hit rectangles, covered Memo names, reduced-motion Sequence cues, engine sleep/resume/disposal, low-tier caps and opt-in depth/graphics-fallback fixtures. `SCS_BROWSERS=chromium,firefox,webkit` expands both engine suites. `pwa-release-test` starts an arcade round for the first time after disconnecting, rather than only replaying an already loaded engine.
+
+Additional production budgets are **2600 KB total compiled JavaScript**, **20 KB Prism CSS**, **12 KB arcade engine CSS** and **16 MB full precache**. The existing **480 KB initial JavaScript / 255 KB original CSS** limits remain unchanged. Phaser and transitive/Capacitor MIT notices are bundled under `licenses/`. `index.html`'s source-only import map is stripped; packaged/web production runs without `node_modules` or an engine CDN.
+
 ```bash
 npm run verify
 ```
@@ -53,6 +59,8 @@ npm run smoke-test
 `npm run brand:generate` refreshes `icon-192.svg`, store PNGs and the Android density-specific launcher/splash rasters from `img/icon-512.svg` and `feature-graphic.svg`. It preserves each splash's existing resolution. Native vector/adaptive/monochrome sources use the same four silhouettes inside the adaptive safe zone; `styles.xml` supplies a dark launch background and post-splash theme. The obsolete API-24 Android-robot drawable override is removed. `npm run brand-assets-test` checks source XML, palette pixels and dimensions across all raster variants and can archive a browser conversion of the native vector via `SCS_REVIEW_OUT`. This preview is not a screenshot of Android's launcher or a substitute for Android resource compilation and device tests. Run `cap:sync` before packaging these resources.
 
 ## Performance Checks
+
+The measurement history below predates the Phaser upgrade and is **not** performance evidence for the current renderer. Current runtime caps are documented under **Prism Arcade** in `ARCHITECTURE.md`; they do not establish Android frame rate, thermals or battery behavior.
 
 Run measurements serially on an otherwise quiet machine, after building. Use the Node command directly so shells/npm cannot drop benchmark flags:
 
@@ -223,7 +231,13 @@ Eight serial, untraced benchmark runs compared frozen `c2d55ae` and the approved
 
 These small, mixed differences and overlapping ranges establish neither a speed improvement nor regression-free/device-60-FPS behavior. The third mid candidate was slower (59.5→59.3 FPS). All eight runs had zero page errors, no inactive-screen animations and unchanged trail budgets. `comparison-summary.json`, per-run logs/JSON and runtime hashes retain the results. Physical smartphone, native screen-reader, vibration/thermal/long-session and legal reviews remain separate/postponed.
 
+### Prism engine diagnostic (local, 2026-10-26)
+
+An initial continuous-render prototype was too costly under emulated load. The retained arcade renderer sleeps on static scenes, reuses unchanged direction geometry and limits animated engine hits to high quality. A single serial, untraced final mid-tier spot check used Colors/classic, 412×915/DPR2, 4× CPU throttle, 30 seconds/3-second warmup, 150ms swipe reaction, seed 1337 and default-off depth. It measured **54.2 FPS after warmup, 33.3ms p95, 1,215ms total long-task time**, 82 correct inputs, zero page errors and no inactive-screen animations. This is one local diagnostic, not a repeated baseline comparison, stable Android FPS or a regression-free/thermal/battery guarantee. Earlier intermediate JSON files intentionally retain the slower prototypes. The final diagnostic is `%LOCALAPPDATA%/Temp/opencode/scs-prism-arcade/perf-mid-static.json`.
+
 ## Android Build
+
+The Prism Worlds/Prism Arcade local acceptance is recorded in [PRISM_WORLDS.md](PRISM_WORLDS.md). Its final all-browser `verify` passed on stable application source, and both APK/AAB packaging plus 49-file runtime parity passed. The APK is debug-signed; the AAB is unsigned and cannot be treated as a signed Play release. Current output paths are those below; physical device, production signing and store submission remain outstanding.
 
 `npm run cap:sync` is mandatory before every Android debug or release build. It runs the production web build and then copies the current `docs/` output and Capacitor configuration into the Android project. Running Gradle without this step can package stale web assets.
 

@@ -151,6 +151,24 @@ async function run() {
   failures.push(...await scan(page, 'mode catalog'));
   await clickIfPresent(page, '#btnCloseModes', 400);
   failures.push(...await scan(page, 'home'));
+  await page.locator('#btnPrism').click();
+  await page.waitForSelector('.pw-map-view');
+  failures.push(...await scan(page, 'Prism world map'));
+  await page.locator('#pwContinue').click();
+  await page.waitForSelector('#pwArena canvas');
+  await page.waitForFunction(() => !document.querySelector('#pwArena .pw-loading'));
+  failures.push(...await scan(page, 'Prism arena and controls'));
+  await page.locator('#pwFire').click();
+  await page.waitForSelector('#pwNext:not(:disabled)');
+  failures.push(...await scan(page, 'Prism earned result'));
+  await page.locator('#pwNext').click();
+  await page.waitForSelector('#pwArena canvas');
+  await page.locator('#pwPause').click();
+  failures.push(...await scan(page, 'Prism pause'));
+  await page.keyboard.press('Escape');
+  await page.locator('#pwBack').click();
+  await page.locator('#pwBack').click();
+  await page.waitForSelector('#home.active');
   await clickIfPresent(page, '#homeLivesBadge', 300);
   failures.push(...await scan(page, 'application dialog'));
   await page.keyboard.press('Escape');
@@ -176,6 +194,24 @@ async function run() {
   for (const [button, label] of [['#btnLeaderboard', 'leaderboard'], ['#btnAchievements', 'achievements'], ['#btnSettings', 'settings'], ['#btnStore', 'store']]) {
     await forceHome(page);
     if (await clickIfPresent(page, button, 900)) failures.push(...await scan(page, label));
+    if (label === 'settings') {
+      await page.evaluate(() => {
+        window.auditStorageWrite = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(key, value) {
+          if (key === 'scs_save:guest') throw new DOMException('Contrast fixture', 'QuotaExceededError');
+          return window.auditStorageWrite.call(this, key, value);
+        };
+      });
+      try {
+        await page.locator('#toggleMotion').check();
+        await page.locator('#settingsSaveNotice:not([hidden])').waitFor();
+        failures.push(...await scan(page, 'settings save failure and retry'));
+      } finally {
+        await page.evaluate(() => { Storage.prototype.setItem = window.auditStorageWrite; delete window.auditStorageWrite; });
+      }
+      await page.locator('#btnSettingsRetrySave').click();
+      await page.locator('#toggleMotion').uncheck();
+    }
     if (label === 'store') {
       await page.locator('[data-preview-id="ocean"]').click();
       await page.locator('#designPreviewOverlay.active').waitFor();

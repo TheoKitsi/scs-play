@@ -45,6 +45,15 @@ const cssResult = await esbuild.build({
   metafile: true,
 });
 await esbuild.build({ entryPoints: [resolve(root, 'css/legal.css')], minify: true, outfile: resolve(out, 'css/legal.css') });
+await esbuild.build({ entryPoints: [resolve(root, 'css/prism.css')], minify: true, outfile: resolve(out, 'css/prism.css') });
+await esbuild.build({ entryPoints: [resolve(root, 'css/arcade-engine.css')], minify: true, outfile: resolve(out, 'css/arcade-engine.css') });
+mkdirSync(resolve(out, 'licenses'), { recursive: true });
+copyFileSync(resolve(root, 'node_modules/phaser/LICENSE.md'), resolve(out, 'licenses/phaser-MIT.txt'));
+writeFileSync(resolve(out, 'licenses/third-party-MIT.txt'), [
+  ['EventEmitter3', 'eventemitter3/LICENSE'],
+  ['Capacitor App', '@capacitor/app/LICENSE'],
+  ['Capacitor Core', '@capacitor/core/LICENSE'],
+].map(([name, file]) => `${name}\n\n${readFileSync(resolve(root, 'node_modules', file), 'utf8')}\n`).join('\n'));
 
 // â”€â”€ 3. Copy static assets â”€â”€
 const skip = new Set([
@@ -71,6 +80,8 @@ copyDir(root, out);
 
 // â”€â”€ 4. Rewrite index.html to use bundled files â”€â”€
 let html = readFileSync(resolve(out, 'index.html'), 'utf8');
+// Bare imports are bundled in production; only the source server needs this map.
+html = html.replace(/\s*<script type="importmap">[\s\S]*?<\/script>/, '');
 html = html.replace(
   '<link rel="stylesheet" href="css/style.css">',
   '<link rel="stylesheet" href="css/style.bundle.css">'
@@ -96,6 +107,10 @@ const bundledAssets = `const ASSETS = [
   './terms-of-service.html',
   './css/style.bundle.css',
   './css/legal.css',
+  './css/prism.css',
+  './css/arcade-engine.css',
+  './licenses/phaser-MIT.txt',
+  './licenses/third-party-MIT.txt',
 ${bundledFontAssets.join(',\n')},
 ${bundledJsAssets.join(',\n')},
   './manifest.json',
@@ -126,6 +141,17 @@ collectStaticImports(entryOutput);
 const jsSize = [...initialOutputs].reduce((sum, path) => sum + (jsOutputs[path]?.bytes || 0), 0);
 const mainJsSize = statSync(resolve(out, 'js/app.bundle.js')).size;
 const cssSize = statSync(resolve(out, 'css/style.bundle.css')).size;
+const totalJsSize = Object.values(jsOutputs).reduce((sum, file) => sum + file.bytes, 0);
+const prismCssSize = statSync(resolve(out, 'css/prism.css')).size;
+const arcadeCssSize = statSync(resolve(out, 'css/arcade-engine.css')).size;
+const precacheSize = [...sw.matchAll(/'\.\/([^']+)'/g)].reduce((sum, match) => {
+  const file = resolve(out, match[1]);
+  return sum + (existsSync(file) && statSync(file).isFile() ? statSync(file).size : 0);
+}, 0);
+console.log(`Prism: ${(prismCssSize / 1024).toFixed(1)} KB CSS; all JS ${(totalJsSize / 1024).toFixed(1)} KB; offline cache ${(precacheSize / 1048576).toFixed(2)} MB`);
+if (totalJsSize > 2600 * 1024 || prismCssSize > 20 * 1024 || arcadeCssSize > 12 * 1024 || precacheSize > 16 * 1048576) {
+  throw new Error('Engine/offline budget exceeded (2600 KB total JS, 20 KB Prism CSS, 12 KB arcade engine CSS, 16 MB precache)');
+}
 
 console.log(`âœ“ JS  initial: ${(jsSize / 1024).toFixed(1)} KB (main ${(mainJsSize / 1024).toFixed(1)} KB, minified)`);
 console.log(`âœ“ CSS bundled: ${(cssSize / 1024).toFixed(1)} KB (minified)`);

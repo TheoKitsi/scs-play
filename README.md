@@ -1,10 +1,20 @@
 # SCS Play
 
-SCS Play is a mobile-first reaction and brain-training game built as a Progressive Web App with a Capacitor Android wrapper. Its release catalog focuses on ten top-level modes covering sorting, math, knowledge, memory, focus, and rule-switching challenges.
+SCS Play is a mobile-first offline game for Web/PWA and Capacitor Android. **Prism Worlds** adds a Phaser 4 action-puzzle adventure: aim energy pulses, trigger crystal chains, use mirrors, colour rings and switches, and restore three illustrated floating gardens across twelve handcrafted puzzles. **Prism Arcade** upgrades all ten existing reflex, math, memory and attention modes with engine-rendered stages while retaining their rules and saves.
+
+## Prism Worlds
+
+Choose **Prism Worlds** on the home screen. Tap to aim and press **Launch pulse**, or drag and release. Every crystal must awaken within the level's pulse allowance. There is no countdown, energy paywall, advertisement or real-money purchase. Undo and retry are free. Matching colours also have different geometric symbols; named target selection, keyboard aiming and DOM launch controls provide alternatives to dragging.
+
+Earned stars restore the world illustration and unlock the next puzzle. Replays retain the best result without adding duplicate rewards. Shared `?prism=<level-id>` links open a clearly labelled free-play puzzle, never bypassing campaign unlocks. All campaign data stays on the device; no remote analytics service was enabled.
+
+See [PRISM_WORLDS.md](PRISM_WORLDS.md) for architecture, scope, research sources and remaining physical-device/release checks. This source addition does not by itself publish the existing live website or submit a Play Store release.
+
+The current release task targets **the existing GitHub Pages site only**, for owner testing. Home shows earned campaign progress, the world map names each puzzle, aim/results explain angle and pulse efficiency, and arcade stages respect selected design themes. Settings disclose browser-local saves and offer a visible retry if a preference cannot be persisted. This is a first chapter/test build, not a verified Top-5 or retention claim.
 
 ## What Matters
 
-- Vanilla JavaScript ES modules, no frontend framework.
+- Vanilla JavaScript ES modules, no frontend framework; Phaser 4.2.1 is shared and lazy-loaded when starting the adventure or arcade.
 - Source lives in `js/`, `css/`, `audio/`, `img/`, and root app files.
 - Production output is generated into `docs/` by `npm run build:prod`.
 - Do not manually edit generated files in `docs/`.
@@ -38,6 +48,9 @@ npm run visual-review
 | --- | --- |
 | `npm run build:prod` | Bundle JS/CSS into `docs/` with size budgets. |
 | `npm run build` | Build the web assets for Capacitor development sync. |
+| `npm run prism-logic-test` | All twelve authored puzzle solutions, collision/chain rules, undo, migration and save rollback. |
+| `npm run prism-release-test` | Naturally played compiled campaign, persistence failures/retry, offline/reload, responsive controls and shared challenges. Supports `SCS_BROWSERS`. |
+| `npm run arcade-engine-release-test` | Real input in all ten Phaser-backed modes, fixed geometry, Memo concealment, reduced-motion Sequence cues, pause/disposal, depth and graphics-fallback fixtures. Supports `SCS_BROWSERS`. |
 | `npm run contrast-audit` | Static WCAG token/theme contrast audit. |
 | `npm run contrast-audit:dom` | Playwright scan of rendered app screens for text/background contrast. |
 | `npm run smoke-test` | Critical boot -> guest -> home -> game -> results flow. |
@@ -76,6 +89,7 @@ SCS Play/
   js/app.js                   App orchestrator and global event wiring
   js/appState.js              Shared singleton state
   js/game/                    Game engine and mode mastery core
+  js/engine/                  Shared Phaser adventure and hybrid arcade stages
   js/screens/                 Screen-specific rendering and bindings
   js/helpers/                 DOM, haptics, onboarding, display helpers
   js/services/                Quests, effects, sharing, and ad demo scaffolding (no packaged ad SDK)
@@ -87,6 +101,8 @@ SCS Play/
 
 ## Presentation
 
+Prism Worlds uses a Phaser-rendered puzzle arena and scoped `css/prism.css`. All ten arcade modes now share a hybrid Phaser stage (`js/engine/ArcadeArena.js`, `css/arcade-engine.css`). Phaser draws the architecture, neutral stations, energy rails and accepted-hit effects; readable tasks, exact colours/symbols, ARIA names and stationary touch/keyboard controls remain DOM/SVG. This is a 2D engine presentation, not Unreal, 3D physics or PBR rendering.
+
 The game uses a lightweight 2.5D presentation, not a 3D engine: material SVG silhouettes, a shared neutral arena, and local answer feedback. Directional light only confirms a committed answer; scene decoration must never disclose the next answer. Reading modes use wider answer cards and a protected question surface. The mode catalog uses the same previews as the home carousel.
 
 UI colors are defined in `css/partials/01-tokens.css` and the theme definitions in `09-extensions.css`. Theme-aware action labels use `--on-primary`, including dark labels on bright themes. The static contrast gate reads those source tokens directly; browser contrast coverage also checks every theme and the mode catalog.
@@ -95,15 +111,15 @@ Performance tiers share one policy for CSS and effects. Short particle trajector
 
 Gameplay notices are a single compact footer status, not center-screen celebrations. Combo/fever/cooldown text never holds the next item or injects a stylesheet mid-round. A stimulus is fully opaque on its first frame. Rush uses the same single spawn scheduler as normal play: a correct answer advances promptly, while unanswered items retain their minimum answer window. Shuffle keeps its short orientation cue, without an extra post-animation wait.
 
-The Living Arena adds neutral clearcoat/rim materials and ten distinct architectural worlds. The mode selector/instructions now give each world its own illustrated silhouette, without adding geometry to the live arena. Two small studio lights replace the previous floating dots. Five peripheral energy stages build with a streak, without a full-screen glow or center-screen celebration. Reading worlds remain restrained. Correct answers emit one short, reusable light impulse and a local target ring/spring. These never move hit areas, hold a successor or persist into the next stimulus.
+The ten distinct worlds use restrained architectural frames and peripheral energy stages. The engine replaces the old CSS light/impulse layer while ready; that layer remains a fallback if engine loading or graphics fails. No question or upcoming answer is passed to the renderer. High-tier engine effects confirm committed correct input only, are bounded to two and clear at the next stimulus; other tiers retain local DOM feedback. Static live stages sleep until drawing changes, without changing game timers. Memo remains concealed and Sequence's necessary watch cues remain visible with reduced motion.
 
-Optional **Moving background** in Settings is off by default: primary mouse/touch movement shifts only the backdrop by at most ±4/3 pixels, on high quality with motion allowed. Its status explains when motion/quality settings suspend it. Inputs are coalesced into one frame; idle gameplay adds no depth loop. Pause, visibility, tier/motion changes and release reset the scenery. World-specific contact sounds and short haptics share the accepted-answer event rather than stacking perfect/combo/menu buzzes. Sound, music and vibration keep independent controls. No 3D engine, sensor permission or runtime dependency is required.
+Optional **Moving background** in Settings is off by default: primary mouse/touch movement shifts only the architecture by at most ±4/3 pixels, on high quality with motion allowed. Its status explains when motion/quality settings suspend it. Inputs are coalesced into one frame; depth itself adds no idle loop. Pause, visibility, tier/motion changes, resize and release reset the scenery. The engine backing surface is capped at 1024×1536, with a 30 FPS low-tier limit; pause sleeps its loop and navigation destroys it. These are resource policies, not a device performance guarantee. World-specific contact sounds and short haptics retain independent settings and the existing app audio owner; Phaser does not start a second audio graph.
 
 The surface-coherence pass reuses material objects in branding, tutorials and Chaos, with shared vector UI icons. Chaos size ratios and all task colors stay intact. A single world silhouette replaces stacked decorative rings; routes are invisible until confirmation. The desktop selector uses a composed two-column stage, the catalog describes tasks as well as worlds, and settings group related controls rather than boxing every row. Results distinguish unanswered rounds, continuation, records and completed rounds, without fake zero-XP rewards. Reserve lives are explained separately from Endless round lives.
 
 Shop confirmations and manual-share fallbacks use a bounded, accessible in-app dialog with cancel-on-Escape/Back and focus restoration, not browser alerts/prompts. The shop discloses the existing service-level unlock requirements before spending currency. Start-up has no cosmetic minimum wait. Web/store icons, native launcher rasters and splash art share the material silhouettes; the Android API-24 robot override and white Capacitor splash are replaced. Legal pages share a readable dark layout, German/English versions and an offline-capable language switch; the original English legal content is retained. Game insights and its text export describe activity rather than claiming to measure enjoyment or ability. Visual review is not a substitute for physical Android testing or legal review of translations.
 
-The Precision Arcade art direction refines these existing systems rather than adding another renderer: narrow neutral material highlights, shallower extrusion, shared panel/control finishes and display/numeric typography. Menu, catalog, tutorial, game, results, records, achievements, avatar, settings, analysis and dialogs share the same material tokens. Shop thumbnails open a static schematic arena/trail preview using the actual theme/trail declarations, without buying/equipping a design. The wheel paints one capped-2x themed bitmap and rotates it instead of redrawing all labels each frame. Unrelated cyan ripples/confetti and center-screen life/streak flashes are removed; status stays in the existing peripheral notice. Engine rules, answer scheduling and target coordinates are unchanged. This is a 2D/SVG implementation inspired by game-UI craft, not Unreal Engine or real PBR rendering.
+The earlier Precision Arcade art direction remains the menu/task-face foundation: narrow neutral highlights, shallow extrusion, shared panel/control finishes and display/numeric typography. The new Phaser stage complements these DOM/SVG surfaces rather than replacing accessible tasks with canvas-only content. Shop thumbnails remain static schematic arena/trail previews, without buying/equipping a design. The wheel paints one capped-2x themed bitmap and rotates it instead of redrawing labels each frame. Status stays peripheral; engine rules, answer scheduling and target coordinates remain unchanged.
 
 The usability follow-up makes home content intrinsic-height/scrollable and lets play types, labels, dialogs and menu grids reflow at larger text sizes. The dock stays in document flow, so enlarged text cannot be hidden beneath it. Settings provide focus-moving section shortcuts and a wide-screen sidebar; the desktop shop uses two columns. The orientation hint no longer hides or blocks any menu. Rotating an active narrow touch arena pauses it; its normal resume/settings/quit controls stay usable. The arena remains designed for portrait rather than promising a new landscape gameplay layout.
 
@@ -117,11 +133,11 @@ Outfit and Space Grotesk are self-hosted Latin WOFF2 cuts with their OFL license
 
 ## Live Arena Experience
 
-All ten live modes use their own station chassis and architectural relief: a precision color deck, chamfered shape stations, radial Expert instrument, restrained math/knowledge consoles, memory cells/Sequence pads and distinct Stroop/Focus/Chaos frames. Shared inset faces, narrow highlights and contact shadows preserve exact answer colors and a clear stimulus center. There are no new moving targets, WebGL dependencies or full-screen particle celebrations.
+All ten live modes use their own Phaser architecture: a precision color deck, chamfered shape stations, radial Expert instrument, restrained math/knowledge consoles, memory cells/Sequence pads and distinct Stroop/Focus/Chaos frames. Shared inset faces, narrow highlights and contact shadows preserve exact answer colors and a clear stimulus center. Phaser chooses WebGL or Canvas; if it cannot start, the original DOM/SVG stage remains playable. There are no moving targets or full-screen particle celebrations.
 
 The multiplier group also shows the current phase: real Rush item count, Flow/strong streaks, Fever/cooldown, or memory Watch/Recall/Ready. It is read-only and does not add a timer or waiting period. Rule/orientation notices outrank reward notices. Accepted contact uses one shared good/perfect/bonus classification for local visual response, a short mode-specific sound and existing independent haptic settings. Sequence points appear at the answered target; its Watch/Go text no longer spins over the task.
 
-Music transitions coalesce at the next track beat. With Web Audio, normal MP3 playback gains a reusable quiet/open EQ as well as the mix changes; there are no extra stems/tracks/downloads and no claim of separately remixing instruments inside a file. The procedural fallback follows the same phases; ordinary file playback remains available without Web Audio. Answer sounds remain immediate. Pause/hiding/navigation cancels pending music/visual work. Low quality/reduced motion retains essential static phase/Sequence cues, while the existing two-light and optional default-off depth policies are preserved.
+Music transitions coalesce at the next track beat. With Web Audio, normal MP3 playback gains a reusable quiet/open EQ as well as the mix changes; there are no extra stems/tracks/downloads and no claim of separately remixing instruments inside a file. The procedural fallback follows the same phases; ordinary file playback remains available without Web Audio. Answer sounds remain immediate. Pause/hiding/navigation cancels pending music/visual work. Low quality/reduced motion retains essential static phase/Sequence cues; the default-off depth limits apply to engine architecture instead of the hidden fallback stage.
 
 ## Complete Round Flow
 

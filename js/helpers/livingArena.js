@@ -36,7 +36,7 @@ function pointerDepth(event) {
 
 function syncDepth() {
   const enabled = depthEnabled && active && !document.hidden && motionAllowed()
-    && document.body.dataset.perfMode === 'high';
+    && document.body.dataset.perfMode === 'high' && stage?.parentElement?.dataset.arcadeEngine !== 'ready';
   if (!enabled) {
     depthListeners?.abort();
     depthListeners = null;
@@ -100,6 +100,7 @@ export const livingArena = {
 
   setDepthEnabled(value) {
     depthEnabled = Boolean(value);
+    window.dispatchEvent(new CustomEvent('scs:arenadepth', { detail: { enabled: depthEnabled } }));
     syncDepth();
   },
 
@@ -137,7 +138,7 @@ export const livingArena = {
     stage.dataset.confirmedDirection = direction;
     stage.classList.add('resonance-hit');
     stage.dataset.impact = quality;
-    if (motionAllowed() && document.body.dataset.perfMode === 'high' && signal?.animate) {
+    if (motionAllowed() && document.body.dataset.perfMode === 'high' && signal?.animate && stage.parentElement?.dataset.arcadeEngine !== 'ready') {
       const point = getDisplacement?.();
       if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
         const angle = Math.atan2(point.y, point.x);

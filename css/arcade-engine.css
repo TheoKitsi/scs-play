@@ -1,0 +1,17 @@
+/* Engine architecture + stable, accessible DOM task faces. No hit-box changes. */
+.arcade-engine-layer{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;contain:strict}
+.arcade-engine-layer canvas{display:block;width:100%!important;height:100%!important;pointer-events:none}
+#game[data-arcade-engine="ready"]{background:radial-gradient(ellipse at 50% 55%,var(--surface-raised),var(--bg) 75%)}
+#game[data-arcade-engine="ready"] .resonance-stage{visibility:hidden}
+#game[data-arcade-engine="ready"] .arena-light,#game[data-arcade-engine="ready"] .arena-signal{animation:none!important}
+#game[data-arcade-engine="ready"] .corner-shape:not([data-content="stroop"]):not(.memo-covered){background:var(--panel-fill);border-color:var(--outline);box-shadow:var(--material-edge),0 4px #0004}
+#game[data-arcade-engine="ready"] .center-platform,#game[data-arcade-engine="ready"] .center-platform.platform-active{background:var(--panel-fill);border-color:var(--outline);box-shadow:var(--material-edge),0 5px #0004}
+#game[data-arcade-engine="ready"] .center-platform:before{background:var(--surface);border-color:var(--outline);box-shadow:inset 0 2px 8px #0005}
+#game[data-arcade-engine="ready"] .hud-scores{border-color:var(--outline);background:var(--panel-fill);box-shadow:var(--material-edge)}
+#game[data-arcade-engine="ready"] .mode-indicator{background:var(--surface-raised);border-color:var(--outline);color:var(--text)}
+#game[data-arcade-engine="ready"] .hud-label{color:var(--text-dim)}
+#game[data-arcade-engine="ready"] .game-notice{background:var(--surface);border-color:var(--outline);color:var(--text)}
+.hero-engine-badge{display:inline-flex;align-items:center;gap:6px;color:#a9e6c7;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;font-weight:500}
+.hero-engine-badge:before{content:'';display:inline-block;width:5px;height:5px;background:#9befcc;border-radius:50%}
+#results .results-panel{border-color:#48656c;box-shadow:inset 0 1px #c1f8dc16,0 20px 70px #0003}
+@media(forced-colors:active){.arcade-engine-layer{display:none}#game[data-arcade-engine="ready"] .resonance-stage{visibility:visible}}

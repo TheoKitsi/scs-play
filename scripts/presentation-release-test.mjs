@@ -19,7 +19,8 @@ async function startGame(page, mode) {
     if (document.querySelector('#tutorial.active')) document.querySelector('#btnTutorialSkip')?.click();
     if (document.querySelector('#modeInstructionOverlay.active')) document.querySelector('#btnStartAfterInstruction')?.click();
     const state = globalThis.__SCS_QA__.gameState();
-    return document.querySelector('#game.active') && state?.running && (mode === 'sequenz' || state.stimulusId != null);
+    return document.querySelector('#game.active') && state?.running && (mode === 'sequenz' || state.stimulusId != null)
+      && globalThis.__SCS_QA__.arcadeRendererState()?.ready;
   }, mode, { timeout: 15000, polling: 150 });
   await page.waitForTimeout(180);
 }
@@ -169,9 +170,11 @@ async function review(viewport) {
           const before = JSON.stringify(rects());
           document.querySelector('#game').dispatchEvent(new PointerEvent('pointermove', { clientX: innerWidth, clientY: innerHeight, isPrimary: true }));
           await new Promise(resolve => requestAnimationFrame(resolve));
-          return { moved: document.querySelector('.arena-scenery').style.transform !== '', fixed: before === JSON.stringify(rects()) };
+          const depth = __SCS_QA__.arcadeRendererState().depth;
+          return { moved: depth.x !== 0 || depth.y !== 0, fixed: before === JSON.stringify(rects()), depth };
         });
         assert.ok(depth.moved && depth.fixed, `${label}: saved depth setting moves only background architecture`);
+        assert.ok(Math.abs(depth.depth.x) <= 4 && Math.abs(depth.depth.y) <= 3);
         const confirmation = await page.evaluate(() => {
           const game = document.querySelector('#game');
           const before = game.getBoundingClientRect();
@@ -185,6 +188,8 @@ async function review(viewport) {
         await page.evaluate(() => document.querySelector('#btnPause').click());
         assert.equal(await page.locator('#resonanceStage').getAttribute('data-live'), null, `${label}: arena stops with gameplay`);
         assert.equal(await page.locator('.arena-scenery').evaluate(el => el.style.transform), '', `${label}: pause clears optional depth`);
+        assert.deepEqual(await page.evaluate(() => __SCS_QA__.arcadeRendererState().depth), { x: 0, y: 0 }, `${label}: pause resets engine architecture`);
+        assert.equal(await page.evaluate(() => __SCS_QA__.arcadeRendererState().loopRunning), false);
         await page.evaluate(() => document.querySelector('#btnResume').click());
         assert.notEqual(await page.locator('#resonanceStage').getAttribute('data-live'), null, `${label}: arena resumes with gameplay`);
         if (viewport.width < 768) {
@@ -205,12 +210,16 @@ async function review(viewport) {
             await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [gesture.from] });
             await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: (gesture.from.x + gesture.to.x) / 2, y: (gesture.from.y + gesture.to.y) / 2 }] });
             await page.waitForTimeout(40);
-            assert.notEqual(await page.locator('.arena-scenery').evaluate(el => el.style.transform), '', `${label}: native touch reaches optional background depth`);
+            assert.ok(await page.evaluate(() => {
+              const depth = __SCS_QA__.arcadeRendererState().depth;
+              return depth.x !== 0 || depth.y !== 0;
+            }), `${label}: native touch reaches optional engine depth`);
             await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [gesture.to] });
             await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
             await page.waitForFunction(before => globalThis.__SCS_QA__.gameState().correct === before + 1, gesture.correct, { timeout: 1500 });
             assert.equal(await page.evaluate(() => globalThis.__SCS_QA__.gameState().correct), gesture.correct + 1, `${label}: depth cannot interfere with real touch answers`);
             assert.equal(await page.locator('.arena-scenery').evaluate(el => el.style.transform), '', `${label}: release returns scenery to neutral`);
+            assert.deepEqual(await page.evaluate(() => __SCS_QA__.arcadeRendererState().depth), { x: 0, y: 0 }, `${label}: release resets engine depth`);
           } finally { await cdp.detach(); }
         }
       }
