@@ -1,18 +1,34 @@
 # SCS Play — Store Listing
 
 ## Kurzbeschreibung (80 Zeichen max)
-10 schnelle Modi fuer Reflexe, Fokus, Mathe und Gedaechtnis.
+12 Licht-Raetsel mit Kettenreaktionen - plus 10 schnelle Arcade-Modi.
 
 ## Short Description (80 chars max)
-10 fast modes for reflexes, focus, math, and memory.
+12 light puzzles with chain reactions, plus 10 quick arcade modes.
 
 ## Vollstaendige Beschreibung (DE)
 
-SCS PLAY — Swipe. Sort. Score.
+SCS PLAY — PRISM WORLDS & ARCADE
 
-Teste deine Reflexe. Trainiere Fokus und Gedaechtnis. In kurzen Runden.
+Ein Impuls. Eine Kettenreaktion. Eine Welt erwacht.
+
+PRISM WORLDS
+
+Lenke Licht durch zwoelf handgestaltete Raetsel. Wecke passende Kristalle, nutze Spiegel, Farbringe und Schalter und bringe drei schwebende Gaerten zum Leuchten.
+
+- Tippe zum Zielen und loese einen Impuls aus - oder ziehe und lass los.
+- Verbinde passende Kristalle zu Kettenreaktionen.
+- Loese jedes Level mit begrenzten Impulsen, aber ohne Zeitlimit.
+- Mache einen Impuls kostenlos rueckgaengig oder starte neu.
+- Sammle bis zu drei Sterne und verbessere deine Loesungen.
+- Teile einzelne Raetsel als spielbaren Browser-Link.
+- Unterschiedliche Symbole ergaenzen die Farben; alternative Ziel- und Tastatursteuerung ist vorhanden.
+
+DEIN ARCADE-BEREICH
 
 10 zentrale Spielmodi fordern unterschiedliche Faehigkeiten - von Farbsortierung und Formerkennung ueber Kopfrechnen bis zu Gedaechtnis und Reaktionsschnelligkeit.
+
+Alle zehn Modi erhalten neue Engine-Buehnen, eigene Arena-Architektur und lokales Trefferfeedback. Aufgaben, feste Eingabeflaechen und bestehende Bestleistungen bleiben erhalten. Memo verdeckt seine Symbole weiterhin; Sequenz behaelt seine notwendigen Merksignale auch bei reduzierter Bewegung.
 
 SPIELMODI
 
@@ -40,9 +56,8 @@ WAS SCS PLAY BESONDERS MACHT
 - Fever Mode ab 20er Combo — alles zaehlt doppelt
 - Rush-Runden mit Schnellfeuer-Spawns
 - Corner Shuffle — die Zuordnung aendert sich waehrend des Spiels
-- 30 Level mit steigender XP-Kurve
-- Ueber 100 Achievements, davon versteckte Raritaeten
-- Taegliche Herausforderungen mit Serien-Belohnungen
+- Erspielter Fortschritt, persoenliche Rekorde und Meilensteine
+- Taegliche Herausforderungen
 - Gluecksrad mit taeglichem Spin
 - Mehrere Spieltypen: Blitz (30s), Marathon (60s), Endlos und Wettkampf
 - Kernspiel offline spielbar; kein Account noetig
@@ -58,11 +73,27 @@ Kostenlos. Keine Werbung. Keine Echtgeldkaeufe.
 
 ## Full Description (EN)
 
-SCS PLAY — Swipe. Sort. Score.
+SCS PLAY — PRISM WORLDS & ARCADE
 
-Test your reflexes. Train focus and memory. In quick rounds.
+One pulse. One chain reaction. A world awakes.
+
+PRISM WORLDS
+
+Guide light through twelve handcrafted puzzles. Awaken matching crystals, use mirrors, colour rings and switches, and bring three floating gardens into bloom.
+
+- Tap to aim and launch a pulse, or drag and release.
+- Connect matching crystals into chain reactions.
+- Solve each level with limited pulses, without a countdown.
+- Undo a pulse or restart for free.
+- Earn up to three stars and improve your solutions.
+- Share individual puzzles as playable browser links.
+- Distinct symbols supplement colours; alternative target selection and keyboard controls are included.
+
+YOUR ARCADE
 
 10 core game modes challenge different skills, from color sorting and shape recognition to mental math, memory, and reaction speed.
+
+All ten modes feature updated engine-backed stages, distinctive arena architecture and local contact feedback. Tasks, stationary controls and existing personal bests are preserved. Memo still conceals its symbols; Sequence keeps essential watch cues even with reduced motion.
 
 GAME MODES
 
@@ -90,9 +121,8 @@ WHAT MAKES SCS PLAY DIFFERENT
 - Fever Mode at 20 combo — everything counts double
 - Rush rounds with rapid-fire spawns
 - Corner Shuffle — assignments change mid-game
-- 30 levels with escalating XP curve
-- Over 100 achievements, including hidden rarities
-- Daily challenges with play-streak rewards
+- Earned progress, personal records and milestones
+- Daily challenges
 - Fortune wheel with daily spin
 - Multiple play types: Blitz (30s), Marathon (60s), Endless, and Competition
 - Core gameplay works offline; no account required
@@ -111,6 +141,8 @@ Primary: Game > Puzzle
 Secondary: Game > Educational
 
 ## Play Store Assets
+
+This is a listing draft for the Prism source build, not a published store update. Existing branding assets below have not been replaced with a new Android screenshot set. Capture the final packaged adventure on a physical device and finish the release checks before submitting this listing.
 
 - Store icon: `img/store-icon-512.png` (512 x 512)
 - Feature graphic: `img/feature-graphic-1024x500.png` (1024 x 500)

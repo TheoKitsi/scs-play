@@ -3,12 +3,37 @@
 ## Stack
 
 - Vanilla JavaScript ES modules.
+- Phaser 4.2.1, shared and lazy-loaded for Prism Worlds and all ten hybrid-rendered arcade modes. Arcade rules remain in the original `GameEngine`.
 - CSS partials imported by `css/style.css`.
 - Playwright for browser QA.
 - esbuild for production bundling.
 - Capacitor Android wrapper.
 
 ## Runtime Shape
+
+### Prism Worlds
+
+`js/game/prism/PrismSimulation.js` is a render-independent simulation. Read-only ray tracing supplies both the aim preview and live path; fixed 1/120-second steps resolve flights, chains, switches and completion without wall-clock timers. Twelve bilingual, authored definitions live in `js/game/prism/levels.js`. Mirrors reflect rays, paint rings retune them, closed walls/gates block rays and chain links. Undo restores the complete pre-shot state. `scripts/lib/prism-solutions.mjs` contains test inputs only and is excluded from production output.
+
+`js/engine/PrismScene.js` owns Phaser drawing and pointer input, not rewards or persistence. A single 420×560 logical canvas scales to its DOM container. Original vector geometry/generated textures require no asset CDN. No Phaser audio manager/physics world is started: the application audio graph and the pure simulation remain authoritative. Impacts are bounded to 4/12 and disabled by reduced motion. Menus do not create a Phaser instance; pause/results sleep its loop, and navigation destroys it.
+
+`js/screens/PrismScreen.js` supplies the world map, DOM HUD, accessible alternative controls and shared modal-stack dialogs. Campaign progress is stored by `js/services/PrismProgress.js` under `save.data.prism`, independently of arcade scores, XP, lives and mastery. Only eligible wins commit through the existing batched save transaction. Failed writes leave an explicit retryable result and cannot enable Next. Shared puzzles never call the campaign persistence path.
+
+`js/services/NativeLifecycle.js` is loaded only in the packaged app and registers the installed Capacitor App plugin. Android Back uses the same modal/navigation path; root Back minimizes the app. Native backgrounding and document visibility both suspend active play. This is integration code, not evidence of physical-device behavior.
+
+Prism uses a separate scoped stylesheet (`css/prism.css`) and a lazy engine chunk. The source HTML import map resolves Phaser for source-server QA; the production build removes it and bundles the dependency locally with its MIT license. The production service worker caches all compiled chunks for offline play. Existing initial-JS/CSS caps remain; total JS, Prism CSS and complete precache now have additional explicit budgets.
+
+### Prism Arcade
+
+`js/engine/ArcadeArena.js` upgrades all ten public arcade modes with one hybrid Phaser stage. `GameScreen.prepareArenaEngine()` resolves the shared lazy dependency before countdown. The renderer receives only target geometry, whitelisted mode architecture, read-only phase/energy and committed feedback; it never receives a question, correct upcoming direction, hidden Memo symbol or Sequence pattern. DOM/SVG task faces retain exact colours, accessible names, keyboard/touch controls and stationary rectangles. `css/arcade-engine.css` skins those faces and hides the redundant fallback stage only after engine boot.
+
+The backing surface is capped at 1024×1536; camera zoom preserves CSS-coordinate geometry on larger displays. High/mid use a 60 FPS cap, low 30. **Static live scenes sleep too:** changes wake a render, while only necessary Sequence cues and at most two short high-tier hit effects sustain frames. Mid/low/reduced motion keep the existing local DOM contact cue without another animated canvas pass. Unchanged target direction sets reuse measured geometry instead of forcing a layout read on each spawn. Sequence's necessary watch outline remains visible regardless of motion policy. Optional depth moves architecture only, at most ±4/3 pixels, with one coalesced pointer frame; resize/release/pause/policy reset it. Pause/results sleep the renderer, real continuation resumes it, and navigation destroys its game, observer, listeners and pending frames. Failed boot/context loss releases the layer so the existing DOM/SVG presentation remains playable; context loss pauses the round first. Stale callbacks after disposal are inert.
+
+`arcade-engine-release-test` uses real timed taps in all ten compiled modes, choosing locked modes with the existing QA selector but never assigning scores. Read-only renderer snapshots check backing pixels, policy, phase and lifecycle. Preferences/quality and a dispatched graphics-loss event are explicit fixtures, not physical-device/GPU measurements. `pwa-release-test` also launches the arcade for the first time only after disconnecting, proving that all lazy Phaser chunks were precached before use.
+
+`app.js` coalesces repeated start requests and cancels a pending start on navigation, so a cold engine download cannot take over a menu opened while loading. The compiled gate holds the real module request and navigates normally to exercise this race. `helpers/prismLink.js` strips unrelated query/hash state from puzzle links; packaged shares use the public deployment URL instead of Capacitor's device-local origin. This prepares usable native links after publication, not evidence that the new chapter is already live.
+
+The web-test UX pass reads the selected theme's existing `--surface`, `--bg` and `--primary-glow` once at arcade mount, sharing neutral card materials with the shop preview instead of hardcoding a substitute palette. Exact task/success colours remain independent. Home uses the canonical campaign sanitizer for earned progress; the map exposes authored titles and the next puzzle, and results/aim controls show actual efficiency/angle. Settings catch rejected preference writes, retain their session effect and offer a visible retry without throwing from async DOM listeners. No new account, telemetry or progression reward path was added.
 
 `js/appState.js` exports the shared `app` singleton. Core services are instantiated in `js/app.js`, which is the app orchestrator. Screen modules render and bind their own screen-specific UI, while cross-screen behavior is routed through `app.js`, helper modules, or services.
 
@@ -68,7 +93,7 @@ Important partials:
 
 `renderers/arenaWorld.js` defines ten whitelisted static architectures, shared by stage scenery and mode previews. They never receive stimulus/answer data. World names and task summaries are localized in the selector; world/plinth silhouettes vary while common buttons retain consistent geometry, theme fills and label colors.
 
-`helpers/livingArena.js` owns the stage lifecycle: two small, CSS-animated studio lights on high quality, static atmosphere on mid, no light layers on low. These replace, rather than stack on, the floating ambient dots. Reading worlds keep the lights static. Quantized `calm → flow → charged → surge → fever` state lives on the stage; unchanged phases do not rewrite attributes. Reading modes build later, and fever/decay updates are immediate. Local light rails/rims replace the old full-screen streak glows and fever overlay.
+`helpers/livingArena.js` preserves the fallback stage lifecycle: two small, CSS-animated studio lights on high quality, static atmosphere on mid, no light layers on low. When Phaser is ready, this stage is hidden and its redundant impulse/depth work is suppressed. Its semantic phase attributes remain synchronized for existing UI and QA. Quantized `calm → flow → charged → surge → fever` state also drives the engine rails; reading modes build later and fever/decay updates are immediate. Neither backend adds full-screen streak glows or a fever overlay.
 
 A single reusable 70 ms compositor impulse is emitted only after a correct answer using cached input geometry; every new stimulus cancels it and removes the committed direction. Local target rings/springs transform only decoration or SVG contents, never the button's hit area. Optional `arenaDepth` is saved locally and defaults to false. On visible, active high quality with motion allowed, passive primary-pointer events coalesce into at most one requested frame, moving **only** `.arena-scenery` by at most ±4/3 CSS pixels. No sensor permission, geometry read or persistent frame loop is involved. Release, resize, pause, hiding, opt-out, quality/motion changes and teardown cancel/reset it. Countdown/tutorial cancellation also releases configured scenery before the first gameplay frame.
 
@@ -130,7 +155,7 @@ Result details offer a truthful mode-specific practice suggestion through `app.j
 
 ## Live arena experience
 
-The ten existing `arenaWorld` entries now also own identifier-free architectural relief paths. Static `world-deck` faces and engraved frames share the existing stage instead of adding a renderer/canvas or continuous frame loop. `14-mode-worlds.css` gives actual target/center stations mode-specific chassis, inset faces and contact shadows. Engine task data, palettes and material SVG geometry remain unchanged. Rounded/cut/radial surface silhouettes never translate/scale the input elements. The old 374px `!important` rule that forced **every** nested center SVG to 60px was removed: it incorrectly enlarged Chaos's rule icon and defeated size-coded Chaos symbols on compact screens. Canonical material/icon dimensions now apply there too, rather than claiming compact SVG display sizes stayed at 60px.
+The ten existing `arenaWorld` entries also own identifier-free architectural relief paths for previews and the fallback stage. Phaser now supplies live architecture as described under **Prism Arcade** above; `14-mode-worlds.css` still supplies mode-specific DOM chassis, inset faces and contact shadows. Engine task data, palettes and material SVG geometry remain unchanged. Rounded/cut/radial surface silhouettes never translate/scale the input elements. The old 374px `!important` rule that forced **every** nested center SVG to 60px was removed: it incorrectly enlarged Chaos's rule icon and defeated size-coded Chaos symbols on compact screens. Canonical material/icon dimensions now apply there too, rather than claiming compact SVG display sizes stayed at 60px.
 
 `helpers/arenaPhase.js` is a pure, read-only projection of existing engine fields. Priority is orientation/remembering before Rush/reward states; actual emitted Rush index/count, paused Fever remainder and the existing cooldown deadline are used. Sequence has explicit watch/recall/ready presentation, with no pattern directions exposed. `GameScreen.syncArenaPhase` runs on existing spawn/result/HUD/phase callbacks, diffs stage and HUD attributes, and updates the **existing multiplier group** rather than introducing an overlay over the task. Phase labels have localized accessible multiplier/state names; the small quantized meter is decorative, not another clock or interaction. No game-engine scheduler, duration, reward threshold or input acceptance rule changed.
 

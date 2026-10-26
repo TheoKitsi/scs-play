@@ -28,6 +28,7 @@ export function bindQaHooks() {
           app.game?.onChaosRuleSwitch?.(rule);
         },
         /* Read-only snapshot for scripts/perf-benchmark.mjs */
+        arcadeRendererState() { return app.arcadeArena?.snapshot() || null; },
         gameState() {
           const game = app.game;
           if (!game) return null;
@@ -160,8 +161,9 @@ export function initBackButton({ pauseGame, quitGame, showHome, backFromSettings
   const handleBack = () => {
     if (dismissTopModal('back')) return;
     if (backFromSettings?.()) return;
+    if (app.currentScreen === 'prism' && app.prismNavigation) { app.prismNavigation.back(); return; }
     const isRootScreen = app.currentScreen === 'home' || app.currentScreen === 'boot' || app.currentScreen === 'auth';
-    if (!app.currentScreen || isRootScreen) return;
+    if (!app.currentScreen || isRootScreen) return false;
     if (app.currentScreen === 'game') {
       if (app.game.running && !app.game.paused) pauseGame();
       else quitGame();
@@ -171,7 +173,19 @@ export function initBackButton({ pauseGame, quitGame, showHome, backFromSettings
   };
 
   window.addEventListener('popstate', handleBack);
-  window.Capacitor?.Plugins?.App?.addListener?.('backButton', handleBack);
+  if (window.Capacitor?.isNativePlatform?.()) {
+    import('../services/NativeLifecycle.js').then(({ bindNativeLifecycle }) => bindNativeLifecycle({
+      back: handleBack,
+      active: isActive => {
+        app.audio?.setVisibility?.(!isActive);
+        if (!isActive) {
+          cancelHaptics();
+          window.dispatchEvent(new Event('scs:native-pause'));
+          if (app.currentScreen === 'game' && app.game?.running && !app.game.paused) pauseGame?.();
+        }
+      },
+    })).catch(() => { /* Web/unsupported plugin must never block the game. */ });
+  }
 }
 
 export function initOrientationListeners(pauseGame) {

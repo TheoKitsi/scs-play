@@ -1,7 +1,7 @@
 ﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SCS Play â€” Service Worker
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-const CACHE = 'scs-v66';
+const CACHE = 'scs-v69';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,17 @@ const ASSETS = [
   './terms-of-service.html',
   './css/style.css',
   './css/legal.css',
+  './css/prism.css',
+  './css/arcade-engine.css',
+  './js/engine/ArcadeArena.js',
+  './js/screens/PrismScreen.js',
+  './js/helpers/prismLink.js',
+  './js/engine/PrismScene.js',
+  './js/game/prism/levels.js',
+  './js/game/prism/PrismSimulation.js',
+  './js/renderers/prismIsland.js',
+  './js/services/PrismProgress.js',
+  './node_modules/phaser/dist/phaser.esm.js',
   './fonts/outfit-300.woff2',
   './fonts/outfit-400.woff2',
   './fonts/outfit-500.woff2',

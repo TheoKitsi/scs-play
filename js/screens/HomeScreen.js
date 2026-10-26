@@ -16,6 +16,7 @@ import { DAILY_REWARD } from '../services/ProgressionService.js';
 import { modePreview } from '../renderers/modePreview.js';
 import { arenaWorld } from '../renderers/arenaWorld.js';
 import { icon } from '../renderers/icons.js';
+import { prismProgress } from '../services/PrismProgress.js';
 import { openModal, closeModal } from '../helpers/modal.js';
 import app                   from '../appState.js';
 
@@ -199,6 +200,7 @@ function buildSlide(mode) {
         <strong>${pb > 0 ? pb.toLocaleString() : t('hero_first_record')}</strong>
       </div>
       <div class="hero-slide-badges" aria-label="${t('hero_progress')}">
+        <span class="hero-engine-badge">Prism Arcade</span>
         ${lv > 0 ? `<span class="hero-slide-badge hero-slide-badge--level">Lv.${lv} ${lvName}</span>` : ''}
         ${(() => {
           if (app.mastery) {
@@ -334,6 +336,7 @@ function navigateCarousel(direction) {
     });
   }
   setTimeout(() => { carouselAnimating = false; }, 360);
+  checkOnboardingHints();
 }
 
 /** Update backdrop aura color for current mode */
@@ -515,6 +518,15 @@ export function showHome() {
   updatePlayTypeSelector();
   updateHeroStats();
   applyTheme(save.getActiveTheme());
+  const prism = prismProgress(save.data);
+  const entry = $('#prismEntryProgress');
+  if (entry) {
+    // Dynamic earned progress must not be overwritten by a later i18n pass.
+    entry.removeAttribute('data-i18n');
+    entry.textContent = prism.completed === 12 ? t('prism_entry_complete', { stars: prism.stars })
+      : prism.completed ? t('prism_entry_continue', { n: prism.unlocked + 1, stars: prism.stars }) : t('prism_entry_note');
+  }
+  $('#btnPrism')?.setAttribute('aria-label', `Prism Worlds. ${entry?.textContent || t('prism_entry_note')}`);
   document.body.classList.add('ad-free');
 
   if (typeof audio.setMusicMode === 'function') audio.setMusicMode('menu');
@@ -580,6 +592,6 @@ export function showHome() {
     xpRateHint.textContent = rate < 1 ? t('xp_rate_info', { n: Math.round(rate * 100) }) : '';
   }
 
-  /* Onboarding hints for first-time users */
-  checkOnboardingHints();
+  /* Prism teaches inside its first level. Arcade hints are requested only
+     after interacting with the mode carousel, never over the new entry. */
 }

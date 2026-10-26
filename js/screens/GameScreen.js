@@ -8,7 +8,7 @@ import { t, getLanguage }   from '../i18n.js';
 import { $, $$, setText, hexToRgba, showScreen } from '../helpers/dom.js';
 import { haptic, cancelHaptics } from '../helpers/haptics.js';
 import { playGameImpact, impactQuality } from '../helpers/gameFeedback.js';
-import { arenaPhase } from '../helpers/arenaPhase.js';
+import { arenaPhase, arenaEnergy } from '../helpers/arenaPhase.js';
 import { closeModal, openModal } from '../helpers/modal.js';
 import { shapeSVG }         from '../renderers/shapes.js';
 import { SwipeHandler }     from '../input.js';
@@ -47,6 +47,18 @@ let _gameRunId = 0;
 let _bestRun = null;
 let _continuedRun = false;
 let _endingRound = false;
+let arcadeModule = null;
+let arcadeModulePromise = null;
+
+/** Resolve the shared engine before countdown, never in an answer callback. */
+export function prepareArenaEngine() {
+  return arcadeModulePromise ||= import('../engine/ArcadeArena.js').then(module => { arcadeModule = module; return true; }).catch(() => false);
+}
+
+function mountArcadeRenderer() {
+  app.arcadeArena?.destroy();
+  app.arcadeArena = arcadeModule?.createArcadeArena($('#game'), app.selectedMode, pauseGame, app.save.getSetting('arenaDepth')) || null;
+}
 
 function lockGameScroll() {
   document.body.style.overflow = 'hidden';
@@ -284,6 +296,7 @@ function renderCorners(cornerMap, forceAll = false) {
     el.dataset.color = color;
     if (!el.classList.contains(`dir-${dir}`)) el.classList.add(`dir-${dir}`);
   });
+  app.arcadeArena?.setTargets(Object.keys(cornerMap));
 }
 
 /* ═══════ Render center shape ═══════ */
@@ -501,6 +514,8 @@ function syncArenaPhase() {
   const { game, audio } = app;
   if (!game.running) return;
   const state = arenaPhase(game);
+  app.arcadeArena?.setPhase(state.phase);
+  app.arcadeArena?.setEnergy(arenaEnergy(game.mode, game.streak, game.feverActive));
   livingArena.setPhase(state.phase);
   audio.setArenaPhase(state.phase);
   const { phase, phaseLabel } = _getHudEls();
@@ -658,6 +673,7 @@ function confirmAnswer(result) {
   const direction = result.expected || result.direction;
   const corner = $(`.corner-shape[data-dir="${direction}"]`);
   const quality = impactQuality(result);
+  app.arcadeArena?.hit(direction, quality);
   livingArena.confirm(direction, () => {
     if (!corner) return null;
     const from = stableRect($('#centerPlatform'));
@@ -2060,6 +2076,8 @@ function updateModeMasteryAfterAnswer(game, result) {
 }
 
 function cleanupGameClasses() {
+  app.arcadeArena?.destroy();
+  app.arcadeArena = null;
   clearGameNotice();
   const phase = $('#arenaPhase');
   phase?.removeAttribute('data-phase');
@@ -2250,6 +2268,8 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
 
   showScreen('game', app);
 
+  mountArcadeRenderer();
+
   lockGameScroll();
 
   if (!practice && !save.getSetting('tutorialDone')) {
@@ -2275,6 +2295,8 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
 export function beginGame(practice, daily, showResults, showHome, showContinuePrompt) {
   const { audio, game, save, effects, swipe } = app;
   const runId = _gameRunId;
+  if (!app.arcadeArena) mountArcadeRenderer();
+  app.arcadeArena?.setActive(true);
   setGameplayPerformanceActive(true);
 
   if (typeof audio.setMusicMode === 'function') {
@@ -2421,6 +2443,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   };
 
   game.onSpawn = (shape) => {
+    app.arcadeArena?.clearFeedback();
     syncArenaPhase();
     livingArena.clearConfirmation();
     $$('.corner-correct,.corner-wrong', $('#game')).forEach(corner => {
@@ -2598,6 +2621,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     cancelHaptics();
     setGameplayPerformanceActive(false);
     livingArena.setActive(false);
+    app.arcadeArena?.setActive(false);
     swipe.unbind();
     effects.stopAmbient();
     effects.dangerZone?.(false);
@@ -2637,6 +2661,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   game.onSequenzRoundStart = (round, seqLen) => {
     if (runId !== _gameRunId) return;
     livingArena.clearConfirmation();
+    app.arcadeArena?.clearFeedback();
     syncArenaPhase();
     showGameNotice(t('sequenz_watch'), { kind: 'memory', importance: 3, duration: 900 });
     /* Show round + sequence length in center platform */
@@ -2651,6 +2676,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   game.onSequenzFlash = (dir, index, total, flashMs) => {
     if (runId !== _gameRunId) return;
     syncArenaPhase();
+    app.arcadeArena?.flash(dir, flashMs);
     const corner = $(`.corner-shape[data-dir="${dir}"]`);
     if (!corner) return;
     /* Bright pulse on the flashed corner */
@@ -2796,6 +2822,8 @@ export function resumeContinuedGame(cancel) {
   clearCenter();
   setText('#hudTimer', String(CONFIG.CONTINUE_EXTRA_TIME));
   showScreen('game', app);
+  mountArcadeRenderer();
+  app.arcadeArena?.setTargets(Object.keys(game.cornerMap));
   lockGameScroll();
   showRoundCue(t('round_ready'), game.mode, () => {
     if (runId !== _gameRunId || app.currentScreen !== 'game') return;
@@ -2804,6 +2832,7 @@ export function resumeContinuedGame(cancel) {
     invalidateRects();
     if (!game.continueGame()) return;
     livingArena.setActive(true);
+    app.arcadeArena?.setActive(true);
     livingArena.setEnergy(game.streak, game.feverActive);
     setGameplayPerformanceActive(true);
     audio.startMusic();
@@ -2836,6 +2865,7 @@ export function pauseGame() {
   updateBestRun();
   cancelHaptics();
   livingArena.setActive(false);
+  app.arcadeArena?.setActive(false);
   setGameplayPerformanceActive(false);
   audio.cancelSfx?.();
   audio.stopMusic();
@@ -2864,6 +2894,7 @@ export function resumeGame() {
   game.resume();
   updateBestRun();
   livingArena.setActive(game.running && !game.paused);
+  app.arcadeArena?.setActive(game.running && !game.paused);
   setGameplayPerformanceActive(game.running && !game.paused);
   audio.startMusic();
   /* Memo re-reveal is handled by the engine's resume() via callbacks */

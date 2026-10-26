@@ -3,8 +3,10 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { createRequire } from 'node:module';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
 function scaleSynth(synth, multiplier) {
   return {
     ...synth,
@@ -15,7 +17,7 @@ function scaleSynth(synth, multiplier) {
 
 function loadMp3Encoder() {
   try {
-    const bundlePath = path.resolve(__dirname, '../node_modules/lamejs/lame.all.js');
+    const bundlePath = require.resolve('lamejs/lame.all.js');
     const lameBundleSource = readFileSync(bundlePath, 'utf8');
     const lameBundleContext = {};
     vm.createContext(lameBundleContext);

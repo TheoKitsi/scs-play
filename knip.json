@@ -12,8 +12,5 @@
   ],
   "paths": {
     "/js/*": ["./js/*"]
-  },
-  "ignoreDependencies": [
-    "lamejs"
-  ]
+  }
 }

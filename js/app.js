@@ -86,11 +86,47 @@ const navShowContinuePrompt = (stats) => showContinuePrompt(stats);
 const navShowTutorial       = () => showTutorial();
 
 let gameScreenPromise;
-const loadGameScreen = () => gameScreenPromise ||= import('./screens/GameScreen.js');
+const loadGameScreen = () => gameScreenPromise ||= import('./screens/GameScreen.js').then(async screen => {
+  await screen.prepareArenaEngine();
+  return screen;
+});
 
+let prismLoading = false;
+const navPrism = async (challengeId = null) => {
+  if (prismLoading || app.currentScreen !== 'home') return;
+  prismLoading = true;
+  const entry = $('#btnPrism');
+  entry.disabled = true; entry.setAttribute('aria-busy', 'true');
+  try {
+    const { openPrism } = await import('./screens/PrismScreen.js');
+    if (app.currentScreen === 'home') openPrism({ onHome: navShowHome, challengeId });
+  } catch {
+    await appDialog({ title: 'Prism Worlds', message: t('prism_load_error') });
+  } finally {
+    prismLoading = false; entry.disabled = false; entry.removeAttribute('aria-busy');
+  }
+};
+
+let gameLoading = false;
 const navStartGame = async (practice = false, daily = false) => {
-  const gameScreen = await loadGameScreen();
-  gameScreen.startGame(practice, daily, navShowTutorial, navShowResults, navShowHome, navShowContinuePrompt);
+  const from = app.currentScreen;
+  if (gameLoading || !['home', 'results'].includes(from)) return;
+  gameLoading = true;
+  let cancelled = false;
+  const cancelOnNavigation = ({ detail }) => { if (detail.id !== from) cancelled = true; };
+  const entry = $(from === 'home' ? '#btnPlay' : practice ? '#btnPracticeResult' : '#btnOneMore');
+  entry?.setAttribute('aria-busy', 'true');
+  window.addEventListener('scs:screenchange', cancelOnNavigation);
+  try {
+    const gameScreen = await loadGameScreen();
+    if (!cancelled && app.currentScreen === from) gameScreen.startGame(practice, daily, navShowTutorial, navShowResults, navShowHome, navShowContinuePrompt);
+  } catch {
+    if (!cancelled) await appDialog({ title: 'Prism Arcade', message: t('game_load_error') });
+  } finally {
+    window.removeEventListener('scs:screenchange', cancelOnNavigation);
+    entry?.removeAttribute('aria-busy');
+    gameLoading = false;
+  }
 };
 
 const navTutorialFinish = async () => {
@@ -150,6 +186,7 @@ function bindEvents() {
   });
 
   /* ─ Primary actions ─ */
+  $('#btnPrism')?.addEventListener('click', () => navPrism());
   $('#btnPlay')?.addEventListener('click',         () => { app.engagement?.trackGameStart(); navStartGame(false, false); });
   $('#btnDaily')?.addEventListener('click',        () => { if (!save.hasDailyToday()) { app.engagement?.trackGameStart(); navStartGame(false, true); } });
   $('#btnLeaderboard')?.addEventListener('click',  () => showLeaderboard());
@@ -219,6 +256,14 @@ function bindEvents() {
   bindShopTabs();
   bindWheel();
   window.addEventListener('scs:show-home', navShowHome);
+  let challengeOpened = false;
+  window.addEventListener('scs:screenchange', ({ detail }) => {
+    const challengeId = new URL(location.href).searchParams.get('prism');
+    if (detail.id === 'home' && !challengeOpened && /^[a-z-]{1,40}$/.test(challengeId || '')) {
+      challengeOpened = true;
+      navPrism(challengeId);
+    }
+  });
   window.addEventListener('scs:update-wheel-card', updateWheelCard);
 
   /* ─ Back button fallback ─ */

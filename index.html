@@ -8,13 +8,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#07090f">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="SCS Play &ndash; Sort &middot; Think &middot; React. Ten focused reflex, math, memory and attention games.">
+  <meta name="description" content="Prism Worlds: twelve handcrafted light puzzles, crystal chains and floating gardens. Plus ten SCS Play arcade modes. Free and playable offline.">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="SCS Play &ndash; Sort &middot; Think &middot; React">
-  <meta property="og:description" content="Ten focused reflex, math, memory and attention games.">
+  <meta property="og:title" content="SCS Play &ndash; Prism Worlds">
+  <meta property="og:description" content="One pulse. One chain reaction. A world awakes. Play twelve light puzzles and ten arcade modes.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="img/icon-512.svg">
 
@@ -30,6 +30,9 @@
   <link rel="apple-touch-icon" href="img/icon-192.svg">
   <title>SCS Play</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/prism.css">
+  <link rel="stylesheet" href="css/arcade-engine.css">
+  <script type="importmap">{"imports":{"phaser":"./node_modules/phaser/dist/phaser.esm.js"}}</script>
 </head>
 <body>
 <!-- Skip to main content (a11y) -->
@@ -112,6 +115,7 @@
 </div>
 
 <!-- ═══════ AUTH ═══════ -->
+<div id="prism" class="screen" inert aria-hidden="true"></div>
 <div id="auth" class="screen">
   <div class="screen-content auth-content">
     <div class="auth-brand" aria-label="SCS Play">
@@ -187,8 +191,13 @@
         <span id="weekendBadge" class="weekend-badge"></span>
       </div>
 
+      <button type="button" class="prism-entry" id="btnPrism">
+        <span class="prism-entry-copy"><span class="prism-entry-kicker" data-i18n="prism_entry_kicker">LICHTRÄTSEL · OHNE ZEITDRUCK</span><span class="prism-entry-title">Prism Worlds</span><span class="prism-entry-note" id="prismEntryProgress" data-i18n="prism_entry_note">12 Rätsel. Ein Impuls. Eine Kettenreaktion.</span></span>
+        <span class="prism-entry-arrow" aria-hidden="true">↗</span>
+      </button>
+
       <div class="mode-browser-bar">
-        <span id="modePosition" class="mode-position" aria-hidden="true">01 / 10</span>
+        <span class="mode-position"><span aria-hidden="true">ARCADE · </span><span id="modePosition" aria-hidden="true">01 / 10</span></span>
         <button id="btnAllModes" type="button" class="btn-mode-browser" aria-haspopup="dialog" aria-controls="modePicker">
           <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z"/></svg>
           <span data-i18n="all_modes">Alle Modi</span>
@@ -768,6 +777,10 @@
 <div id="settings" class="screen">
   <div class="screen-content">
     <div class="screen-header"><h2 data-i18n="settings">Einstellungen</h2></div>
+    <div id="settingsSaveNotice" class="settings-save-notice" hidden>
+      <p id="settingsSaveStatus" role="status" aria-live="polite"></p>
+      <button type="button" id="btnSettingsRetrySave" class="btn btn-secondary" data-i18n="settings_save_retry">Speichern wiederholen</button>
+    </div>
     <div class="settings-layout">
     <nav class="settings-nav" data-i18n-aria="settings_sections" aria-label="Einstellungsbereiche">
       <button type="button" data-settings-section="settingsDisplay" aria-controls="settingsDisplay" data-i18n="settings_accessibility">Anzeige & Bedienung</button>
@@ -792,6 +805,7 @@
       </fieldset>
       <fieldset class="setting-group" id="settingsProfile">
         <legend data-i18n="settings_profile">Profil & Sprache</legend>
+        <p class="screen-subtitle settings-local-data" data-i18n="settings_local_data">Spielstände bleiben in diesem Browser, ohne Konto oder Cloud-Sicherung. Beim Löschen der Website-Daten gehen sie verloren.</p>
         <label class="setting-row">
           <span data-i18n="language">Sprache</span>
           <select id="selectLang"><option value="auto" data-i18n="lang_auto">Automatisch</option><option value="de">Deutsch</option><option value="en">English</option></select>

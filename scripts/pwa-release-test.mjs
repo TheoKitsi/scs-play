@@ -142,6 +142,25 @@ async function run() {
       await loadTrack(page, track);
       console.log(`PASS offline music: ${track}`);
     }
+    // No arcade module or Phaser instance has been opened online. A first
+    // guest launch must resolve every lazy engine chunk from the worker cache.
+    await page.locator('#btnGuest').click();
+    await page.waitForSelector('#home.active');
+    await page.locator('#btnPlay').click();
+    await page.waitForSelector('#tutorial.active,#game.active');
+    if (await page.locator('#tutorial.active').count()) await page.locator('#btnTutorialSkip').click();
+    await page.waitForFunction(() => __SCS_QA__.gameState().running && __SCS_QA__.gameState().stimulusId != null
+      && __SCS_QA__.arcadeRendererState()?.ready);
+    const offlineTask = await page.evaluate(() => __SCS_QA__.gameState());
+    await page.waitForTimeout(120);
+    await page.locator(`#game .corner-shape[data-dir="${offlineTask.direction}"]`).tap();
+    await page.waitForFunction(() => __SCS_QA__.gameState().correct > 0 && __SCS_QA__.arcadeRendererState().hits > 0);
+    assert.equal(await page.locator('.arcade-engine-layer canvas').count(), 1);
+    await page.locator('#btnPause').click();
+    await page.locator('#btnPauseQuit').click();
+    await page.waitForSelector('#home.active');
+    assert.equal(await page.locator('.arcade-engine-layer').count(), 0);
+    console.log('PASS first-ever offline arcade launch, lazy Phaser engine, real answer and disposal');
     for (const file of ['privacy-policy.html', 'terms-of-service.html']) {
       for (const lang of ['de', 'en']) {
         await page.goto(new URL(`${file}?lang=${lang}`, base).href, { waitUntil: 'domcontentloaded' });

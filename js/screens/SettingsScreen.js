@@ -12,6 +12,19 @@ import { cancelHaptics } from '../helpers/haptics.js';
 let _settingsBack = null;
 let _backLabelKey = 'nav_back_home';
 
+function preferenceSaveFailed() {
+  $('#settingsSaveNotice').hidden = false;
+  $('#settingsSaveStatus').textContent = t('settings_save_error');
+  if (app.currentScreen === 'settings') $('#settingsSaveNotice').scrollIntoView({ block: 'nearest', behavior: 'instant' });
+}
+
+async function savePreference(key, value) {
+  try {
+    await app.save.setSetting(key, value);
+    $('#settingsSaveNotice').hidden = true;
+  } catch { preferenceSaveFailed(); }
+}
+
 function updateVolumeControl(input) {
   if (!input) return;
   input.style.setProperty('--range-value', `${input.value}%`);
@@ -30,6 +43,7 @@ function syncPresentationControls() {
     : document.body.dataset.perfMode !== 'high' ? 'settings_depth_quality' : 'settings_depth_ready';
   const status = $('#depthStatus');
   if (status) status.textContent = t(key);
+  if (!$('#settingsSaveNotice').hidden) $('#settingsSaveStatus').textContent = t('settings_save_error');
   $$('.legal-links a').forEach(link => {
     const url = new URL(link.href);
     url.searchParams.set('lang', getLanguage());
@@ -92,6 +106,15 @@ export function showSettings(fromPause, showHome, showPausedGame) {
 
 export function bindSettings(showHome) {
   const { save, audio } = app;
+  $('#btnSettingsRetrySave').addEventListener('click', async event => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      if (!await save.save()) throw new Error('No active save');
+      $('#settingsSaveNotice').hidden = true;
+    } catch { preferenceSaveFailed(); }
+    finally { button.disabled = false; }
+  });
   window.addEventListener('scs:perftier', syncPresentationControls);
   window.addEventListener('scs:motionpreference', syncPresentationControls);
   $$('.settings-nav button').forEach(button => {
@@ -112,7 +135,7 @@ export function bindSettings(showHome) {
     if (!el) return;
     el.addEventListener('change', async () => {
       const val = el.type === 'checkbox' ? el.checked : el.value;
-      const saving = save.setSetting(key, val);
+      const saving = savePreference(key, val);
       if (cb) cb(val);
       await saving;
     });
@@ -140,7 +163,7 @@ export function bindSettings(showHome) {
       setter(value / 100);
     });
     el.addEventListener('change', async () => {
-      await save.setSetting(key, Number(el.value));
+      await savePreference(key, Number(el.value));
       if (preview) preview();
     });
   };
@@ -151,7 +174,7 @@ export function bindSettings(showHome) {
   if (langEl) {
     langEl.addEventListener('change', async () => {
       const val = langEl.value;
-      const saving = save.setSetting('language', val);
+      const saving = savePreference('language', val);
       if (val === 'auto') {
         const browserLang = (navigator.language || 'de').substring(0, 2);
         setLanguage(browserLang === 'de' ? 'de' : 'en');
