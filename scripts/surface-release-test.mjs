@@ -283,6 +283,14 @@ export async function runSurfaceReview({ out = process.env.SCS_REVIEW_OUT || '',
           }, { playType, daily, name });
           await page.locator('#resNormalBtns').waitFor({ state: 'visible' }); await shot(`33-result-${name}`);
           await page.locator('#resDetails > summary').click(); await shot(`34-details-${name}`);
+          assert.ok(await page.locator('#resPhase3').evaluate(footer => {
+            const panel = footer.closest('.results-panel'), r = panel.getBoundingClientRect(), f = footer.getBoundingClientRect();
+            const mask = getComputedStyle(footer, '::after');
+            const y = Math.min(r.bottom - 3, f.bottom + 5), x = r.x + r.width / 2;
+            const hit = document.elementFromPoint(x, y);
+            return mask.content !== 'none' && parseFloat(mask.height) >= 24 && parseFloat(getComputedStyle(footer).zIndex) >= 2
+              && (hit === footer || footer.contains(hit));
+          }), 'The opaque sticky-action extension covers bottom text and intercepts taps instead of exposing invisible underlying controls');
           await page.locator('#btnHome').click();
         }
         await page.evaluate(async () => {

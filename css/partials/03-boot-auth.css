@@ -1,5 +1,5 @@
 /* Branding shares the same material objects as the arena. No looping splash. */
-#boot{background:var(--bg);z-index:100}
+#boot{background:var(--studio-field);z-index:100}
 .boot-content{text-align:center}
 .scs-logo,.auth-brand{display:flex;flex-direction:column;align-items:center;gap:10px}
 .scs-logo{margin-bottom:28px}
@@ -12,6 +12,10 @@
 #auth{overflow-x:hidden;overflow-y:auto;justify-content:center}
 #auth .auth-content{max-width:400px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:min-content;padding-block:24px}
 .auth-brand{margin-bottom:14px}
+.studio-etch{width:100%;height:clamp(42px,8vh,75px);display:block;color:var(--primary-glow);pointer-events:none}
+#auth{background:var(--studio-field)}
+#auth .auth-content{border:1px solid var(--studio-line);border-radius:24px 8px;background:var(--panel-fill);padding:clamp(18px,5vw,32px);box-shadow:var(--material-edge)}
+#auth .auth-brand{width:100%}
 .auth-form-toggle{margin:0;text-align:center}
 .btn-email-toggle{font-size:.9rem}
 .btn-guest-hero{width:100%;max-width:320px;min-height:56px;padding:14px 24px;font:600 1.1rem 'Outfit',sans-serif;letter-spacing:0;text-transform:none;border-radius:var(--radius-sm)}

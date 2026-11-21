@@ -1,11 +1,24 @@
 import Phaser from 'phaser';
 import { arenaWorld } from '../renderers/arenaWorld.js';
+import { renderSurface } from './renderSurface.js';
+import { MATERIAL_ASSETS } from './materialAssets.js';
+import { createStudioMaterial, preloadStudioMaterial } from './studioMaterial.js';
+import { arcadeFrame } from './studioArchitecture.js';
 
 /* Hybrid engine stage: Phaser owns architecture, stations, energy and contact
    animation. The DOM remains authoritative for readable task faces, ARIA and
    stationary input rectangles. No question, answer or RNG data is accepted. */
 const palette = { floor: 0x142939, edge: 0x3e666c, rail: 0x86b9b4, mint: 0x9befcc, gold: 0xffd58c, ink: 0x091724 };
 const STEPS = { calm: 0, flow: 1, charged: 2, surge: 3, fever: 4 };
+// Static instrument finishes only. No question, covered symbol or next answer.
+const FINISHES = Object.freeze({ klassik: 'ceramic', beginner: 'ceramic', expert: 'alloy', mathe: 'slate', wissen: 'slate',
+  memo: 'satin', sequenz: 'alloy', stroop: 'satin', fokus: 'alloy', chaos: 'ceramic' });
+const SURFACES = Object.freeze({ ceramic: { roughness: .38, metallic: .08 }, alloy: { roughness: .29, metallic: .7 },
+  slate: { roughness: .72, metallic: .04 }, satin: { roughness: .48, metallic: .18 } });
+const deckTint = floor => {
+  const lift = shift => Math.min(255, ((floor >> shift) & 255) + 28);
+  return (lift(16) << 16) | (lift(8) << 8) | lift(0);
+};
 
 function themePalette(root) {
   // Read once at mount, not in an answer/frame callback. Themes affect neutral
@@ -28,20 +41,56 @@ function polygon(x, y, w, h, cut = 15) {
     { x: x - w / 2, y: y + h / 2 - c }, { x: x - w / 2, y: y - h / 2 + c }];
 }
 
+function energyRails(g, l, r, cy, level, ink, colors) {
+  // Quantized and peripheral, never a direction hint.
+  for (const xx of [l + 4, r - 4]) for (let i = 0; i < 5; i++) {
+    g.lineStyle(2, i <= level ? ink : colors.rail, i <= level ? 0.7 : 0.16);
+    g.lineBetween(xx, cy + 30 - i * 13, xx, cy + 23 - i * 13);
+  }
+}
+
 class ArcadeScene extends Phaser.Scene {
   constructor(owner) { super('arcade-world'); this.owner = owner; this.impacts = []; this.clock = 0; this.lastFlash = null; this.acceptedHits = 0; }
 
+  preload() {
+    this.load.image('material-deck', MATERIAL_ASSETS.decks[this.owner.world.id]);
+    preloadStudioMaterial(this);
+  }
+
   create() {
-    this.architecture = this.add.graphics();
+    this.architecture = this.add.container();
+    this.deck = this.textures.exists('material-deck') ? this.add.image(0, 0, 'material-deck') : null;
+    if (this.deck && this.game.renderer.type === Phaser.CANVAS) {
+      // Canvas rendering ignores sprite tint. Bake this one theme operation
+      // once, preserving source alpha; never show an untinted white deck.
+      const source = this.textures.get('material-deck').getSourceImage();
+      const texture = this.textures.createCanvas('theme-deck', source.width, source.height), ctx = texture.getContext();
+      ctx.drawImage(source, 0, 0);
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.fillStyle = `#${deckTint(this.owner.palette.floor).toString(16).padStart(6, '0')}`;
+      ctx.fillRect(0, 0, source.width, source.height);
+      ctx.globalCompositeOperation = 'destination-in'; ctx.drawImage(source, 0, 0);
+      ctx.globalCompositeOperation = 'source-over'; texture.refresh();
+      this.deck.setTexture('theme-deck');
+    }
+    if (this.deck) this.architecture.add(this.deck);
+    this.structure = this.add.graphics();
+    this.architecture.add(this.structure);
     this.stations = this.add.graphics();
+    this.energy = this.add.graphics().setDepth(1);
     this.response = this.add.graphics();
+    this.solid = createStudioMaterial(this, ready => {
+      if (ready) this.owner.root.dataset.arenaSolid = 'mesh-ggx';
+      else delete this.owner.root.dataset.arenaSolid;
+    });
     this.owner.boot(this);
   }
 
   redraw() {
     const { geometry: geo, world, energy, phase, palette } = this.owner;
     if (!geo || !this.architecture) return;
-    const g = this.architecture.clear(), p = this.stations.clear();
+    const g = this.structure.clear(), p = this.stations.clear();
+    const rails = this.energy.clear();
     const { center: c, targets } = geo;
     const x = geo.width / 2, y = c.y;
     const left = Math.min(...targets.map(t => t.x - t.w / 2), c.x - c.w / 2) - 12;
@@ -52,11 +101,27 @@ class ArcadeScene extends Phaser.Scene {
     const cy = (top + bottom) / 2;
     const ink = phase === 'fever' ? palette.gold : palette.mint;
     const level = STEPS[energy] || 0;
-    g.fillStyle(0x060f1c, 0.4); g.fillEllipse(x, bottom + 18, w * 0.95, 38);
-    g.fillStyle(palette.edge); g.fillPoints(polygon(x, cy + 9, w, h, world.id === 'beginner' ? 35 : 18), true);
-    g.fillStyle(palette.floor); g.fillPoints(polygon(x, cy, w, h, world.id === 'beginner' ? 35 : 18), true);
-    g.lineStyle(1, palette.edge, 0.8); g.strokePoints(polygon(x, cy, w, h, world.id === 'beginner' ? 35 : 18), true);
     const l = x - w / 2, r = x + w / 2;
+    if (this.deck) {
+      this.deck.setPosition(x, cy).setDisplaySize(w + 12, h + 25).setTint(deckTint(palette.floor));
+      const radius = (t, center) => world.id === 'fokus' || (center && world.id === 'expert') ? Math.min(t.w, t.h) / 2
+        : ['beginner', 'sequenz', 'chaos'].includes(world.id) ? center ? 28 : 20 : world.id === 'mathe' ? 8 : center ? 24 : 14;
+      if (this.solidGeometry !== geo) {
+        this.solid.setObjects([arcadeFrame(x, cy, w + 12, h + 25, deckTint(palette.floor)),
+          ...[...targets, { ...c, dir: 'center' }].map(t => ({ kind: 'station', x: t.x, y: t.y, w: t.w, h: t.h,
+            r: radius(t, t.dir === 'center'), color: deckTint(palette.floor), finish: FINISHES[world.id], ...SURFACES[FINISHES[world.id]] }))]);
+        this.solidGeometry = geo;
+      }
+      this.solid.setEnabled(this.owner.tier === 'high');
+      this.solid.setLight(geo.width * .2, geo.height * .2, 220, 1.5);
+      energyRails(rails, l, r, cy, level, ink, palette);
+      return;
+    } else {
+      g.fillStyle(0x060f1c, 0.4); g.fillEllipse(x, bottom + 18, w * 0.95, 38);
+      g.fillStyle(palette.edge); g.fillPoints(polygon(x, cy + 9, w, h, world.id === 'beginner' ? 35 : 18), true);
+      g.fillStyle(palette.floor); g.fillPoints(polygon(x, cy, w, h, world.id === 'beginner' ? 35 : 18), true);
+      g.lineStyle(1, palette.edge, 0.8); g.strokePoints(polygon(x, cy, w, h, world.id === 'beginner' ? 35 : 18), true);
+    }
     if (world.family === 'think') {
       g.lineStyle(1, palette.rail, 0.045);
       for (let xx = l + 15; xx < r - 10; xx += 32) g.lineBetween(xx, top + 14, xx, bottom - 14);
@@ -65,8 +130,9 @@ class ArcadeScene extends Phaser.Scene {
     g.lineStyle(1.5, palette.rail, 0.23);
     switch (world.id) {
       case 'klassik':
-        for (const yy of [top + 12, bottom - 12]) { g.lineBetween(l + 28, yy, x - 30, yy); g.lineBetween(x + 30, yy, r - 28, yy); }
-        for (let i = 0; i < 8; i++) { g.lineBetween(l + 6, cy - 42 + i * 12, l + 12, cy - 42 + i * 12); g.lineBetween(r - 12, cy - 42 + i * 12, r - 6, cy - 42 + i * 12); }
+        // The baked deck owns the surface, bevel and engraving. No second
+        // chassis is painted behind the DOM faces of the material reference.
+        if (!this.deck) for (const yy of [top + 12, bottom - 12]) { g.lineBetween(l + 28, yy, x - 30, yy); g.lineBetween(x + 30, yy, r - 28, yy); }
         break;
       case 'beginner':
         g.strokePoints(polygon(x, cy, w - 16, h - 16, 32), true);
@@ -106,26 +172,24 @@ class ArcadeScene extends Phaser.Scene {
         for (let i = 0; i < 6; i++) { const xx = l + 26 + i * (w - 52) / 5; g.strokePoints(polygon(xx, top + 11, 10, 6, 2), true); g.strokePoints(polygon(xx, bottom - 11, 10, 6, 2), true); }
         break;
     }
-    // Neutral stations are game objects. Task faces remain crisp DOM overlays.
+    // Legacy architecture/stations are only the unavailable-art fallback.
     for (const t of [...targets, { ...c, dir: 'center' }]) {
       const inset = t.dir === 'center' ? 7 : 5;
       p.fillStyle(palette.ink, 0.8); p.fillRoundedRect(t.x - t.w / 2 - inset, t.y - t.h / 2 + 8, t.w + inset * 2, t.h + inset * 2, 15);
       p.lineStyle(1, palette.rail, 0.3); p.strokeRoundedRect(t.x - t.w / 2 - inset, t.y - t.h / 2 - inset, t.w + inset * 2, t.h + inset * 2, 15);
     }
-    // Energy is quantized and peripheral, never a direction hint.
-    for (const xx of [l + 4, r - 4]) for (let i = 0; i < 5; i++) {
-      g.lineStyle(2, i <= level ? ink : palette.rail, i <= level ? 0.7 : 0.16);
-      g.lineBetween(xx, cy + 30 - i * 13, xx, cy + 23 - i * 13);
-    }
+    energyRails(rails, l, r, cy, level, ink, palette);
   }
 
   hit(direction, quality) {
     const t = this.owner.geometry?.targets.find(t => t.dir === direction);
     if (!t || !this.owner.live) return;
     this.acceptedHits++;
-    // Mid/low retain the existing local DOM contact cue without paying for
-    // another series of full-canvas renders on a constrained device.
-    if (this.owner.reduced || this.owner.tier !== 'high') return;
+    // The baked reference deck stays cached on contact: its existing local SVG
+    // press/outline confirms the hit without repainting a high-DPI texture for
+    // 180ms on every answer. Phase/geometry/depth changes still wake the stage.
+    // Unavailable-art fallbacks retain their bounded engine response.
+    if (this.deck || this.owner.reduced || this.owner.tier !== 'high') return;
     this.impacts.push({ target: t, quality, born: this.clock });
     if (this.impacts.length > 2) this.impacts.shift();
     this.owner.requestRender();
@@ -171,7 +235,7 @@ export function createArcadeArena(root, mode, onContextLost, depthEnabled = fals
   let depthFrame = 0, depthX = 0, depthY = 0;
   const listeners = new AbortController();
   const owner = {
-    world: arenaWorld(mode), live, energy, phase, geometry, tier: document.body.dataset.perfMode || 'high',
+    root, world: arenaWorld(mode), live, energy, phase, geometry, tier: document.body.dataset.perfMode || 'high',
     palette: themePalette(root),
     reduced: document.body.hasAttribute('data-reduced-motion'),
     requestRender,
@@ -179,6 +243,7 @@ export function createArcadeArena(root, mode, onContextLost, depthEnabled = fals
       if (destroyed) return;
       clearTimeout(startupTimer); startupTimer = null;
       scene = value; root.dataset.arcadeEngine = 'ready';
+      if (scene.deck) root.dataset.arenaMaterial = owner.world.id;
       measure();
       scene.redraw();
       if (!live || document.hidden) game.loop.sleep();
@@ -209,7 +274,7 @@ export function createArcadeArena(root, mode, onContextLost, depthEnabled = fals
       return el?.offsetParent ? [{ dir, ...rect(el) }] : [];
     }) };
     owner.geometry = geometry;
-    const size = surfaceSize(box);
+    const size = renderSurface(box.width, box.height, owner.tier, devicePixelRatio);
     if (game?.isBooted && (game.scale.width !== size.width || game.scale.height !== size.height)) game.scale.resize(size.width, size.height);
     scene?.cameras.main.setViewport(0, 0, size.width, size.height).setOrigin(0, 0).setZoom(size.zoom);
     scene?.redraw();
@@ -234,8 +299,10 @@ export function createArcadeArena(root, mode, onContextLost, depthEnabled = fals
     resetDepth();
     owner.tier = document.body.dataset.perfMode || 'high';
     owner.reduced = document.body.hasAttribute('data-reduced-motion');
+    if (owner.tier !== 'high') scene?.solid?.setEnabled(false);
     if (scene) { scene.impacts.length = 0; scene.response.clear(); }
     if (game?.isBooted) game.loop.setFPSLimit(owner.tier === 'low' ? 30 : 60);
+    scheduleMeasure();
     requestRender();
   }
 
@@ -248,7 +315,8 @@ export function createArcadeArena(root, mode, onContextLost, depthEnabled = fals
     scene?.impacts.splice(0); scene?.response.clear();
     game?.loop?.wake(); game?.destroy(true);
     live = false; owner.live = false; scene = game = null;
-    layer.remove(); delete root.dataset.arcadeEngine;
+    layer.remove(); delete root.dataset.arcadeEngine; delete root.dataset.arenaMaterial;
+    delete root.dataset.arenaSolid;
   }
 
   const observer = new ResizeObserver(scheduleMeasure); observer.observe(root);
@@ -257,6 +325,8 @@ export function createArcadeArena(root, mode, onContextLost, depthEnabled = fals
     depthFrame = 0;
     if (scene && (scene.architecture.x || scene.architecture.y)) {
       scene.architecture.setPosition(0, 0);
+      scene.energy.setPosition(0, 0); scene.solid?.setStageOffset(0, 0);
+      scene.solid?.setLight((geometry?.width || 0) * .2, (geometry?.height || 0) * .2, 220, 1.5);
       requestRender();
     }
   }
@@ -266,7 +336,12 @@ export function createArcadeArena(root, mode, onContextLost, depthEnabled = fals
     depthY = Math.max(-3, Math.min(3, (event.clientY / geometry.height * 2 - 1) * 3));
     if (!depthFrame) depthFrame = requestAnimationFrame(() => {
       depthFrame = 0;
-      if (scene && live) { scene.architecture.setPosition(depthX, depthY); requestRender(); }
+      if (scene && live) {
+        scene.architecture.setPosition(depthX, depthY);
+        scene.energy.setPosition(depthX, depthY); scene.solid?.setStageOffset(depthX, depthY);
+        scene.solid?.setLight(geometry.width * .3 + depthX * 30, geometry.height * .25 + depthY * 30, 140, 1.2);
+        requestRender();
+      }
     });
   }, { signal: listeners.signal, passive: true });
   for (const type of ['pointerup', 'pointerleave', 'pointercancel']) root.addEventListener(type, resetDepth, { signal: listeners.signal, passive: true });
@@ -279,12 +354,7 @@ export function createArcadeArena(root, mode, onContextLost, depthEnabled = fals
   }, { signal: listeners.signal });
   document.addEventListener('visibilitychange', () => { if (document.hidden) activity(false); }, { signal: listeners.signal });
   const box = root.getBoundingClientRect();
-  function surfaceSize(box) {
-    const width = box.width || innerWidth, height = box.height || innerHeight;
-    const zoom = Math.min(1, 1024 / width, 1536 / height);
-    return { width: Math.ceil(width * zoom), height: Math.ceil(height * zoom), zoom };
-  }
-  const size = surfaceSize(box);
+  const size = renderSurface(box.width || innerWidth, box.height || innerHeight, owner.tier, devicePixelRatio);
   try {
     root.dataset.arcadeEngine = 'loading';
     // A failed asynchronous GPU boot must also release observers/listeners and
@@ -329,6 +399,9 @@ export function createArcadeArena(root, mode, onContextLost, depthEnabled = fals
       pixels: game?.canvas ? game.canvas.width * game.canvas.height : 0, loopRunning: Boolean(game?.loop.running),
       renderedFrames,
       tier: owner.tier, reduced: owner.reduced, fpsLimit: game?.loop.fpsLimit || 0,
+      material: Boolean(scene?.deck),
+      solid: scene?.solid?.snapshot() || null,
+      materialFile: scene?.deck ? MATERIAL_ASSETS.decks[owner.world.id] : null,
       palette: { ...owner.palette },
       depth: { x: scene?.architecture.x || 0, y: scene?.architecture.y || 0 }, flash: scene?.lastFlash?.target.dir || null }; },
     destroy,

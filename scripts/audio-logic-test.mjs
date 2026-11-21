@@ -13,6 +13,19 @@ globalThis.AudioContext = class { constructor() { throw new Error('Audio device 
 assert.equal(new AudioManager()._ensure(), false, 'Audio-context construction failure must remain non-fatal');
 delete globalThis.AudioContext;
 
+const prism = new AudioManager(), contacts = [];
+prism._play = (...args) => contacts.push(args);
+const optics = ['launch', 'reflect', 'paint', 'switch', 'activate', 'mismatch'];
+const signatures = optics.map(kind => {
+  contacts.length = 0; prism.prismContact({ kind, color: 'mint', x: 90 });
+  assert.equal(contacts.length, 2);
+  assert.ok(contacts.every(([, , duration, , , pan]) => duration <= .21 && pan < 0));
+  return JSON.stringify(contacts);
+});
+assert.equal(new Set(signatures).size, optics.length, 'Distinct puzzle events have distinct contact cues');
+prism.toggle(false); contacts.length = 0; prism.prismContact({ kind: 'launch' });
+assert.equal(contacts.length, 0, 'Silent play stays silent');
+
 const finale = new AudioManager();
 const cadence = [];
 finale._play = (...args) => cadence.push(args);

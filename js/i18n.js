@@ -3,7 +3,8 @@
    ═══════════════════════════════════════ */
 const S = {
   de: {
-    prism_entry_kicker:'LICHTRÄTSEL · OHNE ZEITDRUCK', prism_entry_note:'12 Rätsel. Ein Impuls. Eine Kettenreaktion.', prism_entry_continue:'Weiter mit Level {n}/12 · {stars}/36 Sterne', prism_entry_complete:'Alle Gärten erwacht · {stars}/36 Sterne · erneut spielen',
+    studio_step:'Schritt {n} von {total}', prism_map:'Weltkarte', arcade_blitz_start:'{mode} · {n} s spielen', trial_start:'Ohne Wertung ausprobieren',
+    prism_entry_kicker:'LICHTRÄTSEL · OHNE ZEITDRUCK', prism_entry_note:'Erstes Lichträtsel starten · 1/12', prism_entry_continue:'Weiter mit Level {n}/12 · {stars}/36 Sterne', prism_entry_complete:'Alle Gärten erwacht · {stars}/36 Sterne · erneut spielen',
     prism_load_error:'Das Abenteuer konnte nicht geladen werden. Prüfe deine Verbindung oder starte die App neu und versuche es noch einmal.', game_load_error:'Die Arcade konnte nicht geladen werden. Prüfe deine Verbindung oder starte die App neu und versuche es noch einmal.',
     settings_save_error:'Deine Änderung gilt für diese Sitzung, konnte aber nicht gespeichert werden. Prüfe den freien Browserspeicher und versuche es erneut.', settings_save_retry:'Speichern wiederholen', settings_local_data:'Spielstände bleiben in diesem Browser, ohne Konto oder Cloud-Sicherung. Beim Löschen der Website-Daten gehen sie verloren.',
     app_title:'SCS Play', app_sub:'Sortieren · Denken · Reagieren',
@@ -536,7 +537,8 @@ const S = {
     wissen_wrong_penalty:'-{n}s',
   },
   en: {
-    prism_entry_kicker:'LIGHT PUZZLES · NO TIME LIMIT', prism_entry_note:'12 puzzles. One pulse. One chain reaction.', prism_entry_continue:'Continue with level {n}/12 · {stars}/36 stars', prism_entry_complete:'All gardens awake · {stars}/36 stars · play again',
+    studio_step:'Step {n} of {total}', prism_map:'World map', arcade_blitz_start:'Play {mode} · {n}s', trial_start:'Try without scoring',
+    prism_entry_kicker:'LIGHT PUZZLES · NO TIME LIMIT', prism_entry_note:'Start the first light puzzle · 1/12', prism_entry_continue:'Continue with level {n}/12 · {stars}/36 stars', prism_entry_complete:'All gardens awake · {stars}/36 stars · play again',
     prism_load_error:'Unable to load the adventure. Check your connection or restart the app and try again.', game_load_error:'Unable to load the arcade. Check your connection or restart the app and try again.',
     settings_save_error:'Your change applies to this session but could not be saved. Check available browser storage and try again.', settings_save_retry:'Try saving again', settings_local_data:'Progress stays in this browser, without an account or cloud backup. Clearing this site’s data removes it.',
     dialog_ok:'Got it', dialog_cancel:'Cancel', dialog_purchase:'Unlock design', dialog_unlock:'Unlock',

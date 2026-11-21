@@ -17,6 +17,8 @@ import { modePreview } from '../renderers/modePreview.js';
 import { arenaWorld } from '../renderers/arenaWorld.js';
 import { icon } from '../renderers/icons.js';
 import { prismProgress } from '../services/PrismProgress.js';
+import { prismIsland } from '../renderers/prismIsland.js';
+import { PRISM_LEVELS } from '../game/prism/levels.js';
 import { openModal, closeModal } from '../helpers/modal.js';
 import app                   from '../appState.js';
 
@@ -142,8 +144,8 @@ const MODE_SKILL_KEYS = {
 /* ═══════ Carousel Engine ═══════ */
 
 /** Share the same material scene between the hero and the full catalog. */
-function getModeSVG(mode) {
-  return modePreview(mode, app.colorblind);
+function getModeSVG(mode, defer = false) {
+  return modePreview(mode, app.colorblind, defer);
 }
 
 const MODE_GROUPS = [
@@ -192,7 +194,7 @@ function buildSlide(mode) {
     const modeName = t(`mode_${mode}`);
     slide.innerHTML = `
       <span class="hero-slide-kicker">${t(`world_${arenaWorld(mode).id}`)}</span>
-      <div class="hero-slide-visual" style="--slide-aura:${aura}">${getModeSVG(mode)}</div>
+      <div class="hero-slide-visual" style="--slide-aura:${aura}">${getModeSVG(mode, true)}</div>
       <span class="hero-slide-name">${modeName}</span>
       <span class="hero-slide-desc">${t(MODE_DESC_KEYS[mode] || 'mode_klassik_desc')}</span>
       <div class="hero-slide-personal">
@@ -200,7 +202,6 @@ function buildSlide(mode) {
         <strong>${pb > 0 ? pb.toLocaleString() : t('hero_first_record')}</strong>
       </div>
       <div class="hero-slide-badges" aria-label="${t('hero_progress')}">
-        <span class="hero-engine-badge">Prism Arcade</span>
         ${lv > 0 ? `<span class="hero-slide-badge hero-slide-badge--level">Lv.${lv} ${lvName}</span>` : ''}
         ${(() => {
           if (app.mastery) {
@@ -219,10 +220,11 @@ function buildSlide(mode) {
     slide.innerHTML = `
       <div class="hero-slide-locked">
         <span class="hero-slide-kicker">${skillName}</span>
-        <div class="hero-slide-visual">${getModeSVG(mode)}</div>
+        <div class="hero-slide-visual">${getModeSVG(mode, true)}</div>
         <span class="hero-slide-name">${t(`mode_${mode}`)}</span>
         <span class="hero-slide-desc">${t(`task_${mode}`)}</span>
         <span class="hero-slide-lock-label">${icon('lock')}${t('mode_locked', { n: unlockLv })}</span>
+        <button type="button" class="btn-mode-browser" data-trial="${mode}">${t('trial_start')}</button>
       </div>`;
   }
   return slide;
@@ -271,6 +273,9 @@ function positionSlides() {
     const inactive = position !== 'current';
     slide.inert = inactive;
     slide.setAttribute('aria-hidden', String(inactive));
+    // Do not decode ten full-size materials for the single visible preview.
+    const image = !inactive && slide.querySelector('.mode-material img[data-src]');
+    if (image) { image.src = image.dataset.src; delete image.dataset.src; }
   });
 
   // Update selected mode
@@ -298,12 +303,13 @@ function updatePlayCTA(currentMode) {
   if (!btn || !currentMode) return;
 
   const unlocked = app.save.isModeUnlocked(currentMode);
-  const label = btn.querySelector('[data-i18n="play"]');
+  const label = $('#arcadePlayLabel');
   btn.disabled = !unlocked;
   btn.setAttribute('aria-disabled', String(!unlocked));
 
   if (unlocked) {
-    if (label) label.textContent = t('play');
+    if (label) label.textContent = app.selectedPlayType === 'blitz' && ['klassik','beginner','expert'].includes(currentMode)
+      ? t('arcade_blitz_start', { mode: t(`mode_${currentMode}`), n: CONFIG.DURATION_BLITZ }) : t('play');
     btn.removeAttribute('aria-label');
     btn.removeAttribute('title');
     return;
@@ -465,6 +471,7 @@ export function updatePlayTypeSelector() {
     /* Blitz warning removed — was inconsistent */
     btn.classList.remove('blitz-warn');
   });
+  updatePlayCTA(CONFIG.MODE_ORDER[carouselIdx]);
 }
 
 /* ═══════ Daily login check ═══════ */
@@ -519,6 +526,8 @@ export function showHome() {
   updateHeroStats();
   applyTheme(save.getActiveTheme());
   const prism = prismProgress(save.data);
+  const prismArt = $('#prismEntryArt');
+  if (prismArt) prismArt.innerHTML = prismIsland(prism, PRISM_LEVELS[prism.unlocked].zone);
   const entry = $('#prismEntryProgress');
   if (entry) {
     // Dynamic earned progress must not be overwritten by a later i18n pass.
@@ -526,7 +535,7 @@ export function showHome() {
     entry.textContent = prism.completed === 12 ? t('prism_entry_complete', { stars: prism.stars })
       : prism.completed ? t('prism_entry_continue', { n: prism.unlocked + 1, stars: prism.stars }) : t('prism_entry_note');
   }
-  $('#btnPrism')?.setAttribute('aria-label', `Prism Worlds. ${entry?.textContent || t('prism_entry_note')}`);
+  $('#btnPrismPlay')?.setAttribute('aria-label', `Prism Worlds. ${entry?.textContent || t('prism_entry_note')}`);
   document.body.classList.add('ad-free');
 
   if (typeof audio.setMusicMode === 'function') audio.setMusicMode('menu');

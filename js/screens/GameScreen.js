@@ -740,6 +740,16 @@ function cornerScorePop(dir, text) {
   el._hideTimeout = setTimeout(() => { el.style.display = 'none'; el._hideTimeout = null; }, 700);
 }
 
+function clearCornerScorePops() {
+  for (const el of _cornerPopPool) {
+    clearTimeout(el._hideTimeout);
+    if (el._showRafId) cancelAnimationFrame(el._showRafId);
+    el._hideTimeout = null;
+    el._showRafId = null;
+    el.style.display = 'none';
+  }
+}
+
 let _instructionTimer = null;
 let _cancelInstruction = null;
 let _countdownGeneration = 0;
@@ -818,13 +828,13 @@ export function doCountdown(cb) {
     n--;
     if (n > 0) {
       const numEl = $('#countdownNum');
-      if (numEl) { numEl.setAttribute('data-n', n); numEl.style.animation = 'none'; void numEl.offsetWidth; numEl.style.animation = ''; }
+      if (numEl) numEl.setAttribute('data-n', n);
       setText('#countdownNum', n);
       audio.countdown(n);
       _scheduleCountdown(generation, tick, 800);
     } else {
       const numEl = $('#countdownNum');
-      if (numEl) { numEl.classList.add('cd-go'); numEl.style.animation = 'none'; void numEl.offsetWidth; numEl.style.animation = ''; }
+      numEl?.classList.add('cd-go');
       setText('#countdownNum', t('countdown_go'));
       audio.countdown(0);
       _scheduleCountdown(generation, () => { overlay.classList.remove('active'); const el = $('#countdownNum'); if (el) { el.classList.remove('cd-go'); el.removeAttribute('data-n'); } cb(); }, 500);
@@ -2084,13 +2094,7 @@ function cleanupGameClasses() {
   phase?.removeAttribute('aria-label');
   phase?.style.removeProperty('--phase-progress');
   setText('#arenaPhaseLabel', t('hud_factor'));
-  for (const el of _cornerPopPool) {
-    clearTimeout(el._hideTimeout);
-    if (el._showRafId) cancelAnimationFrame(el._showRafId);
-    el._hideTimeout = null;
-    el._showRafId = null;
-    el.style.display = 'none';
-  }
+  clearCornerScorePops();
   $('#centerPlatform')?.classList.remove('platform-active');
   livingArena.reset();
   const g = $('#game');
@@ -2155,6 +2159,12 @@ function restoreDailySelection() {
   app.pendingDaily = false;
 }
 
+function renderModeHeading(mode) {
+  setText('#modeIndicator', t(`mode_${mode}`));
+  const rules = CONFIG.RULE_LABELS[getLanguage()] || CONFIG.RULE_LABELS.de;
+  setText('#modeRuleLabel', rules[mode] || '');
+}
+
 /* ═══════ Start game ═══════ */
 export function startGame(practice = false, daily = false, showTutorial, showResults, showHome, showContinuePrompt) {
   _cancelPreGame();
@@ -2186,23 +2196,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
   app.swipe = new SwipeHandler(gameScreen, app.selectedMode);
   app.swipe.bind();
 
-  const modeIndicator = $('#modeIndicator');
-  if (modeIndicator) {
-    modeIndicator.textContent = t(`mode_${app.selectedMode}`);
-  }
-
-  /* Persistent rule label — shows the mode's core instruction */
-  const ruleLabelEl = $('#modeRuleLabel');
-  if (ruleLabelEl) {
-    const lang = getLanguage();
-    const labels = CONFIG.RULE_LABELS[lang] || CONFIG.RULE_LABELS.de;
-    const label = labels[app.selectedMode] || '';
-    ruleLabelEl.textContent = label;
-    ruleLabelEl.classList.remove('faded');
-    if (label) {
-      setTimeout(() => ruleLabelEl.classList.add('faded'), 3000);
-    }
-  }
+  renderModeHeading(app.selectedMode);
 
   /* Set mode class on body for CSS-driven corner layout */
   document.body.className = document.body.className.replace(/\bmode-\w+/g, '').trim();
@@ -2315,7 +2309,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   const corners = game.start(app.selectedMode, practice ? 'blitz' : app.selectedPlayType, options);
   livingArena.setActive(true);
 
-  startModeMastery(app.selectedMode, app.mastery);
+  if (!practice) startModeMastery(app.selectedMode, app.mastery);
   _continuedRun = false;
   _endingRound = false;
   _bestRun = createBestRun(game, app.mastery, game.timer);
@@ -2846,6 +2840,7 @@ export function resumeContinuedGame(cancel) {
 function syncPausedPresentation() {
   const { game } = app;
   if (!game.running || (cornerLanguage === getLanguage() && cornerColorblind === app.colorblind)) return;
+  renderModeHeading(game.mode);
   renderCorners(game.cornerMap, true);
   if (game.isMemoMode) {
     Object.entries(game.cornerMap).forEach(([dir, info]) => {
@@ -2862,6 +2857,7 @@ export function pauseGame() {
   const { game, audio } = app;
   if (!game.running || game.paused) return;
   game.pause();
+  clearCornerScorePops();
   updateBestRun();
   cancelHaptics();
   livingArena.setActive(false);
@@ -2873,7 +2869,7 @@ export function pauseGame() {
   const info = $('#pauseGameInfo');
   if (info) {
     const modeName = t(`mode_${app.selectedMode}`) || app.selectedMode.toUpperCase();
-    info.innerHTML = `<span class="pause-mode-badge">${modeName}</span><span class="pause-score">${game.score} ${t('score')}</span>`;
+    info.innerHTML = `<span class="pause-world" aria-hidden="true">${modePreview(app.selectedMode, app.colorblind)}</span><span class="pause-mode-badge">${modeName}</span><span class="pause-score">${game.score} ${t('score')}</span>`;
     if (app.selectedMode === 'sequenz') {
       info.innerHTML += `<span class="pause-seq-warn">${t('sequenz_pause_warn')}</span>`;
     }
@@ -2903,12 +2899,12 @@ export function resumeGame() {
 }
 
 export function restartGame(showTutorial, showResults, showHome, showContinuePrompt) {
-  const { game, audio } = app;
+  const practice = app.game.practice;
   invalidateGameRun();
   _cancelPreGame();
   closeModal($('#pauseOverlay'), { restoreFocus: false });
   cleanupActiveGame();
-  startGame(false, app.pendingDaily, showTutorial, showResults, showHome, showContinuePrompt);
+  startGame(practice, app.pendingDaily, showTutorial, showResults, showHome, showContinuePrompt);
 }
 
 export function quitGame(showHome) {
@@ -2922,6 +2918,7 @@ export function quitGame(showHome) {
 
 export function stopPractice(showHome) {
   invalidateGameRun();
+  _cancelPreGame();
   cleanupActiveGame();
   showHome();
 }

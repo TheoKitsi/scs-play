@@ -162,6 +162,8 @@ function renderStep() {
     else if (i < _step) s.classList.add('exit-left');
   });
   dots.forEach((d, i) => d.classList.toggle('active', i === _step));
+  const progress = $('#tutorialStepCount');
+  if (progress) progress.textContent = t('studio_step', { n: _step + 1, total: slides.length });
 
   if (prevBtn) prevBtn.style.visibility = _step === 0 ? 'hidden' : 'visible';
   if (nextBtn) nextBtn.textContent = _step >= slides.length - 1 ? t('lets_go') : t('tutorial_next');

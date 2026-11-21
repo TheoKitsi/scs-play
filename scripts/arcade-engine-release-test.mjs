@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { chromium, firefox, webkit } from 'playwright';
 import { startStaticServer } from './lib/static-server.mjs';
+import { MATERIAL_ASSETS } from '../js/engine/materialAssets.js';
 
 const modes = (process.env.SCS_ARCADE_MODES || 'klassik,beginner,expert,mathe,wissen,memo,sequenz,stroop,fokus,chaos').split(',');
 const qaRoot = process.env.LOCALAPPDATA ? resolve(process.env.LOCALAPPDATA, 'Temp/opencode') : resolve(tmpdir(), 'opencode');
@@ -65,7 +66,16 @@ try {
           await page.locator('#btnPlay').click();
           await page.waitForSelector('#game.active');
           if (await page.locator('#modeInstructionOverlay.active').count()) await page.locator('#btnStartAfterInstruction').click();
-          await page.waitForFunction(() => __SCS_QA__.gameState().running && __SCS_QA__.arcadeRendererState()?.ready && __SCS_QA__.arcadeRendererState().targets > 0);
+          // Scene creation and the first POST_RENDER are separate, especially
+          // on the capped low tier. Require an actual paint before sampling it.
+          await page.waitForFunction(() => {
+            const stage = __SCS_QA__.arcadeRendererState();
+            return __SCS_QA__.gameState().running && stage?.ready && stage.targets > 0 && stage.renderedFrames > 0;
+          }, null, { timeout: 15000 });
+          if (mode !== 'mathe') await page.waitForFunction(() => {
+            const solid = __SCS_QA__.arcadeRendererState()?.solid;
+            return solid?.draws > 0 || solid?.error;
+          });
           const renderer = await page.evaluate(() => __SCS_QA__.arcadeRendererState());
           assert.equal(renderer.mode, mode); assert.equal(renderer.live, true);
           assert.equal(renderer.targets, mode === 'expert' ? 8 : 4);
@@ -73,6 +83,19 @@ try {
           assert.equal(renderer.fpsLimit, mode === 'mathe' ? 30 : 60);
           assert.equal(renderer.palette.floor, await page.locator('#game').evaluate(el => Number.parseInt(getComputedStyle(el).getPropertyValue('--surface').trim().slice(1), 16)), 'Engine architecture uses the selected theme, not a fixed substitute palette');
           assert.ok(renderer.pixels <= 1024 * 1536);
+          assert.equal(renderer.material, true, `${mode}: the authored material must be loaded`);
+          assert.equal(renderer.materialFile, MATERIAL_ASSETS.decks[mode]);
+          assert.equal(await page.locator('#game').getAttribute('data-arena-material'), mode);
+          assert.equal(renderer.solid.enabled, mode !== 'mathe');
+          if (mode !== 'mathe') {
+            assert.equal(renderer.solid.model, 'mesh-ggx');
+            assert.equal(renderer.solid.error, null);
+            assert.equal(renderer.solid.finish, 'normal-roughness-atlas');
+            assert.equal(renderer.solid.resources.textureBytes, 512 * 128 * 4);
+            assert.equal(renderer.solid.objects, renderer.targets + 2);
+            assert.deepEqual(renderer.solid.kinds, { frame: 1, station: renderer.targets + 1 }, 'One real perimeter frame supplements the same task stations');
+            assert.ok(renderer.solid.triangles <= 3500);
+          }
           assert.equal(await page.locator('.arcade-engine-layer canvas').count(), 1);
           if (mode === 'mathe') {
             await page.waitForFunction(() => !__SCS_QA__.arcadeRendererState().loopRunning);
@@ -84,13 +107,26 @@ try {
             await page.waitForSelector('#game .corner-shape.memo-covered');
             assert.ok((await page.locator('#game .memo-covered').evaluateAll(nodes => nodes.map(el => el.getAttribute('aria-label'))))
               .every(label => /verdeckt/i.test(label)), 'The engine never reveals a covered Memo target');
+            assert.ok(await page.locator('#game .memo-covered').evaluateAll(nodes => nodes.every(el => [...el.children].every(child => getComputedStyle(child).opacity === '0'))), 'A material skin cannot expose hidden Memo contents');
+          }
+          if (mode === 'stroop') {
+            await page.waitForSelector('.stroop-display');
+            assert.equal(await page.locator('.stroop-display').evaluate(el => getComputedStyle(el).textShadow), 'none', 'Ink is readable without the legacy neon halo');
+            assert.equal(await page.locator('.stroop-display').evaluate(el => {
+              const swatch = document.createElement('span'); swatch.style.backgroundColor = getComputedStyle(document.body).getPropertyValue('--bg');
+              return getComputedStyle(el).backgroundColor === swatch.style.backgroundColor;
+            }), true, 'The exact ink sits on an opaque theme-background plate, never on a specular 3D highlight');
+            assert.ok(await page.locator('#game [data-content="stroop"]').evaluateAll(nodes => nodes.every(el => el.style.backgroundColor === getComputedStyle(el).backgroundColor)), 'All answer swatches retain their exact assigned background colour');
           }
           if (mode === 'sequenz') {
-            await page.waitForSelector('#game .sequenz-flash');
-            const cue = await page.locator('#game .sequenz-flash').evaluate(el => {
+            // Observe the live cue and its computed style in one browser task;
+            // automation must not inspect the same target after its cue ended.
+            const cue = await (await page.waitForFunction(() => {
+              const el = document.querySelector('#game .sequenz-flash');
+              if (!el) return false;
               const style = getComputedStyle(el);
               return { width: parseFloat(style.outlineWidth), style: style.outlineStyle, color: style.outlineColor, class: el.className };
-            });
+            })).jsonValue();
             assert.ok(cue.width >= 3, `Reduced motion keeps the necessary watch cue: ${JSON.stringify(cue)}`);
             await page.waitForFunction(() => __SCS_QA__.arcadeRendererState()?.phase === 'recall');
           }
@@ -106,7 +142,9 @@ try {
               await new Promise(resolve => requestAnimationFrame(resolve));
               return __SCS_QA__.arcadeRendererState().depth;
             });
-            assert.ok(depth.x > 0 && Math.abs(depth.x) <= 4 && Math.abs(depth.y) <= 3, `Only architecture has bounded opt-in depth: ${JSON.stringify(depth)}`);
+             assert.ok(depth.x > 0 && Math.abs(depth.x) <= 4 && Math.abs(depth.y) <= 3, `Only architecture has bounded opt-in depth: ${JSON.stringify(depth)}`);
+             const solidOffset = await page.evaluate(() => __SCS_QA__.arcadeRendererState().solid.stageOffset);
+             assert.ok(Math.abs(solidOffset[0] - depth.x) < .00001 && Math.abs(solidOffset[1] - depth.y) < .00001, 'The physical frame follows the same bounded architecture offset, not the input targets');
           }
           await page.screenshot({ path: resolve(out, `${name}-${mode}.png`) });
           if (mode === 'sequenz') {
@@ -122,6 +160,7 @@ try {
             await page.locator(`#game .corner-shape[data-dir="${state.direction}"]`).tap();
           }
           await page.waitForFunction(() => __SCS_QA__.arcadeRendererState().hits > 0);
+          assert.equal(await page.evaluate(() => __SCS_QA__.arcadeRendererState().effects), 0, 'Accepted hits keep every material deck cached');
           assert.deepEqual(await page.locator('#game .corner-shape,#centerPlatform').evaluateAll(nodes => nodes.filter(n => n.offsetParent).map(n => {
             const r = n.getBoundingClientRect(); return [r.x, r.y, r.width, r.height];
           })), geometry, `${mode}: engine contact never moves an input rectangle`);
@@ -152,6 +191,7 @@ try {
           await page.locator('#btnPause').click(); await page.locator('#btnPauseQuit').click();
           await page.waitForSelector('#home.active');
           assert.equal(await page.locator('.arcade-engine-layer').count(), 0);
+          assert.equal(await page.locator('#game').getAttribute('data-arena-material'), null, 'The material skin is disposed with its renderer');
           receipts.push({ browser: name, mode, renderer, fixedGeometry: true, realInput: true });
           assert.deepEqual(errors, [], `${name}/${mode}: no runtime errors`);
           console.log(`PASS ${name}/${mode}: engine stage, real input, fixed targets, pause, motion and disposal${mode === 'klassik' ? ', depth and graphics fallback' : ''}`);

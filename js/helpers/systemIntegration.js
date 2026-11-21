@@ -29,6 +29,7 @@ export function bindQaHooks() {
         },
         /* Read-only snapshot for scripts/perf-benchmark.mjs */
         arcadeRendererState() { return app.arcadeArena?.snapshot() || null; },
+        prismRendererState() { return app.prismNavigation?.rendererState?.() || null; },
         gameState() {
           const game = app.game;
           if (!game) return null;

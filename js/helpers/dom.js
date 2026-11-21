@@ -57,11 +57,7 @@ export function hexToRgba(hex, alpha) {
 export function showScreen(id, app) {
   const prevScreen = app.currentScreen;
   $$('.screen').forEach(s => {
-    if (s.classList.contains('active') && s.id !== id) {
-      s.classList.add('screen-exit');
-      s.classList.remove('active');
-      setTimeout(() => s.classList.remove('screen-exit'), 350);
-    }
+    if (s.id !== id) s.classList.remove('active', 'screen-enter');
     const isTarget = s.id === id;
     s.inert = !isTarget;
     s.setAttribute('aria-hidden', String(!isTarget));
@@ -77,7 +73,8 @@ export function showScreen(id, app) {
     history[method]({ ...(history.state || {}), scsScreen: id }, '', location.href);
 
     requestAnimationFrame(() => {
-      const target = el.querySelector('h1, h2, [data-screen-focus]') || el;
+      if (el.inert || !el.classList.contains('active') || document.activeElement?.closest('[role="dialog"]')) return;
+      const target = [...el.querySelectorAll('[data-screen-focus], h1, h2')].find(node => node.offsetParent && !node.closest('[inert],[aria-hidden="true"]')) || el;
       const addedTabIndex = !target.hasAttribute('tabindex');
       if (addedTabIndex) target.setAttribute('tabindex', '-1');
       target.focus({ preventScroll: true });

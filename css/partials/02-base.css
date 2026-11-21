@@ -28,7 +28,9 @@ body{
   --surface-soft:color-mix(in srgb,var(--surface) 94%,var(--text));
   --surface-raised:color-mix(in srgb,var(--card) 94%,var(--text));
   --scene-bg:color-mix(in srgb,var(--bg) 92%,#000);
-  --panel-fill:linear-gradient(155deg,var(--surface-raised),var(--surface) 58%);
+  --panel-fill:linear-gradient(125deg,var(--surface-raised),var(--surface) 66%);
+  --studio-line:color-mix(in srgb,var(--primary-glow) 32%,var(--card));
+  --studio-field:radial-gradient(ellipse at 12% 0%,color-mix(in srgb,var(--primary-glow) 10%,var(--bg)),transparent 53%),var(--bg);
   --control-fill:linear-gradient(180deg,rgba(255,255,255,.035),transparent 70%),var(--card);
   --material-edge:inset 0 1px 0 rgba(255,255,255,.12),0 2px 4px rgba(0,0,0,.18);
   --action-gradient:linear-gradient(105deg,var(--primary),color-mix(in srgb,var(--primary) 90%,#000));

@@ -118,13 +118,20 @@ const LIGHT = {
 // type: 'text' (normal ≥4.5), 'largeText' (≥3), 'ui' (≥3), 'enhanced' (≥7)
 
 const checks = [
+  ...['#1c3040','#111f30'].map(bg => ({ label: `Prism console: supporting text on ${bg}`, fg: cssColor(prismCss, 'pw-muted'), bg, min: 4.5, type: 'text' })),
+  ...['#173b40','#24374b'].map(bg => ({ label: `Prism home: entry copy on ${bg}`, fg: '#c0d3d8', bg, min: 4.5, type: 'text' })),
   ...['pw-text', 'pw-muted', 'pw-mint'].map(token => ({ label: `Prism: ${token} on background`, fg: cssColor(prismCss, token), bg: cssColor(prismCss, 'pw-bg'), min: 4.5, type: 'text' })),
   ...(() => {
     const match = prismCss.match(/\.pw-primary\{background:(#[0-9a-f]+);color:(#[0-9a-f]+)/i);
     if (!match) throw new Error('Missing Prism primary surface declarations');
     return [{ label: 'Prism: primary button text', fg: match[2], bg: match[1], min: 4.5, type: 'text' }];
   })(),
-  ...['#1b3343', '#162137'].map(bg => ({ label: `Prism: dialog gradient ${bg}`, fg: cssColor(prismCss, 'pw-muted'), bg, min: 4.5, type: 'text' })),
+   ...['#1b3343', '#162137'].map(bg => ({ label: `Prism: dialog gradient ${bg}`, fg: cssColor(prismCss, 'pw-muted'), bg, min: 4.5, type: 'text' })),
+  ...(() => {
+    const match = prismCss.match(/\.pw-reveal-skip\{[^}]*background:(#[0-9a-f]{6});color:(#[0-9a-f]{6})/i);
+    if (!match) throw new Error('Missing restoration skip surface');
+    return [{ label: 'Prism: restoration skip label', fg: match[2], bg: match[1], min: 4.5, type: 'text' }];
+  })(),
   // ══════════════════════════════════════
   //   DARK MODE
   // ══════════════════════════════════════
@@ -245,6 +252,25 @@ for (const theme of [{ id: 'default', ...DARK }, ...THEMES]) {
     ['station', compositeRgba('#ffffff', .04, compositeRgba('#ffffff', .035, theme.card))]]) {
     checks.push({ label: `Material ${theme.id}: muted caption on ${material} highlight`, fg: DARK.textMuted, bg, min: 4.5, type: 'text' });
   }
+}
+
+// The neutral 3D chassis is tone-limited for its overlaid task labels. Read the
+// actual shader ceiling instead of auditing an unrelated CSS approximation.
+const materialShader = readFileSync(new URL('../js/engine/studioMaterial.js', import.meta.url), 'utf8');
+const ceiling = materialShader.match(/const float STATION_CEILING=(\.\d+);/);
+if (!ceiling) throw new Error('Missing readable 3D chassis exposure ceiling');
+if (!/color=STATION_CEILING\*color\/\(color\+vec3\(\.065\)\)/.test(materialShader)) throw new Error('Missing bounded, monotonic 3D chassis tone response');
+const channel = Math.ceil(255 * Number(ceiling[1]) ** (1 / 2.2)).toString(16).padStart(2, '0');
+checks.push({ label: '3D chassis: task label at the actual LDR exposure ceiling', fg: DARK.text, bg: `#${channel.repeat(3)}`, min: 4.5, type: 'text' });
+
+// Exact Stroop ink must not sit directly on a moving specular highlight. Its
+// opaque theme-background plate protects all four large/bold colour words.
+const configSource = readFileSync(new URL('../js/config.js', import.meta.url), 'utf8');
+const inkBlock = configSource.match(/STROOP_COLORS_4:\s*\[([\s\S]*?)\]/)?.[1];
+const inks = [...(inkBlock || '').matchAll(/hex:'(#[0-9a-f]{6})'/gi)].map(match => match[1]);
+if (inks.length !== 4) throw new Error('Missing canonical Stroop ink palette');
+for (const theme of [{ id: 'default', ...DARK }, ...THEMES]) for (const ink of inks) {
+  checks.push({ label: `Stroop ${theme.id}: exact ink ${ink} on the opaque display plate`, fg: ink, bg: theme.bg, min: 3, type: 'text' });
 }
 
 // ─── Run ───
