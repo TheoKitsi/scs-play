@@ -417,6 +417,25 @@ export class AudioManager {
     }
   }
 
+  /** Two short voices at the actual optical contact. No queued notes on undo/pause. */
+  prismContact({ kind, color, depth = 0, x = 210 }) {
+    if (!this.enabled || this._pageHidden) return;
+    const pitch = color === 'violet' ? 659.25 : color === 'amber' ? 523.25 : 440;
+    const pan = Math.max(-.45, Math.min(.45, (x - 210) / 420));
+    let body, overtone, tail;
+    switch (kind) {
+      case 'launch': body = 164.81; overtone = 329.63; tail = .085; break;
+      case 'reflect': body = 1174.66; overtone = 2860; tail = .14; break;
+      case 'paint': body = pitch; overtone = pitch * 1.5; tail = .18; break;
+      case 'switch': body = 130.81; overtone = 248; tail = .065; break;
+      case 'activate': body = pitch * [1, 1.25, 1.5, 2][Math.min(3, depth)]; overtone = body * 2.01; tail = .21; break;
+      case 'mismatch': body = 174.61; overtone = 185; tail = .09; break;
+      default: return;
+    }
+    this._play(body, kind === 'switch' || kind === 'launch' ? 'triangle' : 'sine', tail, .075, 0, pan, .003);
+    this._play(overtone, 'sine', tail * .65, .033, 0, pan, .002);
+  }
+
   /** Stable spatial cue for each corner in Sequenz watch phases. */
   sequenceStep(direction) {
     const cues = {

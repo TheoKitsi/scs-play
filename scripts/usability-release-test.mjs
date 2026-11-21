@@ -90,8 +90,9 @@ try {
           await shot('home');
           await page.locator('#btnAllModes').click();
           await noClippedText(page, '#modePicker', `${label}/catalog`);
-          assert.equal(await page.locator('.mode-choice .mode-artwork').count(), 10);
-          assert.equal(await page.locator('.mode-choice').evaluateAll(choices => new Set(choices.map(el => el.querySelector('.mode-art-base').getAttribute('d'))).size), 10, 'Each mode has distinct illustrated silhouette');
+          assert.equal(await page.locator('.mode-choice .mode-material img').count(), 10);
+          assert.equal(new Set(await page.locator('.mode-choice .mode-material img').evaluateAll(nodes => nodes.map(n => n.getAttribute('src')))).size, 10, 'Every catalog preview shares its own actual stage material');
+          assert.equal(await page.locator('.mode-choice .mode-material').evaluateAll(nodes => nodes.every(el => el.getBoundingClientRect().width > 0 && el.getBoundingClientRect().height > 0)), true, 'The real-material illustrations retain visible layout space');
           await page.locator('[data-mode-choice="wissen"]').click();
           await page.waitForTimeout(400);
           await noClippedText(page, '#home', `${label}/locked-mode`);

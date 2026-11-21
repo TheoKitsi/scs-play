@@ -28,7 +28,7 @@ export function shapeSVG(shape, color, size = 48, bonus = null) {
       inner = `<circle cx="${h}" cy="${h}" r="${r}" fill="${color}" stroke="${stroke}" stroke-width="${sw}" ${glow}/>`;
       break;
     case 'square':
-      inner = `<rect x="4" y="4" width="${s-8}" height="${s-8}" rx="4" fill="${color}" stroke="${stroke}" stroke-width="${sw}" ${glow}/>`;
+      inner = `<rect x="4" y="4" width="${s-8}" height="${s-8}" rx="${s * .12}" fill="${color}" stroke="${stroke}" stroke-width="${sw}" ${glow}/>`;
       break;
     case 'triangle': {
       const pts = `${h},4 ${s-4},${s-4} 4,${s-4}`;
@@ -89,16 +89,21 @@ export function shapeSVG(shape, color, size = 48, bonus = null) {
   }
   const id = `shape-light-${++paintId}`;
   const geometry = inner.replace(/ fill="[^"]*"| stroke="[^"]*"| stroke-width="[^"]*"/g, '');
+  /* The reference enamel square has a real edge profile instead of a broad
+     plastic gradient. Its entire middle (including the three colour probes)
+     is still the exact task colour. All twelve silhouette semantics survive. */
+  const enamel = shape === 'square' ? `<path d="M${s * .18} 6 H${s * .72} Q${s - 6} 6 ${s - 6} ${s * .25}" fill="none" stroke="#fff" stroke-opacity=".48" stroke-width=".7" stroke-linecap="round"/><path d="M6 ${s * .3} V${s * .72}" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width=".65"/><path d="M${s * .22} ${s - 5} H${s * .78}" fill="none" stroke="#000" stroke-opacity=".18" stroke-width="1.1"/>` : '';
   return `<svg class="material-shape" viewBox="0 0 ${s} ${s + 3}" width="${s}" height="${s}" aria-hidden="true" focusable="false"${bonus ? ` data-bonus="${bonus}"` : ''} xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
-        <stop stop-color="#fff" stop-opacity=".24"/>
-        <stop offset=".18" stop-color="#fff" stop-opacity="0"/><stop offset=".84" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/>
+        <stop stop-color="#fff" stop-opacity="${shape === 'square' ? '.42' : '.24'}"/>
+        <stop offset="${shape === 'square' ? '.15' : '.18'}" stop-color="#fff" stop-opacity="0"/><stop offset=".84" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/>
       </linearGradient>
     </defs>
     <g fill="${color}" transform="translate(0 1.25)">${geometry}</g>
     <g fill="#000" opacity=".26" transform="translate(0 1.25)">${geometry}</g>
     <g data-material-face="" fill="${color}">${geometry}</g>
     <g data-shape-light="" fill="url(#${id})" stroke="url(#${id})" stroke-width=".85" stroke-linejoin="round">${geometry}</g>
+    ${enamel}
   </svg>`;
 }

@@ -1,7 +1,7 @@
 ﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SCS Play â€” Service Worker
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-const CACHE = 'scs-v69';
+const CACHE = 'scs-v80';
 const ASSETS = [
   './',
   './index.html',
@@ -15,6 +15,29 @@ const ASSETS = [
   './js/screens/PrismScreen.js',
   './js/helpers/prismLink.js',
   './js/engine/PrismScene.js',
+  './js/engine/materialAssets.js',
+  './js/engine/studioMaterial.js',
+  './js/engine/studioMesh.js',
+  './js/engine/studioArchitecture.js',
+  './js/engine/renderSurface.js',
+  './img/materials/arcade-deck.webp',
+  './img/materials/arcade-beginner.webp',
+  './img/materials/arcade-expert.webp',
+  './img/materials/arcade-mathe.webp',
+  './img/materials/arcade-wissen.webp',
+  './img/materials/arcade-memo.webp',
+  './img/materials/arcade-sequenz.webp',
+  './img/materials/arcade-stroop.webp',
+  './img/materials/arcade-fokus.webp',
+  './img/materials/arcade-chaos.webp',
+  './img/materials/island-garden.webp',
+  './img/materials/island-mirrors.webp',
+  './img/materials/island-sun.webp',
+  './img/materials/prism-garden.webp',
+  './img/materials/prism-mirrors.webp',
+  './img/materials/prism-sun.webp',
+  './img/materials/prism-crystals.webp',
+  './img/materials/studio-finishes.png',
   './js/game/prism/levels.js',
   './js/game/prism/PrismSimulation.js',
   './js/renderers/prismIsland.js',

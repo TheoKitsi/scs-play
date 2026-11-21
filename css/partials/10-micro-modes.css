@@ -153,11 +153,6 @@
   transition:transform .3s var(--ease-bounce);
 }
 
-/* ─── Countdown number enhanced pop ─── */
-.countdown-num{
-  text-shadow:0 0 40px var(--primary),0 0 80px rgba(108,92,231,.3);
-}
-
 /* ─── Score pop — more dramatic for big scores ─── */
 .score-pop.big{
   font-weight:900;

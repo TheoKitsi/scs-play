@@ -72,7 +72,11 @@ function bindStatTooltips() {
 }
 
 /* ═══════ Navigation wrappers ═══════ */
-const navShowHome  = () => showHome();
+let trialReturnMode = null;
+const navShowHome  = () => {
+  if (trialReturnMode) { app.selectedMode = trialReturnMode; trialReturnMode = null; }
+  showHome();
+};
 const navShowAuth  = () => showScreen('auth', app);
 const navShowStore = () => showStore(navShowHome);
 const navActivateHome = async () => {
@@ -92,14 +96,14 @@ const loadGameScreen = () => gameScreenPromise ||= import('./screens/GameScreen.
 });
 
 let prismLoading = false;
-const navPrism = async (challengeId = null) => {
+const navPrism = async (challengeId = null, play = false) => {
   if (prismLoading || app.currentScreen !== 'home') return;
   prismLoading = true;
-  const entry = $('#btnPrism');
+  const entry = $(play ? '#btnPrismPlay' : '#btnPrism');
   entry.disabled = true; entry.setAttribute('aria-busy', 'true');
   try {
     const { openPrism } = await import('./screens/PrismScreen.js');
-    if (app.currentScreen === 'home') openPrism({ onHome: navShowHome, challengeId });
+    if (app.currentScreen === 'home') openPrism({ onHome: navShowHome, challengeId, play });
   } catch {
     await appDialog({ title: 'Prism Worlds', message: t('prism_load_error') });
   } finally {
@@ -108,7 +112,7 @@ const navPrism = async (challengeId = null) => {
 };
 
 let gameLoading = false;
-const navStartGame = async (practice = false, daily = false) => {
+const navStartGame = async (practice = false, daily = false, trialMode = null) => {
   const from = app.currentScreen;
   if (gameLoading || !['home', 'results'].includes(from)) return;
   gameLoading = true;
@@ -119,7 +123,14 @@ const navStartGame = async (practice = false, daily = false) => {
   window.addEventListener('scs:screenchange', cancelOnNavigation);
   try {
     const gameScreen = await loadGameScreen();
-    if (!cancelled && app.currentScreen === from) gameScreen.startGame(practice, daily, navShowTutorial, navShowResults, navShowHome, navShowContinuePrompt);
+    if (!cancelled && app.currentScreen === from && !app.gameStarting) {
+      if (trialMode) {
+        if (!practice || !$('#heroSlider .hero-slide[data-pos="current"] [data-trial="' + CSS.escape(trialMode) + '"]')) return;
+        trialReturnMode = app.selectedMode;
+        app.selectedMode = trialMode;
+      }
+      gameScreen.startGame(practice, daily, navShowTutorial, navShowResults, navShowHome, navShowContinuePrompt);
+    }
   } catch {
     if (!cancelled) await appDialog({ title: 'Prism Arcade', message: t('game_load_error') });
   } finally {
@@ -187,6 +198,11 @@ function bindEvents() {
 
   /* ─ Primary actions ─ */
   $('#btnPrism')?.addEventListener('click', () => navPrism());
+  $('#btnPrismPlay')?.addEventListener('click', () => navPrism(null, true));
+  $('#heroSlider')?.addEventListener('click', event => {
+    const button = event.target.closest('[data-trial]');
+    if (button) navStartGame(true, false, button.dataset.trial);
+  });
   $('#btnPlay')?.addEventListener('click',         () => { app.engagement?.trackGameStart(); navStartGame(false, false); });
   $('#btnDaily')?.addEventListener('click',        () => { if (!save.hasDailyToday()) { app.engagement?.trackGameStart(); navStartGame(false, true); } });
   $('#btnLeaderboard')?.addEventListener('click',  () => showLeaderboard());

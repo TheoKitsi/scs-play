@@ -44,6 +44,20 @@
 
 <!-- SVG Icon Sprite (hidden) -->
 <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" focusable="false">
+  <!-- Etched optical bench. Decorative, never fed game or answer data. -->
+  <symbol id="studio-optics" viewBox="0 0 480 144">
+    <g fill="none" stroke="currentColor">
+      <path opacity=".16" d="M0 109h480M0 119h480M57 15v112m157-115v115m137-120v120"/>
+      <g opacity=".42"><ellipse cx="214" cy="69" rx="14" ry="43"/><ellipse cx="217" cy="69" rx="14" ry="43"/>
+        <path d="M214 112v7m-12 1h24M332 99l32-64 32 64zm0 0 37-19 27 19m-32-64 5 45"/></g>
+      <path d="M0 73h201l32-9 108 18" opacity=".7"/>
+      <path d="m342 83 26-4 112-38" stroke="#92e7d1"/><path d="m342 83 27 1 111-10" stroke="#b9b8ff"/><path d="m342 83 28 6 110 18" stroke="#e8bd95"/>
+      <path opacity=".5" stroke-dasharray="1 8" stroke-width="5" d="M35 124h419"/>
+    </g>
+  </symbol>
+  <symbol id="icon-sliders" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 7h7m5 0h6M3 17h2m5 0h11"/><circle cx="12.5" cy="7" r="2.5"/><circle cx="7.5" cy="17" r="2.5"/></g></symbol>
+  <symbol id="icon-profile" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 6 0 0 1 16 0v2"/></g></symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M3 4v16h18M6 15l5-6 4 3 6-8"/></symbol>
   <symbol id="icon-trophy" viewBox="0 0 24 24">
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M7 3h10v6a5 5 0 0 1-10 0V3ZM7 5H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 2v6m-4 1h8"/>
   </symbol>
@@ -122,6 +136,7 @@
       <div class="brand-scene" data-brand-scene></div>
       <h1 class="brand-name">SCS Play</h1>
       <p class="brand-tagline" data-i18n="app_sub">Sortieren · Denken · Reagieren</p>
+      <svg class="studio-etch" aria-hidden="true"><use href="#studio-optics"/></svg>
     </div>
 
     <button id="btnGuest" class="btn btn-primary btn-guest-hero">
@@ -191,10 +206,11 @@
         <span id="weekendBadge" class="weekend-badge"></span>
       </div>
 
-      <button type="button" class="prism-entry" id="btnPrism">
+      <div class="prism-entry-row"><button type="button" class="prism-entry" id="btnPrismPlay">
+        <span class="prism-entry-art" id="prismEntryArt" aria-hidden="true"></span>
         <span class="prism-entry-copy"><span class="prism-entry-kicker" data-i18n="prism_entry_kicker">LICHTRÄTSEL · OHNE ZEITDRUCK</span><span class="prism-entry-title">Prism Worlds</span><span class="prism-entry-note" id="prismEntryProgress" data-i18n="prism_entry_note">12 Rätsel. Ein Impuls. Eine Kettenreaktion.</span></span>
         <span class="prism-entry-arrow" aria-hidden="true">↗</span>
-      </button>
+      </button><button type="button" class="prism-map-link" id="btnPrism" data-i18n="prism_map">Weltkarte</button></div>
 
       <div class="mode-browser-bar">
         <span class="mode-position"><span aria-hidden="true">ARCADE · </span><span id="modePosition" aria-hidden="true">01 / 10</span></span>
@@ -236,7 +252,7 @@
         <div class="play-fab-wrap play-fab-wrap--primary">
           <button id="btnPlay" class="btn-play-fab">
             <svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-play"></use></svg>
-            <span data-i18n="play">SPIELEN</span>
+            <span id="arcadePlayLabel">Spielen</span>
           </button>
         </div>
       </div>
@@ -447,7 +463,7 @@
 <!-- ═══════ TUTORIAL (Interactive Onboarding) ═══════ -->
 <div id="tutorial" class="screen">
   <div class="screen-content tutorial-content">
-    <h2 data-i18n="tutorial_title">So geht's</h2>
+    <div class="tutorial-heading"><p id="tutorialStepCount" class="studio-caption" role="status"></p><h2 data-i18n="tutorial_title">So geht's</h2></div>
     <!-- Step indicators -->
     <div class="tutorial-dots" id="tutorialDots" aria-hidden="true">
       <span class="tut-dot active"></span><span class="tut-dot"></span><span class="tut-dot"></span><span class="tut-dot"></span>
@@ -546,8 +562,8 @@
   <div class="hud">
     <div class="hud-top">
       <button id="btnPause" class="btn-pause" aria-label="Pause"><svg class="ui-icon" viewBox="0 0 24 24"><use href="#icon-pause"></use></svg></button>
-      <div id="modeIndicator" class="mode-indicator">4-DIR</div>
-      <div id="modeRuleLabel" class="mode-rule-label"></div>
+      <div class="hud-instruction"><div id="modeIndicator" class="mode-indicator" data-screen-focus>Prism Arcade</div>
+        <div id="modeRuleLabel" class="mode-rule-label"></div></div>
       <div id="hudTimer" class="hud-timer">30</div>
     </div>
     <div class="hud-scores">
@@ -613,7 +629,7 @@
 
   <!-- Countdown -->
   <div id="countdownOverlay" class="countdown-overlay" role="alert" aria-live="assertive">
-    <span id="countdownNum" class="countdown-num" aria-label="Countdown">3</span>
+    <span id="countdownNum" class="countdown-num">3</span>
   </div>
 
   <!-- Pre-game Mode Instruction Overlay (brain/reflex modes) -->
@@ -739,7 +755,7 @@
 <!-- ═══════ LEADERBOARD ═══════ -->
 <div id="leaderboard" class="screen">
   <div class="screen-content">
-    <div class="screen-header"><div><h2 data-i18n="leaderboard">Bestleistungen</h2><p class="screen-subtitle" data-i18n="lb_local_help">Deine Ergebnisse auf diesem Gerät.</p></div></div>
+    <div class="screen-header"><svg class="section-seal" aria-hidden="true"><use href="#icon-trophy"/></svg><div><h2 data-i18n="leaderboard">Bestleistungen</h2><p class="screen-subtitle" data-i18n="lb_local_help">Deine Ergebnisse auf diesem Gerät.</p></div></div>
     <label class="lb-mode-select"><span data-i18n="select_mode">Modus wählen</span><select id="lbModeSelect"></select></label>
     <!-- Play type filter -->
     <div id="lbFilters" class="lb-filter-tabs" role="group" aria-label="Spielart">
@@ -758,7 +774,7 @@
 <!-- ═══════ ACHIEVEMENTS ═══════ -->
 <div id="achievements" class="screen">
   <div class="screen-content">
-    <div class="screen-header"><h2 data-i18n="achievements">Erfolge</h2></div>
+    <div class="screen-header"><svg class="section-seal" aria-hidden="true"><use href="#icon-star"/></svg><h2 data-i18n="achievements">Erfolge</h2></div>
     <div id="achProgress" class="ach-progress"></div>
     <!-- Filter tabs — Shop-style -->
     <div id="achTabs" class="ach-tabs" role="group" aria-label="Erfolge filtern">
@@ -776,7 +792,7 @@
 <!-- ═══════ SETTINGS ═══════ -->
 <div id="settings" class="screen">
   <div class="screen-content">
-    <div class="screen-header"><h2 data-i18n="settings">Einstellungen</h2></div>
+    <div class="screen-header"><svg class="section-seal" aria-hidden="true"><use href="#icon-sliders"/></svg><h2 data-i18n="settings">Einstellungen</h2></div>
     <div id="settingsSaveNotice" class="settings-save-notice" hidden>
       <p id="settingsSaveStatus" role="status" aria-live="polite"></p>
       <button type="button" id="btnSettingsRetrySave" class="btn btn-secondary" data-i18n="settings_save_retry">Speichern wiederholen</button>
@@ -829,7 +845,7 @@
 <!-- ═══════ AVATAR SELECTION ═══════ -->
 <div id="avatarSelect" class="screen">
   <div class="screen-content">
-    <div class="screen-header"><h2 data-i18n="avatar_title">Avatar</h2></div>
+    <div class="screen-header"><svg class="section-seal" aria-hidden="true"><use href="#icon-profile"/></svg><h2 data-i18n="avatar_title">Avatar</h2></div>
     <div class="avatar-preview">
       <div id="avatarPreviewSvg" class="avatar-preview-svg"></div>
     </div>
@@ -858,7 +874,7 @@
 <!-- ═══════ STORE ═══════ -->
 <div id="store" class="screen">
   <div class="screen-content">
-    <div class="screen-header"><div><h2 data-i18n="store">Design-Shop</h2><p class="screen-subtitle" data-i18n="store_sub">Spiele Fire frei und gestalte dein Spiel.</p></div></div>
+    <div class="screen-header"><svg class="section-seal" aria-hidden="true"><use href="#icon-cart"/></svg><div><h2 data-i18n="store">Design-Shop</h2><p class="screen-subtitle" data-i18n="store_sub">Spiele Fire frei und gestalte dein Spiel.</p></div></div>
     <!-- Shop Tabs -->
     <div id="shopTabs" class="shop-tabs" role="tablist" aria-label="Shop-Kategorien">
       <button id="shopTabThemes" class="shop-tab selected" role="tab" aria-selected="true" aria-controls="shopTabContent" data-tab="themes" data-i18n="shop_tab_themes">Themen</button>
@@ -883,7 +899,7 @@
 <!-- ═══════ ENGAGEMENT REPORT ═══════ -->
 <div id="engagementReport" class="screen">
   <div class="screen-content">
-    <div class="screen-header"><h2 data-i18n="engagement_report_title">Spielanalyse</h2></div>
+    <div class="screen-header"><svg class="section-seal" aria-hidden="true"><use href="#icon-chart"/></svg><h2 data-i18n="engagement_report_title">Spielanalyse</h2></div>
     <div class="er-content">
       <p class="screen-subtitle" data-i18n="insights_note">Diese Übersicht beschreibt deine Spielaktivität, nicht deinen Spaß oder deine Fähigkeiten.</p>
       <!-- Summary header -->

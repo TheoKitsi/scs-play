@@ -23,17 +23,17 @@ function renderAvatarPreview(icon, colorIndex, photo) {
   }
 }
 
-function renderAvatarIconGrid(selectedIcon) {
+function renderAvatarIconGrid(selectedIcon, selectedCI) {
   const { audio } = app;
   const grid = $('#avatarIconGrid');
   if (!grid) return;
   /* Use CSS variable for icon color so it adapts to light/dark theme (P1 white-on-white fix) */
-  const iconColor = getComputedStyle(document.documentElement).getPropertyValue('--icon-on-surface').trim() || '#CBD5E1';
+  const iconColor = 'var(--icon-on-surface)';
   grid.innerHTML = CONFIG.AVATAR_ICONS.map(icon => {
     const selected = icon === selectedIcon ? 'selected' : '';
-    const color = selected ? (CONFIG.COLORS.normal[parseInt($('.avatar-color-item.selected')?.dataset.ci || '0')] || iconColor) : iconColor;
+    const color = selected ? (CONFIG.COLORS.normal[selectedCI] || iconColor) : iconColor;
     const label = t('avatar_icon_choice', { icon: t(`avatar_icon_${icon}`) });
-    return `<button type="button" class="avatar-grid-item ${selected}" data-icon="${icon}" aria-label="${label}" aria-pressed="${icon === selectedIcon}">${avatarSVG(icon, color, 28)}</button>`;
+    return `<button type="button" class="avatar-grid-item ${selected}" data-icon="${icon}" style="color:${color}" aria-label="${label}" aria-pressed="${icon === selectedIcon}">${avatarSVG(icon, 'currentColor', 28)}</button>`;
   }).join('');
 
   $$('.avatar-grid-item', grid).forEach(item => {
@@ -41,10 +41,12 @@ function renderAvatarIconGrid(selectedIcon) {
       $$('.avatar-grid-item', grid).forEach(i => {
         i.classList.remove('selected');
         i.setAttribute('aria-pressed', 'false');
+        i.style.color = iconColor;
       });
       item.classList.add('selected');
       item.setAttribute('aria-pressed', 'true');
       const ci = parseInt($('.avatar-color-item.selected')?.dataset.ci || '0');
+      item.style.color = CONFIG.COLORS.normal[ci];
       renderAvatarPreview(item.dataset.icon, ci);
       audio.tap();
     });
@@ -70,7 +72,9 @@ function renderAvatarColorGrid(selectedCI) {
       });
       item.classList.add('selected');
       item.setAttribute('aria-pressed', 'true');
-      const icon = $('.avatar-grid-item.selected')?.dataset.icon || 'circle';
+      const selectedIcon = $('.avatar-grid-item.selected');
+      if (selectedIcon) selectedIcon.style.color = CONFIG.COLORS.normal[item.dataset.ci];
+      const icon = selectedIcon?.dataset.icon || 'circle';
       renderAvatarPreview(icon, parseInt(item.dataset.ci));
       audio.tap();
     });
@@ -162,7 +166,7 @@ export function showAvatarSelect(showStore) {
   showScreen('avatarSelect', app);
   const avatar = save.getAvatar();
   renderAvatarPreview(avatar.icon, avatar.colorIndex, avatar.photo);
-  renderAvatarIconGrid(avatar.icon);
+  renderAvatarIconGrid(avatar.icon, avatar.colorIndex);
   renderAvatarColorGrid(avatar.colorIndex);
   setupAvatarUpload();
 }

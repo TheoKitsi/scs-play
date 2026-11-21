@@ -36,6 +36,11 @@ function obstructed(a, b, barriers) {
   return barriers.some(rect => rectEdges(rect).some(([p, q]) => raySegment(a, d, p, q) < length - EPS));
 }
 
+// The etched links and the live wave must agree when masonry or a gate cuts a chain.
+export function linkedCrystals(a, b, level, barriers) {
+  return a.color === b.color && Math.hypot(b.x - a.x, b.y - a.y) <= level.chainRadius && !obstructed(a, b, barriers);
+}
+
 function chainFrom(first, state, gatesOpen) {
   const found = [{ node: first, depth: 0 }], visited = new Set([first.id]);
   const barriers = [...state.level.walls, ...state.gates.filter(g => !g.open && !gatesOpen)];
@@ -43,7 +48,7 @@ function chainFrom(first, state, gatesOpen) {
     const { node, depth } = found[i];
     for (const next of state.nodes) {
       if (next.kind !== 'crystal' || next.active || visited.has(next.id) || next.color !== first.color) continue;
-      if (Math.hypot(next.x - node.x, next.y - node.y) <= state.level.chainRadius && !obstructed(node, next, barriers)) {
+      if (linkedCrystals(node, next, state.level, barriers)) {
         visited.add(next.id);
         found.push({ node: next, depth: depth + 1, from: node.id });
       }
@@ -66,7 +71,7 @@ export function tracePulse(state, aim, color = state.color) {
     const candidate = (t, kind, node) => { if (t < hit.t) hit = { t, kind, node }; };
     for (const [a, b] of bounds) candidate(raySegment(origin, direction, a, b), 'edge');
     for (const rect of [...state.level.walls, ...state.gates.filter(g => !g.open && !gatesOpen)]) {
-      for (const [a, b] of rectEdges(rect)) candidate(raySegment(origin, direction, a, b), 'wall');
+      for (const [a, b] of rectEdges(rect)) candidate(raySegment(origin, direction, a, b), 'wall', rect);
     }
     for (const node of state.nodes) {
       if (node.active || node.id === previous || passed.has(node.id)) continue;
@@ -98,7 +103,9 @@ export function tracePulse(state, aim, color = state.color) {
         for (const { node, depth, from } of chainFrom(hit.node, state, gatesOpen)) {
           events.push({ kind: 'activate', id: node.id, x: node.x, y: node.y, at: at + depth * 0.1, color, depth, from });
         }
-      } else events.push({ kind: hit.kind === 'crystal' ? 'mismatch' : 'miss', x: end.x, y: end.y, at, color });
+      } else events.push({ kind: hit.kind === 'crystal' ? 'mismatch' : 'miss',
+        surface: hit.node?.kind === 'gate' ? 'gate' : hit.kind,
+        x: end.x, y: end.y, at, color });
       break;
     }
     origin = point(end, direction, EPS * 2);

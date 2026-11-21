@@ -1,7 +1,6 @@
 /* Engine architecture + stable, accessible DOM task faces. No hit-box changes. */
 .arcade-engine-layer{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;contain:strict}
 .arcade-engine-layer canvas{display:block;width:100%!important;height:100%!important;pointer-events:none}
-#game[data-arcade-engine="ready"]{background:radial-gradient(ellipse at 50% 55%,var(--surface-raised),var(--bg) 75%)}
 #game[data-arcade-engine="ready"] .resonance-stage{visibility:hidden}
 #game[data-arcade-engine="ready"] .arena-light,#game[data-arcade-engine="ready"] .arena-signal{animation:none!important}
 #game[data-arcade-engine="ready"] .corner-shape:not([data-content="stroop"]):not(.memo-covered){background:var(--panel-fill);border-color:var(--outline);box-shadow:var(--material-edge),0 4px #0004}
@@ -11,7 +10,124 @@
 #game[data-arcade-engine="ready"] .mode-indicator{background:var(--surface-raised);border-color:var(--outline);color:var(--text)}
 #game[data-arcade-engine="ready"] .hud-label{color:var(--text-dim)}
 #game[data-arcade-engine="ready"] .game-notice{background:var(--surface);border-color:var(--outline);color:var(--text)}
-.hero-engine-badge{display:inline-flex;align-items:center;gap:6px;color:#a9e6c7;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;font-weight:500}
-.hero-engine-badge:before{content:'';display:inline-block;width:5px;height:5px;background:#9befcc;border-radius:50%}
+#game .hud-top{gap:12px}
+#game .hud-instruction .mode-indicator{font:600 1rem/1.15 var(--font-display);letter-spacing:-.025em;background:none;color:var(--text);border:0}
+#game .hud-instruction .mode-rule-label{position:static;inset:auto;transform:none;text-align:start;max-width:100%;line-height:1.22;color:var(--text-dim);white-space:normal;overflow-wrap:anywhere}
+#game .hud .hud-scores{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:0;background:var(--panel-fill);border:1px solid var(--outline);border-radius:14px 5px;box-shadow:var(--material-edge)}
+#game .hud-scores .hud-score-group{min-width:0}
+#game .hud-score-group+.hud-score-group{border-inline-start:1px solid var(--outline)}
+#game .hud-score-group .hud-value,#game .hud-score-group .hud-multiplier{font-weight:600}
+#game .timer-bar{background:var(--surface)}
+#game .btn-pause{border-radius:12px 5px}
+#game .hud-timer{letter-spacing:-.065em}
+#game .timer-critical{border-block-end:2px solid currentColor}
+#arenaPhase .arena-phase-meter{left:24%;width:52%;bottom:-3px;mask:repeating-linear-gradient(90deg,#000 0 17%,transparent 17% 20%)}
+#arenaPhase:is([data-phase="watch"],[data-phase="recall"]) .hud-label{color:var(--primary-glow)}
+#arenaPhase[data-phase="fever"] .arena-phase-meter i{background:var(--gold)}
+#game .hud-value.on-fire,#game .hud-multiplier.mult-ultra{animation:none;text-shadow:none}
 #results .results-panel{border-color:#48656c;box-shadow:inset 0 1px #c1f8dc16,0 20px 70px #0003}
 @media(forced-colors:active){.arcade-engine-layer{display:none}#game[data-arcade-engine="ready"] .resonance-stage{visibility:visible}}
+
+/* One physical body per station. Mode-specific radii remain intact, as do
+   Stroop's exact fills, Memo covers, Sequence cues and Chaos size coding. */
+#game[data-arena-material] .corner-shape:not([data-content="stroop"]):not(.memo-covered){
+  border:1px solid color-mix(in srgb,var(--text) 16%,var(--surface));
+  background:linear-gradient(160deg,color-mix(in srgb,var(--card) 85%,var(--text)),var(--surface) 65%);
+  box-shadow:inset 0 1px #ffffff1c,inset 0 -1px #0008,0 3px 0 color-mix(in srgb,var(--bg) 75%,#000),0 9px 16px #0005;
+}
+#game[data-arena-material] .corner-shape::before{display:none}
+#game[data-arena-material] .center-platform,
+#game[data-arena-material] .center-platform.platform-active{
+  border:1px solid color-mix(in srgb,var(--text) 20%,var(--surface));
+  background:linear-gradient(150deg,color-mix(in srgb,var(--card) 82%,var(--text)),var(--surface) 62%);
+  box-shadow:inset 0 1px #ffffff24,inset 0 -2px #0006,0 5px 0 var(--bg),0 16px 26px #0006;
+}
+#game[data-arena-material] .center-platform::before{display:none}
+#game[data-arena-material] .hud-scores{background:var(--surface);box-shadow:none}
+#game[data-arena-material="klassik"]{--station-radius:18px;--core-radius:30px}
+#game[data-arena-material] .stroop-display{text-shadow:none;-webkit-text-stroke:0;letter-spacing:.02em;font-weight:750}
+#game[data-arena-material] .corner-shape[data-content="stroop"]{box-shadow:inset 0 1px #ffffff40,inset 0 -2px #0004,0 3px #0005,0 9px 14px #0004}
+
+/* Menu and instructions use the actual stage material, not a second visual
+   language. A neutral multiply layer follows the selected theme, like Phaser. */
+.mode-preview .mode-material{position:absolute;inset:0;z-index:-1;overflow:hidden;isolation:isolate;border-radius:18px;background:color-mix(in srgb,var(--surface) 80%,#444)}
+.mode-material img{display:block;width:100%;height:100%;object-fit:cover;mix-blend-mode:multiply}
+.mode-preview--klassik :is(.preview-object,.preview-sample){display:grid;place-items:center;width:22%;height:25%;padding:2%;border-radius:18%;background:var(--control-fill);box-shadow:var(--material-edge)}
+.mode-preview--klassik .preview-object--1,.mode-preview--klassik .preview-object--3{left:8%}
+.mode-preview--klassik .preview-object--2,.mode-preview--klassik .preview-object--4{right:8%}
+.mode-preview--klassik .preview-object--1,.mode-preview--klassik .preview-object--2{top:9%}
+.mode-preview--klassik .preview-object--3,.mode-preview--klassik .preview-object--4{bottom:9%}
+.mode-preview--klassik .preview-sample{position:absolute;left:36%;top:34%;width:28%;height:32%}
+.preview-sample svg{width:100%;height:100%}
+.mode-preview .preview-recall,.mode-preview .preview-sequence i{box-shadow:inset 0 1px #ffffff24,0 4px 10px #0005}
+
+/* Real mesh chassis replace only neutral DOM skins on supported high quality.
+   Exact stimulus faces, swatch fills, cover opacity and input geometry stay. */
+#game[data-arena-solid][data-arena-material] .corner-shape:not([data-content="stroop"]),
+#game[data-arena-solid][data-arena-material] .center-platform,
+#game[data-arena-solid][data-arena-material] .center-platform.platform-active{background:transparent;border-color:transparent;box-shadow:none}
+#game[data-arena-solid] .corner-shape.memo-covered{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+#game[data-arena-solid][data-arena-mode="stroop"] .stroop-display{background:var(--bg);padding:8px 10px;border-radius:10px}
+
+/* The same quietly lit ceramic/slate surfaces around the game. Theme action
+   colours, prices, unlocks, local-only notices and control semantics survive. */
+.pause-panel,.results-panel,.app-dialog-panel{background:linear-gradient(145deg,color-mix(in srgb,var(--card) 94%,var(--text)),var(--surface) 68%);border:1px solid var(--outline);box-shadow:inset 0 1px #ffffff20,inset 0 -1px #0005,0 20px 60px #0005}
+.pause-panel{border-radius:24px;padding:22px;gap:11px}
+.pause-game-info{display:grid;grid-template-columns:76px minmax(0,1fr);gap:4px 14px;text-align:left;align-items:center;padding:0 0 14px;border-bottom:1px solid var(--outline-subtle)}
+.pause-world{grid-column:1;grid-row:1/span 3;display:block;width:76px;height:62px}
+.pause-mode-badge,.pause-score,.pause-seq-warn{grid-column:2;min-width:0;overflow-wrap:anywhere}
+.pause-score{font-family:var(--font-display);font-size:1.2rem;font-weight:550;letter-spacing:-.025em;color:var(--text)}
+.pause-panel .btn,.app-dialog-panel .btn{box-shadow:inset 0 1px #ffffff1c,0 2px #0003}
+.mode-picker-panel,.mode-instruction-panel,.wheel-panel,.pause-overlay .pause-panel,.app-dialog-overlay .app-dialog-panel{border-radius:22px 8px;background:var(--panel-fill);border:1px solid var(--studio-line);box-shadow:var(--material-edge),0 18px 54px #0005}
+.wheel-heading,.mode-instruction-title,.pause-panel h2{font-family:var(--font-display);letter-spacing:-.04em;text-shadow:none}
+.wheel-heading{padding-inline:36px}
+.mode-picker-panel .mode-choice[aria-pressed=true]{border-color:var(--primary-glow);box-shadow:inset 0 -3px var(--primary-glow)}
+#game .pause-overlay{touch-action:pan-y}
+#game .pause-panel{max-height:calc(100% - 20px);overflow-y:auto;overscroll-behavior:contain}
+#game .pause-panel>*{flex-shrink:0}
+#results .results-panel{position:relative;border-color:var(--outline);border-radius:24px;box-shadow:inset 0 1px #ffffff20,0 20px 60px #0005}
+#results .result-world{width:100px;height:62px;margin:0 auto 4px}
+.result-world>.mode-preview,.pause-world>.mode-preview{width:100%;height:100%}
+.result-world .preview-object,.pause-world .preview-object{filter:none}
+.result-world .preview-equation,.pause-world .preview-equation{font-size:18px}
+.result-world .preview-question,.pause-world .preview-question,.result-world .preview-recall,.pause-world .preview-recall{font-size:26px}
+.result-world .preview-ink,.pause-world .preview-ink{font-size:24px}
+.result-world .preview-sequence i,.pause-world .preview-sequence i{font-size:12px}
+.result-world .preview-arrows,.pause-world .preview-arrows{font-size:14px;gap:2px}
+#results .res-item{background:var(--surface);border:1px solid var(--outline-subtle);box-shadow:inset 0 1px #ffffff12;border-radius:13px}
+#results .results-details{border:1px solid var(--outline);border-radius:14px;background:var(--surface);padding:0 12px}
+#results .results-details>summary{color:var(--text-dim);min-height:46px;display:list-item;padding:13px 2px}
+#results .results-details-body{padding-bottom:14px;gap:12px}
+#results .results-details-body .res-item{background:var(--card)}
+#results #resPhase1{border-block:1px solid var(--outline);padding-block:8px;background:var(--panel-fill);border-radius:12px}
+#results .results-xp-ring{height:auto;min-height:1.3em;padding-block:4px;display:grid;place-items:center}
+#results .results-xp-ring .ring-score{position:static;transform:none;line-height:1.2}
+#results .results-panel .ring-score{font-family:var(--font-display);letter-spacing:-.055em;font-variant-numeric:tabular-nums}
+#results .results-details[open]>summary{border-bottom:1px solid var(--outline);margin-bottom:8px}
+#results .results-panel{scroll-padding-bottom:90px}
+#results #resPhase3{z-index:2}
+#results #resPhase3::after{content:'';position:absolute;top:100%;left:0;right:0;height:28px;background:var(--surface);pointer-events:auto}
+#resContinue{box-shadow:inset 0 1px #ffffff14}
+.round-cue-card{background:var(--surface);box-shadow:inset 0 1px #ffffff20,0 12px 40px #0004}
+#roundCueArt{display:block;width:88px;height:66px}
+#roundCueArt .preview-equation,#roundCueArt .preview-ink{font-size:23px}
+#roundCueArt .preview-question,#roundCueArt .preview-recall{font-size:28px}
+#roundCueArt .preview-sequence i{font-size:12px}
+#settings .setting-group{background:linear-gradient(145deg,color-mix(in srgb,var(--card) 94%,var(--text)),var(--surface) 68%);box-shadow:inset 0 1px #ffffff1c;border-radius:18px;border-color:var(--outline);padding-inline:16px}
+#settings .setting-group legend{padding:0 8px;font-size:.83rem;letter-spacing:.04em;color:var(--text-dim)}
+#settings .settings-nav button{background:var(--surface);border-radius:12px;box-shadow:inset 0 1px #ffffff10}
+#settings .settings-nav button[aria-current="true"]{background:var(--card);box-shadow:inset 0 -2px var(--primary-glow)}
+#settings .setting-row select{background:var(--surface);border-radius:10px}
+#settings .settings-local-data{padding:14px 16px;border-left:2px solid var(--outline);background:var(--surface);border-radius:0 12px 12px 0}
+#store .store-item{background:linear-gradient(145deg,color-mix(in srgb,var(--card) 94%,var(--text)),var(--surface) 68%)!important;box-shadow:inset 0 1px #ffffff1c,0 5px 14px #0002!important;border-radius:18px!important;transition:border-color .14s,background .14s}
+#store .store-item:active{transform:none}
+#store .store-item.owned{border-color:var(--primary-glow)!important}
+.design-material{position:absolute;inset:5%;border-radius:13px;overflow:hidden;isolation:isolate;background:color-mix(in srgb,var(--surface) 80%,#444)}
+.design-material img{width:100%;height:100%;display:block;object-fit:fill;mix-blend-mode:multiply}
+.design-preview>svg{position:relative}
+.design-preview .design-slot,.design-preview .design-plinth{box-shadow:inset 0 1px #ffffff25,inset 0 -1px #0005,0 3px 6px #0005;border-color:var(--outline)}
+.screen-enter:not(#game):not(#prism){animation:studio-screen-in .16s ease-out}
+@keyframes studio-screen-in{from{opacity:.85}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.screen-enter:not(#game):not(#prism){animation:none}#store .store-item{transition:none}}
+body[data-reduced-motion] .screen-enter:not(#game):not(#prism){animation:none}
+@media(forced-colors:active){#game[data-arena-solid] .corner-shape,#game[data-arena-solid] .center-platform{background:Canvas!important;border-color:ButtonText!important;box-shadow:none!important}}

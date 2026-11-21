@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { startStaticServer } from './lib/static-server.mjs';
+import { MATERIAL_FILES } from '../js/engine/materialAssets.js';
 
 const EXTERNAL_BASE = process.env.SCS_BASE || '';
 
@@ -19,17 +20,19 @@ async function loadTrack(page, track) {
       audio.load();
     });
     let playing = false;
+    let playback = null;
     if (outcome === 'loaded') {
       await audio.play();
       await new Promise(resolve => setTimeout(resolve, 350));
       playing = !audio.paused && audio.currentTime > 0 && !audio.error;
+      playback = { time: audio.currentTime, paused: audio.paused, ready: audio.readyState, network: audio.networkState };
       audio.pause();
     }
-    return { outcome, playing, duration: Number.isFinite(audio.duration) ? audio.duration : 0, error: audio.error?.message };
+    return { outcome, playing, playback, duration: Number.isFinite(audio.duration) ? audio.duration : 0, error: audio.error?.message };
   }, track);
   assert.equal(result.outcome, 'loaded', `${track} must decode through the service worker: ${result.error || result.outcome}`);
   assert.ok(result.duration > 0, `${track} must have usable audio metadata`);
-  assert.ok(result.playing, `${track} must actually play, not fall back to a silent/failed media element`);
+  assert.ok(result.playing, `${track} must actually play, not fall back to a silent/failed media element: ${JSON.stringify(result)}`);
 }
 
 async function run() {
@@ -138,6 +141,13 @@ async function run() {
       return faces.every(list => list.length > 0 && list.every(face => face.status === 'loaded'));
     }), true, 'Offline fonts must actually load, not silently fall back');
     console.log('PASS all 11 local, precached and decoded offline DE/EN font cuts');
+    const art = await page.evaluate(async files => Promise.all(files.map(async src => {
+      const image = new Image(); image.src = src; await image.decode();
+      return { src, width: image.naturalWidth, height: image.naturalHeight };
+    })), MATERIAL_FILES);
+    assert.equal(art.length, 18);
+    assert.ok(art.every(image => image.width > 0 && image.height > 0), 'All original materials and restoration atlases decode offline before their first use');
+    console.log('PASS all 18 original material/island/data assets decoded on their first offline use');
     for (const track of state.tracks) {
       await loadTrack(page, track);
       console.log(`PASS offline music: ${track}`);

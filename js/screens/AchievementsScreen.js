@@ -129,12 +129,11 @@ function renderCategories(lang, earned, saveData, animate) {
     const catDesc   = cat.desc[lang] || cat.desc.en;
     const chainKeys = _getUniqueChains(filtered);
     const bodyId = `ach-cat-body-${cat.id}`;
-    // v25: stagger handled by CSS .screen.active .ach-category (listItemIn) — no inline override
-    const animStyle = '';
 
     html += `
-    <div class="ach-category ${isCollapsed ? 'collapsed' : 'expanded'}" data-cat="${cat.id}" style="${animStyle}">
+    <div class="ach-category ${isCollapsed ? 'collapsed' : 'expanded'}" data-cat="${cat.id}">
       <button type="button" class="ach-cat-header" data-cat="${cat.id}" aria-expanded="${!isCollapsed}" aria-controls="${bodyId}" style="font:inherit;color:inherit;background:none;border:0;width:100%;text-align:left">
+        ${icon(({ milestones: 'star', precision: 'ruler', modes: 'shapes', daily: 'chart' })[cat.id])}
         <div class="ach-cat-info">
           <span class="ach-cat-name">${catName}</span>
           <span class="ach-cat-desc">${catDesc}</span>

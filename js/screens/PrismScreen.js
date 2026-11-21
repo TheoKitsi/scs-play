@@ -1,7 +1,7 @@
 import { createPrismArena } from '../engine/PrismScene.js';
 import { PRISM_LEVELS, PRISM_COLORS } from '../game/prism/levels.js';
 import { prismProgress, savePrismWin } from '../services/PrismProgress.js';
-import { prismIsland } from '../renderers/prismIsland.js';
+import { prismIsland, prismRegions } from '../renderers/prismIsland.js';
 import { getLanguage } from '../i18n.js';
 import { $, escHTML, showScreen } from '../helpers/dom.js';
 import { openModal, closeModal } from '../helpers/modal.js';
@@ -15,9 +15,9 @@ const copy = {
   de: {
     home: 'Arcade & Menü', map: 'Weltkarte', chapter: 'KAPITEL 01 · DIE SCHWEBENDEN GÄRTEN',
     adventure: 'Dein Licht verändert die Welt.', intro: 'Lenke Energie durch vergessene Gärten. Wecke Kristalle, verbinde Wege und bring die Inseln zum Blühen.',
-    play: 'Abenteuer starten', continue: 'Abenteuer fortsetzen', replay: 'Noch einmal spielen', restored: 'Gärten erwacht', stars: 'Sterne',
+    play: 'Abenteuer starten', continue: 'Abenteuer fortsetzen', replay: 'Noch einmal spielen', restored: 'Rätsel gelöst', stars: 'Sterne',
     zones: ['Der erste Funke', 'Spiegelgärten', 'Das Sonnenwerk'], level: 'Level', locked: 'Gesperrt · schließe zuerst das vorherige Level ab',
-    pulses: 'Impulse übrig', crystals: 'Kristalle', goal: 'Wecke alle Kristalle.', par: 'Drei Sterne mit höchstens {n} Impulsen',
+    pulses: 'Impulse übrig', crystals: 'Kristalle', goal: 'Wecke alle Kristalle.', parOne: 'Drei Sterne mit einem Impuls', par: 'Drei Sterne mit höchstens {n} Impulsen',
     fire: 'Impuls auslösen', left: '5° nach links zielen', right: '5° nach rechts zielen', undo: 'Rückgängig', restart: 'Neustart', pause: 'Pause', resume: 'Weiterspielen',
     controls: 'Steuerung & Ziele', controlHelp: 'Tippen zielt; Ziehen und Loslassen schießt. Alternativ: links/rechts zielen, Leertaste oder Enter schießen. Die Zielauswahl unten funktioniert auch per Tastatur.',
     target: 'Zielen auf', mirror: 'Spiegel', paint: 'Farbring', switch: 'Schalter', crystal: 'Kristall',
@@ -32,13 +32,15 @@ const copy = {
     challenge: 'GETEILTES RÄTSEL', challengeHelp: 'Freies Rätsel: kein Kampagnenfortschritt und keine Änderung deiner Freischaltungen.',
     loading: 'Die Gärten werden aufgebaut …', graphicsError: 'Die Grafik konnte nicht gestartet werden. Du kannst es erneut versuchen oder zum Arcade-Menü zurückkehren.',
     context: 'Die Grafik wurde unterbrochen. Starte das Level neu. Dein gespeicherter Fortschritt bleibt erhalten.', angle: 'Zielwinkel',
+    blooming: 'Der Garten erwacht.', skipReveal: 'Ergebnis anzeigen', hint: 'Tipp zum Lichtweg', improve: 'Mit weniger Impulsen versuchen',
+    hitGate: 'Die Schranke hält das Licht auf. Ein Schalter öffnet sie.', hitWall: 'Der Impuls trifft auf Stein. Suche einen Weg um die Mauer.',
   },
   en: {
     home: 'Arcade & menu', map: 'World map', chapter: 'CHAPTER 01 · THE FLOATING GARDENS',
     adventure: 'Your light changes the world.', intro: 'Guide energy through forgotten gardens. Awaken crystals, connect paths and bring the islands into bloom.',
-    play: 'Start adventure', continue: 'Continue adventure', replay: 'Play again', restored: 'Gardens awake', stars: 'Stars',
+    play: 'Start adventure', continue: 'Continue adventure', replay: 'Play again', restored: 'Puzzles solved', stars: 'Stars',
     zones: ['The first spark', 'Mirror gardens', 'The sun engine'], level: 'Level', locked: 'Locked · complete the previous level first',
-    pulses: 'Pulses left', crystals: 'Crystals', goal: 'Awaken every crystal.', par: 'Three stars with at most {n} pulses',
+    pulses: 'Pulses left', crystals: 'Crystals', goal: 'Awaken every crystal.', parOne: 'Three stars with one pulse', par: 'Three stars with at most {n} pulses',
     fire: 'Launch pulse', left: 'Aim 5° left', right: 'Aim 5° right', undo: 'Undo', restart: 'Restart', pause: 'Pause', resume: 'Keep playing',
     controls: 'Controls & targets', controlHelp: 'Tap to aim; drag and release to fire. Or aim left/right and press Space or Enter to launch. The target picker below also works with a keyboard.',
     target: 'Aim at', mirror: 'Mirror', paint: 'Colour ring', switch: 'Switch', crystal: 'Crystal',
@@ -53,16 +55,20 @@ const copy = {
     challenge: 'SHARED PUZZLE', challengeHelp: 'Free-play puzzle: no campaign progress and no change to your unlocks.',
     loading: 'Growing the gardens …', graphicsError: 'Unable to start the graphics. Try again or return to the arcade menu.',
     context: 'Graphics were interrupted. Restart this level. Your saved progress is safe.', angle: 'Aim angle',
+    blooming: 'The garden awakens.', skipReveal: 'Show result', hint: 'Light-path hint', improve: 'Try with fewer pulses',
+    hitGate: 'The barrier stops the light. A switch opens it.', hitWall: 'The pulse hit stone. Look for a way around the wall.',
   },
 };
 
 const langIndex = () => getLanguage() === 'de' ? 0 : 1;
 const tr = (key, params = {}) => Object.entries(params).reduce((s, [key, val]) => s.replaceAll(`{${key}}`, String(val)), copy[getLanguage()]?.[key] || copy.en[key] || key);
 const title = level => level.name[langIndex()];
+const glyph = id => `<svg class="pw-glyph" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><use href="#icon-${id}"/></svg>`;
+const pulseCells = (max, remaining) => Array.from({ length: max }, (_, i) => `<i${i < remaining ? ' class="charged"' : ''}></i>`).join('');
 const policy = () => ({ tier: document.body.dataset.perfMode || 'high', reduced: document.body.hasAttribute('data-reduced-motion'), maxImpacts: document.body.dataset.perfMode === 'low' ? 4 : 12 });
 let cleanup = null;
 
-export function openPrism({ onHome, challengeId = null }) {
+export function openPrism({ onHome, challengeId = null, play = false }) {
   cleanup?.();
   const root = $('#prism');
   let arena = null, view = 'map', generation = 0, levelIndex = 0, paused = false, settled = false, challenge = false;
@@ -77,14 +83,16 @@ export function openPrism({ onHome, challengeId = null }) {
     setGameplayPerformanceActive(false);
     cancelHaptics(); app.releaseWakeLock?.();
     arena?.destroy(); arena = null;
+    delete root.dataset.pwFinishing;
     paused = false;
   };
   const leave = () => { cleanup?.(); onHome(); };
 
   function shell(body) {
+    root.dataset.pwView = view;
     root.innerHTML = `<div class="pw-shell">
       <header class="pw-header"><button type="button" class="pw-icon-button" id="pwBack" aria-label="${tr(view === 'map' ? 'home' : 'map')}">←</button>
-        <div class="pw-brand"><span class="pw-eyebrow">SCS PLAY PRESENTS</span><h1>Prism Worlds<span class="pw-brand-dot">.</span></h1></div>
+        <div class="pw-brand"><span class="pw-eyebrow">SCS PLAY</span><h1>Prism Worlds<span class="pw-brand-dot">.</span></h1></div>
         <button type="button" class="pw-icon-button" id="pwSound" aria-pressed="${app.save.getSetting('sound')}">${tr(app.save.getSetting('sound') ? 'sound' : 'soundOff')}</button>
       </header>${body}</div>`;
     root.scrollTop = 0;
@@ -95,15 +103,16 @@ export function openPrism({ onHome, challengeId = null }) {
     app.audio.setMusicMode('menu'); app.audio.startMusic();
     const progress = prismProgress(app.save.data);
     const next = progress.unlocked;
+    const regions = prismRegions(progress);
     shell(`<div class="pw-map-view">
-      <section class="pw-world-art" aria-label="${tr('restored')}: ${progress.completed}/12">${prismIsland(progress.completed)}
+      <section class="pw-world-art" aria-label="${tr('restored')}: ${progress.completed}/12">${prismIsland(progress)}
         <div class="pw-world-caption"><span>${tr('restored')} <strong>${progress.completed}/12</strong></span><span>✦ <strong>${progress.stars}/36</strong> ${tr('stars')}</span></div>
       </section>
       <section class="pw-journey"><p class="pw-eyebrow">${tr('chapter')}</p><h2>${tr(progress.completed === 12 ? 'complete' : 'adventure')}</h2>
         <p class="pw-intro">${tr(progress.completed === 12 ? 'completeHelp' : 'intro')}</p>
         <p class="pw-next-preview">${tr('level')} ${progress.completed === 12 ? 1 : next + 1} · ${escHTML(title(PRISM_LEVELS[progress.completed === 12 ? 0 : next]))}</p>
         <button type="button" class="pw-primary" id="pwContinue">${tr(progress.completed === 12 ? 'replay' : progress.completed ? 'continue' : 'play')} <span aria-hidden="true">↗</span></button>
-        <div class="pw-level-zones">${[0, 1, 2].map(zone => `<section class="pw-level-zone"><h3><span>0${zone + 1}</span> ${copy[getLanguage()]?.zones[zone] || copy.en.zones[zone]}</h3><div class="pw-level-grid">${PRISM_LEVELS.map((level, index) => {
+        <div class="pw-level-zones">${[0, 1, 2].map(zone => `<section class="pw-level-zone" data-pw-zone="${zone}"><div class="pw-region-heading">${prismIsland(progress, zone)}<div><h3><span>0${zone + 1}</span> ${copy[getLanguage()]?.zones[zone] || copy.en.zones[zone]}</h3><p>${tr('restored')} <strong>${regions[zone]}/4</strong></p></div></div><div class="pw-level-grid">${PRISM_LEVELS.map((level, index) => {
           if (level.zone !== zone) return '';
           const result = progress.levels[level.id], unlocked = index <= next;
           return `<button type="button" class="pw-level${result ? ' pw-level--done' : ''}${index === next && !result ? ' pw-level--next' : ''}" data-pw-level="${index}" ${unlocked ? '' : 'disabled'} aria-label="${tr('level')} ${index + 1}: ${escHTML(title(level))}. ${unlocked ? `${result?.stars || 0}/3 ${tr('stars')}` : tr('locked')}" ${index === next && !result ? 'aria-current="step"' : ''}><span class="pw-level-number">${String(index + 1).padStart(2, '0')}</span><span class="pw-level-name">${escHTML(title(level))}</span><span class="pw-level-stars" aria-hidden="true">${result ? '✦'.repeat(result.stars) + '·'.repeat(3 - result.stars) : unlocked ? '→' : '·'}</span></button>`;
@@ -119,7 +128,7 @@ export function openPrism({ onHome, challengeId = null }) {
     modal()?.remove();
     const el = document.createElement('div');
     el.id = 'pwDialog'; el.className = 'pw-dialog'; el.setAttribute('aria-labelledby', 'pwDialogTitle');
-    el.innerHTML = `<section class="pw-dialog-card"><span class="pw-eyebrow">PRISM WORLDS</span><h2 id="pwDialogTitle">${heading}</h2><div class="pw-result-art">${prismIsland(prismProgress(app.save.data).completed)}</div><p id="pwDialogMessage">${message}</p><div class="pw-dialog-actions"></div></section>`;
+    el.innerHTML = `<section class="pw-dialog-card"><span class="pw-eyebrow">PRISM WORLDS</span><h2 id="pwDialogTitle">${heading}</h2><div class="pw-result-art">${prismIsland(prismProgress(app.save.data), PRISM_LEVELS[levelIndex].zone)}</div><p id="pwDialogMessage">${message}</p><div class="pw-dialog-actions"></div></section>`;
     for (const [id, label, action, primary] of buttons) {
       const button = document.createElement('button');
       button.id = id; button.type = 'button'; button.className = primary ? 'pw-primary' : 'pw-secondary'; button.textContent = label; button.onclick = action;
@@ -148,19 +157,31 @@ export function openPrism({ onHome, challengeId = null }) {
   async function finish(state) {
     if (settled) return;
     settled = true;
-    arena.scene.settle();
     setGameplayPerformanceActive(false); app.releaseWakeLock?.();
     const token = generation, sim = arena.scene.simulation;
     if (state.phase === 'lost') {
+      arena.scene.settle();
       makeDialog(tr('lost'), tr('lostHelp'), [
         ['pwResultUndo', tr('undo'), () => { closeDialog(); settled = false; arena.scene.setPaused(false); arena.scene.undo(); app.requestWakeLock?.(); setGameplayPerformanceActive(true); }, true],
         ['pwResultRestart', tr('restart'), () => loadLevel(levelIndex, challenge)], ['pwResultMap', tr('toMap'), showMap],
       ], { dismiss: () => { closeDialog(); settled = false; arena.scene.setPaused(false); arena.scene.undo(); app.requestWakeLock?.(); setGameplayPerformanceActive(true); } });
       return;
     }
+    // Commit the genuine win immediately. Presentation neither delays storage
+    // nor alters simulation time, rewards or eligibility. Catch before awaiting
+    // the reveal so a rejected write can never become an unhandled rejection.
+    const saveWin = () => savePrismWin(app.save, sim).then(saved => Boolean(saved), () => false);
+    const saving = challenge ? Promise.resolve(true) : saveWin();
+    root.dataset.pwFinishing = '';
+    $('#pwStatus').textContent = tr('blooming');
+    $('#pwSkipReveal').hidden = false;
+    const presented = await arena.scene.presentCompletion();
+    if (!presented || token !== generation) return;
+    delete root.dataset.pwFinishing;
+    $('#pwSkipReveal').hidden = true;
     makeDialog(tr('won'), challenge ? tr('challengeHelp') : tr('saving'), [
       ['pwNext', tr(challenge || levelIndex === 11 ? 'toMap' : 'next'), () => challenge || levelIndex === 11 ? showMap() : loadLevel(levelIndex + 1), true],
-      ['pwResultReplay', tr('replay'), () => loadLevel(levelIndex, challenge)], ['pwShare', tr('share'), share],
+      ['pwResultReplay', tr(state.stars < 3 ? 'improve' : 'replay'), () => loadLevel(levelIndex, challenge)], ['pwShare', tr('share'), share],
     ]);
     const stars = document.createElement('div'); stars.className = 'pw-earned-stars'; stars.setAttribute('aria-label', `${state.stars}/3 ${tr('stars')}`);
     stars.textContent = '✦'.repeat(state.stars) + '·'.repeat(3 - state.stars);
@@ -171,23 +192,21 @@ export function openPrism({ onHome, challengeId = null }) {
     stars.after(efficiency);
     const next = $('#pwNext'); next.disabled = !challenge;
     if (challenge) return;
-    const persist = async () => {
-      try {
-        $('#pwRetrySave')?.remove();
-        const saved = await savePrismWin(app.save, sim);
-        if (!saved) throw new Error('Campaign result not eligible');
-        if (token !== generation) return;
+    const persist = async (pending = null) => {
+      $('#pwRetrySave')?.remove();
+      const saved = await (pending || saveWin());
+      if (token !== generation) return;
+      if (saved) {
         $('#pwDialogMessage').textContent = tr('saved');
-        $('.pw-result-art').innerHTML = prismIsland(prismProgress(app.save.data).completed);
+        $('.pw-result-art').innerHTML = prismIsland(prismProgress(app.save.data), PRISM_LEVELS[levelIndex].zone);
         next.disabled = false;
-      } catch {
-        if (token !== generation) return;
+      } else {
         $('#pwDialogMessage').textContent = tr('saveError');
-        const button = document.createElement('button'); button.type = 'button'; button.id = 'pwRetrySave'; button.className = 'pw-secondary'; button.textContent = tr('retrySave'); button.onclick = persist;
+        const button = document.createElement('button'); button.type = 'button'; button.id = 'pwRetrySave'; button.className = 'pw-secondary'; button.textContent = tr('retrySave'); button.onclick = () => persist();
         $('.pw-dialog-actions').prepend(button);
       }
     };
-    await persist();
+    await persist(saving);
   }
 
   function update(state) {
@@ -195,7 +214,11 @@ export function openPrism({ onHome, challengeId = null }) {
     const sim = arena?.scene.simulation;
     if (!sim) return;
     const count = state.nodes.filter(n => n.kind === 'crystal'), active = count.filter(n => n.active).length;
-    $('#pwPulses').textContent = `${sim.level.shots - state.shots}`;
+    const remaining = sim.level.shots - state.shots;
+    if ($('#pwPulses').textContent !== String(remaining)) {
+      $('#pwPulses').textContent = String(remaining);
+      $('#pwCharge').innerHTML = pulseCells(sim.level.shots, remaining);
+    }
     $('#pwCrystals').textContent = `${active}/${count.length}`;
     $('#pwFire').disabled = state.phase !== 'ready' || paused;
     $('#pwUndo').disabled = !state.canUndo || paused;
@@ -214,15 +237,15 @@ export function openPrism({ onHome, challengeId = null }) {
     if (view !== 'game' || paused) return;
     const el = $('#pwStatus');
     const messages = { launch: 'launch', reflect: 'reflect', paint: 'paintHit', switch: 'switchHit', mismatch: 'mismatch', miss: 'miss' };
-    if (messages[event.kind]) el.textContent = tr(messages[event.kind]);
+    const message = event.kind === 'miss' && event.surface === 'gate' ? 'hitGate'
+      : event.kind === 'miss' && event.surface === 'wall' ? 'hitWall' : messages[event.kind];
+    if (message) el.textContent = tr(message);
+    app.audio.prismContact(event);
     if (event.kind === 'activate') {
       const n = arena.scene.simulation.nodes.filter(n => n.kind === 'crystal' && n.active).length;
       el.textContent = tr('chain', { n });
-      // One bounded contact sound, not layered reward jingles.
-      app.audio.gameImpact({ correct: true, quality: event.depth ? 'bonus' : 'good', streak: n, mode: 'memo' });
       if (!event.depth) haptic('correct', app.save);
-    } else if (['reflect', 'paint', 'switch', 'launch'].includes(event.kind)) app.audio.tap();
-    else if (event.kind === 'mismatch') app.audio.wrong();
+    }
   }
 
   function loadLevel(index, freePlay = false) {
@@ -230,15 +253,15 @@ export function openPrism({ onHome, challengeId = null }) {
     releaseArena(); levelIndex = index; challenge = freePlay; view = 'game'; settled = false;
     contextFailed = false;
     const level = PRISM_LEVELS[index], token = generation;
-    shell(`<div class="pw-play-view"><div class="pw-level-heading"><div><p class="pw-eyebrow">${freePlay ? tr('challenge') : `${tr('level')} ${String(index + 1).padStart(2, '0')} / 12`}</p><h2>${escHTML(title(level))}</h2></div><button type="button" class="pw-icon-button" id="pwPause">Ⅱ <span>${tr('pause')}</span></button></div>
-      <div class="pw-play-layout"><div class="pw-arena" id="pwArena"><p class="pw-loading">${tr('loading')}</p></div>
-      <section class="pw-console" aria-label="${tr('controls')}"><div class="pw-stats"><div><span>${tr('crystals')}</span><strong id="pwCrystals">0</strong></div><div><span>${tr('pulses')}</span><strong id="pwPulses">${level.shots}</strong></div></div>
-        <p class="pw-goal">${tr('goal')} <span>${tr('par', { n: level.par })}</span></p>
+    shell(`<div class="pw-play-view"><div class="pw-level-heading"><div><p class="pw-eyebrow">${freePlay ? tr('challenge') : `${tr('level')} ${String(index + 1).padStart(2, '0')} / 12`}</p><h2>${escHTML(title(level))}</h2></div><button type="button" class="pw-icon-button" id="pwPause">${glyph('pause')} <span>${tr('pause')}</span></button></div>
+      <div class="pw-play-layout"><div class="pw-arena" id="pwArena"><p class="pw-loading">${tr('loading')}</p><button type="button" id="pwSkipReveal" class="pw-reveal-skip" hidden>${tr('skipReveal')} <span aria-hidden="true">→</span></button></div>
+      <section class="pw-console" aria-label="${tr('controls')}"><div class="pw-stats"><div><span>${tr('crystals')}</span><strong id="pwCrystals">0</strong></div><div><span>${tr('pulses')}<span id="pwCharge" class="pw-charge" aria-hidden="true">${pulseCells(level.shots, level.shots)}</span></span><strong id="pwPulses">${level.shots}</strong></div></div>
+        <p class="pw-goal">${tr('goal')} <span>${tr(level.par === 1 ? 'parOne' : 'par', { n: level.par })}</span></p>
         <div class="pw-colors" aria-label="${getLanguage() === 'de' ? 'Energie wählen' : 'Choose energy'}">${level.colors.map(color => `<button type="button" data-pw-color="${color}" style="--energy:${PRISM_COLORS[color].css}" aria-pressed="${color === level.colors[0]}" aria-label="${PRISM_COLORS[color][getLanguage()]}"><span aria-hidden="true">${PRISM_COLORS[color].symbol}</span> ${PRISM_COLORS[color][getLanguage()].split(' · ')[0]}</button>`).join('')}</div>
         <fieldset id="pwAimControls" class="pw-aim-controls" aria-label="${tr('angle')}"><button type="button" id="pwLeft" class="pw-secondary" aria-label="${tr('left')}">↶</button><button type="button" id="pwFire" class="pw-primary">${tr('fire')} <span aria-hidden="true">↗</span></button><button type="button" id="pwRight" class="pw-secondary" aria-label="${tr('right')}">↷</button></fieldset>
         <div class="pw-tools"><button type="button" class="pw-text-button" id="pwUndo" disabled>↶ ${tr('undo')}</button><output id="pwAimReadout" class="pw-aim-readout" aria-label="${tr('aimValue', { degrees: 0 })}" aria-live="off">0°</output><button type="button" class="pw-text-button" id="pwRestart">↻ ${tr('restart')}</button></div>
         <p id="pwStatus" class="pw-status" role="status" aria-live="polite">${tr('ready')}</p>
-        <p class="pw-tip">${escHTML(level.tip[langIndex()])}</p>
+        ${index === 0 ? `<p class="pw-tip">${escHTML(level.tip[langIndex()])}</p>` : `<details class="pw-help pw-hint"><summary>${tr('hint')}</summary><p class="pw-tip">${escHTML(level.tip[langIndex()])}</p></details>`}
         <details class="pw-help"><summary>${tr('controls')}</summary><p>${tr('controlHelp')}</p><div class="pw-target-picker">${level.nodes.map((n, i) => `<button type="button" class="pw-secondary" data-pw-target="${n.id}">${tr('target')}: ${tr(n.kind)} ${i + 1}${n.color ? ` · ${PRISM_COLORS[n.color][getLanguage()]}` : ''}</button>`).join('')}</div></details>
         ${freePlay ? `<p class="pw-map-note">${tr('challengeHelp')}</p>` : ''}
       </section></div></div>`);
@@ -267,6 +290,9 @@ export function openPrism({ onHome, challengeId = null }) {
         contextLost: event => {
           if (token !== generation) return;
           event.preventDefault(); contextFailed = true; paused = true;
+          arena?.scene.endCompletion(false);
+          delete root.dataset.pwFinishing;
+          $('#pwSkipReveal').hidden = true;
           arena?.scene.setPaused(true);
           setGameplayPerformanceActive(false); app.releaseWakeLock?.(); cancelHaptics();
           makeDialog('Prism Worlds', tr('context'), [['pwGraphicsRestart', tr('restart'), () => loadLevel(index, freePlay), true], ['pwGraphicsMap', tr('toMap'), showMap]], { dismiss: showMap });
@@ -284,6 +310,7 @@ export function openPrism({ onHome, challengeId = null }) {
     $('#pwUndo').onclick = () => { arena?.scene.undo(); if ($('#pwStatus')) $('#pwStatus').textContent = tr('ready'); };
     $('#pwRestart').onclick = () => loadLevel(index, freePlay);
     $('#pwPause').onclick = pause;
+    $('#pwSkipReveal').onclick = () => arena?.scene.endCompletion(true);
   }
 
   async function share() {
@@ -314,14 +341,18 @@ export function openPrism({ onHome, challengeId = null }) {
     }
   });
   on(document, 'keydown', event => {
+    if (app.currentScreen === 'prism' && root.hasAttribute('data-pw-finishing') && event.key === 'Escape') {
+      event.preventDefault(); arena?.scene.endCompletion(true); return;
+    }
     if (app.currentScreen !== 'prism' || !arena || paused || settled) return;
     if (event.key === 'Escape') { event.preventDefault(); pause(); return; }
     if (event.target.closest('details,button,input,select')) return;
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); arena.scene.rotateAim(event.key === 'ArrowLeft' ? -5 : 5); }
     if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); arena.scene.fire(); }
   });
-  on(document, 'visibilitychange', () => { if (document.hidden) pause(); });
-  on(window, 'scs:native-pause', pause);
+  const suspend = () => { arena?.scene.endCompletion(true); pause(); };
+  on(document, 'visibilitychange', () => { if (document.hidden) suspend(); });
+  on(window, 'scs:native-pause', suspend);
   on(window, 'scs:motionpreference', () => arena?.scene.setPolicy(policy()));
   on(window, 'scs:perftier', () => arena?.scene.setPolicy(policy()));
   on(window, 'resize', () => { if (window.innerHeight < 400 && view === 'game') pause(); });
@@ -330,10 +361,17 @@ export function openPrism({ onHome, challengeId = null }) {
   cleanup = () => {
     listeners.abort(); releaseArena();
     root.innerHTML = ''; app.prismNavigation = null; cleanup = null;
+    delete root.dataset.pwView;
   };
-  app.prismNavigation = { back: () => { if (view === 'map') leave(); else if (!paused && !settled) pause(); else showMap(); } };
+  app.prismNavigation = {
+    back: () => { if (view === 'map') leave(); else if (!paused && !settled) pause(); else showMap(); },
+    rendererState: () => arena?.scene.solid ? { ...arena.scene.solid.snapshot(), loopRunning: Boolean(arena.game.loop.running), tier: arena.scene.policy.tier } : null,
+  };
   showScreen('prism', app);
-  showMap();
   const requested = PRISM_LEVELS.findIndex(level => level.id === challengeId);
   if (requested >= 0) loadLevel(requested, true);
+  else if (play) {
+    const progress = prismProgress(app.save.data);
+    loadLevel(progress.completed === PRISM_LEVELS.length ? 0 : progress.unlocked);
+  } else showMap();
 }

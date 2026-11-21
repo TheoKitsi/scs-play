@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Supported by the locked Playwright 1.58 browser dependencies.
     steps:
       - uses: actions/checkout@v5
 

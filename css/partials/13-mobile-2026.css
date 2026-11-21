@@ -17,7 +17,7 @@ body::before{
 
 .ambient-bg-orbs{display:none}
 .line-icon{fill:none;flex:0 0 auto;vertical-align:middle}
-.screen h1[tabindex="-1"]:focus,.screen h2[tabindex="-1"]:focus{outline:none}
+.screen :is(h1,h2,[data-screen-focus])[tabindex="-1"]:focus{outline:none}
 .btn,.shop-tab,.ach-tab,.lb-filter-btn,.btn-unlock{font-family:inherit;letter-spacing:.01em;text-transform:none;font-weight:500;transition:transform .1s ease,background-color .12s ease,border-color .12s ease;filter:none}
 .btn::before,.btn::after{display:none}
 .btn:active{transform:translateY(1px);opacity:1;filter:none}
@@ -37,6 +37,9 @@ select{font-family:inherit;color:var(--text);background:var(--card);border:1px s
 #tutorial .tut-try-hint{animation:none;letter-spacing:0}
 #tutorial .tutorial-slide p{text-shadow:none;font-size:1rem}
 #tutorial .tutorial-nav .btn{box-shadow:none}
+.studio-caption{font:600 .76rem/1.5 var(--font-display);color:var(--primary-glow);letter-spacing:.065em}
+#tutorial .tut-dot{height:4px;width:20px;border-radius:2px}
+#tutorial .tut-visual{border-radius:18px 6px;background:var(--panel-fill);border-color:var(--studio-line)}
 
 button,.btn,.footer-item,.play-type-btn,.btn-icon-circle,.btn-back-bottom{
   min-height:48px;
@@ -123,7 +126,7 @@ button:focus-visible,.btn:focus-visible{
 #home .hero-slide[data-pos="current"]{position:relative;width:100%}
 #home .hero-slide-locked{opacity:1;gap:8px;width:100%}
 #home .hero-slide-locked .mode-preview{filter:saturate(.6)}
-#home .hero-slide-badges:empty{display:none}
+#home .hero-slide-badges:not(:has(.hero-slide-badge)){display:none}
 #home .hero-slide[data-pos="prev"]{transform:translateX(-64%) scale(.7);opacity:0;filter:none}
 #home .hero-slide[data-pos="next"]{transform:translateX(64%) scale(.7);opacity:0;filter:none}
 #home .hero-slide-visual{
@@ -195,6 +198,11 @@ button:focus-visible,.btn:focus-visible{
 }
 #home .hero-nav-prev{left:0}
 #home .hero-nav-next{right:0}
+#home .hero-slider{isolation:isolate}
+#home .hero-slider::before{content:"";position:absolute;inset:2px var(--phone-gutter);pointer-events:none;border:1px solid var(--studio-line);border-radius:20px 6px;background:radial-gradient(ellipse at 50% 28%,color-mix(in srgb,var(--primary-glow) 9%,var(--surface)),transparent 67%),var(--surface);z-index:-1}
+#home .hero-slide-personal strong,.mode-position,.resource-pill{font-variant-numeric:tabular-nums}
+#home .hero-nav-arrow{color:var(--text-dim)}
+@media(min-width:768px){#home .hero-slide-locked [data-trial]{grid-column:2;grid-row:6;align-self:start}}
 #home .home-play-command{gap:10px;padding:0}
 #home .play-type-selector--primary{
   display:grid;
@@ -453,9 +461,10 @@ button:focus-visible,.btn:focus-visible{
   border:1px solid rgba(255,255,255,.1);
   box-shadow:none;
 }
+.hud-instruction{display:grid;align-content:center;justify-items:start;gap:2px;min-width:0}
 .mode-indicator{
   min-width:0;
-  padding:0 8px;
+  padding:0;
   border:0;
   background:transparent;
   box-shadow:none;
@@ -468,15 +477,13 @@ button:focus-visible,.btn:focus-visible{
   font-weight:700;
   letter-spacing:.03em;
   color:var(--text-dim);
-  text-align:center;
+  text-align:left;
 }
 .mode-rule-label{
   display:block;
-  position:absolute;
-   top:62px;
-  left:50%;
-  max-width:80%;
-  transform:translateX(-50%);
+  position:static;
+  max-width:100%;
+  transform:none;
   padding:0;
   border:0;
   background:none;
@@ -485,7 +492,7 @@ button:focus-visible,.btn:focus-visible{
   line-height:1.3;
   letter-spacing:0;
   color:var(--text-dim);
-  text-align:center;
+  text-align:left;
   text-transform:none;
 }
 .mode-rule-label.faded{opacity:1}
@@ -502,7 +509,7 @@ button:focus-visible,.btn:focus-visible{
 }
 .hud-scores{
   width:min(340px,92vw);
-  margin:30px auto 0;
+  margin:6px auto 0;
   padding:6px 14px;
   gap:12px;
   justify-content:space-between;
@@ -852,7 +859,10 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
   backdrop-filter:none;
 }
 .screen-header::after{display:none}
-.screen-header h2{font-family:var(--font-display);font-size:1.5rem;font-weight:500;letter-spacing:-.04em;text-transform:none;text-shadow:none;text-align:left;overflow-wrap:anywhere;min-width:0}
+.section-seal{flex:none;width:2.65rem;height:2.65rem;padding:.62rem;border-radius:12px 4px;border:1px solid var(--studio-line);background:var(--panel-fill);color:var(--primary-glow)}
+.screen-header h2{font-family:var(--font-display);font-size:clamp(1.35rem,3.6vw,2rem);font-weight:600;letter-spacing:-.045em;text-transform:none;text-shadow:none;text-align:left;overflow-wrap:anywhere;min-width:0}
+.screen:where(#store,#settings,#avatarSelect,#achievements,#engagementReport,#leaderboard,#tutorial,#results){background:var(--studio-field)}
+.screen-header{column-gap:12px;border-bottom-color:var(--studio-line)}
 .screen-header>div{min-width:0;max-width:100%}
 .screen-subtitle{margin:2px 0 0;font-size:.85rem;color:var(--text-muted);line-height:1.4}
 #engagementReport.no-data #erSummary,
@@ -886,6 +896,8 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
 #leaderboard .lb-rank-num{font:600 1rem 'Outfit',sans-serif;color:var(--text-muted);min-width:28px}
 #leaderboard .score-big{text-shadow:none;color:var(--text);font:500 1.15rem var(--font-display);font-variant-numeric:tabular-nums}
 #leaderboard .lb-empty-state{margin:auto;padding:24px 16px}
+#leaderboard .lb-empty-state,#engagementReport .er-no-data{background:var(--panel-fill);border:1px dashed var(--studio-line);border-radius:var(--radius-lg);width:100%}
+#leaderboard .top-1 .lb-rank-num{color:var(--gold)}
 #leaderboard .lb-play-now{min-height:50px;margin-top:14px;padding-inline:24px}
 #engagementReport .er-no-data{padding:34px 18px}
 #engagementReport .er-no-data .btn{min-height:52px;margin-top:18px;padding-inline:24px}
@@ -1004,6 +1016,11 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
 .unlock-preview-label{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;padding:6px 2px;font:500 .7rem/1.3 'Outfit',sans-serif;color:var(--text);background:var(--card);overflow-wrap:anywhere}
 .unlock-preview-label .ui-icon{width:14px;height:14px}
 #store .unlock-preview:active{transform:none}
+#store .unlock-item>.unlock-preview{grid-row:1 / span 2;align-self:center}
+#store .unlock-item>.unlock-info{align-self:end}
+#store .unlock-item>.btn-unlock{align-self:start}
+#store .unlock-item.active-item{border-inline-start:3px solid var(--primary-glow)!important}
+#achievements .ach-cat-header>.ui-icon{width:1.25rem;height:1.25rem;flex:none;color:var(--primary-glow)}
 #store .unlock-item{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px 14px}
 #store .unlock-item>.btn-unlock{grid-column:2;justify-self:start}
 #store .unlock-item.locked-item{opacity:1}
@@ -1013,6 +1030,7 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
 #avatarSelect .avatar-grid-item.selected{background:var(--card);border-color:var(--primary-glow);box-shadow:inset 0 0 0 1px var(--primary-glow)}
 #avatarSelect .avatar-preview-svg{box-shadow:none;background:var(--surface);border:1px solid var(--outline)}
 #avatarSelect .avatar-preview-svg svg{filter:none}
+#avatarSelect .avatar-preview-svg{outline:1px solid var(--studio-line);outline-offset:4px}
 #avatarSelect .avatar-upload-btn{background:var(--card);border:1px solid var(--outline);box-shadow:none;font-family:inherit;letter-spacing:0}
 #avatarSelect .avatar-section-title{font-family:var(--font-display);font-weight:500;text-transform:none;font-size:1rem;letter-spacing:0}
 #engagementReport .er-score-ring{filter:none}
@@ -1020,6 +1038,8 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
 #engagementReport .er-signal-card{border-color:var(--outline);border-radius:var(--radius-md);box-shadow:var(--material-edge);background:var(--panel-fill)}
 #engagementReport .er-signal-title,#engagementReport .er-feedback-title,#engagementReport .er-chart-title{font-family:inherit;font-weight:500;text-transform:none;letter-spacing:0;font-size:.8rem}
 #engagementReport .er-signal-pct{display:none}
+#engagementReport .er-signal-val,#settings output,.ach-cat-counter,.lb-rank-num{font-variant-numeric:tabular-nums}
+#home .footer-nav{border-block-start-color:var(--studio-line)}
 
 /* Compact phones retain the hierarchy instead of shrinking text into illegibility. */
 @media(max-height:700px){
@@ -1051,8 +1071,7 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
   .footer-nav{min-height:58px}
   .footer-item{min-height:46px}
   .hud{padding-top:6px}
-  .mode-rule-label{top:60px}
-  .hud-scores{margin-top:28px;padding-block:5px}
+  .hud-scores{margin-top:4px;padding-block:5px}
    .results-panel{gap:5px;padding:12px 14px;border-radius:var(--radius-lg)}
   .results-xp-ring{width:100%;height:72px;margin:0}
   .results-xp-ring .ring-score{font-size:2.5rem}

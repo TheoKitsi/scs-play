@@ -74,6 +74,25 @@ async function review(viewport) {
     await page.locator('#btnAllModes').click();
     await page.locator('[data-mode-choice="expert"]').click();
     assert.equal(await page.locator('#btnPlay').isDisabled(), true, `${label}: locked selection cannot start another mode`);
+    const beforeTrial = await page.evaluate(() => __SCS_QA__.progressionState());
+    await page.locator('[data-pos="current"] [data-trial="expert"]').click();
+    const waitForTrial = () => page.waitForFunction(() => {
+      const s = __SCS_QA__.gameState();
+      return s.mode === 'expert' && s.practice && s.running && !s.paused && s.stimulusId != null;
+    }, null, { timeout: 15000 });
+    await waitForTrial();
+    const direction = await page.evaluate(() => __SCS_QA__.gameState().direction);
+    await page.waitForTimeout(180); // Real input after the scored/practice reaction floor.
+    const corner = page.locator(`#game .corner-shape[data-dir="${direction}"]`);
+    if (viewport.width < 768) await corner.tap(); else await corner.click();
+    await page.waitForFunction(() => __SCS_QA__.gameState().correct === 1);
+    await page.locator('#btnPause').click();
+    await page.locator('#btnPauseRestart').click();
+    await waitForTrial();
+    await page.locator('#btnStopPractice').click();
+    await page.locator('#home.active').waitFor();
+    assert.equal(await page.locator('.hero-slide[data-pos="current"]').getAttribute('data-mode'), 'klassik');
+    assert.deepEqual(await page.evaluate(() => __SCS_QA__.progressionState()), beforeTrial, 'Practice restart never promotes a locked trial to a scored run');
     await page.locator('#btnAllModes').click();
     await page.locator('[data-mode-choice="beginner"]').click();
     assert.equal(await page.locator('#btnPlay').isEnabled(), true);

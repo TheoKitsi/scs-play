@@ -419,49 +419,7 @@
   border-radius: 1px; opacity: 0.6;
 }
 
-/* ─── Staggered list item entrance ─── */
-.screen.active .score-row,
-.screen.active .ach-category,
-.screen.active .store-item,
-.screen.active .setting-row,
-.screen.active .unlock-item {
-  animation: listItemIn 0.35s var(--ease-smooth) both;
-}
-@keyframes listItemIn {
-  0%   { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-/* Stagger delays — first 8 items get individual delays, rest instant */
-.screen.active .score-row:nth-child(1),
-.screen.active .ach-category:nth-child(1),
-.screen.active .store-item:nth-child(1),
-.screen.active .setting-row:nth-child(1) { animation-delay: 0.04s; }
-.screen.active .score-row:nth-child(2),
-.screen.active .ach-category:nth-child(2),
-.screen.active .store-item:nth-child(2),
-.screen.active .setting-row:nth-child(2) { animation-delay: 0.08s; }
-.screen.active .score-row:nth-child(3),
-.screen.active .ach-category:nth-child(3),
-.screen.active .store-item:nth-child(3),
-.screen.active .setting-row:nth-child(3) { animation-delay: 0.12s; }
-.screen.active .score-row:nth-child(4),
-.screen.active .ach-category:nth-child(4),
-.screen.active .store-item:nth-child(4),
-.screen.active .setting-row:nth-child(4) { animation-delay: 0.16s; }
-.screen.active .score-row:nth-child(5),
-.screen.active .ach-category:nth-child(5),
-.screen.active .store-item:nth-child(5),
-.screen.active .setting-row:nth-child(5) { animation-delay: 0.20s; }
-.screen.active .score-row:nth-child(6),
-.screen.active .ach-category:nth-child(6),
-.screen.active .store-item:nth-child(6),
-.screen.active .setting-row:nth-child(6) { animation-delay: 0.24s; }
-.screen.active .score-row:nth-child(7),
-.screen.active .ach-category:nth-child(7),
-.screen.active .setting-row:nth-child(7) { animation-delay: 0.28s; }
-.screen.active .score-row:nth-child(8),
-.screen.active .ach-category:nth-child(8),
-.screen.active .setting-row:nth-child(8) { animation-delay: 0.32s; }
+/* Lists appear together with their screen; rows never slide away from a tap. */
 
 /* ─── Back button polish ─── */
 .btn-back-bottom {

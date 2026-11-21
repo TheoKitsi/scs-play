@@ -8,6 +8,7 @@ import { mkdirSync, rmSync, existsSync, readdirSync, statSync,
 import { resolve, dirname, extname } from 'path';
 import { fileURLToPath } from 'url';
 import esbuild from 'esbuild';
+import { MATERIAL_FILES } from '../js/engine/materialAssets.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
@@ -116,6 +117,7 @@ ${bundledJsAssets.join(',\n')},
   './manifest.json',
   './img/icon-192.svg',
   './img/icon-512.svg',
+${MATERIAL_FILES.map(file => `  './${file}',`).join('\n')}
   './audio/music/tracks.json',
   './audio/music/menu.mp3',
   './audio/music/classic.mp3',

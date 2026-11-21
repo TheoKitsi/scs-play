@@ -55,6 +55,7 @@ assert.equal(miss.phase, 'lost'); assert.equal(miss.stars, 0); assert.equal(miss
 assert.equal(miss.undo(), true); assert.equal(miss.shots, 2); assert.equal(miss.phase, 'ready');
 
 const switching = new PrismSimulation(PRISM_LEVELS[8]);
+assert.equal(tracePulse(switching, { x: 210, y: 145 }).events.at(-1).surface, 'gate', 'A stopped pulse explains the actual obstacle');
 switching.fire({ x: 210, y: 145 }); resolve(switching);
 assert.equal(switching.nodes.some(n => n.active), false, 'A closed gate blocks energy');
 switching.undo(); switching.fire({ x: 115, y: 338 }); resolve(switching);
@@ -65,6 +66,21 @@ const mismatched = new PrismSimulation(PRISM_LEVELS[2]);
 mismatched.fire({ x: 290, y: 180 }); resolve(mismatched);
 assert.ok(mismatched.nodes.every(n => !n.active), 'Mismatched colours cannot activate crystals');
 assert.equal(mismatched.selectColor('invalid'), false);
+
+// The first tap teaches firing. Later puzzles demand an actual choice.
+for (const [index, level] of PRISM_LEVELS.entries()) {
+  const idleAim = new PrismSimulation(level);
+  idleAim.fire({ x: 210, y: 120 }); resolve(idleAim);
+  assert.equal(idleAim.phase === 'won', index === 0, `${level.id}: default aim`);
+}
+const loom = new PrismSimulation(PRISM_LEVELS[10]);
+const path = tracePulse(loom, PRISM_SOLUTIONS[10][0]);
+assert.deepEqual(path.events.map(e => e.kind), ['reflect', 'switch', 'reflect', 'paint', 'activate', 'activate']);
+loom.selectColor('violet'); loom.fire({ x: 230, y: 169 }); resolve(loom);
+assert.equal(loom.nodes.filter(n => n.kind === 'crystal' && n.active).length, 1, 'Direct path works, closed gate interrupts the chain');
+loom.fire({ x: 265, y: 388 }); resolve(loom);
+loom.fire({ x: 282, y: 83 }); resolve(loom);
+assert.equal(loom.stars, 1, 'The three-step route completes without needing the trick shot');
 
 const corrupt = prismProgress({ prism: { version: 1, levels: { 'first-light': { stars: 999, bestShots: -1 }, 'world-awake': { stars: 2, bestShots: 3 }, invented: { stars: 3, bestShots: 1 } } } });
 assert.equal(corrupt.unlocked, 0); assert.equal(corrupt.completed, 1);

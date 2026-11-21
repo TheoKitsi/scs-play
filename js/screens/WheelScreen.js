@@ -163,15 +163,17 @@ function drawWheel(canvas, angle) {
     ctx.stroke();
 
     ctx.save();
-    ctx.rotate(start + SEG_ANGLE / 2);
+    const middle = start + SEG_ANGLE / 2;
+    ctx.translate(Math.cos(middle) * r * .60, Math.sin(middle) * r * .60);
+    ctx.rotate(-angle); // Upright in the resting bitmap, even when reopened after a previous spin.
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = ink;
     ctx.font = '500 21px "Space Grotesk", sans-serif';
     ctx.shadowBlur = 0;
-    ctx.fillText(prize.type === 'xp' ? String(prize.amount) : prize.icon, r * 0.59, -7);
+    ctx.fillText(prize.type === 'xp' ? String(prize.amount) : prize.icon, 0, -6, 53);
     ctx.font = '400 11px "Outfit", sans-serif';
-    ctx.fillText(prize.label().replace(/^\d+\s*/, ''), r * 0.59, 13);
+    ctx.fillText(prize.label().replace(/^\d+\s*/, ''), 0, 10, 53);
     ctx.restore();
   }
 
@@ -202,9 +204,10 @@ function drawWheel(canvas, angle) {
   ctx.lineWidth = 1;
   ctx.stroke();
 
+  // An engraved prism on the centre bearing.
   ctx.beginPath();
-  ctx.moveTo(-6, 0); ctx.lineTo(6, 0);
-  ctx.moveTo(0, -6); ctx.lineTo(0, 6);
+  ctx.moveTo(0, -12); ctx.lineTo(10, 4); ctx.lineTo(0, 12); ctx.lineTo(-10, 4); ctx.closePath();
+  ctx.moveTo(0,-12); ctx.lineTo(0,12); ctx.moveTo(-10,4); ctx.lineTo(10,4);
   ctx.strokeStyle = ink;
   ctx.stroke();
 
@@ -430,7 +433,8 @@ function renderWheelStatus() {
     if (finished) statusNote.textContent = t('wheel_status_complete');
     else if (bonusReady) statusNote.textContent = t('wheel_bonus_ready');
     else if (usedBaseSpinToday()) statusNote.textContent = t('wheel_status_complete');
-    else statusNote.textContent = t('wheel_subtitle');
+    else statusNote.textContent = '';
+    statusNote.hidden = !statusNote.textContent;
   }
   if (spinBtn) {
     spinBtn.disabled = !canSpinNow() || spinning;

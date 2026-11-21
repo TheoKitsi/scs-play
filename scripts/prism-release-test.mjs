@@ -28,6 +28,13 @@ async function open(page) {
 async function ready(page) {
   await page.waitForSelector('#pwArena canvas');
   await page.waitForFunction(() => !document.querySelector('#pwArena .pw-loading'));
+  await page.waitForFunction(() => {
+    const renderer = __SCS_QA__.prismRendererState();
+    return renderer?.enabled && renderer.draws >= 2;
+  });
+  const renderer = await page.evaluate(() => __SCS_QA__.prismRendererState());
+  assert.ok(renderer.kinds.beam >= 4 && renderer.kinds.ring >= 2, 'Real puzzle play uses the physical architecture, not just a ready attribute');
+  assert.ok(renderer.objects <= 32 && renderer.triangles <= 3500);
 }
 async function aim(page, action, touch = false) {
   const canvas = page.locator('#pwArena canvas');
@@ -63,6 +70,7 @@ try {
     const context = await browser.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true, locale: 'de-DE' });
     const errors = [];
     await context.addInitScript(() => {
+      localStorage.setItem('scsQa', '1'); localStorage.setItem('scsQaPerfTier', 'high');
       window.addEventListener('error', e => console.error('[Prism runtime]', e.message));
       window.addEventListener('unhandledrejection', e => console.error('[Prism rejection]', String(e.reason?.stack || e.reason)));
     });
@@ -72,7 +80,7 @@ try {
     try {
       await guest(page);
       assert.match(await page.locator('#prismEntryProgress').innerText(), /12/);
-      assert.doesNotMatch(await page.locator('#btnPrism').innerText(), /ENGINE/);
+      assert.doesNotMatch(await page.locator('#btnPrismPlay').innerText(), /ENGINE/);
       // A real preference stays usable in-session when storage is unavailable,
       // with a visible retry instead of an unhandled rejected event listener.
       await page.locator('#btnSettings').click();
@@ -102,6 +110,7 @@ try {
       await open(page);
       assert.equal(await page.locator('[data-pw-level]:not(:disabled)').count(), 1, 'Only the first puzzle is unlocked');
       assert.equal(await page.locator('.pw-level-name').count(), 12, 'Every puzzle has a visible authored title');
+      assert.deepEqual(await page.locator('.pw-world-art [data-pw-region]').evaluateAll(nodes => nodes.map(n => [Number(n.dataset.pwRegion), Number(n.dataset.restored)]).sort((a, b) => a[0] - b[0])), [[0, 0], [1, 0], [2, 0]], 'A fresh map has no invented restoration');
       await page.screenshot({ path: resolve(out, `${name}-map-new.png`) });
       await page.locator('#pwContinue').click(); await ready(page);
       await page.locator('#pwLeft').click();
@@ -112,8 +121,10 @@ try {
       // Naturally miss, undo, pause and resume the very same untouched puzzle.
       await shoot(page, { x: 30, y: 450 }, true);
       assert.equal(await page.locator('#pwPulses').innerText(), '2');
+      assert.equal(await page.locator('#pwCharge .charged').count(), 2);
       await page.locator('#pwUndo').click();
       assert.equal(await page.locator('#pwPulses').innerText(), '3');
+      assert.equal(await page.locator('#pwCharge .charged').count(), 3, 'Undo restores the visible pulse reserve as well as the number');
       await page.locator('#pwPause').click();
       await page.waitForSelector('#pwResume');
       await page.keyboard.press('Escape');
@@ -127,6 +138,26 @@ try {
 
       for (let index = 0; index < PRISM_LEVELS.length; index++) {
         await ready(page);
+        if (index === 10) {
+          const hint = page.locator('.pw-hint');
+          assert.equal(await hint.locator('.pw-tip').isVisible(), false, 'Late puzzle does not disclose its route by default');
+          await hint.locator('summary').press('Enter');
+          assert.equal(await hint.locator('.pw-tip').isVisible(), true);
+          await hint.locator('summary').press('Enter');
+        }
+        if (index === 2) {
+          const before = await page.evaluate(() => __SCS_QA__.prismRendererState());
+          for (const color of ['amber', 'mint']) {
+            const draws = await page.evaluate(() => __SCS_QA__.prismRendererState().draws);
+            await page.locator(`[data-pw-color="${color}"]`).click();
+            await page.waitForFunction(draws => __SCS_QA__.prismRendererState().draws > draws, draws);
+          }
+          assert.equal(await page.evaluate(() => __SCS_QA__.prismRendererState().uploads), before.uploads, 'Colour choice updates its exact symbol, never rebuilds static architecture/crystals');
+        }
+        if ([0, 3, 4, 6, 8, 10, 11].includes(index)) {
+          await page.waitForTimeout(180); // Settle only the real screen-entry fade; the untouched puzzle remains ready.
+          await page.screenshot({ path: resolve(out, `${name}-architecture-${index + 1}.png`), scale: 'css' });
+        }
         for (const action of PRISM_SOLUTIONS[index]) {
           if (index === 1) await dragShot(page, action);
           else await shoot(page, action, index < 3);
@@ -135,6 +166,7 @@ try {
         const save = await stored(page), level = PRISM_LEVELS[index];
         assert.equal(save.levels[level.id].stars, 3, `${name}: earned ${level.id}`);
         assert.equal(save.levels[level.id].bestShots, level.par);
+        assert.equal(await page.locator(`.pw-result-art [data-pw-region="${level.zone}"]`).getAttribute('data-restored'), String(PRISM_LEVELS.slice(0, index + 1).filter(l => l.zone === level.zone).length), 'Result artwork reflects the genuinely earned region');
         assert.match(await page.locator('.pw-efficiency').innerText(), new RegExp(String(level.par)), 'The earned result explains pulse efficiency');
         if ([1, 4, 7, 10, 11].includes(index)) await page.screenshot({ path: resolve(out, `${name}-earned-${index + 1}.png`) });
         receipts.push({ browser: name, level: level.id, ...save.levels[level.id] });
@@ -142,6 +174,8 @@ try {
       }
       await page.waitForSelector('.pw-map-view');
       assert.equal(await page.locator('.pw-level--done').count(), 12);
+      assert.deepEqual(await page.locator('.pw-world-art [data-pw-region]').evaluateAll(nodes => nodes.map(n => Number(n.dataset.restored))), [4, 4, 4]);
+      assert.deepEqual(await page.locator('.pw-region-heading [data-pw-region]').evaluateAll(nodes => nodes.map(n => Number(n.dataset.restored))), [4, 4, 4], 'Region cards and map share earned states');
       await page.screenshot({ path: resolve(out, `${name}-map-restored.png`) });
       const earned = JSON.stringify(await stored(page));
       // Replay cannot farm stars or mutate arcade currency.
@@ -193,6 +227,7 @@ try {
       await page.locator('#pwBack').click();
       await page.waitForSelector('#home.active');
       assert.match(await page.locator('#prismEntryProgress').innerText(), /36\/36/);
+      assert.equal(await page.locator('#prismEntryArt [data-pw-region="2"]').getAttribute('data-restored'), '4', 'Home shares the final earned region');
       assert.equal(await page.locator('#prism canvas').count(), 0, 'Leaving releases the arena');
       // Previously earned data, but all visual state and code are loaded offline.
       await page.evaluate(async () => { await navigator.serviceWorker.ready; });
@@ -205,7 +240,10 @@ try {
       else await context.setOffline(true);
       await page.reload({ waitUntil: 'load' });
       await page.waitForSelector('#home.active');
-      await open(page); await page.locator('[data-pw-level="4"]').click(); await ready(page);
+      await page.locator('#btnPrismPlay').click(); await ready(page);
+      assert.match(await page.locator('.pw-level-heading').innerText(), /01\s*\/\s*12/, 'Completed offline campaign replays directly from Home');
+      await page.locator('#pwBack').click();
+      await page.locator('[data-pw-level="4"]').click(); await ready(page);
       await shoot(page, PRISM_SOLUTIONS[4][0]);
       await page.waitForFunction(() => Boolean(document.querySelector('#pwNext:not(:disabled)')));
       assert.equal(JSON.stringify(await stored(page)), earned, 'Real offline replay is idempotent');
@@ -214,6 +252,7 @@ try {
 
       // A shared late puzzle on a fresh profile is explicitly free play.
       const free = await browser.newContext({ viewport: { width: 412, height: 915 }, locale: 'en-US' });
+      await free.addInitScript(() => { localStorage.setItem('scsQa', '1'); localStorage.setItem('scsQaPerfTier', 'high'); });
       const shared = await free.newPage();
       shared.on('pageerror', e => errors.push(e.message));
       shared.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
@@ -223,6 +262,7 @@ try {
       await shoot(shared, PRISM_SOLUTIONS[10][0]);
       await shared.waitForSelector('#pwNext');
       assert.equal(await stored(shared), null, 'Shared challenge cannot award campaign progress');
+      assert.equal(await shared.locator('.pw-result-art [data-pw-region="2"]').getAttribute('data-restored'), '0', 'Shared wins never fake regional restoration');
       await free.close();
       assert.deepEqual(errors, [], `${name}: zero runtime/console errors`);
       console.log(`PASS ${name}: 12 genuinely completed levels, replay/reload/offline, touch, pause, reflow and shared challenge`);
