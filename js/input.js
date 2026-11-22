@@ -16,9 +16,7 @@ export class SwipeHandler {
     this.el = el;
     this.mode = mode;
     this.onSwipe = null;
-    this.onTap = null;
     this.onCornerTap = null;   /* (dir, timestamp) — tapped a corner */
-    this.onCenterTap = null;   /* () — tapped the center area */
     this.onSwipeRejected = null; /* () — swipe fell in dead zone */
     this.onGestureStart = null; /* () => current stimulus id */
     this.onTrailStart = null;
@@ -36,7 +34,7 @@ export class SwipeHandler {
     this._onCancel = this._cancel.bind(this);
     this._onKeyDown = this._keyDown.bind(this);
     this._onAccessibleClick = this._accessibleClick.bind(this);
-    this._invalidateGeometry = () => { this._hitRects = null; this._centerRect = null; };
+    this._invalidateGeometry = () => { this._hitRects = null; };
     this._invalidateGeometry();
   }
 
@@ -50,7 +48,6 @@ export class SwipeHandler {
     this._hitRects = [...this.el.querySelectorAll('.corner-shape')]
       .filter(el => el.offsetParent !== null && (el.hasChildNodes() || el.dataset.value))
       .map(el => ({ dir: el.dataset.dir, rect: el.getBoundingClientRect() }));
-    this._centerRect = this.el.querySelector('#centerPlatform')?.getBoundingClientRect();
   }
 
   bind() {
@@ -117,8 +114,6 @@ export class SwipeHandler {
     const stimulusId = this.onGestureStart ? this.onGestureStart() : undefined;
     if (corner && this.onCornerTap) {
       this.onCornerTap(corner.dataset.dir, performance.now(), stimulusId);
-    } else if (e.target.closest('#centerPlatform') && this.onCenterTap) {
-      this.onCenterTap();
     }
   }
 
@@ -183,20 +178,6 @@ export class SwipeHandler {
         }
       }
 
-      /* Hit-test center platform (for Memo peek) */
-      if (this.onCenterTap) {
-        const r = this._centerRect;
-        if (r) {
-          if (tapX >= r.left - TAP_HIT_PADDING && tapX <= r.right + TAP_HIT_PADDING &&
-              tapY >= r.top - TAP_HIT_PADDING && tapY <= r.bottom + TAP_HIT_PADDING) {
-            this.onCenterTap();
-            return;
-          }
-        }
-      }
-
-      /* Fallback: generic tap */
-      if (this.onTap) this.onTap();
       return;
     }
 

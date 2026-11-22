@@ -44,6 +44,7 @@ export function bindQaHooks() {
             practice: game.practice,
             continued: game.continued,
             stimulusId: game.currentShape?.stimulusId ?? null,
+            stimulusAge: game.currentShape ? performance.now() - game.lastSpawnTime : null,
             direction: game.currentShape?.direction ?? null,
             streak: game.streak,
             correct: game.correct,

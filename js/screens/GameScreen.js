@@ -2815,7 +2815,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       effects.trailEnd();
       return;
     }
-    const result = game.handleSwipe(dir, ts, stimulusId);
+    game.handleSwipe(dir, ts, stimulusId);
     effects.trailEnd();
   };
 
@@ -2842,12 +2842,9 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
       effects.ripple(r.left + r.width / 2, r.top + r.height / 2,
         game.isMemoMode ? '#C4CEDD' : game.cornerMap[dir]?.color || '#fff');
     }
-    const result = game.handleSwipe(dir, ts, stimulusId);
+    game.handleSwipe(dir, ts, stimulusId);
     effects.trailEnd();
   };
-
-  /* ── Center tap: no-op (memo peek removed) ── */
-  swipe.onCenterTap = () => {};
 
   /* ── Dead-zone swipe: brief feedback so player knows input was received ── */
   swipe.onSwipeRejected = () => {

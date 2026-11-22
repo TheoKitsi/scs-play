@@ -687,29 +687,6 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
   color:var(--text-muted);
   text-transform:uppercase;
 }
-.results-xp-ring{
-  width:100%;
-  min-height:3.5rem;
-  height:clamp(86px,14vh,124px);
-  margin:0 auto;
-  filter:none;
-}
-.results-xp-ring svg{display:none}
-.results-xp-ring::before{display:none}
-.results-xp-ring .ring-bg{stroke:rgba(255,255,255,.06);stroke-width:5}
-.results-xp-ring .ring-fill{stroke:var(--primary-glow);stroke-width:5;filter:none}
-.results-xp-ring .ring-score{
-  max-width:100%;overflow-wrap:anywhere;
-   font-family:var(--font-display);
-   font-size:clamp(2.25rem,6vh,3.5rem);
-   font-weight:500;
-   font-variant-numeric:tabular-nums;
-   letter-spacing:-.05em;
-  background:none;
-  -webkit-text-fill-color:var(--text);
-  color:var(--text);
-  text-shadow:none;
-}
 .results-mode{
   padding:5px 12px;
   font-family:inherit;
@@ -817,11 +794,8 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
 .round-cue-card{display:grid;justify-items:center;gap:8px;max-width:100%;padding:20px 28px;border:1px solid var(--outline);border-radius:var(--radius-lg);background:var(--panel-fill);color:var(--text);text-align:center}
 .round-cue-card p{font:500 1.3rem/1.4 var(--font-display);overflow-wrap:anywhere}
 .round-cue .mode-artwork{width:72px;height:57px}
-.result-world{width:52px;height:36px;margin:0 auto;flex-shrink:0}
-.result-world .mode-artwork{width:100%;height:100%}
 #resHighlight{color:var(--text);font-weight:600}
 #resScoreBreakdown{font-size:.75rem;margin:0}
-#results[data-world-family="think"] .result-world{width:60px}
 #results[data-world-family="memory"] .results-panel{border-top:2px solid var(--primary-glow)}
 #results[data-world-family="reflex"] .results-panel{border-inline-start:2px solid var(--primary-glow)}
 #game[data-round-phase] .arena-light{opacity:.2;transition:opacity .16s ease-out}
@@ -831,7 +805,6 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
 #game .btn-stop-practice{left:50%;transform:translateX(-50%);min-height:44px;background:var(--control-fill)}
 #game .practice-label{top:calc(var(--safe-top) + 144px);color:var(--text-dim);background:var(--surface);border-color:var(--outline);text-align:center}
 #results[data-result-state="empty"] .results-score-label{display:none}
-#results[data-result-state="empty"] .results-xp-ring{height:64px}
 #results[data-result-state="empty"] .results-score-num{font-size:2.2rem;color:var(--text-muted)}
 
 @media(max-width:767px){
@@ -977,7 +950,6 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
   #results .screen-content{justify-content:center}
   .results-panel{max-width:720px;padding:24px 28px;gap:12px}
   .results-content h2{font-size:1.4rem}
-  .results-xp-ring{width:100%;height:138px}
   .results-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .res-item{min-height:78px}
   .results-xp{max-width:520px;margin-inline:auto}
@@ -1078,8 +1050,6 @@ body.mode-mathe #game .corner-shape .corner-text{font-size:clamp(22px,6.5vw,28px
   .hud{padding-top:6px}
   .hud-scores{margin-top:4px;padding-block:5px}
    .results-panel{gap:5px;padding:12px 14px;border-radius:var(--radius-lg)}
-  .results-xp-ring{width:100%;height:72px;margin:0}
-  .results-xp-ring .ring-score{font-size:2.5rem}
   .res-item{min-height:48px;padding:5px 3px}
   .res-val{font-size:1rem}
   .results-bonus{display:none}
