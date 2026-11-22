@@ -480,6 +480,15 @@ input._start({touches:[{identifier:7,clientX:30,clientY:30}]});
 input._end({changedTouches:[{identifier:8,clientX:110,clientY:30}]});
 assert.equal(input._active,true,'Lifting a second finger must not submit an answer for the first');
 input._cancel();
+const drops = [];
+input.onCornerTap = () => assert.fail('A held press is not an answer');
+input.onSwipe = (dir, _time, token) => drops.push([dir,token]);
+for (const x of [100,71,10]) {
+  input._start({clientX:10,clientY:30});
+  input._st -= CONFIG.SWIPE_MAX_TIME + 1;
+  input._end({clientX:x,clientY:30});
+}
+assert.deepEqual(drops,[['ur',3]],'Only dropping inside the key submits the originally touched task; padding and long holds do not');
 
 input.mode = 'ultra';
 assert.equal(input._classify(100, -47), 'ene', 'Ultra ENE must match its visible right-edge slot');

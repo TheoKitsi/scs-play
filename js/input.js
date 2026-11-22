@@ -155,7 +155,11 @@ export class SwipeHandler {
       setTimeout(() => { this._isTouch = false; }, 400);
     }
 
-    if (dt > CONFIG.SWIPE_MAX_TIME) {
+    // Dropping on a key is an explicit choice, not a directional flick. Slow
+    // drops still carry the original stimulus token; a later task rejects it.
+    const tap = dist < CONFIG.SWIPE_MIN_DISTANCE;
+    const cornerHit = this.onCornerTap ? this._hitTestCorner(p.clientX, p.clientY, dt > CONFIG.SWIPE_MAX_TIME ? 0 : TAP_HIT_PADDING) : null;
+    if (dt > CONFIG.SWIPE_MAX_TIME && (tap || !cornerHit)) {
       if (this.onTrailEnd) this.onTrailEnd();
       return;
     }
@@ -165,24 +169,13 @@ export class SwipeHandler {
     const minVelocity = CONFIG.SWIPE_MIN_VELOCITY || 0.3; // px/ms
 
     /* ── Tap gesture (no significant movement) ── */
-    if (dist < CONFIG.SWIPE_MIN_DISTANCE) {
+    if (tap) {
       if (this.onTrailEnd) this.onTrailEnd();
-      const tapX = p.clientX, tapY = p.clientY;
-
-      /* Hit-test against visible corner shapes */
-      if (this.onCornerTap) {
-        const hit = this._hitTestCorner(tapX, tapY);
-        if (hit) {
-          this.onCornerTap(hit, performance.now(), this._gestureStimulusId);
-          return;
-        }
-      }
-
+      if (cornerHit) this.onCornerTap(cornerHit, performance.now(), this._gestureStimulusId);
       return;
     }
 
     /* ── Swipe gesture ── */
-    const cornerHit = this.onCornerTap ? this._hitTestCorner(p.clientX, p.clientY) : null;
     const dir = cornerHit || ((velocity >= minVelocity) ? this._classify(dx, dy) : null);
     if (dir && this.onSwipe) {
       this.onSwipe(dir, performance.now(), this._gestureStimulusId);
@@ -202,14 +195,14 @@ export class SwipeHandler {
   }
 
   /* ─── Hit-test visible corner shapes ─── */
-  _hitTestCorner(x, y) {
+  _hitTestCorner(x, y, padding = TAP_HIT_PADDING) {
     this._cacheGeometry();
     let nearest = null, best = Infinity;
     for (const { dir, rect: r } of this._hitRects) {
       const dx = Math.max(r.left-x,0,x-r.right), dy = Math.max(r.top-y,0,y-r.bottom);
       if (!dx && !dy) return dir; // An actual button beats another button's padding.
       const dist = dx*dx + dy*dy;
-      if (dist <= TAP_HIT_PADDING**2 && dist < best) { best = dist; nearest = dir; }
+      if (dist <= padding**2 && dist < best) { best = dist; nearest = dir; }
     }
     return nearest;
   }
