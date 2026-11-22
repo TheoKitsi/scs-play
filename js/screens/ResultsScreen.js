@@ -13,31 +13,19 @@ import { maybeShowFeedback } from '../helpers/microFeedback.js';
 import { getKlassikInsights, getFormenInsights, getExpertInsights, getUltraInsights, getMatheInsights, getAlgebraInsights, getWorteInsights, getHauptstaedteInsights, getWissenInsights, getMemoInsights, getSequenzInsights, getStroopInsights, getFokusInsights, getChaosInsights } from '../game/ModeMastery.js';
 import { getOrSeedQuests, recordGameResult as recordQuestProgress, autoClaim as autoClaimQuests } from '../services/DailyQuestService.js';
 import { isQualifiedRound, getRoundRequirements } from '../services/ProgressionService.js';
-import { modeArtwork } from '../renderers/modeArtwork.js';
 import { arenaWorld } from '../renderers/arenaWorld.js';
 import { roundHighlight, practiceSuggestion } from '../helpers/roundSummary.js';
+import { missReceipt } from './gameHud/roundGuide.js';
 
 let _resultGeneration = 0;
 let _resultCountUpCancel = null;
-const _resultFrames = new Set();
 let _continuing = false;
 
 function cancelResultWork() {
   _resultGeneration++;
-  _resultFrames.forEach(cancelAnimationFrame);
-  _resultFrames.clear();
   if (_resultCountUpCancel) _resultCountUpCancel();
   _resultCountUpCancel = null;
   return _resultGeneration;
-}
-
-function scheduleResultFrame(generation, callback) {
-  if (generation !== _resultGeneration) return;
-  const id = requestAnimationFrame(() => {
-    _resultFrames.delete(id);
-    if (generation === _resultGeneration) callback();
-  });
-  _resultFrames.add(id);
 }
 
 window.addEventListener('scs:screenchange', ({ detail }) => {
@@ -145,9 +133,15 @@ export async function showResults(stats, canContinue = false) {
   const world = arenaWorld(stats.mode);
   $('#results').dataset.world = world.id;
   $('#results').dataset.worldFamily = world.family;
-  $('#resWorld').innerHTML = modeArtwork(stats.mode);
+  const cover = {klassik:'optics',memo:'archive',mathe:'calculus'}[world.id] || 'harbour';
+  $('#ticketScene').src = `img/scenery/${cover}.webp`;
+  const scroll = $('#results .results-scroll');
+  if (!inPlace) scroll.scrollTop = 0;
 
-  const empty = !(Number(stats.total) > 0);
+  // Deadlines count against the engine's scored total. An untouched round
+  // still has no player accuracy to display, unlike a submitted wrong pick.
+  const receipt = missReceipt(stats.roundId);
+  const empty = !(Number(stats.total) > (receipt?.late || 0));
   $('#results').dataset.resultState = canContinue ? 'continue' : empty ? 'empty'
     : stats.playType === 'competition' ? 'competition' : stats.isDaily ? 'daily' : isNewPB ? 'record' : 'complete';
   setText('#resSummary', t(canContinue ? (save.getLives() > 0 ? 'result_continue_help' : 'result_no_lives')
@@ -161,7 +155,7 @@ export async function showResults(stats, canContinue = false) {
   setText('#resScoreBreakdown', canContinue ? t('round_provisional')
     : t('round_breakdown', { raw: rawScore.toLocaleString(), bonus: bonus.toLocaleString() }));
   $('#resScoreBreakdown').hidden = empty;
-  const suggestion = practiceSuggestion(stats);
+  const suggestion = empty ? '' : practiceSuggestion(stats);
   setText('#resPracticeSuggestion', suggestion);
   $('#resPracticeSuggestion').hidden = !suggestion;
   $('#btnPracticeResult').hidden = !suggestion || !save.isModeUnlocked(stats.mode);
@@ -186,29 +180,12 @@ export async function showResults(stats, canContinue = false) {
       dailyBanner = document.createElement('div');
       dailyBanner.id = 'resDailyBanner';
       dailyBanner.className = 'results-daily-banner';
-      const resultsContent = $('#results .results-card, #results .results-content, #results > div');
-      const insertTarget = $('[data-i18n="game_over"]');
-      if (insertTarget && insertTarget.parentElement) {
-        insertTarget.parentElement.insertBefore(dailyBanner, insertTarget.nextSibling);
-      }
+      $('#resPhase1').after(dailyBanner);
     }
     dailyBanner.textContent = t('result_daily_recorded');
     dailyBanner.style.display = '';
   } else if (dailyBanner) {
     dailyBanner.style.display = 'none';
-  }
-
-  const ringEl = $('#resXPRingFill');
-  if (ringEl) {
-    ringEl.style.stroke = 'var(--primary-glow)';
-    ringEl.style.filter = '';
-  }
-
-  /* Dramatic ring entrance */
-  const xpRing = $('.results-xp-ring');
-  if (xpRing) {
-    xpRing.classList.remove('ring-entrance');
-    scheduleResultFrame(resultGeneration, () => xpRing.classList.add('ring-entrance'));
   }
 
   const phase2 = $('#resPhase2');
@@ -369,6 +346,8 @@ export async function showResults(stats, canContinue = false) {
   if (xpSection) xpSection.hidden = canContinue || (gameXPEarned <= 0 && fireEarned <= 0);
 
   const retryBtn = $('#btnOneMore');
+  const hubRound = $('#game').hasAttribute('data-hub-round');
+  setText('#btnHome', hubRound ? (getLanguage() === 'de' ? 'Spiel wechseln' : 'Switch game') : t('home'));
   if (retryBtn) {
     retryBtn.classList.remove('retry-glow', 'cta-pulse');
   }
@@ -382,21 +361,23 @@ export async function showResults(stats, canContinue = false) {
 
   updateXPBar();
 
-  /* v19: Animate XP ring SVG in results */
-  const xpRingFill = $('#resXPRingFill');
-  if (xpRingFill) {
-    const circumference = 2 * Math.PI * 65; /* r=65 in SVG */
-    xpRingFill.style.strokeDasharray = circumference;
-    xpRingFill.style.strokeDashoffset = circumference;
-    xpRingFill.classList.remove('animated');
-    const targetOffset = circumference * (1 - prog.pct);
-    xpRingFill.style.setProperty('--ring-target', targetOffset);
-    scheduleResultFrame(resultGeneration, () => {
-      scheduleResultFrame(resultGeneration, () => { xpRingFill.classList.add('animated'); });
-    });
-  }
-
   const details = $('#resDetails');
+  const misses = !canContinue && receipt;
+  let split = $('#resMissSplit');
+  if (misses) {
+    if (!split) {
+      split = document.createElement('p');
+      split.id = 'resMissSplit';
+      $('#resReview').before(split);
+    }
+    split.textContent = getLanguage() === 'de'
+      ? `Falsch gewählt: ${misses.picks} · Ohne Eingabe: ${misses.late}`
+      : `Wrong choices: ${misses.picks} · No input: ${misses.late}`;
+  }
+  if (split) { split.hidden = !misses; if (!misses) split.textContent = ''; }
+  const review = !canContinue && app.answerReview?.roundId === stats.roundId ? app.answerReview : null;
+  $('#resReview').hidden = !review;
+  for (const [id,value] of [['reviewPrompt',review?.prompt],['reviewChoice',review?.choice],['reviewSolution',review?.solution]]) setText('#'+id,value || '');
   if (details) {
     details.open = false;
     details.hidden = canContinue;

@@ -45,7 +45,7 @@ export async function runSurfaceReview({ out = process.env.SCS_REVIEW_OUT || '',
       const back = async screen => { await page.locator(`#${screen} .btn-back-bottom`).click(); await page.locator('#home.active').waitFor(); };
       const appState = (fn, arg) => page.evaluate(fn, arg);
       try {
-        await page.goto(server.baseUrl, { waitUntil: 'networkidle' });
+        await page.goto(`${server.baseUrl}?view=arcade`, { waitUntil: 'networkidle' });
         await page.locator('#btnGuest').waitFor({ state: 'visible' });
         await shot('01-auth');
         await page.evaluate(async () => { const { t } = await import('/js/i18n.js'); document.querySelector('#authError').textContent = t('error_network'); });
@@ -247,6 +247,23 @@ export async function runSurfaceReview({ out = process.env.SCS_REVIEW_OUT || '',
           }
         });
         assert.equal(sharing, 0, 'Cancelling native sharing must not copy or open another dialog');
+        const postcard = await page.evaluate(async () => {
+          const { shareScore } = await import('/js/services/ShareService.js');
+          const keys = ['share','canShare'], originals = keys.map(k=>Object.getOwnPropertyDescriptor(navigator,k));
+          let payload;
+          try {
+            Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});
+            Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{payload=data}});
+            await shareScore({mode:'mathe',playType:'blitz',score:12500,accuracy:90,streak:8});
+            const image=await createImageBitmap(payload.files[0]);
+            const shape=[image.width,image.height];image.close();
+            return {shape,text:payload.text};
+          } finally {
+            keys.forEach((k,i)=>{if(originals[i]) Object.defineProperty(navigator,k,originals[i]); else delete navigator[k]});
+          }
+        });
+        assert.deepEqual(postcard.shape,[960,640]);
+        assert.match(postcard.text,/12\.500 Punkte/);
         await page.evaluate(async () => {
           const { shareScore } = await import('/js/services/ShareService.js');
           const shareDescriptor = Object.getOwnPropertyDescriptor(navigator, 'share');
@@ -285,12 +302,12 @@ export async function runSurfaceReview({ out = process.env.SCS_REVIEW_OUT || '',
           await page.locator('#resDetails > summary').click(); await shot(`34-details-${name}`);
           assert.ok(await page.locator('#resPhase3').evaluate(footer => {
             const panel = footer.closest('.results-panel'), r = panel.getBoundingClientRect(), f = footer.getBoundingClientRect();
-            const mask = getComputedStyle(footer, '::after');
-            const y = Math.min(r.bottom - 3, f.bottom + 5), x = r.x + r.width / 2;
-            const hit = document.elementFromPoint(x, y);
-            return mask.content !== 'none' && parseFloat(mask.height) >= 24 && parseFloat(getComputedStyle(footer).zIndex) >= 2
-              && (hit === footer || footer.contains(hit));
-          }), 'The opaque sticky-action extension covers bottom text and intercepts taps instead of exposing invisible underlying controls');
+            const scroller = panel.querySelector('.results-scroll');
+            return scroller.getBoundingClientRect().bottom <= f.top + 1 && f.bottom <= r.bottom + 1 &&
+              [...footer.querySelectorAll('#resNormalBtns button')].every(btn => {
+                const b=btn.getBoundingClientRect(); return btn.contains(document.elementFromPoint(b.left+b.width/2,b.top+b.height/2));
+              });
+          }), 'Expanded details end above the fixed action row and both visible buttons receive taps');
           await page.locator('#btnHome').click();
         }
         await page.evaluate(async () => {

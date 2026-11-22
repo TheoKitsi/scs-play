@@ -5,7 +5,6 @@
 import { CONFIG }              from '../config.js';
 import { t, setLanguage }      from '../i18n.js';
 import { $, $$, setText, localise, showScreen } from '../helpers/dom.js';
-import { modePreview } from '../renderers/modePreview.js';
 import { applyTheme } from '../services/ThemeService.js';
 import { EngagementTracker }   from '../helpers/engagementTracker.js';
 import app                     from '../appState.js';
@@ -36,11 +35,13 @@ export function applyLoadedSave() {
   app.engagement = new EngagementTracker(save);
 }
 
-export async function boot(showHome, showAuth) {
+export async function boot(showHome, showAuth, showGarden) {
   const { save, auth, audio } = app;
 
   showScreen('boot', app);
-  $$('[data-brand-scene]').forEach(el => { el.innerHTML = modePreview('beginner'); });
+  $$('[data-brand-scene]').forEach(el => {
+    el.innerHTML = '<svg aria-hidden="true" focusable="false" viewBox="50 50 412 412"><use href="img/icon-512.svg#brand-mark"/></svg>';
+  });
   const progressFill = $('#bootProgressFill');
   const setProgress = (pct) => { if (progressFill) progressFill.style.width = pct + '%'; };
 
@@ -49,6 +50,10 @@ export async function boot(showHome, showAuth) {
 
   setProgress(20);
   try { await auth.init(); } catch {}
+  const arcadeEntry = new URL(location.href).searchParams.get('view') === 'arcade';
+  if (!arcadeEntry && !auth.user && !auth.fbReady) {
+    try { auth.signInAsGuest(); } catch { /* Local play can still start without persistent storage. */ }
+  }
   setText('#bootStatus', t('boot_audio'));
   setProgress(40);
 
@@ -78,7 +83,9 @@ export async function boot(showHome, showAuth) {
   }
 
   /* Ready means ready: no decorative minimum wait before the next screen. */
-  if (auth.user) {
+  if (!arcadeEntry && (auth.user || !auth.fbReady)) {
+    await showGarden();
+  } else if (auth.user) {
     showHome();
   } else {
     showAuth();

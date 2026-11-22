@@ -119,6 +119,9 @@ const LIGHT = {
 
 const checks = [
   ...['#1c3040','#111f30'].map(bg => ({ label: `Prism console: supporting text on ${bg}`, fg: cssColor(prismCss, 'pw-muted'), bg, min: 4.5, type: 'text' })),
+  ...[['Twilight caption','#d3c8cc','#514051'],['Twilight launch','#332634','#ffdcaa'],['Quick colours caption','#e0d0d4','#302e41']]
+    .map(([label,fg,bg]) => ({ label, fg, bg, min: 4.5, type: 'text' })),
+  ...['#263949','#383345'].map(bg => ({ label:'Play hub: resume caption',fg:'#ffe0b6',bg,min:4.5,type:'text' })),
   ...['#173b40','#24374b'].map(bg => ({ label: `Prism home: entry copy on ${bg}`, fg: '#c0d3d8', bg, min: 4.5, type: 'text' })),
   ...['pw-text', 'pw-muted', 'pw-mint'].map(token => ({ label: `Prism: ${token} on background`, fg: cssColor(prismCss, token), bg: cssColor(prismCss, 'pw-bg'), min: 4.5, type: 'text' })),
   ...(() => {
@@ -264,13 +267,17 @@ const channel = Math.ceil(255 * Number(ceiling[1]) ** (1 / 2.2)).toString(16).pa
 checks.push({ label: '3D chassis: task label at the actual LDR exposure ceiling', fg: DARK.text, bg: `#${channel.repeat(3)}`, min: 4.5, type: 'text' });
 
 // Exact Stroop ink must not sit directly on a moving specular highlight. Its
-// opaque theme-background plate protects all four large/bold colour words.
+// opaque neutral plate protects both the ordinary and accessible inks.
 const configSource = readFileSync(new URL('../js/config.js', import.meta.url), 'utf8');
 const inkBlock = configSource.match(/STROOP_COLORS_4:\s*\[([\s\S]*?)\]/)?.[1];
 const inks = [...(inkBlock || '').matchAll(/hex:'(#[0-9a-f]{6})'/gi)].map(match => match[1]);
 if (inks.length !== 4) throw new Error('Missing canonical Stroop ink palette');
-for (const theme of [{ id: 'default', ...DARK }, ...THEMES]) for (const ink of inks) {
-  checks.push({ label: `Stroop ${theme.id}: exact ink ${ink} on the opaque display plate`, fg: ink, bg: theme.bg, min: 3, type: 'text' });
+const detailCss = readFileSync(new URL('../css/detail-focus.css',import.meta.url),'utf8');
+const matte = detailCss.match(/#centerShape \.stroop-display\s*\{[^}]*background:\s*(#[\da-f]{6})/i)?.[1];
+if (!matte) throw new Error('Missing Stroop matte');
+const altInks = configSource.match(/colorblind:\s*\[([^\]]+)/)?.[1].match(/#[\da-f]{6}/gi).slice(0,4);
+for (const ink of [...inks,...altInks]) {
+  checks.push({ label: `Stroop: exact ink ${ink} on the matte`, fg: ink, bg: matte, min: 3, type: 'text' });
 }
 
 // ─── Run ───

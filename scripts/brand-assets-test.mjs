@@ -46,7 +46,9 @@ const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage({ viewport: { width: 108, height: 108 }, deviceScaleFactor: 3 });
   const pixels = await page.evaluate(async images => {
-    const palette = [[130, 130, [255, 71, 87]], [382, 130, [55, 66, 250]], [130, 390, [46, 213, 115]], [382, 395, [255, 165, 2]]];
+    // Probe the interiors (also at 48 px): four enamel stations and the
+    // broad ice-blue plane of the split prism, not their antialiased edges.
+    const palette = [[150, 151, [255, 71, 87]], [361, 150, [55, 66, 250]], [149, 384, [46, 213, 115]], [363, 378, [255, 165, 2]], [249, 176, [175, 186, 245]]];
     const failures = [];
     for (const image of images) {
       const img = new Image(); img.src = image.src; await img.decode();
@@ -62,6 +64,18 @@ try {
     return failures;
   }, images);
   assert.deepEqual(pixels, [], 'Every legacy/adaptive raster and splash shows the SCS palette, not Capacitor placeholders');
+  await page.setContent(master);
+  assert.ok(await page.evaluate(() => [...document.querySelectorAll('#brand-mark [data-ink]')].every(path => {
+    const len = path.getTotalLength();
+    for (let i = 0; i <= 300; i++) {
+      const p = path.getPointAtLength(i * len / 300);
+      if (Math.hypot(p.x - 256, p.y - 256) > 512 * .4) return false;
+    }
+    return true;
+  })), 'The prism and all four stations fit the PWA maskable safe circle');
+  const outlines = await page.evaluate(() => [...document.querySelectorAll('#brand-mark path[data-ink]')].map(p => p.getAttribute('d')));
+  assert.deepEqual([...monochrome.matchAll(/android:pathData="([^"]+)"/g)].map(m => m[1]), outlines,
+    'The themed launcher retains both halves of the split prism and all four original silhouettes');
   const native = await page.evaluate(({ foreground, monochrome }) => {
     const ns = 'http://schemas.android.com/apk/res/android';
     const parse = source => new DOMParser().parseFromString(source, 'application/xml');

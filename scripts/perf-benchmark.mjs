@@ -197,7 +197,7 @@ async function run() {
   page.on('pageerror', err => errors.push(err.message));
 
   try {
-    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}?view=arcade`, { waitUntil: 'networkidle' });
     await enterGame(page);
     const resources = () => page.evaluate(() => ({
       connectedNodes: document.querySelectorAll('*').length,

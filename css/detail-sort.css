@@ -1,0 +1,137 @@
+/* Real mode classes, not material IDs: Ultra shares Expert's baked deck.
+   All marks are painted inside existing controls; none participate in input. */
+:is(.mode-klassik, .mode-beginner, .mode-expert) #game {
+  --sort-engraving: color-mix(in srgb, var(--text) 38%, var(--surface));
+  --sort-rim: color-mix(in srgb, var(--text) 23%, var(--surface));
+}
+
+/* Farben — print-sample keys. Repeat each key's own ink at its foot so a
+   thumb can cover the middle of the wide phone key without hiding its hue. */
+.mode-klassik #game .corner-shape:not(.corner-correct)::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: auto 14% 6px;
+  height: 4px;
+  border: 0;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 3px, var(--surface) 3px 5px)
+      right / 15px 100% no-repeat,
+    var(--target-color, transparent);
+  pointer-events: none;
+}
+
+/* Three shutters record the last scored reaction zone. The receiver stays
+   neutral even in colourblind mode; no stimulus colour reaches this plate. */
+.mode-klassik #game .center-platform::after {
+  content: "";
+  position: absolute;
+  inset: 7px auto auto calc(50% - 15px);
+  width: 30px;
+  height: 4px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, var(--text-dim) var(--sort-speed, 0%), var(--sort-rim) 0);
+  mask: repeating-linear-gradient(90deg, #000 0 8px, transparent 8px 11px);
+  pointer-events: none;
+}
+.mode-klassik #game.speed-glow-good { --sort-speed: 30%; }
+.mode-klassik #game.speed-glow-fast { --sort-speed: 66%; }
+.mode-klassik #game.speed-glow-ultra { --sort-speed: 100%; }
+
+/* Formen — die-cut pieces. Trace the actual glyph just inside its perimeter
+   at both ends of the match. The solid SVG face below keeps its exact fill. */
+.mode-beginner #game .material-shape [data-shape-light] > * {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(.81);
+  fill: none;
+  stroke: #172331;
+  stroke-opacity: .65;
+  stroke-width: 1.2px;
+  stroke-linecap: round;
+  stroke-dasharray: 2 2.8;
+  vector-effect: non-scaling-stroke;
+}
+.mode-beginner #game .center-platform::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: inherit;
+  border: 1px dashed var(--sort-engraving);
+  pointer-events: none;
+}
+
+/* The engine writes physical fill height. Rotate its little well into a
+   horizontal bobbin, anchored at the same safe footer baseline on any phone. */
+.mode-beginner #game #flowMeter {
+  --spool-length: 74px;
+  width: 8px;
+  height: var(--spool-length);
+  bottom: calc(var(--bottom-inset, 0px) + 18px - var(--spool-length) / 2);
+  transform: translateX(-50%) rotate(90deg);
+  background: var(--sort-rim);
+  border: 1px solid var(--sort-engraving);
+  border-radius: 4px;
+}
+.mode-beginner #game #flowMeterFill {
+  background: var(--text-dim);
+  box-shadow: none;
+  border-radius: 0;
+  transition: none;
+}
+.mode-beginner #game #flowMeter.in-flow #flowMeterFill { background: var(--primary-glow); }
+.mode-beginner #game #flowMeter::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to top, transparent 0 7px, var(--surface) 7px 9px);
+  pointer-events: none;
+}
+
+/* Expert — fixed compass bezel. Long indices mark all eight permissible
+   bearings equally; the shorter divisions never move with a question. */
+.mode-expert #game .center-platform::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1px solid var(--sort-rim);
+  background:
+    repeating-conic-gradient(from -1.3deg, var(--text-dim) 0 2.6deg, transparent 2.6deg 45deg),
+    repeating-conic-gradient(from -.5deg, var(--sort-engraving) 0 1deg, transparent 1deg 11.25deg);
+  mask: radial-gradient(closest-side, transparent calc(100% - 9px), #000 calc(100% - 8px)) intersect,
+    radial-gradient(closest-side, transparent calc(100% - 4px), #000 calc(100% - 3px)),
+    repeating-conic-gradient(from -2deg, #000 0 4deg, transparent 4deg 45deg);
+  pointer-events: none;
+}
+.mode-expert #game .corner-shape[data-dir="ur"]    { --sort-bearing: 45deg; }
+.mode-expert #game .corner-shape[data-dir="right"] { --sort-bearing: 90deg; }
+.mode-expert #game .corner-shape[data-dir="dr"]    { --sort-bearing: 135deg; }
+.mode-expert #game .corner-shape[data-dir="down"]  { --sort-bearing: 180deg; }
+.mode-expert #game .corner-shape[data-dir="dl"]    { --sort-bearing: 225deg; }
+.mode-expert #game .corner-shape[data-dir="left"]  { --sort-bearing: 270deg; }
+.mode-expert #game .corner-shape[data-dir="ul"]    { --sort-bearing: 315deg; }
+.mode-expert #game .corner-shape:not(.corner-correct)::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 10px;
+  height: 5px;
+  border: 0;
+  border-radius: 0;
+  background: var(--text-dim);
+  clip-path: polygon(50% 0, 100% 100%, 50% 65%, 0 100%);
+  transform: translate(-50%, -50%) rotate(var(--sort-bearing, 0deg))
+    translateY(calc(7px - var(--target-height) / 2));
+  pointer-events: none;
+}
+
+/* Use the original system-colour faces and mastery readouts in high contrast. */
+@media (forced-colors: active) {
+  :is(.mode-klassik, .mode-beginner, .mode-expert) #game .center-platform::after,
+  :is(.mode-klassik, .mode-expert) #game .corner-shape:not(.corner-correct)::before,
+  .mode-beginner #game #flowMeter::after { display: none; }
+  .mode-beginner #game .material-shape [data-shape-light] > * { stroke: none; }
+}

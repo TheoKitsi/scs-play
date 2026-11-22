@@ -41,7 +41,8 @@ function createOverlay() {
   div.innerHTML = `
     <div class="onboarding-spotlight"></div>
     <div class="onboarding-bubble">
-      <p class="onboarding-text"></p>
+      <div class="onboarding-key" aria-hidden="true"><svg viewBox="50 50 412 412"><use href="img/icon-512.svg#brand-mark"/></svg><span></span></div>
+      <p id="onboardingText" class="onboarding-text"></p>
       <div class="onboarding-actions">
         <button class="onboarding-btn-ok"></button>
       </div>
@@ -52,7 +53,7 @@ function createOverlay() {
     if (e.target === div) dismissCurrent();
   });
   _overlay = div;
-  div.setAttribute('aria-label', t('hint_ok'));
+  div.setAttribute('aria-labelledby', 'onboardingText');
   return div;
 }
 
@@ -91,9 +92,10 @@ function positionSpotlight(overlay, hint) {
   const bubble = overlay.querySelector('.onboarding-bubble');
   /* The spotlight's own shadow dims the rest; the overlay tint would also
      darken the element being pointed at. */
-  overlay.classList.toggle('has-spotlight', Boolean(targetEl));
-  if (targetEl) {
-    const rect = targetEl.getBoundingClientRect();
+  const rect = targetEl?.getBoundingClientRect();
+  const visible = rect && rect.width && rect.height && rect.bottom > 12 && rect.top < innerHeight - 12;
+  overlay.classList.toggle('has-spotlight', Boolean(visible));
+  if (visible) {
     const pad = 8;
     spotlight.style.top = `${rect.top - pad}px`;
     spotlight.style.left = `${rect.left - pad}px`;
@@ -101,11 +103,16 @@ function positionSpotlight(overlay, hint) {
     spotlight.style.height = `${rect.height + pad * 2}px`;
     spotlight.style.borderRadius = '16px';
     spotlight.style.display = '';
-    const below = window.innerHeight - rect.bottom;
+    const height = bubble.offsetHeight;
+    const gutter = 16;
+    const ceiling = Math.max(gutter, innerHeight - height - gutter);
+    const below = innerHeight - rect.bottom;
+    const preferred = below >= height + 2 * gutter || below >= rect.top
+      ? rect.bottom + gutter : rect.top - height - gutter;
     bubble.style.position = 'fixed';
     bubble.style.left = '50%';
     bubble.style.transform = 'translateX(-50%)';
-    bubble.style.top = `${below >= 180 ? rect.bottom + 16 : Math.max(16, rect.top - 166)}px`;
+    bubble.style.top = `${Math.max(gutter, Math.min(ceiling, preferred))}px`;
   } else {
     spotlight.style.display = 'none';
     bubble.removeAttribute('style');
@@ -118,16 +125,16 @@ function showHint(hint) {
   overlay.dataset.hintId = hint.id;
   _activeHint = hint;
 
-  positionSpotlight(overlay, hint);
-
   // Set text
   overlay.querySelector('.onboarding-text').textContent = t(hint.i18n);
+  overlay.querySelector('.onboarding-key span').textContent = t('studio_step', { n: HINTS.indexOf(hint) + 1, total: HINTS.length });
   overlay.querySelector('.onboarding-btn-ok').textContent = t('hint_ok');
 
   openModal(overlay, {
     initialFocus: '.onboarding-btn-ok',
     onDismiss: dismissCurrent,
   });
+  positionSpotlight(overlay, hint);
 }
 
 /** Check and show pending onboarding hints for the home screen */

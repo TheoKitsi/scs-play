@@ -12,7 +12,7 @@ const base = process.env.SCS_BASE || server.baseUrl;
 const engines = { chromium, firefox, webkit };
 
 async function enter(page) {
-  await page.goto(base, { waitUntil: 'networkidle' });
+  await page.goto(`${base}?view=arcade`, { waitUntil: 'networkidle' });
   await page.locator('#btnGuest').click();
   await page.locator('#home.active').waitFor();
   await page.waitForTimeout(1000);
@@ -107,6 +107,7 @@ try {
           await shot('settings');
           await page.locator('#settings .btn-back-bottom').click();
           await page.locator('#btnStore').click();
+          await page.locator('#store.active').waitFor();
           if (view.width >= 1200) assert.ok(await page.locator('#store>.screen-content').evaluate(el => el.getBoundingClientRect().width) >= 1000, 'Desktop shop must use its wider two-column layout');
           await noClippedText(page, '#store', `${label}/shop`);
           await page.locator('[data-preview-id="sunset"] .unlock-preview-label').waitFor({ state: 'visible' });
@@ -118,7 +119,8 @@ try {
           assert.equal(await page.locator('#designPreviewOverlay').isVisible(), false);
           await page.locator('#store .btn-back-bottom').click();
           for (const [button, screen] of [['#btnLeaderboard', 'leaderboard'], ['#btnAchievements', 'achievements']]) {
-            await page.locator(button).click();
+             await page.locator(button).click();
+             await page.locator(`#${screen}.active`).waitFor();
             await noClippedText(page, `#${screen}`, `${label}/${screen}`);
             await shot(screen);
             await page.locator(`#${screen} .btn-back-bottom`).click();

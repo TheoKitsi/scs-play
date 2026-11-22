@@ -48,6 +48,9 @@ const cssResult = await esbuild.build({
 await esbuild.build({ entryPoints: [resolve(root, 'css/legal.css')], minify: true, outfile: resolve(out, 'css/legal.css') });
 await esbuild.build({ entryPoints: [resolve(root, 'css/prism.css')], minify: true, outfile: resolve(out, 'css/prism.css') });
 await esbuild.build({ entryPoints: [resolve(root, 'css/arcade-engine.css')], minify: true, outfile: resolve(out, 'css/arcade-engine.css') });
+await esbuild.build({ entryPoints: [resolve(root, 'css/play-hub.css')], minify: true, outfile: resolve(out, 'css/play-hub.css') });
+await esbuild.build({entryPoints:[resolve(root, 'css/game-detail.css')], bundle:true, external:['../img/*'], minify:true, outfile:resolve(out,'css/game-detail.css')});
+await esbuild.build({entryPoints:[resolve(root,'css/finish.css')],bundle:true,external:['../img/*'],minify:true,outfile:resolve(out,'css/finish.css')});
 mkdirSync(resolve(out, 'licenses'), { recursive: true });
 copyFileSync(resolve(root, 'node_modules/phaser/LICENSE.md'), resolve(out, 'licenses/phaser-MIT.txt'));
 writeFileSync(resolve(out, 'licenses/third-party-MIT.txt'), [
@@ -110,6 +113,9 @@ const bundledAssets = `const ASSETS = [
   './css/legal.css',
   './css/prism.css',
   './css/arcade-engine.css',
+  './css/play-hub.css',
+  './css/game-detail.css',
+  './css/finish.css',
   './licenses/phaser-MIT.txt',
   './licenses/third-party-MIT.txt',
 ${bundledFontAssets.join(',\n')},
@@ -117,7 +123,11 @@ ${bundledJsAssets.join(',\n')},
   './manifest.json',
   './img/icon-192.svg',
   './img/icon-512.svg',
+  './img/install/icon-180.png',
+  './img/install/garden.webp',
+  './img/install/arcade.webp',
 ${MATERIAL_FILES.map(file => `  './${file}',`).join('\n')}
+${readdirSync(resolve(root, 'img/scenery')).filter(file => file.endsWith('.webp')).map(file => `  './img/scenery/${file}',`).join('\n')}
   './audio/music/tracks.json',
   './audio/music/menu.mp3',
   './audio/music/classic.mp3',

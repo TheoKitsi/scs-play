@@ -13,8 +13,7 @@ import {
 
 // ── Local UI state ──────────────────────────────────────────────
 let _filter      = 'close';     // Focused goals | earned | full archive
-let _collapsed   = {};          // categoryId -> boolean (true = collapsed)
-let _hasAutoExpanded = false;   // track if first-render auto-expand happened
+let _openCategory;              // undefined = open first match, null = all closed
 let _allAchs     = null;        // cached generated list
 let _byCat       = null;        // categoryId -> [achievements]
 let _chains      = null;        // chainKey -> [achievement ids]
@@ -46,7 +45,7 @@ export function showAchievements() {
 
   renderHeader(done, total);
   bindTabs();
-  renderCategories(lang, earned, save.data, true);
+  renderCategories(lang, earned, save.data);
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -61,6 +60,7 @@ function renderHeader(done, total) {
       <div class="ach-progress-fill" style="width:${pct}%"></div>
     </div>
     <span class="ach-progress-text">${t(done === 1 ? 'ach_unlocked_one' : 'ach_unlocked_many', { n: `<strong>${done}</strong>` })}</span>
+    <span class="ach-total">${done} / ${total}</span>
   `;
 }
 
@@ -82,13 +82,15 @@ function bindTabs() {
     tab.addEventListener('click', () => {
       if (tab.dataset.filter === _filter) return;
       _filter = tab.dataset.filter;
+      _openCategory = undefined;
+      $('#achList').scrollTop = 0;
       $$('.ach-tab').forEach(b => {
         const selected = b.dataset.filter === _filter;
         b.classList.toggle('selected', selected);
         b.setAttribute('aria-pressed', String(selected));
       });
       if (app.audio) app.audio.tap();
-      _rerender(true);
+      _rerender();
     });
   });
 }
@@ -96,35 +98,22 @@ function bindTabs() {
 // ──────────────────────────────────────────────────────────────
 //  RENDER: Categories accordion with staggered popIn
 // ──────────────────────────────────────────────────────────────
-function renderCategories(lang, earned, saveData, animate) {
+function renderCategories(lang, earned, saveData) {
   const list = $('#achList');
   if (!list) return;
 
-  // Default: collapse all, auto-expand first with progress
-  if (!Object.keys(_collapsed).length) {
-    for (const cat of CATEGORIES) {
-      const catAchs = _byCat[cat.id] || [];
-      const catEarnedCount = catAchs.filter(a => earned.has(a.id)).length;
-      _collapsed[cat.id] = true;
-      if (catEarnedCount > 0 && !_hasAutoExpanded) {
-        _collapsed[cat.id] = false;
-        _hasAutoExpanded = true;
-      }
-    }
-  }
-
   const focusedIds = _filter === 'close' ? _getFocusedAchievementIds(earned, saveData) : null;
   let html = '';
-  let itemIdx = 0;
   for (const cat of CATEGORIES) {
     const catAchs = _byCat[cat.id] || [];
-    const filtered = _filterAchievements(catAchs, earned, saveData, focusedIds);
+    const filtered = _filterAchievements(catAchs, earned, focusedIds);
     if (filtered.length === 0 && (_filter !== 'all')) continue;
 
     const catEarned = catAchs.filter(a => earned.has(a.id)).length;
     const catTotal  = catAchs.length;
     const catPct    = catTotal ? Math.round((catEarned / catTotal) * 100) : 0;
-    const isCollapsed = _collapsed[cat.id] !== false;
+    if (_openCategory === undefined) _openCategory = cat.id;
+    const isCollapsed = _openCategory !== cat.id;
     const catName   = cat.name[lang] || cat.name.en;
     const catDesc   = cat.desc[lang] || cat.desc.en;
     const chainKeys = _getUniqueChains(filtered);
@@ -148,23 +137,30 @@ function renderCategories(lang, earned, saveData, animate) {
         ${chainKeys.map(ck => _renderChain(ck, filtered, earned, saveData, lang)).join('')}
       </div>
     </div>`;
-    itemIdx++;
   }
 
   if (!html) {
     if (_filter === 'close') {
       html = `<div class="ach-empty">${t('ach_none_close')}</div>`;
     } else {
-      html = `<div class="ach-empty">${t('no_achievements_found')}</div>`;
+      html = `<div class="ach-empty"><small class="catalog-eyebrow">${t('ach_filter_earned')}</small>
+        <h3>${lang === 'de' ? 'Dein erster Erfolg wartet' : 'Your first achievement awaits'}</h3>
+        <p class="ach-empty-help">${lang === 'de' ? 'Wähle ein Ziel und sieh, welche Runden dafür zählen.' : 'Pick a goal to see which rounds count toward it.'}</p>
+        <button type="button" class="btn btn-secondary" data-ach-goals>${t('ach_filter_focus')} →</button></div>`;
     }
   }
 
   list.innerHTML = html;
+  list.querySelector('[data-ach-goals]')?.addEventListener('click', () => {
+    const tab = $('.ach-tab[data-filter="close"]');
+    tab.click(); tab.focus();
+  });
 
   if (_filter === 'earned' || _filter === 'all') {
     const activeIds = new Set(_allAchs.map(achievement => achievement.id));
     const legacyIds = [...new Set([...earned].map(id => getAchById(id)?.id || id))].filter(id => !activeIds.has(id));
     if (legacyIds.length) {
+      list.querySelector('.ach-empty')?.remove();
       const archive = document.createElement('details');
       archive.className = 'ach-legacy-archive';
       const summary = document.createElement('summary');
@@ -191,12 +187,15 @@ function renderCategories(lang, earned, saveData, animate) {
   list.querySelectorAll('.ach-cat-header').forEach(header => {
     header.addEventListener('click', () => {
       const catId = header.dataset.cat;
-      const wasCollapsed = _collapsed[catId] !== false;
-      // Collapse all categories first
-      for (const cat of CATEGORIES) _collapsed[cat.id] = true;
-      // Toggle the clicked one (expand if was collapsed, stay collapsed if was open)
-      _collapsed[catId] = !wasCollapsed;
-      _rerender(false);
+      _openCategory = _openCategory === catId ? null : catId;
+      for (const row of list.querySelectorAll('.ach-category')) {
+        const open = row.dataset.cat === _openCategory;
+        row.classList.toggle('expanded', open);
+        row.classList.toggle('collapsed', !open);
+        row.querySelector('.ach-cat-header').setAttribute('aria-expanded', String(open));
+        row.querySelector('.ach-cat-body').style.display = open ? '' : 'none';
+      }
+      header.scrollIntoView({ block:'nearest' });
     });
   });
 }
@@ -215,7 +214,7 @@ function _renderChain(chainKey, filteredAchs, earned, saveData, lang) {
   const allEarned = progress.earned === progress.total;
 
   let progressHtml = '';
-  if (nextAch && nextProgress) {
+  if (_filter === 'all' && nextAch && nextProgress) {
     const pct = Math.round(nextProgress.pct * 100);
     const nextName = nextAch.name[lang] || nextAch.name.en;
     const cur = _fmtDisplay(nextProgress.current, nextAch.cmp);
@@ -237,15 +236,15 @@ function _renderChain(chainKey, filteredAchs, earned, saveData, lang) {
     const tier = TIERS[a.tier] || TIERS[0];
     const name = a.name[lang] || a.name.en;
     const desc = a.desc[lang] || a.desc.en;
-    const tierColor = isEarned ? tier.color : '#555';
     const tierName  = tier.name[lang] || tier.name.en;
 
     if (isEarned) {
       return `
         <div class="ach-node earned" title="${desc}">
-          <span class="ach-node-check" style="color:${tierColor}">${icon('check')}</span>
+          <span class="ach-node-check">${icon('check')}</span>
           <span class="ach-node-name">${name}</span>
-          <span class="ach-node-tier" style="color:${tierColor}">${tierName}</span>
+          <span class="ach-node-tier">${tierName}</span>
+          <span class="ach-rule">${desc}</span>
         </div>`;
     }
 
@@ -256,6 +255,7 @@ function _renderChain(chainKey, filteredAchs, earned, saveData, lang) {
         <span class="ach-node-lock">${icon('lock')}</span>
         <span class="ach-node-name">${name}</span>
         <span class="ach-node-tier">${tierName}</span>
+        ${_filter === 'close' ? `<span class="ach-rule">${desc}</span><strong class="ach-goal-count">${_fmtDisplay(p.current,a.cmp)} / ${_fmtDisplay(p.target,a.cmp)}</strong>` : ''}
         <div class="ach-node-minibar"><div class="ach-node-minibar-fill" style="width:${pct}%"></div></div>
       </div>`;
   }).join('');
@@ -270,7 +270,7 @@ function _renderChain(chainKey, filteredAchs, earned, saveData, lang) {
 // ──────────────────────────────────────────────────────────────
 //  FILTERING
 // ──────────────────────────────────────────────────────────────
-function _filterAchievements(achs, earned, saveData, focusedIds = null) {
+function _filterAchievements(achs, earned, focusedIds = null) {
   let result = achs;
 
   if (_filter === 'earned') {
@@ -312,7 +312,7 @@ function _getUniqueChains(achs) {
   return result;
 }
 
-function _rerender(animate) {
+function _rerender() {
   const { save } = app;
   const lang = getLanguage();
   const earned = new Set(save.getAchievements());
@@ -320,7 +320,7 @@ function _rerender(animate) {
   const done   = _allAchs.filter(a => earned.has(a.id)).length;
 
   renderHeader(done, total);
-  renderCategories(lang, earned, save.data, animate);
+  renderCategories(lang, earned, save.data);
 }
 
 function _fmtDisplay(value, cmp) {

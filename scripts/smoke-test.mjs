@@ -32,7 +32,7 @@ function assert(condition, label) {
 
 async function run() {
   console.log('SCS Play Smoke Test\n');
-  const staticServer = EXTERNAL_BASE ? null : await startStaticServer({ root: 'docs' });
+  const staticServer = EXTERNAL_BASE ? null : await startStaticServer({ root: 'docs', port: 0 });
   const BASE = EXTERNAL_BASE || staticServer.baseUrl;
   console.log(`Target: ${BASE}`);
   const browser = await chromium.launch({ headless: true });
@@ -95,15 +95,12 @@ async function run() {
   console.log('\n1. Boot Screen');
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2000);
-  assert(await visible('#btnGuest'), 'Guest button visible');
-  assert(
-    await hasActiveClass('#auth', 4000) || await hasActiveClass('#home', 4000) || await hasActiveClass('#boot', 4000),
-    'Entry screen active'
-  );
+  assert(await visible('#pwArena canvas'), 'First puzzle opens directly');
 
   // ─── 2) Guest Login → Home ───
-  console.log('\n2. Guest Login → Home');
-  await clickSel('#btnGuest', 1500);
+  console.log('\n2. Garden → Arcade menu');
+  await clickSel('#pwMenu', 1500);
+  await page.locator('#hub [data-action=catalog]').click();
   assert(await visible('#home', 5000), 'Home screen visible after guest login');
   assert(await visible('#btnPlay'), 'Play button visible');
 

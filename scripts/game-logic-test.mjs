@@ -472,6 +472,23 @@ input._start({ touches: [{ clientX: 20, clientY: 20 }] });
 assert.equal(input._gestureStimulusId, 1, 'A second finger must not replace the active gesture target');
 input._cancel();
 assert.equal(input._isTouch, false, 'Cancelled touches must not disable later mouse input');
+input._hitRects = [{dir:'ul',rect:{left:0,right:60,top:0,bottom:60}},
+  {dir:'ur',rect:{left:75,right:135,top:0,bottom:60}}];
+assert.equal(input._hitTestCorner(77,30),'ur','Inside the right key must beat padding of the left');
+assert.equal(input._hitTestCorner(71,30),'ur','Between close keys the nearest edge wins');
+input._start({touches:[{identifier:7,clientX:30,clientY:30}]});
+input._end({changedTouches:[{identifier:8,clientX:110,clientY:30}]});
+assert.equal(input._active,true,'Lifting a second finger must not submit an answer for the first');
+input._cancel();
+const drops = [];
+input.onCornerTap = () => assert.fail('A held press is not an answer');
+input.onSwipe = (dir, _time, token) => drops.push([dir,token]);
+for (const x of [100,71,10]) {
+  input._start({clientX:10,clientY:30});
+  input._st -= CONFIG.SWIPE_MAX_TIME + 1;
+  input._end({clientX:x,clientY:30});
+}
+assert.deepEqual(drops,[['ur',3]],'Only dropping inside the key submits the originally touched task; padding and long holds do not');
 
 input.mode = 'ultra';
 assert.equal(input._classify(100, -47), 'ene', 'Ultra ENE must match its visible right-edge slot');

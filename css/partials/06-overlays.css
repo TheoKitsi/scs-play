@@ -409,8 +409,6 @@
   .res-ach-teasers{display:none}
 }
 @media(max-height:700px){
-  .results-xp-ring{width:clamp(75px,12vh,100px);height:clamp(75px,12vh,100px);margin:4px auto}
-  .results-xp-ring .ring-score{font-size:clamp(1.4rem,3vh,2rem)}
   .results-panel{padding:10px 8px; gap:4px}
   .results-content h2{font-size:1rem;margin-bottom:0}
   .results-grid{gap:4px}
@@ -434,8 +432,6 @@
 @media(max-height:640px){
   .results-panel{padding:8px 6px; gap:4px}
   .results-content h2{font-size:.9rem; margin-bottom:0}
-  .results-xp-ring{width:clamp(65px,10vh,85px);height:clamp(65px,10vh,85px);margin:2px auto}
-  .results-xp-ring .ring-score{font-size:clamp(1.2rem,2.5vh,1.6rem)}
   .results-mode{font-size:.6rem;padding:2px 6px}
   .results-grid{gap:3px}
   .res-item{padding:4px 4px; gap:1px}
@@ -459,18 +455,6 @@
 }
 .results-phase-hidden.results-phase-visible {
   display:block;
-}
-
-/* ─── XP ring ambient glow ─── */
-.results-xp-ring::before {
-  content: ''; position: absolute; inset: -18px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(124,58,237,0.18), transparent 70%);
-  animation: ringAura 3s ease-in-out infinite alternate;
-  pointer-events: none; z-index: 0;
-}
-@keyframes ringAura {
-  0%   { opacity: 0.5; transform: scale(0.95); }
-  100% { opacity: 1;   transform: scale(1.08); }
 }
 
 /* ─── Heading entrance ─── */

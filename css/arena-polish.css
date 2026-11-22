@@ -1,0 +1,177 @@
+/* One instrument header: identity and clock above a single line of telemetry.
+   The scene can change underneath; only the foot of the material fades out. */
+#game .hud {
+  --hud-edge: color-mix(in srgb, var(--text) 22%, var(--surface));
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 0 10px;
+  padding: 7px max(var(--phone-gutter), var(--safe-right)) 5px max(var(--phone-gutter), var(--safe-left));
+  background: var(--surface);
+}
+#game .hud::after {
+  content: "";
+  position: absolute;
+  inset: 100% 0 auto;
+  height: 12px;
+  background: linear-gradient(var(--surface), transparent);
+  pointer-events: none;
+}
+#game .timer-bar { z-index: 21 }
+#game .hud-top { display: contents }
+#game .hud > *, #game .hud-top > * { pointer-events: none }
+#game .hud .btn-pause {
+  grid-area: 1 / 1 / span 2;
+  align-self: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  border: 1px solid var(--hud-edge);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  pointer-events: auto;
+}
+#game .hud-instruction { grid-area: 1 / 2 / span 2; gap: 1px }
+#game .hud .mode-indicator {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--text);
+  font: 600 clamp(1.25rem, 5vw, 1.55rem)/1.06 Georgia, "Times New Roman", serif;
+  letter-spacing: -.025em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+#game .hud-instruction .mode-rule-label { font: 500 .8125rem/1.2 'Outfit', sans-serif }
+#game .hud-timer {
+  grid-area: 1 / 3 / span 2;
+  align-self: center;
+  justify-self: end;
+  min-width: 0;
+  font: 500 1.55rem/1 'Space Grotesk', sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.045em;
+}
+#game .hud:has(.hud-endless-lives:not([style*="none"])) .hud-timer { grid-row: 1; align-self: end }
+#game .hud-endless-lives {
+  grid-area: 2 / 3;
+  align-self: start;
+  justify-self: end;
+  gap: 3px;
+  margin-top: 3px;
+}
+#game .hud-endless-lives .endless-heart,
+#game .hud-endless-lives .ui-icon { display: block; width: 11px; height: 11px }
+
+#game .hud .hud-scores {
+  grid-area: 3 / 1 / auto / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 6px 14px;
+  width: 100%;
+  margin: 5px 0 0;
+  padding: 5px 0 3px;
+  border: 0;
+  border-top: 1px solid var(--hud-edge);
+  border-radius: 0;
+  box-shadow: none;
+  background: none;
+  overflow: visible;
+}
+#game .hud-scores .hud-score-group {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4px;
+  border: 0;
+}
+#game .hud .hud-label {
+  color: var(--text-dim);
+  font: 500 .75rem/1.2 'Outfit', sans-serif;
+  letter-spacing: .015em;
+}
+#game .hud-score-group :is(.hud-value, .hud-multiplier) {
+  font: 600 .9375rem/1 'Space Grotesk', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+#game #hudScore { font-size: 1.1875rem; color: var(--text) }
+#game #arenaPhase { margin-inline-start: auto }
+#game #arenaPhase .arena-phase-meter { left: 0; width: 100%; bottom: -4px; height: 2px }
+#game #arenaPhase:is([data-phase="watch"], [data-phase="recall"]) .hud-label {
+  color: var(--text);
+  font-weight: 700;
+}
+#game .hud-comp-target {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  font: 500 .8125rem/1.25 'Outfit', sans-serif;
+}
+
+@media (orientation: portrait) and (max-width: 699px) {
+  /* The deck already gives the actionable colour / arithmetic instruction.
+     Retain its full wording next to the choices, once. Other modes' live
+     rules (including Chaos switches and memory phases) stay in the header. */
+  #game:is([data-arena-mode="klassik"], [data-arena-mode="mathe"]):has(#deckInstruction:not(:empty)) #modeRuleLabel {
+    display: none;
+  }
+  /* These optional notes used to sit at y=144, inside Expert's north key.
+     Place them in the space just below the instrument instead. */
+  #game .hud { anchor-name: --arcade-head }
+  #game :is(#practiceLabel, #bestRunComparison, #pbProximity) {
+    position: absolute;
+    position-anchor: --arcade-head;
+    top: calc(var(--safe-top) + 92px);
+    top: calc(anchor(bottom) + 3px);
+    right: auto;
+    left: var(--phone-gutter);
+    width: fit-content;
+    max-width: calc(100% - 2 * var(--phone-gutter));
+    margin: 0;
+    padding: 2px 6px;
+    transform: none;
+    animation: none;
+    border: 0;
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--text);
+    font: 500 .75rem/1.2 'Outfit', sans-serif;
+    text-align: start;
+    pointer-events: none;
+  }
+  #game #pbProximity.visible { opacity: 1 }
+  #game:has(#practiceLabel:not([style*="none"])) #pbProximity {
+    left: auto;
+    right: var(--phone-gutter);
+    max-width: 59%;
+  }
+  @supports not (top: anchor(bottom)) {
+    #game:has(.hud-comp-target:not([style*="none"])) :is(#practiceLabel, #bestRunComparison, #pbProximity) {
+      top: calc(var(--safe-top) + 114px);
+    }
+  }
+}
+@media (orientation: portrait) and (max-height: 640px) {
+  /* Diagonal pads at 18% vertical radius need clearance from the central dial. */
+  body.mode-expert #game #centerPlatform {
+    width: min(39vw, 21svh) !important;
+    height: min(39vw, 21svh) !important;
+  }
+  /* Ultra places two keys in each quadrant of the same compass. */
+  body.mode-ultra #game {
+    --target-width: 50px;
+    --target-height: 48px;
+    --arena-ry: 26%;
+  }
+}
+@media (forced-colors: active) {
+  #game .hud, #game .hud .hud-scores, #game .hud .btn-pause { border-color: CanvasText }
+  #game #arenaPhase .arena-phase-meter { background: GrayText }
+  #game #arenaPhase .arena-phase-meter i { background: CanvasText }
+}

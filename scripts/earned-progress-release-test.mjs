@@ -33,7 +33,7 @@ const snapshot = async name => {
 
 async function enterHome(reload = false) {
   if (reload) await page.reload({ waitUntil: 'networkidle' });
-  else await page.goto(base, { waitUntil: 'networkidle' });
+  else await page.goto(`${base}?view=arcade`, { waitUntil: 'networkidle' });
   await page.locator('#auth.active, #home.active').waitFor();
   if (await page.locator('#btnGuest').isVisible()) await page.locator('#btnGuest').click();
   await page.locator('#home.active').waitFor();

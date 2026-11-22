@@ -12,7 +12,8 @@ const stack = [];
 function getFocusable(modal) {
   return [...modal.querySelectorAll(FOCUSABLE)].filter(el => {
     const style = getComputedStyle(el);
-    return !el.hidden && style.display !== 'none' && style.visibility !== 'hidden';
+    return !el.matches(':disabled,[tabindex="-1"]') && !el.closest('[inert],[hidden]') &&
+      el.getClientRects().length > 0 && style.visibility !== 'hidden';
   });
 }
 

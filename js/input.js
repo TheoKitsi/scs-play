@@ -7,15 +7,16 @@ import { CONFIG } from './config.js';
 
 /* ─── Corner hit-test padding (px) for fat-finger tolerance ─── */
 const TAP_HIT_PADDING = 22;
+function fingerIn(list, id) {
+  for (let i=0;i<list.length;i++) if (list[i].identifier === id) return list[i];
+}
 
 export class SwipeHandler {
   constructor(el, mode = 'beginner') {
     this.el = el;
     this.mode = mode;
     this.onSwipe = null;
-    this.onTap = null;
     this.onCornerTap = null;   /* (dir, timestamp) — tapped a corner */
-    this.onCenterTap = null;   /* () — tapped the center area */
     this.onSwipeRejected = null; /* () — swipe fell in dead zone */
     this.onGestureStart = null; /* () => current stimulus id */
     this.onTrailStart = null;
@@ -33,7 +34,7 @@ export class SwipeHandler {
     this._onCancel = this._cancel.bind(this);
     this._onKeyDown = this._keyDown.bind(this);
     this._onAccessibleClick = this._accessibleClick.bind(this);
-    this._invalidateGeometry = () => { this._hitRects = null; this._centerRect = null; };
+    this._invalidateGeometry = () => { this._hitRects = null; };
     this._invalidateGeometry();
   }
 
@@ -47,7 +48,6 @@ export class SwipeHandler {
     this._hitRects = [...this.el.querySelectorAll('.corner-shape')]
       .filter(el => el.offsetParent !== null && (el.hasChildNodes() || el.dataset.value))
       .map(el => ({ dir: el.dataset.dir, rect: el.getBoundingClientRect() }));
-    this._centerRect = this.el.querySelector('#centerPlatform')?.getBoundingClientRect();
   }
 
   bind() {
@@ -114,8 +114,6 @@ export class SwipeHandler {
     const stimulusId = this.onGestureStart ? this.onGestureStart() : undefined;
     if (corner && this.onCornerTap) {
       this.onCornerTap(corner.dataset.dir, performance.now(), stimulusId);
-    } else if (e.target.closest('#centerPlatform') && this.onCenterTap) {
-      this.onCenterTap();
     }
   }
 
@@ -124,6 +122,7 @@ export class SwipeHandler {
     if (e.touches) this._isTouch = true;
     else if (this._isTouch) return;
     const p = e.touches ? e.touches[0] : e;
+    this._finger = p.identifier;
     this._sx = p.clientX;
     this._sy = p.clientY;
     this._st = performance.now();
@@ -136,15 +135,17 @@ export class SwipeHandler {
   _move(e) {
     if (!this._active) return;
     if (this._isTouch && !e.touches) return;
-    const p = e.touches ? e.touches[0] : e;
+    const p = e.touches ? fingerIn(e.touches,this._finger) : e;
+    if (!p) return;
     if (this.onTrailMove) this.onTrailMove(p.clientX, p.clientY);
   }
 
   _end(e) {
     if (this._isTouch && !e.changedTouches) return;
     if (!this._active) return;
+    const p = e.changedTouches ? fingerIn(e.changedTouches,this._finger) : e;
+    if (!p) return;
     this._active = false;
-    const p = e.changedTouches ? e.changedTouches[0] : e;
     const dx = p.clientX - this._sx;
     const dy = p.clientY - this._sy;
     const dt = performance.now() - this._st;
@@ -154,7 +155,11 @@ export class SwipeHandler {
       setTimeout(() => { this._isTouch = false; }, 400);
     }
 
-    if (dt > CONFIG.SWIPE_MAX_TIME) {
+    // Dropping on a key is an explicit choice, not a directional flick. Slow
+    // drops still carry the original stimulus token; a later task rejects it.
+    const tap = dist < CONFIG.SWIPE_MIN_DISTANCE;
+    const cornerHit = this.onCornerTap ? this._hitTestCorner(p.clientX, p.clientY, dt > CONFIG.SWIPE_MAX_TIME ? 0 : TAP_HIT_PADDING) : null;
+    if (dt > CONFIG.SWIPE_MAX_TIME && (tap || !cornerHit)) {
       if (this.onTrailEnd) this.onTrailEnd();
       return;
     }
@@ -164,38 +169,13 @@ export class SwipeHandler {
     const minVelocity = CONFIG.SWIPE_MIN_VELOCITY || 0.3; // px/ms
 
     /* ── Tap gesture (no significant movement) ── */
-    if (dist < CONFIG.SWIPE_MIN_DISTANCE) {
+    if (tap) {
       if (this.onTrailEnd) this.onTrailEnd();
-      const tapX = p.clientX, tapY = p.clientY;
-
-      /* Hit-test against visible corner shapes */
-      if (this.onCornerTap) {
-        const hit = this._hitTestCorner(tapX, tapY);
-        if (hit) {
-          this.onCornerTap(hit, performance.now(), this._gestureStimulusId);
-          return;
-        }
-      }
-
-      /* Hit-test center platform (for Memo peek) */
-      if (this.onCenterTap) {
-        const r = this._centerRect;
-        if (r) {
-          if (tapX >= r.left - TAP_HIT_PADDING && tapX <= r.right + TAP_HIT_PADDING &&
-              tapY >= r.top - TAP_HIT_PADDING && tapY <= r.bottom + TAP_HIT_PADDING) {
-            this.onCenterTap();
-            return;
-          }
-        }
-      }
-
-      /* Fallback: generic tap */
-      if (this.onTap) this.onTap();
+      if (cornerHit) this.onCornerTap(cornerHit, performance.now(), this._gestureStimulusId);
       return;
     }
 
     /* ── Swipe gesture ── */
-    const cornerHit = this.onCornerTap ? this._hitTestCorner(p.clientX, p.clientY) : null;
     const dir = cornerHit || ((velocity >= minVelocity) ? this._classify(dx, dy) : null);
     if (dir && this.onSwipe) {
       this.onSwipe(dir, performance.now(), this._gestureStimulusId);
@@ -205,8 +185,9 @@ export class SwipeHandler {
     }
   }
 
-  _cancel() {
+  _cancel(e) {
     if (!this._active) return;
+    if (e?.changedTouches && !fingerIn(e.changedTouches,this._finger)) return;
     this._active = false;
     this._isTouch = false;
     this._gestureStimulusId = undefined;
@@ -214,15 +195,16 @@ export class SwipeHandler {
   }
 
   /* ─── Hit-test visible corner shapes ─── */
-  _hitTestCorner(x, y) {
+  _hitTestCorner(x, y, padding = TAP_HIT_PADDING) {
     this._cacheGeometry();
+    let nearest = null, best = Infinity;
     for (const { dir, rect: r } of this._hitRects) {
-      if (x >= r.left - TAP_HIT_PADDING && x <= r.right + TAP_HIT_PADDING &&
-          y >= r.top - TAP_HIT_PADDING && y <= r.bottom + TAP_HIT_PADDING) {
-        return dir;
-      }
+      const dx = Math.max(r.left-x,0,x-r.right), dy = Math.max(r.top-y,0,y-r.bottom);
+      if (!dx && !dy) return dir; // An actual button beats another button's padding.
+      const dist = dx*dx + dy*dy;
+      if (dist <= padding**2 && dist < best) { best = dist; nearest = dir; }
     }
-    return null;
+    return nearest;
   }
 
   /* ─── Classify direction from vector ─── */

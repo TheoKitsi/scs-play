@@ -1,18 +1,46 @@
-:root{color-scheme:dark;font-family:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;color:#F4F7FC;background:#080C14;font-size:16px}
-*{box-sizing:border-box}
-body{max-width:800px;margin:0 auto;padding:24px clamp(18px,5vw,36px) 64px;line-height:1.75;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:16px;border:1px solid #384657;border-radius:18px 6px;background:linear-gradient(120deg,#202a3b,#111824)}
-header>a{font-weight:650;text-decoration:none}
-nav{display:flex;gap:8px}
-a{color:#C4B5FD;text-underline-offset:4px;overflow-wrap:anywhere}
-nav a{display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;border:1px solid #435066;border-radius:12px;text-decoration:none}
-nav a[aria-current]{color:#F4F7FC;background:#192231;border-color:#B7A2FF}
-a:focus-visible{outline:2px solid #B7A2FF;outline-offset:4px}
-main{padding-top:clamp(24px,6vw,48px);max-width:68ch;margin-inline:auto}
-h1{font-size:clamp(1.8rem,6vw,2.5rem);font-weight:600;line-height:1.2;letter-spacing:-.04em;margin:0 0 12px}
-h2{font-size:1.15rem;line-height:1.4;margin:32px 0 8px;font-weight:650;border-block-start:1px solid #293241;padding-top:16px}
-p,ul{margin:10px 0;color:#C4CEDD}
-ul{padding-left:22px}
-.updated{font-size:.85rem;color:#A9B4C5}
-strong{color:#F4F7FC}
-[hidden]{display:none!important}
+:root {
+  color-scheme: dark;
+  font: 100%/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #080c14;
+  color: #f5f2eb;
+  --line: #454b57;
+  --link: #e8cdaa;
+}
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+/* Native language links also work when scripts aren't available. */
+html:not([data-legal-ready]) #de:not(:target),
+html:not([data-legal-ready]) #de:target ~ #en { display: none }
+body {
+  max-width: 70ch;
+  margin: auto;
+  padding: max(12px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));
+  overflow-wrap: anywhere;
+}
+header, footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem 1rem; padding-block: .6rem; border-bottom: 1px solid var(--line) }
+header nav { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: .6rem }
+a { color: var(--link); text-underline-offset: .2em; text-decoration-thickness: .08em }
+header a, footer a, summary { min-height: 44px; padding-block: .5rem }
+header a, footer a { display: inline-flex; align-items: center; font-weight: 600; font-size: .9rem }
+nav a { padding-inline: .7rem; border-radius: .4rem; text-decoration: none }
+nav a[aria-current] { background: #e3ceb0; color: #211d19; text-decoration: underline; text-underline-offset: .22em }
+:focus-visible { outline: 3px solid currentColor; outline-offset: 3px }
+main { padding-block: clamp(1.5rem,6vw,3rem) 1rem }
+.imprint { margin:0 0 .8rem; color:var(--link); font-size:.8rem; font-weight:650; letter-spacing:.06em }
+.imprint::before { content:""; display:inline-block; vertical-align:middle; margin-inline-end:.5rem; width:1.35rem; height:.32rem; background:repeating-linear-gradient(115deg,currentColor 0 2px,transparent 2px 5px) }
+h1 { margin: 0; font: normal clamp(2rem,7vw,3.4rem)/1.05 Georgia,serif; letter-spacing: -.035em; hyphens: auto }
+.updated { margin: .75rem 0 1.4rem; font-size: .88rem; color: #c3c5cb }
+h2 { border-top: 1px solid var(--line); margin: 1.8rem 0 .5rem; padding-block-start: 1rem; font-size: 1.18rem; letter-spacing: -.018em; line-height: 1.35; scroll-margin-top: 1rem }
+p, ul { margin: .5rem 0 .8rem; color: #d3d6df }
+ul { padding-inline-start: 1.4rem }
+li + li { margin-top: .45em }
+strong { color: #f5f2eb }
+details { border: 1px solid var(--line); background: #191f2a; border-radius: .5rem; padding-inline: .85rem }
+summary { cursor: pointer; color: var(--link); font-weight: 650 }
+details a { display: flex; align-items: center; min-height: 44px; line-height: 1.4; padding: .55rem .15rem; border-top: 1px solid var(--line) }
+footer { border-block: 1px solid var(--line); padding-block: .8rem }
+@media (prefers-contrast: more) {
+  :root { --line: #bbc1ce; --link: #ffdeab }
+  p,ul,.updated { color: #fff }
+}
+@media (forced-colors: active) { nav a[aria-current] { outline: 1px solid Highlight; outline-offset: -2px } }

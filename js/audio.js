@@ -1540,7 +1540,7 @@ export class AudioManager {
         const swing = (this._musicBeat % 2 === 0) ? swingAmt : 0;
         /* Humanize: small random timing offset (±3ms) */
         const humanize = (Math.random() - 0.5) * 0.006;
-        const tt = t + swing + humanize; // timing with groove
+        const tt = Math.max(0, t + swing + humanize); // The first beat can start at AudioContext time zero.
         /* Velocity randomizer for percussion */
         const velR = () => 0.88 + Math.random() * 0.24;
 

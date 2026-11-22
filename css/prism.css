@@ -65,3 +65,35 @@
 @media(min-width:700px){.pw-console{border:1px solid #354d5d;border-radius:18px 6px;background:linear-gradient(135deg,#1c3040,#111f30 65%);padding:clamp(16px,2.5vw,32px)}.pw-play-layout{align-items:start}.prism-entry-art{width:36%;right:60px;mask-image:none}.pw-header{margin-bottom:18px}}
 @media(max-width:699px){.pw-header{margin-bottom:6px}#prism[data-pw-view=game] .pw-header{padding-bottom:4px}.pw-charge i{width:6px}}
 @media(forced-colors:active){.pw-charge i{border:1px solid GrayText}.pw-charge i.charged{background:Highlight;forced-color-adjust:none}}
+
+#prism[data-pw-view=game]{--pw-text:#fff3de;--pw-muted:#d3c8cc;--pw-mint:#ffdeb0;background:radial-gradient(ellipse at 50% 23%,#514051 0,#272538 43%,#151c29 84%)}
+.pw-shell{width:100%;min-width:0}
+.pw-brand h1,.pw-journey{overflow-wrap:anywhere}
+[data-pw-view=game] .pw-primary{background:#ffdcaa;color:#332634;border-radius:24px}
+[data-pw-view=game] .pw-icon-button{border-color:#706375;background:#292938;border-radius:24px}
+[data-pw-view=game] .pw-status{color:#ffdeb0;border:0;font-weight:600}
+.pw-quick{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:44px;margin:2px 0 6px;border:1px solid #6e667a;border-radius:24px;background:#302e41;color:#fff0dc;font-size:.85rem;font-weight:600;line-height:1.2}
+.pw-quick small{font-size:.72rem;color:#e0d0d4}
+.pw-trail,.pw-trail ol{display:flex;align-items:center;flex-wrap:wrap;gap:4px 7px}.pw-trail{margin:0 0 8px;padding:5px 9px;border-inline-start:2px solid var(--pw-mint);font-size:.74rem;color:var(--pw-muted)}.pw-trail ol{margin:0;padding:0;list-style:none}.pw-trail li{padding:2px 7px;background:#152337;border:1px solid var(--pw-edge);border-radius:9px 3px;color:var(--energy);font-size:.84rem;font-variant-numeric:tabular-nums}
+@media(max-width:699px){
+  #prism[data-pw-view=game] .pw-shell{padding:calc(env(safe-area-inset-top,0px) + 6px) 12px calc(env(safe-area-inset-bottom,0px) + 16px)}
+  #prism[data-pw-view=game] .pw-header{border:0;padding:0;gap:7px}
+  .pw-level-heading h2{font-family:Georgia,serif;font-weight:normal;font-size:clamp(1.35rem,6vw,2rem)}
+  .pw-play-layout{gap:8px}
+  .pw-arena{width:min(100%,calc((100svh - 228px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) * .75));border-radius:24px 24px 16px 16px;box-shadow:0 8px 26px #090c1955}
+  .pw-stats{border:0;margin:0;padding:2px 0 3px}
+  .pw-stats>div{justify-content:center}.pw-stats strong{font-size:.95rem}
+  .pw-status{margin:2px 0 7px;text-align:center;font-size:.88rem}
+  .pw-tools .pw-text-button{min-height:44px}
+  .pw-dialog.active{align-items:flex-end;background:#10142399}
+  .pw-dialog-card{max-width:480px;background:linear-gradient(155deg,#383446,#1a2631);border-radius:26px 26px 16px 16px}
+}
+.pw-header .pw-level-heading{display:block;flex:1;min-width:0;margin:0;overflow-wrap:anywhere}
+.pw-header .pw-level-heading h1{color:var(--pw-text);font:500 clamp(1.15rem,5.2vw,1.65rem)/1.12 Georgia,serif;letter-spacing:-.035em;margin:0}
+#prism[data-pw-view=game] .pw-header .pw-level-heading .pw-eyebrow{display:block;margin:0 0 2px;line-height:1.2}
+.pw-help #pwSound{margin-bottom:8px}
+.pw-dialog{padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + max(env(safe-area-inset-bottom,0px),var(--gesture-nav-inset,0px)))}
+.pw-dialog-card{padding:0;display:grid;grid-template-rows:minmax(0,1fr) auto;overflow:hidden}
+.pw-dialog-scroll{padding:18px;min-height:0;overflow:auto;overscroll-behavior:contain}
+.pw-dialog-footer{padding:10px 16px;border-top:1px solid var(--pw-edge);display:grid;gap:6px;max-height:45svh;overflow:auto}
+.pw-dialog-footer:has(#pwRetrySave) #pwNext:disabled{display:none}

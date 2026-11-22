@@ -16,6 +16,10 @@ npm run build:prod
 
 `build:prod` bundles `js/app.js` and `css/style.css` into `docs/js/app.bundle.js` and `docs/css/style.bundle.css`. Standalone `js/legal.js` and `css/legal.css` are built separately for the scrollable bilingual legal documents. It also copies root assets, images, audio metadata, legal pages, and store listing docs into `docs/`.
 
+The scoped screen finishes in `css/finish.css` are flattened into one production stylesheet. `npm run install:refresh` updates the install listing's two real mobile screenshots, share-link cover and iOS icon in `img/install/`. Run it after changing those surfaces or the brand.
+
+For paired visual reviews, capture both revisions with `npm run visual-review` into different `SCS_REVIEW_OUT` directories, then run `node scripts/compare-surfaces.mjs BEFORE/small AFTER/small OUTPUT`. Open `OUTPUT/index.html` for a phone-friendly, offline comparison.
+
 The build script enforces default budgets:
 
 - JavaScript bundle: 480 KB max.

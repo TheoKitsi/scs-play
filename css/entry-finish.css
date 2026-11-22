@@ -1,0 +1,197 @@
+/* Launch and first play: the same split crystal as the Android/PWA mark.
+   All artwork is static; the only fill that moves represents real boot progress. */
+:is(#boot,#auth,#tutorial,.onboarding-overlay) {
+  --entry-ink:#111d2f;
+  --entry-paper:#f5f3ff;
+  --entry-mint:#b7ece4;
+  --entry-line:#66728c;
+}
+:is(#boot,#auth,#tutorial).screen {
+  padding:max(18px,var(--safe-top)) max(16px,var(--safe-right)) max(18px,var(--safe-bottom)) max(16px,var(--safe-left));
+  justify-content:flex-start;
+}
+:is(#auth,#tutorial) .btn-primary,.onboarding-overlay .onboarding-btn-ok {
+  border:1px solid #e7fffb;
+  color:var(--entry-ink);
+  background:linear-gradient(110deg,#e2f7ee,#b4dce7 79%,#c6c7f0) #b4dce7;
+  box-shadow:inset 0 -2px 0 #93acb8;
+  text-shadow:none;
+  font-weight:650;
+}
+#boot {
+  background:radial-gradient(ellipse at 50% 41%,#232c42 0,#101724 35%,#080c14 70%) #080c14;
+}
+#boot .boot-content {width:min(100%,28rem);margin:auto}
+#boot .scs-logo {gap:8px;margin:0 0 28px}
+:is(#boot,#auth) .brand-scene {
+  position:relative;isolation:isolate;display:grid;place-items:center;
+  width:clamp(132px,45vw,222px);height:auto;aspect-ratio:1;
+  background:radial-gradient(closest-side,#a4afdc1a,transparent 92%);
+}
+:is(#boot,#auth) .brand-scene::before,:is(#boot,#auth) .brand-scene::after {
+  content:"";position:absolute;inset:4%;border-radius:50%;border:1px solid #d7e0ec50;pointer-events:none;
+}
+:is(#boot,#auth) .brand-scene::after {
+  inset:0;border:3px solid transparent;
+  background:repeating-conic-gradient(from -.4deg,#d9d6ed88 0 1deg,transparent 1deg 12deg) border-box;
+  mask:radial-gradient(closest-side,transparent calc(100% - 3px),black calc(100% - 2px));
+}
+:is(#boot,#auth) .brand-scene svg {width:93%;height:93%;overflow:visible}
+#boot .brand-name,#auth .brand-name {
+  font:600 clamp(2.6rem,10vw,4.25rem)/1 var(--font-display);
+  letter-spacing:-.065em;color:var(--entry-paper);text-shadow:none;
+}
+#boot .brand-name {font-size:clamp(2.3rem,9vw,3.3rem);margin-top:14px}
+#boot .logo-subtitle,#auth .brand-tagline {color:#d4dae8;font:400 1rem/1.45 'Outfit',sans-serif;letter-spacing:.015em}
+#boot .boot-progress {width:min(144px,60%);height:3px;background:#303b4b}
+#boot .boot-progress-fill {background:linear-gradient(90deg,#a49ccf,#c3efe7)}
+#boot .boot-status {color:#c1cbdc;font-size:.85rem}
+
+/* An illustrated launch poster. Controls stay on opaque ink, always below
+   the illustration; auto margins collapse naturally for large text/keyboards. */
+#auth {background:radial-gradient(ellipse at 50% 26%,#37435b,#1c2234 49%,#0c1522 92%) #0c1522}
+#auth .auth-content {
+  flex:none;width:min(100%,444px);max-width:444px;margin:auto;gap:12px;
+  padding:0 20px 24px;overflow:hidden;
+  border:1px solid #637389;border-radius:26px 8px 26px 8px;
+  background:linear-gradient(120deg,#172538,#101b2c 72%) #172538;
+  box-shadow:0 20px 48px #050b164d,inset 0 1px #ffffff0c;
+}
+#auth .auth-brand {
+  width:calc(100% + 40px);align-items:flex-start;gap:6px;isolation:isolate;
+  padding:clamp(20px,4svh,38px) 24px 24px;margin:0 0 6px;perspective:none;
+  background:linear-gradient(0deg,#152336 0%,#172438e8 15%,#17243855 48%,#282c4f2e),
+    url("../img/scenery/valley.webp") center 43%/cover;
+  border-bottom:1px solid #6e81904f;
+}
+#auth .brand-scene {
+  align-self:center;width:clamp(154px,min(57vw,27svh),254px);margin:0 0 clamp(10px,3svh,30px);
+  background:radial-gradient(closest-side,#2d3a4f88 32%,#35425aad 87%,transparent 90%);
+}
+#auth .brand-scene::before {border-color:#f3e1b999}
+#auth .brand-scene::after {background:repeating-conic-gradient(from -.4deg,#f6e6c6 0 1deg,transparent 1deg 12deg) border-box}
+#auth .studio-etch {display:none}
+#auth .brand-tagline {margin:0}
+#auth .btn-guest-hero {width:100%;max-width:none;min-height:56px;justify-content:flex-start;padding:12px 17px;border-radius:12px}
+#auth .btn-guest-hero .btn-icon {display:grid;place-items:center;width:26px;height:26px}
+#auth .auth-guest-hint {margin:0;color:#c4d1df;font-size:.875rem}
+#auth .auth-error:not(:empty) {color:#fff0ef;background:#452b38;padding:10px 14px;border-radius:8px}
+
+/* A field guide page: one heading, a progress rule, a playable instrument
+   and navigation. Inactive pages take no layout space and have no tab stops. */
+#tutorial {
+  background:radial-gradient(ellipse at 25% 0%,#33384b,#182235 47%,#0e1725 90%) #182235;
+  color:var(--entry-paper);
+}
+#tutorial .tutorial-content {
+  flex:none;width:min(100%,420px);max-width:420px;margin:auto;align-items:stretch;
+  padding:clamp(8px,2.5svh,22px) clamp(2px,1.8vw,9px);gap:14px;
+}
+#tutorial .tutorial-heading {text-align:left}
+#tutorial .studio-caption,.onboarding-key {
+  display:flex;align-items:center;gap:10px;margin:0 0 6px;color:var(--entry-mint);
+  font:600 .77rem/1.4 var(--font-display);letter-spacing:.09em;text-transform:uppercase;
+}
+#tutorial .studio-caption::before {content:"";width:20px;height:2px;background:currentColor}
+#tutorial .tutorial-heading h2 {font:600 clamp(2.1rem,8.6vw,3.1rem)/1.08 var(--font-display);letter-spacing:-.045em;color:var(--entry-paper)}
+#tutorial .tutorial-dots {gap:5px;width:100%;margin-bottom:4px}
+#tutorial .tut-dot {flex:1;height:3px;border-radius:2px;background:#525d72;box-shadow:none;transition:none}
+#tutorial .tut-dot.active {background:#b7ece4}
+#tutorial .tutorial-carousel {min-height:0;overflow:visible}
+#tutorial .tutorial-slide {display:none;position:relative;inset:auto;transform:none;transition:none;align-items:stretch;gap:12px}
+#tutorial .tutorial-slide.active {display:flex}
+#tutorial .tutorial-slide p {max-width:none;text-align:left;color:#e8edf6;font:500 1.12rem/1.45 'Outfit',sans-serif;text-wrap:pretty}
+#tutorial .tut-visual {
+  isolation:isolate;width:100%;height:clamp(178px,31svh,270px);border-radius:18px 6px 18px 6px;border:1px solid #728094;
+  background:
+    radial-gradient(ellipse at center,transparent 0 23%,#bfcbdf30 23.2%,transparent 23.9% 39%,#a6c5d526 39.3%,transparent 40%),
+    linear-gradient(28deg,transparent 49.6%,#c7d0de32 50%,transparent 50.4%),
+    linear-gradient(152deg,transparent 49.6%,#abe9db3d 50%,transparent 50.4%),
+    radial-gradient(ellipse at 26% 7%,#37485b,#1f3345 46%,#162133 89%);
+  box-shadow:inset 0 1px 0 #fff2,0 5px 14px #0c111c55;
+}
+#tutorial .tut-visual::before {
+  inset:6px;border-radius:12px 3px;border:1px solid #cbd1dd28;
+  background:repeating-linear-gradient(90deg,#cad9e566 0 1px,transparent 1px 9px) center bottom/44% 3px no-repeat;
+}
+#tutorial :is(.tut-corner,.tut-try-corner) {
+  border:1px solid #818aa1;background:linear-gradient(150deg,#34465d,#17263a);width:52px;height:52px;
+  border-radius:14px 6px;padding:7px;box-shadow:0 3px 5px #09112173,inset 0 1px #e4edff2b;
+}
+#tutorial :is(.tut-mock-center,.tut-try-center) {
+  width:70px;height:70px;border:1px solid #b6c7d3;border-radius:50%;
+  background:radial-gradient(ellipse at 38% 20%,#44546b,#253649 70%);
+  box-shadow:0 0 0 4px #131e2b,0 0 0 5px #8290a566;
+}
+#tutorial .tut-corner-glow {outline:3px solid var(--entry-paper);outline-offset:2px}
+#tutorial .tut-try-area .tut-tc-ul {
+  border-color:#d6f6e9;
+  box-shadow:0 0 0 3px #17263a,0 0 0 4px #aec6c3;
+}
+#tutorial .tut-practice-caption {
+  position:relative;display:grid;place-items:start;min-height:1.5rem;
+  font:500 .88rem/1.45 'Outfit',sans-serif;
+}
+#tutorial .tut-try-hint,#tutorial .tut-try-feedback {
+  position:static;grid-area:1/1;transform:none;white-space:normal;text-align:left;align-items:center;
+  color:var(--entry-mint);font:inherit;animation:none;transition:none;
+}
+#tutorial .tut-try-hint svg {flex:none}
+#tutorial .tut-try-feedback {color:var(--entry-paper)!important}
+#tutorial .tut-score-demo {position:relative;margin:0}
+#tutorial .tut-speed-icon {position:relative;display:grid;place-items:center;margin-right:10px}
+#tutorial .tut-speed-icon .line-icon {width:44px;height:44px;color:var(--entry-mint)}
+#tutorial .tut-pts {font:600 clamp(2.25rem,13vw,4.1rem)/1 var(--font-display);letter-spacing:-.07em;color:var(--entry-paper)}
+#tutorial .tut-streak-demo {position:relative;align-items:end;gap:5px;width:85%;justify-content:center}
+#tutorial :is(.tut-x,.tut-x-big,.tut-x-fire) {
+  display:grid;align-content:center;justify-content:center;flex:1;min-width:0;max-width:88px;height:48px;
+  font:600 clamp(1rem,5vw,1.6rem)/1.1 var(--font-display);color:#e4edf8;
+  background:#273b51;border:1px solid #92a3b7;border-radius:8px 3px;
+}
+#tutorial .tut-x-big {height:70px;background:#385365}
+#tutorial .tut-x-fire {height:94px;gap:3px;background:#bfe8df;color:var(--entry-ink);border-color:#effdfb;justify-items:center}
+#tutorial .tut-x-fire .line-icon {color:#324c5d}
+#tutorial [data-step="2"] .tut-visual {
+  background:radial-gradient(ellipse at 50% 66%,#344a5c,#27364b 57%,#172536 87%);
+}
+#tutorial [data-step="2"] .tut-visual::after {
+  content:"";position:absolute;z-index:-1;pointer-events:none;
+  width:min(80%,245px);aspect-ratio:1;top:16%;border-radius:50%;
+  background:repeating-conic-gradient(from -120deg,#a2c1c7 0 1deg,transparent 1deg 6deg);
+  mask:radial-gradient(closest-side,transparent calc(100% - 9px),black calc(100% - 8px)),
+    conic-gradient(from -120deg,black 0 240deg,transparent 240deg);
+  mask-composite:intersect;
+}
+#tutorial [data-step="3"] .tut-visual {
+  background:repeating-linear-gradient(0deg,transparent 0 22px,#c4d7dc12 22px 23px),
+    radial-gradient(ellipse at 90% 10%,#3d5060,#223348 58%,#182737);
+}
+#tutorial .tut-arrow-r {align-self:center;color:#c6d7e6}
+#tutorial .tutorial-nav {max-width:none;gap:8px}
+#tutorial .tutorial-nav .btn {min-height:50px;padding:10px 12px;border-radius:10px}
+#tutorial .tutorial-nav:has(.tut-prev[style*="hidden"]) .tut-prev {display:none}
+#tutorial :is(.tut-prev,.tut-skip) {background:#182538;color:#e0e7f2;border:1px solid #7d8799;opacity:1}
+#tutorial .tut-skip {align-self:center;margin:0;border:0;background:none;font-weight:500}
+
+.onboarding-overlay .onboarding-spotlight {border:2px solid #b7ece4;box-shadow:0 0 0 9999px #070b14c9;transition:none}
+.onboarding-overlay .onboarding-bubble {
+  width:calc(100% - 32px);max-width:360px;max-height:calc(100% - 32px);overflow:auto;
+  padding:16px 18px;border:1px solid #8a97aa;border-radius:18px 6px 18px 6px;text-align:left;
+  background:linear-gradient(120deg,#26354b,#172537 60%) #26354b;box-shadow:0 12px 40px #050a1866;
+}
+.onboarding-key {margin-bottom:8px;gap:8px}
+.onboarding-key svg {width:30px;height:30px}
+.onboarding-key::after {content:"";flex:1;height:1px;background:#7182976b}
+.onboarding-overlay .onboarding-text {margin:0 0 12px;color:var(--entry-paper);font:500 1.04rem/1.45 'Outfit',sans-serif;text-wrap:pretty}
+.onboarding-overlay .onboarding-actions {justify-content:flex-end}
+.onboarding-overlay .onboarding-btn-ok {min-height:46px;min-width:108px;padding:9px 20px;border-radius:9px}
+@media(max-height:690px) {
+  #auth .auth-brand {padding-top:14px}
+  #tutorial .tutorial-content {padding-block:4px;gap:10px}
+  #tutorial .tut-visual {height:184px}
+}
+@media(prefers-reduced-motion:reduce) {
+  :is(#auth,#boot,#tutorial,.onboarding-overlay),:is(#auth,#boot,#tutorial,.onboarding-overlay) * {animation:none!important;transition:none!important}
+}
+body[data-reduced-motion] :is(#auth,#boot,#tutorial,.onboarding-overlay),
+body[data-reduced-motion] :is(#auth,#boot,#tutorial,.onboarding-overlay) * {animation:none!important;transition:none!important}

@@ -1,0 +1,143 @@
+/* The default near-miss hint outlines the expected corner. In a memory
+   round the tapped pad can confirm input; the missed pad must stay neutral. */
+#game:is([data-arena-mode=memo], [data-arena-mode=sequenz]) .corner-shape.near-miss-hint:not(:focus-visible):not(.sequenz-flash):not(.corner-correct):not(.corner-wrong) {
+  outline: none;
+}
+#game:is([data-arena-mode=memo], [data-arena-mode=sequenz]) .corner-shape:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 3px;
+}
+
+.memory-readout { display: none }
+
+@media (orientation: portrait) and (max-width: 699px) {
+  #game[data-arena-mode=memo] #modeDetail:has(> [data-mode=memo]),
+  #game[data-arena-mode=sequenz] #modeDetail:has(> [data-mode=sequenz]) {
+    position: absolute;
+    inset: auto;
+    left: 50%;
+    z-index: 5;
+    display: block;
+    pointer-events: none;
+    color: var(--text);
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    transition-property: none;
+  }
+  .memory-readout, .memory-readout *, .memory-readout::before { transition-property: none }
+  #game[data-arena-mode=memo] .memory-readout[data-mode=memo],
+  #game[data-arena-mode=sequenz] .memory-readout[data-mode=sequenz] {
+    display: grid;
+    align-content: center;
+    box-sizing: border-box;
+    height: 100%;
+    row-gap: 2px;
+  }
+  .memory-readout strong { font: 650 .92rem/1.15 var(--font-display) }
+  .memory-readout span { font: 500 .76rem/1.15 var(--font-display); color: var(--text-dim) }
+
+  /* Memo: a caption on the edge of a four-card tray. Turn all four
+     cards over in place, with identical opaque, printed backs. */
+  #game[data-arena-mode=memo] #modeDetail:has(> [data-mode=memo]) {
+    top: 56%;
+    width: min(85%, 350px);
+    height: 42px;
+    transform: translate(-50%, -50%);
+  }
+  #game[data-arena-mode=memo]:has(.memory-readout[data-mode=memo]) #deckInstruction {
+    clip-path: inset(50%); /* Keep the existing accessible instruction. */
+  }
+  #game[data-arena-mode=memo] .center-platform {
+    max-height: 18svh;
+  }
+  .memory-readout[data-mode=memo] {
+    grid-template-columns: 24px minmax(0, 1fr);
+    column-gap: 10px;
+    padding: 3px 12px;
+    border: 1px solid var(--outline);
+    border-inline-start: 4px double currentColor;
+    border-radius: 3px 11px 11px 3px;
+    background: var(--surface);
+    text-align: start;
+  }
+  .memory-readout[data-mode=memo]::before {
+    content: "";
+    grid-row: 1 / span 2;
+    align-self: center;
+    height: 22px;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    background:
+      linear-gradient(90deg, transparent 46%, currentColor 46% 54%, transparent 54%),
+      linear-gradient(transparent 46%, currentColor 46% 54%, transparent 54%);
+  }
+  .memory-readout[data-mode=memo][data-state=recall]::before {
+    background: repeating-linear-gradient(135deg, transparent 0 4px, currentColor 4px 5px);
+  }
+  .memory-readout[data-mode=memo] .memory-track { display: none }
+  #game[data-arena-mode=memo] .corner-shape.memo-covered {
+    background: repeating-linear-gradient(135deg, transparent 0 7px, var(--outline-subtle) 7px 8px), var(--surface) !important;
+    border-color: var(--outline) !important;
+  }
+  #game[data-arena-mode=memo] .corner-shape.memo-covered::before {
+    content: "";
+    display: block;
+    position: absolute;
+    inset: 4px;
+    border: 3px double var(--outline);
+    border-radius: 6px;
+    pointer-events: none;
+  }
+  #game[data-arena-mode=memo] .corner-shape.memo-covered > * { visibility: hidden; transition: none }
+
+  /* Sequenz: four pads around one stationary playback head. The upper half
+     keeps the game's round and length; the lower half counts accepted taps. */
+  #game[data-arena-mode=sequenz] {
+    --arena-dx: 27%;
+    --arena-dy: 19%;
+    --target-width: clamp(66px, 22vw, 108px);
+    --target-height: clamp(54px, 11svh, 96px);
+  }
+  #game[data-arena-mode=sequenz] .corner-shape {
+    border-radius: 32% 32% 24% 24%;
+  }
+  #game[data-arena-mode=sequenz] .corner-shape.sequenz-flash {
+    outline: 5px double var(--text);
+    outline-offset: 2px;
+  }
+  #game[data-arena-mode=sequenz] #modeDetail:has(> [data-mode=sequenz]) {
+    top: calc(var(--arena-cy) + 3px);
+    width: clamp(142px, 38vw, 178px);
+    height: 52px;
+    transform: translateX(-50%);
+  }
+  #game[data-arena-mode=sequenz]:has(.memory-readout[data-mode=sequenz]) .sequenz-round-display {
+    position: relative;
+    top: -27px;
+  }
+  #game[data-arena-mode=sequenz] .seq-round-num {
+    background: none;
+    color: var(--text);
+    -webkit-text-fill-color: currentColor;
+    filter: none;
+    font: 650 2rem/1 var(--font-display);
+  }
+  .memory-readout[data-mode=sequenz] {
+    justify-items: center;
+    border-radius: 6px;
+    text-align: center;
+    background: var(--surface);
+  }
+  .memory-track {
+    width: 82%;
+    height: 5px;
+    margin-top: 2px;
+    background: linear-gradient(to right, var(--text) var(--memory-fill), var(--outline) var(--memory-fill));
+    mask: linear-gradient(to right, #000 calc(100% - 2px), transparent 0) 0 0 / calc(100% / var(--memory-slots)) 100% repeat-x;
+  }
+  .memory-readout[data-state=ready] .memory-track { visibility: hidden }
+  @media (forced-colors: active) {
+    .memory-track { forced-color-adjust: none; --text: Highlight; --outline: GrayText }
+    .memory-readout[data-mode=sequenz] { border: 1px solid CanvasText }
+  }
+}

@@ -14,6 +14,89 @@ const out = process.env.SCS_REVIEW_OUT && resolve(process.env.SCS_REVIEW_OUT, 'a
 if (out) mkdirSync(out, { recursive: true });
 const reports = [];
 const modes = (process.env.SCS_ARENA_MODES || 'klassik,beginner,expert,mathe,wissen,memo,sequenz,stroop,fokus,chaos').split(',');
+const smallPhone = { width: 320, height: 568 };
+
+// Run on the live task at the frozen playhead, before feedback replaces it.
+// Compare rendered lines, not the bounds of full-screen scenery/wrappers.
+async function checkPhoneTask(page, mode, phase) {
+  const issues = await page.evaluate(({ mode, phase, smallPhone }) => {
+    const game = document.querySelector('#game.active');
+    const issues = [];
+    if (innerWidth !== smallPhone.width || innerHeight !== smallPhone.height) issues.push(`Unexpected viewport: ${innerWidth}×${innerHeight}`);
+    const visible = el => el.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+    const pads = [...game.querySelectorAll('.corner-shape')].filter(visible);
+    if (pads.length !== (mode === 'expert' ? 8 : 4)) issues.push(`${pads.length} visible pads`);
+    const center = game.querySelector('#centerPlatform');
+    const controls = mode === 'memo' && phase === 'watch' ? pads : [...pads, center];
+    const name = el => el.dataset.dir || el.id || el.tagName;
+    const outside = (a, b) => a.left < b.left - 1 || a.right > b.right + 1 || a.top < b.top - 1 || a.bottom > b.bottom + 1;
+    const viewport = { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
+    const overlaps = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+      Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+    for (const el of controls) {
+      const r = el.getBoundingClientRect();
+      if (outside(r, viewport) || r.width < 44 || r.height < 44) issues.push(`${name(el)} lacks an on-screen 44px target`);
+      // Watch is a visual cue, not an open answer window.
+      if (phase === 'watch') continue;
+      for (const [x, y] of [[.5, .5], [.25, .5], [.75, .5], [.5, .25], [.5, .75]]) {
+        const hit = document.elementFromPoint(r.left + x * r.width, r.top + y * r.height);
+        if (!el.contains(hit)) { issues.push(`${name(el)} blocked at ${x},${y} by ${hit ? name(hit) : 'nothing'}`); break; }
+      }
+    }
+
+    // A pointer-transparent caption can still cover an answer. A wrapped quiz
+    // line can extend beyond its decorative plinth without actually clipping.
+    // Measure each text fragment against its clipping ancestors and other tasks.
+    const copy = [...game.querySelectorAll('#deckInstruction, #modeDetail, #gameNotice, #modeRuleLabel, #arenaPhaseLabel')];
+    if (!game.querySelector('#modeDetail')) issues.push('Missing shared #modeDetail host');
+    // Status may intentionally share the plinth with a sequence counter. Its
+    // text must clear the actual glyphs/shape, not an empty part of the plinth.
+    const occupied = pads.map(root => ({ root, r: root.getBoundingClientRect() }));
+    if (controls.includes(center)) {
+      for (const svg of center.querySelectorAll('#centerShape svg')) {
+        if (visible(svg)) occupied.push({ root: center, r: svg.getBoundingClientRect() });
+      }
+    }
+    for (const root of [...controls, ...copy]) {
+      let hasText = false;
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      for (let node; (node = walker.nextNode());) {
+        const el = node.parentElement;
+        if (!node.textContent.trim() || el.closest('svg,.sr-only') || !visible(el)) continue;
+        // An accessible-only instruction can coexist with its visual readout.
+        let clippedAway = false;
+        for (let p = el; p && p !== game; p = p.parentElement) {
+          if (getComputedStyle(p).clipPath === 'inset(50%)') { clippedAway = true; break; }
+        }
+        if (clippedAway) continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        for (const r of range.getClientRects()) {
+          if (!r.width || !r.height) continue;
+          hasText = true;
+          const label = `${name(root)} "${node.textContent.trim()}"`;
+          if (outside(r, viewport)) issues.push(`${label} outside viewport`);
+          for (let parent = el; parent && parent !== game; parent = parent.parentElement) {
+            const style = getComputedStyle(parent), box = parent.getBoundingClientRect();
+            if ((/hidden|clip|auto|scroll/.test(style.overflowX) && (r.left < box.left - 1 || r.right > box.right + 1)) ||
+                (/hidden|clip|auto|scroll/.test(style.overflowY) && (r.top < box.top - 1 || r.bottom > box.bottom + 1))) {
+              issues.push(`${label} clipped by ${name(parent)}`); break;
+            }
+          }
+          for (const other of occupied) {
+            if (root !== other.root && !root.contains(other.root) && !other.root.contains(root) && overlaps(r, other.r)) {
+              issues.push(`${label} overlaps ${name(other.root)}`);
+            }
+          }
+          occupied.push({ root, r });
+        }
+      }
+      if (mode === 'wissen' && controls.includes(root) && !hasText) issues.push(`${name(root)} has no visible quiz text`);
+    }
+    return issues;
+  }, { mode, phase, smallPhone });
+  assert.deepEqual(issues, [], `${mode}/${phase} at 320×568: task must remain readable and reachable`);
+}
 
 try {
   for (const engine of (process.env.SCS_BROWSERS || 'chromium').split(',')) {
@@ -38,7 +121,7 @@ try {
             const page = await context.newPage();
             const errors = [];
             page.on('pageerror', error => errors.push(error.message));
-            await page.goto(base, { waitUntil: 'networkidle' });
+            await page.goto(`${base}?view=arcade`, { waitUntil: 'networkidle' });
             await page.locator('#btnGuest').click();
             await page.locator('#home.active').waitFor();
             await page.waitForTimeout(1000);
@@ -69,7 +152,14 @@ try {
                 document.querySelector('#tutorial.active #btnTutorialSkip')?.click();
               });
               await page.clock.runFor(100);
-              if (!baseline && mode === 'memo' && await page.locator('#resonanceStage[data-phase="watch"]').count()) sawWatch = true;
+              if (!baseline && !sawWatch && mode === 'memo' && await page.locator('#resonanceStage[data-phase="watch"]').count()) {
+                sawWatch = true;
+                if (viewport.width === 360) {
+                  await page.setViewportSize(smallPhone);
+                  await checkPhoneTask(page, mode, 'watch');
+                  await page.setViewportSize(viewport);
+                }
+              }
               started = await page.evaluate(mode => __SCS_QA__.gameState().running &&
                 (mode === 'sequenz' ? document.querySelector('.sequenz-flash') != null : __SCS_QA__.gameState().stimulusId != null), mode);
               if (started) break;
@@ -104,6 +194,19 @@ try {
               assert.equal(view.mode, mode);
               assert.equal(view.overlay, 0, 'No central WATCH/GO or fever celebration obscures tasks');
               assert.ok(view.phase && view.label);
+              const phone = viewport.width === 360;
+              if (phone) {
+                await page.setViewportSize(smallPhone);
+                await checkPhoneTask(page, mode, view.phase);
+              }
+              const answer = async dir => {
+                const pad = page.locator(`#game .corner-shape[data-dir="${dir}"]`);
+                if (!phone) return pad.evaluate(el => el.click());
+                // Coordinate input has no force, scroll, or auto-retry. An
+                // intercepting overlay must receive the touch if one exists.
+                const r = await pad.boundingBox();
+                await page.touchscreen.tap(r.x + r.width / 2, r.y + r.height / 2);
+              };
               if (mode === 'memo') {
                 assert.equal(sawWatch, true, 'Memo watch status exists for its full real preview');
                 assert.equal(view.phase, 'recall');
@@ -117,11 +220,12 @@ try {
                 await page.emulateMedia({ reducedMotion: 'no-preference' });
                 for (let i = 0; i < 100 && !await page.locator('#resonanceStage[data-phase="recall"]').count(); i++) await page.clock.runFor(100);
                 assert.equal(await page.locator('#resonanceStage[data-phase="recall"]').count(), 1);
+                if (phone) await checkPhoneTask(page, mode, 'recall');
                 const watched = await page.evaluate(() => __watchedDirections);
                 assert.equal(watched.length, 3, 'Watch cues remain distinct, including repeated directions');
                 for (const direction of watched) {
                   await page.clock.runFor(180);
-                  await page.evaluate(dir => document.querySelector(`#game .corner-shape[data-dir="${dir}"]`).click(), direction);
+                  await answer(direction);
                 }
                 await page.clock.runFor(40);
                 assert.equal(await page.locator('#resonanceStage[data-phase="ready"]').count(), 1, 'Completion is not mislabeled as watching a sequence not yet shown');
@@ -130,7 +234,7 @@ try {
               const state = await page.evaluate(() => __SCS_QA__.gameState());
               if (state.stimulusId != null) {
                 await page.clock.runFor(mode === 'wissen' ? 1600 : 180);
-                await page.evaluate(direction => document.querySelector(`#game .corner-shape[data-dir="${direction}"]`).click(), state.direction);
+                await answer(state.direction);
                 const hit = await page.evaluate(() => ({ kind: document.querySelector('.corner-correct')?.dataset.impact,
                   state: __SCS_QA__.gameState() }));
                 assert.equal(hit.state.correct, 1, `${mode}: a normal answer drives feedback ${JSON.stringify({ before: state, hit })}`);
@@ -147,6 +251,7 @@ try {
                 }
                 await page.clock.runFor(500);
               }
+              if (phone) await page.setViewportSize(viewport);
               assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('#game .corner-shape,#centerPlatform')].filter(el => el.offsetParent).map(el => {
                 const r = el.getBoundingClientRect(); return [r.x, r.y, r.width, r.height];
               })), geometry, 'Phases/confirmation never move hit rectangles');
@@ -165,7 +270,7 @@ try {
             assert.deepEqual(errors, []);
           } finally { await context.close(); }
         }
-        console.log(`PASS ${engine} ${viewport.width}: ${modes.length} ${baseline ? 'baseline' : 'compiled'} world fixtures, fixed hit geometry, state and readable tasks`);
+        console.log(`PASS ${engine} ${viewport.width}: ${modes.length} world fixtures, fixed hit geometry, state and readable tasks${!baseline && viewport.width === 360 ? '; 320×568 touch answers and task clearance' : ''}`);
       }
     } finally { await browser.close(); }
   }

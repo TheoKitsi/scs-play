@@ -41,7 +41,7 @@ async function review(viewport) {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   try {
-    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.goto(`${base}?view=arcade`, { waitUntil: 'networkidle' });
     await page.locator('#btnGuest').waitFor({ state: 'visible' });
     await page.locator('#btnGuest').click();
     await page.locator('#home.active').waitFor();
@@ -214,29 +214,32 @@ async function review(viewport) {
         if (viewport.width < 768) {
           // A just-answered stimulus can remain in the snapshot until its
           // scheduled successor. A non-null ID alone is not a new answer window.
-          await page.waitForFunction(previous => {
+          const cdp = await context.newCDPSession(page);
+          await page.evaluate(() => {
+            globalThis.__touchDepthSeen = false;
+            const game = document.querySelector('#game');
+            const sample = () => requestAnimationFrame(() => {
+              const depth = __SCS_QA__.arcadeRendererState()?.depth;
+              if (depth?.x || depth?.y) globalThis.__touchDepthSeen = true;
+            });
+            game.addEventListener('pointermove', sample);
+            game.addEventListener('pointerup', () => game.removeEventListener('pointermove', sample), {once:true});
+          });
+          const gesture = await (await page.waitForFunction(previous => {
             const state = globalThis.__SCS_QA__.gameState();
-            return state.running && !state.paused && state.stimulusId != null && state.stimulusId !== previous;
-          }, confirmation.stimulusId);
-          await page.waitForTimeout(120);
-          const gesture = await page.evaluate(() => {
-            const state = globalThis.__SCS_QA__.gameState();
+            if (!state.running || state.paused || !state.direction || state.stimulusId === previous ||
+                state.stimulusAge < 100 || state.stimulusAge > 350) return false;
             const center = el => { const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
             return { from: center(document.querySelector('#centerPlatform')), to: center(document.querySelector(`.corner-shape[data-dir="${state.direction}"]`)), correct: state.correct };
-          });
-          const cdp = await context.newCDPSession(page);
+          }, confirmation.stimulusId,{timeout:5000})).jsonValue();
           try {
             await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [gesture.from] });
             await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: (gesture.from.x + gesture.to.x) / 2, y: (gesture.from.y + gesture.to.y) / 2 }] });
-            await page.waitForTimeout(40);
-            assert.ok(await page.evaluate(() => {
-              const depth = __SCS_QA__.arcadeRendererState().depth;
-              return depth.x !== 0 || depth.y !== 0;
-            }), `${label}: native touch reaches optional engine depth`);
             await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [gesture.to] });
             await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-            await page.waitForFunction(before => globalThis.__SCS_QA__.gameState().correct === before + 1, gesture.correct, { timeout: 1500 });
-            assert.equal(await page.evaluate(() => globalThis.__SCS_QA__.gameState().correct), gesture.correct + 1, `${label}: depth cannot interfere with real touch answers`);
+            const after = await page.evaluate(() => __SCS_QA__.gameState());
+            assert.equal(after.correct, gesture.correct + 1, `${label}: native release at ${JSON.stringify(gesture)}: ${JSON.stringify(after)}`);
+            assert.ok(await page.evaluate(()=>globalThis.__touchDepthSeen), `${label}: native touch reaches optional engine depth`);
             assert.equal(await page.locator('.arena-scenery').evaluate(el => el.style.transform), '', `${label}: release returns scenery to neutral`);
             assert.deepEqual(await page.evaluate(() => __SCS_QA__.arcadeRendererState().depth), { x: 0, y: 0 }, `${label}: release resets engine depth`);
           } finally { await cdp.detach(); }
@@ -258,11 +261,18 @@ async function review(viewport) {
     await page.locator('#results.active').waitFor();
     await page.waitForTimeout(1400);
     const results = await page.evaluate(() => ({
-      stats: getComputedStyle(document.querySelector('.results-grid')).gridTemplateColumns.split(' ').length,
+      stats: ['resAccuracy','resAvgReaction'].map(id => {
+        const r = document.getElementById(id).closest('.res-item').getBoundingClientRect();
+        return {left:r.left,right:r.right,top:r.top,width:r.width,height:r.height};
+      }),
       actions: getComputedStyle(document.querySelector('.results-buttons')).gridTemplateColumns.split(' ').length,
       oldDirection: document.querySelector('#resonanceStage').dataset.confirmedDirection,
     }));
-    assert.equal(results.stats, 2);
+    // auto-fit can serialize collapsed 0px tracks. Check the two painted cells.
+    const [accuracy,reaction] = results.stats;
+    assert.ok(results.stats.every(r => r.width > 0 && r.height > 0) &&
+      Math.abs(accuracy.top-reaction.top) < 1 && accuracy.right <= reaction.left+1,
+      `${label}: accuracy and reaction must be visible side-by-side`);
     assert.equal(results.actions, 2);
     assert.equal(results.oldDirection, undefined);
 

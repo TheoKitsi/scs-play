@@ -5,7 +5,7 @@
    ═══════════════════════════════════════ */
 import { CONFIG }           from '../config.js';
 import { t, getLanguage }    from '../i18n.js';
-import { $, $$, setText, setHTML, showScreen } from '../helpers/dom.js';
+import { $, $$, setText, showScreen } from '../helpers/dom.js';
 import { getUnlockLevel }   from '../helpers/modeUnlockHelper.js';
 import { updateAvatarDisplay } from '../helpers/avatarDisplayHelper.js';
 import { applyTheme }       from '../services/ThemeService.js';
@@ -72,10 +72,8 @@ function startDailyCountdown() {
   
   const updateTimer = () => {
     const ms = getTimeUntilMidnight();
-    if (ms <= 0) {
-      clearInterval(dailyCountdownInterval);
-      dailyCountdownInterval = null;
-      if (app.currentScreen === 'home') showHome();
+    if (!app.save.hasDailyToday()) {
+      updateDailyCard();
       return;
     }
     timerEl.textContent = `⏱ ${formatCountdown(ms)}`;
@@ -161,12 +159,14 @@ function openModePicker() {
   window.dispatchEvent(new Event('scs:home-explore'));
   const selected = CONFIG.MODE_ORDER[carouselIdx];
   grid.innerHTML = MODE_GROUPS.map(group => `<section class="mode-picker-group" aria-labelledby="picker-${group.key}">
-    <h3 id="picker-${group.key}">${t(group.key)}</h3><div class="mode-picker-grid">${group.modes.map(mode => {
+    <h3 id="picker-${group.key}">${t(group.key)} <span>${String(group.modes.length).padStart(2,'0')}</span></h3><div class="mode-picker-grid">${group.modes.map(mode => {
       const unlocked = app.save.isModeUnlocked(mode);
       return `<button type="button" class="mode-choice${unlocked ? '' : ' mode-choice--locked'}" data-mode-choice="${mode}" aria-pressed="${mode === selected}">
-        ${getModeSVG(mode)}<span class="mode-choice-name">${t(`mode_${mode}`)}</span>
+        <span class="catalog-cover" data-family="${arenaWorld(mode).family}">${getModeSVG(mode)}</span>
+        <span class="mode-choice-name">${t(`mode_${mode}`)}</span>
         <span class="mode-choice-task">${t(`task_${mode}`)}</span>
         <span class="mode-choice-meta">${unlocked ? t(`world_${arenaWorld(mode).id}`) : `${icon('lock')}${t('mode_locked', { n: getUnlockLevel(mode) })}`}</span>
+        ${unlocked ? '' : `<span class="catalog-trial-note">${t('trial_start')}</span>`}
       </button>`;
     }).join('')}</div></section>`).join('');
   openModal($('#modePicker'), {
@@ -303,6 +303,7 @@ function updatePlayCTA(currentMode) {
   if (!btn || !currentMode) return;
 
   const unlocked = app.save.isModeUnlocked(currentMode);
+  $('#homePlayCommand').hidden = !unlocked;
   const label = $('#arcadePlayLabel');
   btn.disabled = !unlocked;
   btn.setAttribute('aria-disabled', String(!unlocked));
@@ -327,20 +328,11 @@ function navigateCarousel(direction) {
   if (carouselAnimating) return;
   carouselAnimating = true;
   const total = CONFIG.MODE_ORDER.length;
-  const prevPlayType = app.selectedPlayType;
   carouselIdx = ((carouselIdx + direction) % total + total) % total;
   positionSlides();
   updateBackdropAura();
   updateHeroStats();
   updatePlayTypeSelector();
-  // Restore play type if the new mode supports it (A6 fix)
-  if (app.selectedMode !== 'sequenz' && prevPlayType) {
-    app.selectedPlayType = prevPlayType;
-    $$('.play-type-btn').forEach(btn => {
-      btn.classList.toggle('selected', btn.dataset.play === prevPlayType);
-      btn.setAttribute('aria-pressed', String(btn.dataset.play === prevPlayType));
-    });
-  }
   setTimeout(() => { carouselAnimating = false; }, 360);
   checkOnboardingHints();
 }
@@ -364,6 +356,28 @@ function initCarouselListeners() {
   // Arrow nav
   const prevBtn = $('#heroNavPrev');
   const nextBtn = $('#heroNavNext');
+  const bar = $('#home .mode-browser-bar');
+  const position = bar.querySelector('.mode-position');
+  const paging = document.createElement('div');
+  paging.className = 'catalog-paging';
+  $('#heroSlider').after(paging);
+  paging.append(prevBtn, position, nextBtn);
+  const today = document.createElement('button');
+  today.type = 'button';
+  today.className = 'btn-mode-browser';
+  today.id = 'catalogToday';
+  today.setAttribute('aria-controls','catalogDailyHeading');
+  bar.append(today);
+  const heading = document.createElement('h2');
+  heading.id = 'catalogDailyHeading';
+  heading.tabIndex = -1;
+  const actions = $('#home .today-actions');
+  actions.before(heading);
+  actions.after($('#home .prism-entry-row'));
+  today.onclick = focusDailyActions;
+  window.addEventListener('scs:home-today', () => {
+    if (app.currentScreen === 'home') focusDailyActions();
+  });
   if (prevBtn) prevBtn.addEventListener('click', () => navigateCarousel(-1));
   if (nextBtn) nextBtn.addEventListener('click', () => navigateCarousel(1));
   $('#btnAllModes')?.addEventListener('click', openModePicker);
@@ -436,7 +450,6 @@ export function updateModeSelector() {
 export function updatePlayTypeSelector() {
   const { save } = app;
   const isSequenz = app.selectedMode === 'sequenz';
-  const isBrainReflex = ['mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra','wissen'].includes(app.selectedMode);
   const competitionUnlocked = save.isCompetitionUnlocked();
   const completedStages = Math.min(save.data.competitionLevel || 0, CONFIG.COMPETITION_LEVELS);
   const competitionStars = (save.data.competitionStars || [])
@@ -553,7 +566,6 @@ export function showHome() {
 
   setText('#dqTitle', t('dq_title'));
   setText('#spTitle', t('sp_title'));
-  setText('#dailyCard .daily-title', t('daily_challenge_short'));
 
   /* Update lives & fire display in home header */
   const livesEl = $('#homeLivesCount');
@@ -562,15 +574,49 @@ export function showHome() {
   const fireEl = $('#homeFireCount');
   if (fireEl) fireEl.textContent = save.getFireBalance();
 
+  setText('#catalogToday', `${t('today_label')} ↓`);
+  setText('#catalogDailyHeading', t('today_label'));
+  updateDailyCard();
+
+  updateAvatarDisplay();
+  checkDailyLogin();
+  window.dispatchEvent(new Event('scs:update-wheel-card'));
+  try { renderDailyQuestsPanel(); } catch (e) { console.warn('quests render failed', e); }
+  setText('#weekendBadge', '');
+  const rate = save.getDailyXPInfo ? save.getDailyXPInfo().rate : 1;
+  setText('#xpRateHint', rate < 1 ? t('xp_rate_info', { n: Math.round(rate * 100) }) : '');
+}
+
+function focusDailyActions() {
+  const heading = $('#catalogDailyHeading');
+  heading?.focus({preventScroll:true});
+  heading?.scrollIntoView({block:'start'});
+}
+
+function updateDailyCard() {
+  const { save } = app;
   const dailyCard = $('#dailyCard');
   const dailyBtn = $('#btnDaily');
   const dailyReward = $('#dailyReward');
   const hasDailyPlayed = save.hasDailyToday();
   if (dailyCard) {
+    const title = $('.daily-title', dailyCard);
+    title.removeAttribute('data-i18n');
+    title.textContent = t('daily_challenge_short');
+    let topic = $('.daily-topic', dailyCard);
+    if (!topic) {
+      topic = document.createElement('small');
+      topic.className = 'daily-topic';
+      title.before(topic);
+    }
+    const daily = app.game.constructor.dailyConfig();
+    topic.textContent = `${t(`mode_${daily.mode}`)} · ${t(`play_${daily.playType}`)}`;
+    for (const el of [dailyBtn, dailyReward]) el?.removeAttribute('data-i18n');
+    if (dailyBtn) dailyBtn.disabled = hasDailyPlayed;
     if (hasDailyPlayed) {
       dailyCard.classList.add('daily-done');
       if (dailyBtn) dailyBtn.textContent = t('daily_done');
-      if (dailyReward) dailyReward.textContent = t('daily_reward_summary');
+      if (dailyReward) dailyReward.textContent = `${t('score')}: ${save.getDailyScore().toLocaleString(getLanguage())}`;
       startDailyCountdown();
     } else {
       dailyCard.classList.remove('daily-done');
@@ -579,28 +625,7 @@ export function showHome() {
         dailyReward.textContent = t('daily_reward_lean', { xp: DAILY_REWARD.xp, fire: DAILY_REWARD.fire });
       }
       stopDailyCountdown();
+      setText('#dailyTimer','');
     }
   }
-
-  updateAvatarDisplay();
-  checkDailyLogin();
-  window.dispatchEvent(new Event('scs:update-wheel-card'));
-  /* v60 Welle 4: Quests panel + Season Pass bar */
-  try { renderDailyQuestsPanel(); } catch (e) { console.warn('quests render failed', e); }
-
-  /* Weekend XP bonus badge */
-  const weekendBadge = $('#weekendBadge');
-  if (weekendBadge) {
-    weekendBadge.textContent = '';
-  }
-
-  /* XP rate hint when throttled */
-  const xpRateHint = $('#xpRateHint');
-  if (xpRateHint) {
-    const rate = save.getDailyXPInfo ? save.getDailyXPInfo().rate : 1;
-    xpRateHint.textContent = rate < 1 ? t('xp_rate_info', { n: Math.round(rate * 100) }) : '';
-  }
-
-  /* Prism teaches inside its first level. Arcade hints are requested only
-     after interacting with the mode carousel, never over the new entry. */
 }

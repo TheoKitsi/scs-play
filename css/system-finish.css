@@ -1,0 +1,109 @@
+/* System surfaces. Load after the shared mobile and arcade sheets. */
+html:where(:has(#settings.active, #appDialog.active)) { font-size: 100% }
+:is(#settings,#appDialog,#pwaInstallBanner,#landscapeWarning)[hidden],
+:is(#settings,#appDialog) [hidden] { display: none !important }
+
+#settings .screen-content { gap: .85rem; scroll-padding-block: 5.25rem 5.5rem }
+#settings .screen-header { min-height: 3.65rem; padding: .65rem .2rem; gap: .75rem; border-bottom: 1px solid var(--outline) }
+#settings .screen-header h2 { font: 400 clamp(1.75rem,6vw,2.5rem)/1.1 Georgia,serif; letter-spacing: -.04em }
+#settings .section-seal { width: 2.4rem; height: 2.4rem; padding: .56rem; color: var(--text-dim); border-radius: .4rem; background: var(--surface) }
+#settings .settings-layout { gap: 1.1rem }
+#settings .settings-nav { counter-reset: section; gap: .35rem }
+#settings .settings-nav button {
+  counter-increment: section; flex: 1 1 5.4rem; display: grid; align-content: start; gap: .22rem;
+  min-width: 0; min-height: 44px; padding: .55rem .55rem .65rem; border-radius: .4rem;
+  font: 550 .875rem/1.28 var(--font-display); overflow-wrap: anywhere; color: var(--text);
+  background: var(--surface); box-shadow: none;
+}
+#settings .settings-nav button::before {
+  content: counter(section,decimal-leading-zero) / ""; color: var(--text-muted);
+  font: 550 .75rem/1.1 var(--font-display); font-variant-numeric: tabular-nums;
+}
+#settings .settings-nav button[aria-current="true"] { border-color: var(--primary-glow); box-shadow: inset 0 -3px var(--primary-glow) }
+#settings .settings-list { gap: 1.3rem }
+#settings .setting-group { padding: 0 clamp(12px,4vw,20px) .25rem; border-radius: .65rem; background: var(--surface); box-shadow: none; margin: 0 }
+#settings .setting-group legend {
+  width: auto; padding: 0 .42rem; margin-inline-start: -.42rem; color: var(--text);
+  font: 600 1.05rem/1.35 var(--font-display); letter-spacing: -.018em; overflow-wrap: anywhere;
+}
+#settings .setting-row { align-items: center; gap: .6rem 1rem; min-height: 3.4rem; padding-block: .82rem; font-size: 1rem }
+#settings .setting-row > span { min-width: 0; padding: 0; font-size: 1em; line-height: 1.35; overflow-wrap: anywhere }
+#settings .setting-copy { flex: 1 1 0; gap: .28rem; text-align: start }
+#settings .setting-copy small { font-size: .875rem; line-height: 1.48; color: var(--text-dim); font-weight: 400 }
+#settings #depthStatus { align-self: start; border-inline-start: 2px solid var(--primary-glow); padding-inline-start: .52rem; font-weight: 550 }
+#settings .setting-row input[type="checkbox"] { align-self: center }
+#settings .setting-volume { gap: .12rem .5rem; padding-block: .65rem 0 }
+#settings .setting-volume output { width: auto; font-size: .9rem }
+#settings .setting-volume:has(input:disabled) { opacity: 1; color: var(--text-muted) }
+#settings .setting-volume input:disabled { opacity: .62 }
+#settings .setting-row select { max-width: 100%; font: inherit; padding: .5rem; min-height: 48px }
+#settings .settings-local-data { margin-block: .5rem; padding: .7rem .8rem; border-radius: .25rem; color: var(--text-dim); background: var(--bg); font-size: .92rem; line-height: 1.5 }
+#settings .legal-links { justify-content: start; gap: .25rem .85rem; margin: 0; font-size: .92rem }
+#settings .legal-links a { display: flex; align-items: center; min-height: 44px; color: var(--text-dim); padding: .4rem; overflow-wrap: anywhere }
+#settings .bottom-back-bar { padding: .4rem .2rem max(.4rem,var(--bottom-inset)); border-top: 1px solid var(--outline) }
+#settings .bottom-back-bar .btn { width: 100%; min-width: 0; justify-content: center; white-space: normal; font-size: 1rem; line-height: 1.3 }
+#settings .settings-save-notice,#authError:not(:empty),#bootStatus[role="alert"] {
+  width: 100%; border: 1px solid var(--outline); border-inline-start: 4px solid var(--warning);
+  border-radius: .35rem; padding: .8rem 1rem; text-align: start; background: var(--card); color: var(--text); overflow-wrap: anywhere;
+}
+#settings .settings-save-notice p,#authError:not(:empty),#bootStatus[role="alert"] { font-size: .95rem; line-height: 1.5 }
+#boot:has(#bootRetry) { overflow-y: auto; justify-content: safe center }
+#boot .boot-content:has(#bootRetry) { width: min(100%,24rem); padding: 1rem }
+#boot:has(#bootRetry) :is(.brand-scene,.boot-progress,.logo-subtitle) { display: none }
+#bootRetry { margin-top: .8rem; min-height: 48px }
+#settings #btnSettingsRetrySave { margin: 0; white-space: normal }
+#settings [aria-busy="true"] { cursor: progress }
+
+#appDialog { overscroll-behavior: contain; grid-template: minmax(0,1fr) / minmax(0,1fr) }
+#appDialog .app-dialog-panel {
+  width: min(100%,28rem); max-height: 100%; gap: 0; padding: 0; overflow-y: auto; overscroll-behavior: contain;
+  border-radius: .85rem; background: var(--surface); border: 1px solid var(--outline);
+}
+#appDialog .app-dialog-body { flex: 0 1 auto; min-height: 4rem; overflow-y: auto; overscroll-behavior: contain; padding: clamp(16px,5vw,26px); user-select: text; overflow-wrap: anywhere }
+#appDialog .app-dialog-body:focus-visible { outline: 2px solid var(--primary-glow); outline-offset: -4px }
+#appDialog h2 { font: 400 1.8rem/1.14 Georgia,serif; letter-spacing: -.035em; margin: 0 }
+#appDialogMessage { margin-block: .7rem 0; font-size: 1rem; line-height: 1.55; white-space: pre-line }
+#appDialogMessage:empty { display: none }
+#appDialogCopy { display: block; min-height: 6rem; height: min(24dvh,11rem); resize: vertical; margin-top: .75rem; font-size: 1rem }
+#appDialog .app-dialog-actions { padding: .8rem 1rem; border-top: 1px solid var(--outline); gap: .5rem; background: var(--card) }
+#appDialog .app-dialog-actions button { flex: 1 1 7rem; min-width: 0; min-height: 48px; white-space: normal; overflow-wrap: anywhere; line-height: 1.35 }
+@media (max-width: 36rem) {
+  #appDialog { place-items: end center; padding: max(10px,var(--safe-top)) max(8px,var(--safe-right)) max(8px,var(--bottom-inset)) max(8px,var(--safe-left)) }
+}
+@media (min-width: 768px) { #settings .settings-nav button { flex-basis: auto } }
+@media (max-height: 31rem) { #settings .screen-header,#settings .bottom-back-bar { position: static } #settings .screen-content { scroll-padding-block: 1rem } }
+
+:is(#home,#settings) #pwaInstallBanner {
+  position: relative; inset: auto; z-index: auto; display: grid; grid-template-columns: minmax(0,1fr) 44px;
+  align-items: center; gap: .55rem; width: 100%; padding: .8rem; margin-block: .5rem;
+  border-radius: .55rem; background: var(--card); border: 1px solid var(--outline); box-shadow: none;
+}
+#pwaInstallBanner .pwa-install-left { grid-area: 1 / 1 }
+#pwaInstallBanner .pwa-install-title { font-size: 1rem; letter-spacing: 0 }
+#pwaInstallBanner .pwa-install-desc { font-size: .875rem; line-height: 1.4; white-space: normal; overflow-wrap: anywhere }
+#pwaInstallBanner .btn-pwa-install { grid-area: 2 / 1 / auto / -1; margin: 0; min-height: 46px; font-size: 1rem; white-space: normal; background: var(--primary); color: var(--on-primary) }
+#pwaInstallBanner .pwa-install-dismiss { grid-area: 1 / 2; position: static; height: 44px; width: 44px; min-height: 44px; border: 1px solid var(--outline); border-radius: .45rem; color: var(--text); background: var(--surface); opacity: 1 }
+
+#offlineToast,#toastContainer .achievement-toast { min-height: 44px; padding: .65rem .9rem; border: 1px solid var(--outline); border-inline-start: 4px solid var(--primary-glow); border-radius: .55rem; background: var(--card); text-align: start; overflow-wrap: anywhere }
+#offlineToast { justify-content: start; border-inline-start-color: var(--warning); font-size: .95rem; line-height: 1.45; font-weight: 500 }
+#offlineToast.online { border-inline-start-color: var(--success) }
+#offlineToast .offline-icon { display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; width: 1.3em; height: 1.3em; font-weight: 700 }
+#offlineToast .offline-msg { white-space: normal; overflow: visible }
+#toastContainer .toast-text { font: 500 .95rem/1.4 var(--font-display); letter-spacing: 0 }
+/* The toast owner removes its status on animationend. A shorter animation on
+   the nested icon would bubble first and cut off the message mid-sentence. */
+#toastContainer .toast-icon,#toastContainer .toast-icon svg { animation: none }
+#pauseOverlay #landscapeWarning { position: static; transform: none; width: 100%; padding: .55rem .7rem; text-align: start; line-height: 1.35; overflow-wrap: anywhere }
+:is(#settings,#appDialog,#pwaInstallBanner) :is(button,input,select,textarea,a,legend):focus-visible {
+  outline: 3px solid var(--primary-glow); outline-offset: 2px; box-shadow: none;
+}
+@media (prefers-contrast: more) {
+  :is(#settings,#appDialog,#offlineToast,#toastContainer,#pwaInstallBanner,#landscapeWarning) { --outline: var(--text-muted); --outline-subtle: var(--text-muted); --text-dim: var(--text) }
+}
+@media (forced-colors: active) {
+  #settings input[type="checkbox"] { appearance: auto; width: 28px; height: 28px; flex-basis: 28px; accent-color: auto }
+  #settings input[type="checkbox"]::after { content: none }
+  #settings .setting-volume input[type="range"] { appearance: auto }
+  #settings .settings-nav button[aria-current="true"] { border: 2px solid Highlight; text-decoration: underline }
+  :is(#settings,#appDialog,#pwaInstallBanner) :focus-visible { outline-color: Highlight }
+}

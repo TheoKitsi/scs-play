@@ -15,6 +15,19 @@ const FINISHES = Object.freeze({ klassik: 'ceramic', beginner: 'ceramic', expert
   memo: 'satin', sequenz: 'alloy', stroop: 'satin', fokus: 'alloy', chaos: 'ceramic' });
 const SURFACES = Object.freeze({ ceramic: { roughness: .38, metallic: .08 }, alloy: { roughness: .29, metallic: .7 },
   slate: { roughness: .72, metallic: .04 }, satin: { roughness: .48, metallic: .18 } });
+// Physical silhouettes of the ten instruments, in logical pixels. The camera,
+// DOM hit areas, stimuli and task palette are independent of these dimensions.
+// [key radius, display radius, key depth, display depth, anodized rim tint]
+const INSTRUMENT = {
+  klassik:[15,36,9,13,0xa48873], beginner:[26,18,11,12,0xa69ac3],
+  expert:[8,Infinity,9,14,0x74949e], mathe:[7,11,7,9,0x7f9d95],
+  wissen:[12,22,8,10,0xb39a70], memo:[10,19,12,12,0xb29aa9],
+  sequenz:[23,32,14,9,0x7d98b6], stroop:[12,10,7,10,0x8e969c],
+  fokus:[Infinity,Infinity,8,12,0x96a69a], chaos:[18,22,10,14,0xa89890],
+};
+function bevelTint(floor, rim) {
+  return [16,8,0].reduce((acc,shift)=>acc | Math.round(((floor>>shift)&255)*.57 + ((rim>>shift)&255)*.43)<<shift,0);
+}
 const deckTint = floor => {
   const lift = shift => Math.min(255, ((floor >> shift) & 255) + 28);
   return (lift(16) << 16) | (lift(8) << 8) | lift(0);
@@ -103,13 +116,14 @@ class ArcadeScene extends Phaser.Scene {
     const level = STEPS[energy] || 0;
     const l = x - w / 2, r = x + w / 2;
     if (this.deck) {
-      this.deck.setPosition(x, cy).setDisplaySize(w + 12, h + 25).setTint(deckTint(palette.floor));
-      const radius = (t, center) => world.id === 'fokus' || (center && world.id === 'expert') ? Math.min(t.w, t.h) / 2
-        : ['beginner', 'sequenz', 'chaos'].includes(world.id) ? center ? 28 : 20 : world.id === 'mathe' ? 8 : center ? 24 : 14;
+      this.deck.setPosition(x, cy).setDisplaySize(w + 12, h + 25).setTint(deckTint(palette.floor)).setAlpha(.66);
       if (this.solidGeometry !== geo) {
-        this.solid.setObjects([arcadeFrame(x, cy, w + 12, h + 25, deckTint(palette.floor)),
+        const [keyRadius,faceRadius,keyDepth,faceDepth,rim] = INSTRUMENT[world.id];
+        this.solid.setObjects([arcadeFrame(x, cy, w + 12, h + 25, bevelTint(deckTint(palette.floor),rim)),
           ...[...targets, { ...c, dir: 'center' }].map(t => ({ kind: 'station', x: t.x, y: t.y, w: t.w, h: t.h,
-            r: radius(t, t.dir === 'center'), color: deckTint(palette.floor), finish: FINISHES[world.id], ...SURFACES[FINISHES[world.id]] }))]);
+            r: Math.min(t.w/2,t.h/2,t.dir === 'center' ? faceRadius : keyRadius), z:t.dir === 'center' ? faceDepth : keyDepth,
+            color: t.dir === 'center' ? palette.edge : deckTint(palette.floor),
+            finish: FINISHES[world.id], ...SURFACES[FINISHES[world.id]] }))]);
         this.solidGeometry = geo;
       }
       this.solid.setEnabled(this.owner.tier === 'high');
@@ -350,7 +364,7 @@ export function createArcadeArena(root, mode, onContextLost, depthEnabled = fals
   for (const type of ['scs:motionpreference', 'scs:perftier']) window.addEventListener(type, policy, { signal: listeners.signal });
   window.addEventListener('scs:screenchange', ({ detail }) => {
     if (detail.id !== 'game') activity(false);
-    if (['home', 'auth', 'prism', 'results'].includes(detail.id)) destroy();
+    if (['home', 'hub', 'auth', 'prism', 'results'].includes(detail.id)) destroy();
   }, { signal: listeners.signal });
   document.addEventListener('visibilitychange', () => { if (document.hidden) activity(false); }, { signal: listeners.signal });
   const box = root.getBoundingClientRect();

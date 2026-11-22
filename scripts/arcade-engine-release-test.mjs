@@ -39,7 +39,7 @@ try {
           page.on('pageerror', e => errors.push(e.message));
           page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
           if (mode === 'sequenz') await page.emulateMedia({ reducedMotion: 'reduce' });
-          await page.goto(base, { waitUntil: 'networkidle' });
+          await page.goto(`${base}?view=arcade`, { waitUntil: 'networkidle' });
           await page.locator('#btnGuest').click(); await page.waitForSelector('#home.active');
           await page.evaluate(mode => __SCS_QA__.setGameSelection(mode, 'endless'), mode);
           if (mode === 'klassik') {
@@ -112,10 +112,8 @@ try {
           if (mode === 'stroop') {
             await page.waitForSelector('.stroop-display');
             assert.equal(await page.locator('.stroop-display').evaluate(el => getComputedStyle(el).textShadow), 'none', 'Ink is readable without the legacy neon halo');
-            assert.equal(await page.locator('.stroop-display').evaluate(el => {
-              const swatch = document.createElement('span'); swatch.style.backgroundColor = getComputedStyle(document.body).getPropertyValue('--bg');
-              return getComputedStyle(el).backgroundColor === swatch.style.backgroundColor;
-            }), true, 'The exact ink sits on an opaque theme-background plate, never on a specular 3D highlight');
+            assert.equal(await page.locator('.stroop-display').evaluate(el => getComputedStyle(el).backgroundColor),
+              'rgb(16, 16, 16)', 'Exact ink sits on the audited opaque neutral plate, independent of theme and specular highlights');
             assert.ok(await page.locator('#game [data-content="stroop"]').evaluateAll(nodes => nodes.every(el => el.style.backgroundColor === getComputedStyle(el).backgroundColor)), 'All answer swatches retain their exact assigned background colour');
           }
           if (mode === 'sequenz') {

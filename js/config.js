@@ -390,7 +390,7 @@ export const CONFIG = {
   /* New mode unlock levels (0 = always available) */
   UNLOCK_MATHE: 0,
   UNLOCK_WORTE: 0,
-  UNLOCK_MEMO:  2,
+  UNLOCK_MEMO:  0,
   UNLOCK_SEQUENZ: 3,
   UNLOCK_STROOP: 0,
   UNLOCK_FOKUS: 2,

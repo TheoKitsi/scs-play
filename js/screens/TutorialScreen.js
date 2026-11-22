@@ -13,6 +13,8 @@ import { icon } from '../renderers/icons.js';
 let _step = 0;
 let _tryBound = false;
 let _advanceTimer = null;
+let _feedbackTimer = null;
+const stations = ['circle', 'square', 'triangle', 'star'];
 
 export function showTutorial() {
   clearTimeout(_advanceTimer);
@@ -20,12 +22,21 @@ export function showTutorial() {
   const colors = CONFIG.COLORS[app.colorblind ? 'colorblind' : 'normal'];
   for (const selector of ['.tut-corner', '.tut-try-corner']) {
     $$(selector).forEach((corner, index) => {
-      corner.innerHTML = shapeSVG('square', colors[index], 48);
+      corner.innerHTML = shapeSVG(stations[index], colors[index], 48);
       const dir = corner.dataset.tutorialDir;
       if (dir) corner.setAttribute('aria-label', t(`direction_${dir}`));
     });
   }
-  $$('.tut-shape-dot').forEach(el => { el.innerHTML = shapeSVG('square', colors[0], 48); });
+  $$('.tut-shape-dot').forEach(el => { el.innerHTML = shapeSVG(stations[0], colors[0], 48); });
+  const hint = $('#tutTryHint'), feedback = $('#tutTryFeedback');
+  if (hint.parentElement.id === 'tutTryArea') {
+    // Reserve a separate line for instructions so they never cover a control.
+    const caption = document.createElement('div');
+    caption.className = 'tut-practice-caption';
+    $('#tutTryArea').after(caption);
+    caption.append(hint, feedback);
+    feedback.setAttribute('role', 'status');
+  }
   $('.tut-speed-icon').innerHTML = icon('bolt');
   $('.tut-x-fire').innerHTML = `${icon('fire')} ×5`;
   showScreen('tutorial', app);
@@ -127,20 +138,25 @@ function _showTryFeedback(correct, dir) {
   if (feedback) {
     feedback.textContent = correct ? t('correct') : t('tutorial_try_again');
     feedback.style.color = 'var(--text)';
-    feedback.classList.remove('show');
-    requestAnimationFrame(() => feedback.classList.add('show'));
-    setTimeout(() => feedback.classList.remove('show'), 1200);
+    clearTimeout(_feedbackTimer);
+    feedback.classList.add('show');
+    hint.style.visibility = 'hidden';
+    _feedbackTimer = setTimeout(() => {
+      feedback.classList.remove('show');
+      hint.style.visibility = '';
+    }, 1200);
   }
 
   if (correct) {
-    if (hint) hint.style.display = 'none';
     if (app.audio) app.audio.correct(1);
     /* Auto-advance to next step after success */
     clearTimeout(_advanceTimer);
     _advanceTimer = setTimeout(() => {
       if (_step === 1 && app.currentScreen === 'tutorial') {
+        const moveFocus = $('#tutTryArea').contains(document.activeElement);
         _step++;
         renderStep();
+        if (moveFocus) $('#btnTutorialNext').focus({ preventScroll: true });
       }
     }, 800);
   } else {
@@ -149,6 +165,11 @@ function _showTryFeedback(correct, dir) {
 }
 
 function renderStep() {
+  clearTimeout(_advanceTimer);
+  clearTimeout(_feedbackTimer);
+  $('#tutTryHint').style.visibility = '';
+  $('#tutTryFeedback').classList.remove('show');
+  $('#tutTryFeedback').textContent = '';
   const slides = $$('#tutorialCarousel .tutorial-slide');
   const dots = $$('#tutorialDots .tut-dot');
   const prevBtn = $('#btnTutorialPrev');

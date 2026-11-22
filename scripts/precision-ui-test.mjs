@@ -36,7 +36,7 @@ try {
       return Object.fromEntries(['fire', 'lives', 'totalXP', 'purchases', 'activeTheme', 'activeTrail', 'settings'].map(key => [key, data[key]]));
     });
     try {
-      await page.goto(base, { waitUntil: 'networkidle' });
+      await page.goto(`${base}?view=arcade`, { waitUntil: 'networkidle' });
       await page.locator('#btnGuest').click();
       await page.locator('#home.active').waitFor();
       await page.waitForTimeout(1000);
