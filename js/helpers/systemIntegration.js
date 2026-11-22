@@ -3,6 +3,7 @@ import app from '../appState.js';
 import { $ } from './dom.js';
 import { dismissTopModal } from './modal.js';
 import { cancelHaptics } from './haptics.js';
+import { appDialog } from './appDialog.js';
 
 let wakeLock = null;
 let deferredInstall = null;
@@ -72,25 +73,42 @@ export function initOfflineIndicator() {
   if (!toast) return;
 
   let hideTimer = null;
+  let pendingState = null;
+  const icon = toast.querySelector('.offline-icon');
+  icon?.setAttribute('aria-hidden', 'true');
+  if (msgEl) msgEl.textContent = '';
+  function hideToast() {
+    clearTimeout(hideTimer);
+    toast.classList.remove('active');
+    if (msgEl) msgEl.textContent = '';
+  }
   function showToast(isOnline) {
-    if (msgEl) msgEl.textContent = isOnline ? t('online_msg') : t('offline_msg');
+    if (document.hidden) { pendingState = isOnline; return; }
+    pendingState = null;
     toast.classList.toggle('online', isOnline);
     toast.classList.add('active');
+    if (icon) icon.textContent = isOnline ? '✓' : '!';
+    if (msgEl) msgEl.textContent = isOnline ? t('online_msg') : t('offline_msg');
     clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => {
-      hideTimer = null;
-      toast.classList.remove('active');
-    }, 5000);
+    hideTimer = setTimeout(hideToast, 6500);
   }
 
   window.addEventListener('offline', () => showToast(false));
   window.addEventListener('online', () => showToast(true));
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (toast.classList.contains('active')) pendingState = toast.classList.contains('online');
+      hideToast();
+    }
+    else if (pendingState !== null) showToast(pendingState);
+  });
+  if (navigator.onLine === false) showToast(false);
 }
 
 export function initVisibilityPause(pauseGame) {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) cancelHaptics();
-    if (document.hidden && app.currentScreen === 'game' && app.game.running && !app.game.paused) {
+    if (document.hidden && app.currentScreen === 'game' && app.game?.running && !app.game.paused) {
       pauseGame();
     }
     app.audio?.setVisibility?.(document.hidden);
@@ -120,41 +138,97 @@ export function initWakeLock() {
 }
 
 export function initErrorBoundary(debug) {
+  const offerBootRetry = () => {
+    const status = $('#boot.active #bootStatus');
+    if (!status || $('#bootRetry')) return;
+    status.setAttribute('role', 'alert');
+    status.textContent = document.documentElement.lang === 'de'
+      ? 'SCS Play konnte nicht gestartet werden. Versuche, die App neu zu laden.'
+      : 'SCS Play could not start. Try reloading the app.';
+    const retry = document.createElement('button');
+    retry.id = 'bootRetry';
+    retry.type = 'button';
+    retry.className = 'btn btn-secondary';
+    retry.textContent = t('retry');
+    retry.addEventListener('click', () => location.reload());
+    status.after(retry);
+    retry.setAttribute('aria-describedby', status.id);
+    retry.focus();
+  };
   window.addEventListener('error', (e) => {
     if (debug) console.error('[SCS Error]', e.message, e.filename, ':', e.lineno);
+    if (e.error) offerBootRetry();
     e.preventDefault();
   });
   window.addEventListener('unhandledrejection', (e) => {
     if (debug) console.error('[SCS Rejection]', e.reason);
+    if (e.reason?.name !== 'AbortError') offerBootRetry();
     e.preventDefault();
   });
 }
 
 export function initPwaInstallPrompt() {
+  const banner = $('#pwaInstallBanner');
+  if (!banner) return;
+  const homeContainer = banner.parentElement;
+  const dismiss = $('#btnDismissInstall');
+  dismiss.dataset.i18nAria = 'ad_interstitial_close';
+  const hide = () => {
+    const focused = banner.contains(document.activeElement);
+    banner.hidden = true;
+    if (!focused) return;
+    const next = app.currentScreen === 'settings' ? $('#selectLang') : $('#btnPlay');
+    if (next && !next.disabled && next.getClientRects().length) next.focus();
+  };
+  const place = () => {
+    const destination = app.currentScreen === 'settings' ? $('#settingsProfile') : homeContainer;
+    if (destination && banner.parentElement !== destination) destination.append(banner);
+  };
+  const rememberDismissal = () => {
+    try { localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); } catch {}
+  };
+  banner.hidden = true;
+  banner.style.removeProperty('display');
+  window.addEventListener('scs:screenchange', place);
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredInstall = e;
-    const dismissed = localStorage.getItem(INSTALL_DISMISS_KEY);
-    if (dismissed && Date.now() - parseInt(dismissed) < 7 * 86400000) return;
-    const banner = $('#pwaInstallBanner');
-    if (banner) banner.style.display = '';
+    let dismissed;
+    try { dismissed = Number(localStorage.getItem(INSTALL_DISMISS_KEY)); } catch {}
+    if (dismissed && Date.now() - dismissed < 7 * 86400000) return;
+    place();
+    dismiss.setAttribute('aria-label', t(dismiss.dataset.i18nAria));
+    banner.hidden = false;
   });
 
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#btnDismissInstall')) return;
-    const banner = $('#pwaInstallBanner');
-    if (banner) banner.style.display = 'none';
-    localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now()));
+  dismiss.addEventListener('click', () => {
+    hide();
+    rememberDismissal();
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredInstall = null;
+    hide();
   });
 
   app.promptInstall = async () => {
     if (!deferredInstall) return false;
-    deferredInstall.prompt();
-    const { outcome } = await deferredInstall.userChoice;
+    const prompt = deferredInstall;
     deferredInstall = null;
-    const banner = $('#pwaInstallBanner');
-    if (banner) banner.style.display = 'none';
-    return outcome === 'accepted';
+    try {
+      await prompt.prompt();
+      const { outcome } = await prompt.userChoice;
+      hide();
+      if (outcome === 'dismissed') rememberDismissal();
+      return outcome === 'accepted';
+    } catch {
+      hide();
+      if (['settings', 'home'].includes(app.currentScreen)) {
+        await appDialog({ title: t('pwa_install_title'), message: document.documentElement.lang === 'de'
+          ? 'Die Installation wurde nicht gestartet. Du kannst im Browser weiterspielen.'
+          : 'Installation did not start. You can keep playing in your browser.' });
+      }
+      return false;
+    }
   };
 }
 
@@ -163,6 +237,10 @@ export function initBackButton({ pauseGame, quitGame, showHome, backFromSettings
     if (dismissTopModal('back')) return;
     if (backFromSettings?.()) return;
     if (app.currentScreen === 'prism' && app.prismNavigation) { app.prismNavigation.back(); return; }
+    if (app.currentScreen === 'hub') {
+      if ($('#hub [data-action="collection"][aria-current]')) { $('#hub [data-action="play"]').click(); return; }
+      return false;
+    }
     const isRootScreen = app.currentScreen === 'home' || app.currentScreen === 'boot' || app.currentScreen === 'auth';
     if (!app.currentScreen || isRootScreen) return false;
     if (app.currentScreen === 'game') {
@@ -190,6 +268,8 @@ export function initBackButton({ pauseGame, quitGame, showHome, backFromSettings
 }
 
 export function initOrientationListeners(pauseGame) {
+  const warning = $('#landscapeWarning');
+  if (warning) $('#btnResume')?.before(warning);
   const update = () => {
     if (checkOrientation() && app.game?.running && !app.game.paused) pauseGame?.();
   };

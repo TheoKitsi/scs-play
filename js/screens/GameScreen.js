@@ -4,6 +4,11 @@
    spawn handling, swipe wiring.
    ═══════════════════════════════════════ */
 import { CONFIG }           from '../config.js';
+import { rememberPlay } from '../helpers/lastPlay.js';
+import { updateFocus } from './gameHud/detailFocus.js';
+import { updateMemory } from './gameHud/detailMemory.js';
+import { renderArenaLives } from './gameHud/arenaPolish.js';
+import { beginMissReceipt, noteMiss, roundGuide, clockFact } from './gameHud/roundGuide.js';
 import { t, getLanguage }   from '../i18n.js';
 import { $, $$, setText, hexToRgba, showScreen } from '../helpers/dom.js';
 import { haptic, cancelHaptics } from '../helpers/haptics.js';
@@ -65,7 +70,9 @@ function lockGameScroll() {
   document.documentElement.style.overflow = 'hidden';
   if (window.__gameScrollBlocker) window.__gameScrollBlocker.el?.removeEventListener('touchmove', window.__gameScrollBlocker.fn);
   const el = $('#game');
-  const fn = event => event.preventDefault();
+  const fn = event => {
+    if (!event.target.closest('#pauseOverlay, #modeInstructionOverlay')) event.preventDefault();
+  };
   el?.addEventListener('touchmove', fn, { passive: false });
   window.__gameScrollBlocker = { el, fn };
 }
@@ -164,6 +171,8 @@ const CHAOS_SIZE_MAP = { tiny: '0.7rem', small: '1.2rem', medium: '2rem', large:
 const COLORBLIND_MARKS = {
   'diagonal-stripes': '///', dots: '•••', crosshatch: '+++', 'horizontal-stripes': '===',
 };
+const PRINT_PATTERNS = Object.keys(COLORBLIND_MARKS);
+const arrowName = glyph => t(`direction_${({ '←': 'left', '→': 'right', '↑': 'up', '↓': 'down' })[glyph]}`);
 const PALETTE_NAMES = ['red', 'blue', 'green', 'orange', 'pink', 'indigo', 'mint', 'gold', 'lilac', 'cyan', 'rose', 'cream'];
 const ACCESSIBLE_PALETTE_NAMES = ['coral', 'violet', 'gray', 'cyan', 'red', 'slate', 'sky', 'gold', 'charcoal', 'orange', 'plum', 'berry'];
 let cornerLanguage = null;
@@ -180,11 +189,12 @@ function getColorName(hex) {
 
 export function getGameplayCornerLabel(dir, info, mode = app.game?.mode) {
   const direction = t(`direction_${dir}`);
-  if (info.type === 'stroop') return `${direction}: ${getColorName(info.value) || info.display}`;
+  if (info.type === 'fokus') return `${direction}: ${arrowName(info.display)}`;
+  if (info.type === 'stroop') return `${direction}: ${getColorName(app.colorblind ? info.colorblind : info.value) || info.display}`;
   if (info.type === 'chaos') {
     return t('chaos_corner_label', {
       direction,
-      color: getColorName(info.color),
+      color: getColorName(app.colorblind ? info.colorblind : info.color),
       shape: t(`memo_symbol_${info.shape}`),
       size: t(`chaos_size_${info.size}`),
     });
@@ -196,6 +206,11 @@ export function getGameplayCornerLabel(dir, info, mode = app.game?.mode) {
 
 /** Describe only what is visible, never the correct target's direction. */
 export function getGameplayStimulusLabel(data, mode, colorblind = false) {
+  if (data.type === 'fokus') {
+    const arrows = [...(data.flankers || [])];
+    arrows.splice(Math.floor(arrows.length / 2), 0, data.display);
+    return arrows.map(arrowName).join(', ');
+  }
   if (mode === 'klassik') return t('game_color_stimulus', { color: getColorName(colorblind ? data.colorblind : data.color) });
   return String(data.display ?? (data.shape ? t(`memo_symbol_${data.shape}`) : data.value) ?? t('game_shape'));
 }
@@ -215,6 +230,19 @@ function announceStimulus(label) {
   platform?.removeAttribute('data-i18n-aria');
   platform?.setAttribute('aria-label', label);
   if (live) live.textContent = label;
+}
+
+// Capture only an accepted, manually missed input before the next spawn can
+// replace its labels. One in-memory example per run; no save or score changes.
+function rememberMiss(game, result) {
+  const picked = game.cornerMap[result.direction], expected = game.cornerMap[result.expected];
+  if (!picked || !expected) return;
+  const seq = game.isSequenzMode;
+  const prompt = seq ? `${t('mode_sequenz')} · ${t('sequenz_round', {n:game._seqRound + 1})} · ${game._seqInputIndex+1}/${game._seqPattern.length}`
+    : $('#centerPlatform')?.getAttribute('aria-label');
+  if (!prompt) return;
+  const label = (dir, info) => seq || game.isMemoMode ? t(`direction_${dir}`) : getGameplayCornerLabel(dir, info, game.mode);
+  app.answerReview = {roundId:game.roundId, prompt, choice:label(result.direction,picked), solution:label(result.expected,expected)};
 }
 
 function renderCorners(cornerMap, forceAll = false) {
@@ -249,6 +277,9 @@ function renderCorners(cornerMap, forceAll = false) {
     // fallback. A global language pass must not erase color/shape information.
     el.removeAttribute('data-i18n-aria');
     el.setAttribute('aria-label', getGameplayCornerLabel(dir, info));
+    if (el.dataset.content === 'stroop' && info.type !== 'stroop') {
+      el.style.removeProperty('background'); el.style.removeProperty('border-color'); el.style.removeProperty('box-shadow');
+    }
     el.dataset.content = info.type || 'shape';
     el.style.setProperty('--target-color', color);
 
@@ -290,6 +321,7 @@ function renderCorners(cornerMap, forceAll = false) {
     } else {
       el.textContent = '';
       el.appendChild(getCachedSVGNode(info.shape, color, 48));
+      if (game.mode === 'klassik') appendColorblindMark(el, PRINT_PATTERNS[info.colorIndex]);
       el.dataset.shape = info.shape;
     }
 
@@ -349,7 +381,13 @@ function renderCenter(shapeData) {
       center.appendChild(span);
     }
     span.className = `center-text ${cls}`;
-    span.textContent = shapeData.display;
+    const arithmetic = shapeData.type === 'math' && /^(\d+ )([+−×÷])( \d+)$/.exec(shapeData.display);
+    if (arithmetic) {
+      const op = document.createElement('b');
+      op.className = 'register-operator';
+      op.textContent = arithmetic[2];
+      span.replaceChildren(arithmetic[1], op, arithmetic[3]);
+    } else span.textContent = shapeData.display;
     if (shapeData.type === 'word' && shapeData.textColor) {
       span.style.color = shapeData.textColor;
     } else {
@@ -372,7 +410,7 @@ function renderCenter(shapeData) {
     appendColorblindMark(center, shapeData.colorblindPattern);
     announceStimulus(t('stroop_stimulus_label', {
       word: shapeData.display,
-      color: app.game.cornerMap[shapeData.direction]?.display || getColorName(shapeData.inkColor),
+      color: getColorName(app.colorblind ? shapeData.inkColorblind : shapeData.inkColor),
     }));
     center.className = 'center-shape pop-in spawn-pop';
     if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
@@ -416,7 +454,7 @@ function renderCenter(shapeData) {
     wrap.appendChild(rule);
     announceStimulus(t('chaos_stimulus_label', {
       rule: t(`chaos_rule_${shapeData.chaosRule}`),
-      color: getColorName(shapeData.stimColor),
+      color: getColorName(app.colorblind ? shapeData.stimColorblind : shapeData.stimColor),
       shape: t(`memo_symbol_${shapeData.display}`),
       size: t(`chaos_size_${shapeData.stimSize}`),
     }));
@@ -437,6 +475,9 @@ function renderCenter(shapeData) {
   _centerSVGCache.set(key, node);
   if (_centerSVGCache.size > 32) _centerSVGCache.delete(_centerSVGCache.keys().next().value);
   center.appendChild(node);
+  if (app.game.mode === 'klassik' && app.colorblind) {
+    appendColorblindMark(center, PRINT_PATTERNS[CONFIG.COLORS.colorblind.indexOf(color)]);
+  }
   center.className = 'center-shape pop-in spawn-pop';
   if (shapeData.bonus) center.classList.add(`bonus-${shapeData.bonus}`);
 }
@@ -514,6 +555,15 @@ function syncArenaPhase() {
   const { game, audio } = app;
   if (!game.running) return;
   const state = arenaPhase(game);
+  const root = _getHudEls().game, lang = getLanguage();
+  updateFocus(root,game,state.phase,lang);
+  updateMemory(root,game,state.phase,lang);
+  if (game.mode === 'memo') {
+    const cue = $('#deckInstruction'), watch = state.phase === 'watch';
+    const hint = getLanguage() === 'de' ? (watch ? '① Merke dir die Positionen' : '② Wo war das Symbol?')
+      : (watch ? '① Remember the positions' : '② Where was the symbol?');
+    if (cue.textContent !== hint) cue.textContent = hint;
+  }
   app.arcadeArena?.setPhase(state.phase);
   app.arcadeArena?.setEnergy(arenaEnergy(game.mode, game.streak, game.feverActive));
   livingArena.setPhase(state.phase);
@@ -601,14 +651,14 @@ function _updateHUDInner() {
   const timerEl = hud.timer;
   if (timerEl) {
     const thresholds = getUrgencyThresholds();
-    if (game.playType === 'endless') {
+    if (game.practice) {
+      timerEl.style.visibility = 'hidden';
+    } else if (game.playType === 'endless') {
       const min = Math.floor(game.elapsed / 60);
       const sec = game.elapsed % 60;
       const text = `${min}:${sec.toString().padStart(2, '0')}`;
       if (timerEl.textContent !== text) timerEl.textContent = text;
       timerEl.classList.remove('timer-urgent', 'timer-critical');
-    } else if (game.practice) {
-      timerEl.style.visibility = 'hidden';
     } else {
       if (timerEl.textContent !== String(game.timer)) timerEl.textContent = game.timer;
       timerEl.classList.toggle('timer-urgent', game.timer <= thresholds.urgent);
@@ -621,14 +671,7 @@ function _updateHUDInner() {
 }
 
 function updateEndlessLives() {
-  const { game } = app;
-  const container = $('#hudEndlessLives');
-  if (!container) return;
-  const hearts = container.querySelectorAll('.endless-heart');
-  hearts.forEach((h, i) => {
-    if (i < game.endlessLives) { h.style.opacity = '1'; h.style.transform = ''; }
-    else { h.style.opacity = '0.2'; h.style.transform = 'scale(0.6)'; }
-  });
+  renderArenaLives($('#hudEndlessLives'),app.game.endlessLives);
 }
 
 function checkPBProximity() {
@@ -654,19 +697,30 @@ function checkPBProximity() {
   }
 }
 
-function showNearMiss(correctDir) {
-  const corner = $(`.corner-shape[data-dir="${correctDir}"]`);
-  if (!corner) return;
-  corner.classList.remove('near-miss-hint');
-  requestAnimationFrame(() => { corner.classList.add('near-miss-hint'); });
-  setTimeout(() => corner.classList.remove('near-miss-hint'), 600);
-
-  /* Briefly enlarge the correct corner text so player sees the right answer */
-  const textEl = corner.querySelector('.corner-text');
-  if (textEl) {
-    textEl.classList.add('correct-flash');
-    setTimeout(() => textEl.classList.remove('correct-flash'), 400);
+function showMiss(game, result) {
+  const late = result.autoMiss || result.direction === '__timeout__';
+  if (!game.practice) {
+    noteMiss(game.roundId, late);
+    if (!late) rememberMiss(game, result);
   }
+  const corner = !late && $(`.corner-shape[data-dir="${result.direction}"]`);
+  if (corner) {
+    clearTimeout(corner._answerFeedbackTimer);
+    corner.classList.remove('corner-correct');
+    corner.classList.add('corner-wrong');
+    corner._answerFeedbackTimer = setTimeout(() => corner.classList.remove('corner-wrong'), 320);
+  }
+  // Keep a finished reading task in place through its brief miss grace so
+  // the player can reread the prompt alongside the rejected choice.
+  if (game.isSequenzMode || (!late && (game.mode === 'wissen' || game.mode === 'mathe'))) return;
+  clearCenter();
+  // During the recovery gap use the last choice, never the expected pad.
+  // Memory's center is shared with the playback/reveal phase renderer.
+  if (game.isMemoMode || late) return;
+  const center = $('#centerShape');
+  center.className = 'center-shape round-recovery';
+  center.textContent = roundGuide(game.mode);
+  announceStimulus(center.textContent);
 }
 
 function confirmAnswer(result) {
@@ -785,7 +839,16 @@ function _showModeInstruction(mode, onDone, onCancel) {
   const textEl = $('#modeInstructionText');
   if (iconEl) iconEl.innerHTML = modePreview(arenaWorld(mode).id, app.colorblind);
   if (titleEl) titleEl.textContent = t(`mode_${mode}`) || mode.toUpperCase();
-  if (textEl) textEl.textContent = t(`instr_${mode}`) || '';
+  if (textEl) {
+    const de = getLanguage() === 'de';
+    const touchRule = {
+      mathe: de ? 'Tippe auf das Ergebnis der Rechnung oder wische dorthin.' : 'Tap the result of the equation or swipe toward it.',
+      wissen: de ? 'Wähle die Antwort durch Tippen oder Wischen.' : 'Tap your answer or swipe toward it.',
+      memo: de ? 'Wenn die Karten verdeckt sind, tippe auf den Platz des gesuchten Symbols.' : 'Once the cards turn over, tap where the symbol was.',
+      stroop: de ? 'Tippe auf die Schriftfarbe. Das Wort kann eine andere Farbe nennen.' : 'Tap the ink color. The word may name a different color.',
+    };
+    textEl.textContent = touchRule[mode] || t(`instr_${mode}`);
+  }
   const btn = $('#btnStartAfterInstruction');
   const cleanup = (restoreFocus = true) => {
     btn?.removeEventListener('click', handleStart);
@@ -816,6 +879,13 @@ export function doCountdown(cb) {
   const { audio } = app;
   const overlay = $('#countdownOverlay');
   if (!overlay) { cb(); return; }
+  let caption = overlay.querySelector('.round-count-guide');
+  if (!caption) {
+    caption = document.createElement('p');
+    caption.className = 'round-count-guide';
+    overlay.appendChild(caption);
+  }
+  caption.textContent = roundGuide(app.selectedMode);
   overlay.classList.add('active');
   let n = 3;
   const numEl0 = $('#countdownNum');
@@ -1603,10 +1673,8 @@ function showWissenDifficultyReveal(tier) {
     $('#game')?.appendChild(el);
   }
   const labels = ['easy', 'medium', 'hard', 'expert', 'master'];
-  const pcts = [85, 62, 38, 23, 8];
   const label = t(`difficulty_${labels[tier] || labels[0]}`);
-  const pct = pcts[tier] || pcts[0];
-  el.textContent = `${label} — ${pct}%`;
+  el.textContent = label;
   el.dataset.tier = tier;
   el.classList.add('wissen-diff-show');
   setTimeout(() => el.classList.remove('wissen-diff-show'), 1500);
@@ -2089,6 +2157,9 @@ function cleanupGameClasses() {
   app.arcadeArena?.destroy();
   app.arcadeArena = null;
   clearGameNotice();
+  updateFocus($('#game'),null,'',getLanguage());
+  $('#modeDetail')?.replaceChildren();
+  $('#centerPlatform')?.removeAttribute('aria-describedby');
   const phase = $('#arenaPhase');
   phase?.removeAttribute('data-phase');
   phase?.removeAttribute('aria-label');
@@ -2197,6 +2268,9 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
   app.swipe.bind();
 
   renderModeHeading(app.selectedMode);
+  setText('#deckInstruction', getLanguage() === 'de'
+    ? ({klassik:'Tippe die passende Farbe', mathe:'Tippe das Ergebnis', memo:'Merke dir die Positionen'}[app.selectedMode] || '')
+    : ({klassik:'Tap the matching colour', mathe:'Tap the answer', memo:'Remember the positions'}[app.selectedMode] || ''));
 
   /* Set mode class on body for CSS-driven corner layout */
   document.body.className = document.body.className.replace(/\bmode-\w+/g, '').trim();
@@ -2206,17 +2280,23 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
   setText('#hudMultiplier', 'x1');
   setText('#arenaPhaseLabel', t('hud_factor'));
   setText('#hudStreak', '0');
+  $('#hudStreak')?.classList.remove('on-fire');
   $('#pbProximity')?.classList.remove('visible', 'new-pb');
 
   const timerEl = $('#hudTimer');
   const endlessLivesEl = $('#hudEndlessLives');
   const compTargetEl = $('#hudCompTarget');
 
-  if (app.selectedPlayType === 'endless') {
+  timerEl?.classList.remove('timer-urgent', 'timer-critical');
+  if (practice) {
+    if (timerEl) timerEl.style.visibility = 'hidden';
+    if (endlessLivesEl) endlessLivesEl.style.display = 'none';
+    if (compTargetEl) compTargetEl.style.display = 'none';
+  } else if (app.selectedPlayType === 'endless' || app.selectedMode === 'sequenz') {
     if (timerEl) { timerEl.style.visibility = 'visible'; timerEl.textContent = '0:00'; }
     if (endlessLivesEl) endlessLivesEl.style.display = 'flex';
     if (compTargetEl) compTargetEl.style.display = 'none';
-    endlessLivesEl?.querySelectorAll('.endless-heart').forEach(h => { h.style.opacity = '1'; h.style.transform = ''; });
+    renderArenaLives(endlessLivesEl);
   } else if (app.selectedPlayType === 'competition') {
     const level = save.getCompetitionLevel();
     const isBrainLikeMode = ['mathe','worte','stroop','fokus','chaos','hauptstaedte','algebra','wissen'].includes(app.selectedMode);
@@ -2266,7 +2346,7 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
 
   lockGameScroll();
 
-  if (!practice && !save.getSetting('tutorialDone')) {
+  if (!practice && !gameScreen.hasAttribute('data-hub-round') && !save.getSetting('tutorialDone')) {
     showTutorial();
     return;
   }
@@ -2274,7 +2354,8 @@ export function startGame(practice = false, daily = false, showTutorial, showRes
   /* Brain & Reflex modes: show instruction overlay for first 5 plays */
   const instructionModes = ['mathe','worte','memo','sequenz','stroop','fokus','chaos','hauptstaedte','algebra','wissen'];
   const instrViews = save.getInstructionViews(app.selectedMode);
-  const showInstr = instructionModes.includes(app.selectedMode) && !practice && instrViews < 5;
+  const showInstr = instructionModes.includes(app.selectedMode) && !practice && instrViews < 5 &&
+    !['memo','mathe'].includes(gameScreen.dataset.hubRound);
   if (showInstr) {
     save.incrementInstructionViews(app.selectedMode);
     _showModeInstruction(app.selectedMode, () => {
@@ -2307,6 +2388,9 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     lang: getLanguage()
   };
   const corners = game.start(app.selectedMode, practice ? 'blitz' : app.selectedPlayType, options);
+  beginMissReceipt(game.roundId);
+  app.answerReview = null;
+  if (!practice && !daily) rememberPlay(save, `${app.selectedMode}:${app.selectedPlayType}`);
   livingArena.setActive(true);
 
   if (!practice) startModeMastery(app.selectedMode, app.mastery);
@@ -2432,6 +2516,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   /* ── Chaos mode: rule-switch banner ── */
   game.onChaosRuleSwitch = (newRule) => {
+    syncArenaPhase();
     showGameNotice(t('chaos_rule_' + newRule), { kind: 'rule', importance: 3, duration: 1100 });
     haptic('rush', save);
   };
@@ -2454,19 +2539,9 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
     if (result.correct) {
       confirmAnswer(result);
+      clearCenter();
     } else {
-      if (!result.autoMiss) {
-        if (result.expected) showNearMiss(result.expected);
-        if (result.direction) {
-          const wrongCorner = $(`.corner-shape[data-dir="${result.direction}"]`);
-          if (wrongCorner) {
-            clearTimeout(wrongCorner._answerFeedbackTimer);
-            wrongCorner.classList.remove('corner-correct');
-            wrongCorner.classList.add('corner-wrong');
-            wrongCorner._answerFeedbackTimer = setTimeout(() => wrongCorner.classList.remove('corner-wrong'), 320);
-          }
-        }
-      }
+      showMiss(game, result);
     }
 
     playGameImpact(result, game, audio, save);
@@ -2476,7 +2551,6 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
     effects.trailComplete(result.correct);
     updateHUD();
-    clearCenter();
     checkPBProximity();
   };
 
@@ -2516,14 +2590,20 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   game.onScoreMilestone = null;
 
   /* v19: Streak break feedback */
-  game.onStreakBreak = null;
+  game.onStreakBreak = n => {
+    if (game.streak === 0) showGameNotice(getLanguage() === 'de' ? `${n}er-Combo beendet` : `${n} combo ended`,
+      { kind: 'streak', duration: 900 });
+  };
 
   /* Combo decay: update streak HUD as combo ticks down */
   game.onComboDecay = (newStreak) => {
     livingArena.setEnergy(newStreak, game.feverActive);
     syncArenaPhase();
     const streakEl = document.getElementById('hudStreak');
-    if (streakEl) streakEl.textContent = newStreak > 0 ? newStreak : '';
+    if (streakEl) {
+      streakEl.textContent = newStreak;
+      streakEl.classList.toggle('on-fire', newStreak >= 10);
+    }
   };
 
   game.onEndlessMiss = (livesLeft) => {
@@ -2588,16 +2668,11 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
 
   /* ═══ Anti-frustration callbacks (v22) ═══ */
   game.onStreakProtected = (brokenStreak) => {
-    showGameNotice(t('streak_warning', { n: brokenStreak }), { kind: 'streak', importance: 2, duration: 900 });
+    const label = getLanguage() === 'de' ? 'Combo geschützt' : 'Combo protected';
+    showGameNotice(`${label}: ${brokenStreak} → ${game.streak}`, { kind: 'streak', importance: 2, duration: 900 });
   };
 
-  game.onShowCorrectAnswer = (correctDir, durationMs) => {
-    const el = $(`.corner-shape[data-dir="${correctDir}"]`);
-    if (el) {
-      el.classList.add('show-correct');
-      setTimeout(() => el.classList.remove('show-correct'), durationMs || 400);
-    }
-  };
+  game.onShowCorrectAnswer = null;
 
   game.onShuffleExplain = () => {
     showGameNotice(t('shuffle_explain'), { kind: 'shuffle', importance: 3, duration: 1200 });
@@ -2633,7 +2708,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
   game.onContinuePrompt = (stats) => {
     if (runId !== _gameRunId) return;
     if (game.practice) { stopPractice(showHome); return; }
-    if (save.getLives() <= 0) { game.declineContinue(); return; }
+    if (save.getLives() <= 0 || ($('#game').hasAttribute('data-hub-round') && game.playType === 'blitz')) { game.declineContinue(); return; }
     presentEnd(stats, showContinuePrompt);
   };
 
@@ -2699,9 +2774,15 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     syncGameplayMusicIntensity(game, result);
     if (result.correct) {
       confirmAnswer(result);
-    } else {
-      /* Wrong step */
-      if (result.expected) showNearMiss(result.expected);
+    } else showMiss(game, result);
+    syncArenaPhase();
+    if (!result.correct) {
+      const missed = game._seqInputIndex + 1;
+      const late = result.direction === '__timeout__';
+      const de = getLanguage() === 'de';
+      updateMemory(_getHudEls().game, game, 'recall', getLanguage(), true);
+      showGameNotice(de ? `Schritt ${missed}: ${late ? 'Zeit vorbei' : 'falsches Feld'}` :
+        `Step ${missed}: ${late ? 'time ran out' : 'wrong pad'}`, { kind: 'memory', importance: 3, duration: 1250 });
     }
 
     playGameImpact(result, game, audio, save);
@@ -2759,7 +2840,7 @@ export function beginGame(practice, daily, showResults, showHome, showContinuePr
     if (corner) {
       const r = stableRect(corner);
       effects.ripple(r.left + r.width / 2, r.top + r.height / 2,
-        game.cornerMap[dir]?.color || '#fff');
+        game.isMemoMode ? '#C4CEDD' : game.cornerMap[dir]?.color || '#fff');
     }
     const result = game.handleSwipe(dir, ts, stimulusId);
     effects.trailEnd();
@@ -2851,12 +2932,14 @@ function syncPausedPresentation() {
   // Sequence watch/input text has its own phase renderer. Never replace it
   // with a generic center object or advance its pattern while changing UI.
   if (game.mode !== 'sequenz') renderCenter(game.currentShape);
+  syncArenaPhase();
 }
 
 export function pauseGame() {
   const { game, audio } = app;
   if (!game.running || game.paused) return;
   game.pause();
+  app.swipe?.unbind();
   clearCornerScorePops();
   updateBestRun();
   cancelHaptics();
@@ -2866,19 +2949,20 @@ export function pauseGame() {
   audio.cancelSfx?.();
   audio.stopMusic();
   if (typeof audio.stopTension === 'function') audio.stopTension();
-  const info = $('#pauseGameInfo');
-  if (info) {
-    const modeName = t(`mode_${app.selectedMode}`) || app.selectedMode.toUpperCase();
-    info.innerHTML = `<span class="pause-world" aria-hidden="true">${modePreview(app.selectedMode, app.colorblind)}</span><span class="pause-mode-badge">${modeName}</span><span class="pause-score">${game.score} ${t('score')}</span>`;
-    if (app.selectedMode === 'sequenz') {
-      info.innerHTML += `<span class="pause-seq-warn">${t('sequenz_pause_warn')}</span>`;
-    }
-  }
   reopenPauseMenu();
 }
 
 export function reopenPauseMenu() {
   syncPausedPresentation();
+  const { game } = app;
+  const info = $('#pauseGameInfo');
+  if (info) {
+    const facts = [[t('score'), game.score], [t('streak_label'), game.streak], clockFact(game)];
+    info.innerHTML = `<span class="pause-world" aria-hidden="true">${modePreview(game.mode, app.colorblind)}</span>
+      <strong class="pause-mode-badge">${t(`mode_${game.mode}`)}</strong>
+      <span class="pause-rule">${game.isSequenzMode ? t('sequenz_pause_warn') : roundGuide(game.mode)}</span>
+      <dl class="pause-facts">${facts.map(([k,v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
+  }
   const overlay = $('#pauseOverlay');
   openModal(overlay, { initialFocus: '#btnResume', onDismiss: resumeGame });
   if (overlay) overlay.onclick = (event) => { if (event.target === overlay) resumeGame(); };
@@ -2888,6 +2972,7 @@ export function resumeGame() {
   const { game, audio } = app;
   syncPausedPresentation();
   game.resume();
+  if (game.running && !game.paused) app.swipe?.bind();
   updateBestRun();
   livingArena.setActive(game.running && !game.paused);
   app.arcadeArena?.setActive(game.running && !game.paused);

@@ -30,6 +30,7 @@ const app = {
   gameStarting:     false,
   gameDuration:     0,
   lastResultStats:  null,
+  answerReview:     null,
   continueStats:    null,
 };
 

@@ -137,7 +137,7 @@ async function run() {
   const page = await context.newPage();
   const failures = [];
 
-  await page.goto(baseUrl, { waitUntil: 'networkidle' });
+  await page.goto(`${baseUrl}?view=arcade`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2200);
   failures.push(...await scan(page, 'auth'));
 

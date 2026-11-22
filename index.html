@@ -6,17 +6,21 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#07090f">
+  <meta name="theme-color" content="#162535">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="Prism Worlds: twelve handcrafted light puzzles, crystal chains and floating gardens. Plus ten SCS Play arcade modes. Free and playable offline.">
+  <meta name="description" content="Erwecke den Lichtgarten in zwölf handgebauten Rätseln oder spiele eine schnelle Arcade-Runde. SCS Play funktioniert auch offline.">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
   <!-- Open Graph -->
   <meta property="og:title" content="SCS Play &ndash; Prism Worlds">
-  <meta property="og:description" content="One pulse. One chain reaction. A world awakes. Play twelve light puzzles and ten arcade modes.">
+  <meta property="og:description" content="Ein Lichtimpuls erweckt den Garten. Zwölf Rätsel und zehn Arcade-Modi für dein Smartphone.">
   <meta property="og:type" content="website">
-  <meta property="og:image" content="img/icon-512.svg">
+  <meta property="og:image" content="https://theokitsi.github.io/scs-play/img/install/cover.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SCS Play – Der Lichtgarten vor der Küste und seine schwebenden Kristallinseln.">
+  <meta name="twitter:card" content="summary_large_image">
 
   <!-- DNS Prefetch for Firebase -->
   <link rel="dns-prefetch" href="https://firestore.googleapis.com">
@@ -27,11 +31,14 @@
   
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="img/icon-192.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="img/icon-192.svg">
+  <link rel="apple-touch-icon" href="img/install/icon-180.png">
   <title>SCS Play</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/prism.css">
   <link rel="stylesheet" href="css/arcade-engine.css">
+  <link rel="stylesheet" href="css/play-hub.css">
+  <link rel="stylesheet" href="css/game-detail.css">
+  <link rel="stylesheet" href="css/finish.css">
   <script type="importmap">{"imports":{"phaser":"./node_modules/phaser/dist/phaser.esm.js"}}</script>
 </head>
 <body>
@@ -45,6 +52,9 @@
 <!-- SVG Icon Sprite (hidden) -->
 <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" focusable="false">
   <!-- Etched optical bench. Decorative, never fed game or answer data. -->
+  <symbol id="dock-play" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="5"/><path d="m10 8 6 4-6 4z"/></g></symbol>
+  <symbol id="dock-worlds" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="m3 14 9-4 9 4-9 7zM12 10V2l4 4-4 4-4-4 4-4"/><path d="m6 15 6 2 6-2"/></g></symbol>
+  <symbol id="dock-collection" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><rect x="2" y="4" width="8" height="7" rx="2"/><rect x="14" y="4" width="8" height="7" rx="2"/><rect x="2" y="15" width="8" height="5" rx="1.5"/><path d="m14 17.5 4-3.5 4 3.5-4 3.5z"/></g></symbol>
   <symbol id="studio-optics" viewBox="0 0 480 144">
     <g fill="none" stroke="currentColor">
       <path opacity=".16" d="M0 109h480M0 119h480M57 15v112m157-115v115m137-120v120"/>
@@ -166,6 +176,7 @@
 </div>
 
 <!-- ═══════ HOME ═══════ -->
+<section id="hub" class="screen" inert aria-hidden="true"></section>
 <div id="home" class="screen">
   <div class="home-viewport">
 
@@ -213,6 +224,7 @@
       </button><button type="button" class="prism-map-link" id="btnPrism" data-i18n="prism_map">Weltkarte</button></div>
 
       <div class="mode-browser-bar">
+        <button id="catalogHub" type="button" class="btn-mode-browser">← SCS Play</button>
         <span class="mode-position"><span aria-hidden="true">ARCADE · </span><span id="modePosition" aria-hidden="true">01 / 10</span></span>
         <button id="btnAllModes" type="button" class="btn-mode-browser" aria-haspopup="dialog" aria-controls="modePicker">
           <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z"/></svg>
@@ -623,6 +635,8 @@
   <button type="button" class="corner-shape ultra-only" data-dir="sse" data-i18n-aria="direction_sse" aria-label="Süd-Südost"></button>
 
   <!-- Center shape -->
+  <div id="modeDetail" aria-hidden="true"></div>
+  <p id="deckInstruction" class="deck-instruction"></p>
   <button type="button" id="centerPlatform" class="center-platform" data-i18n-aria="center_stimulus" aria-label="Zu sortierendes Element">
     <span id="centerShape" class="center-shape"></span>
   </button>
@@ -664,25 +678,16 @@
 <div id="results" class="screen">
   <div class="screen-content results-content">
     <div class="results-panel">
-      <div id="resWorld" class="result-world" aria-hidden="true"></div>
+      <div class="results-scroll">
+      <header id="resPhase1" class="results-phase score-ticket">
+      <img class="ticket-scene" id="ticketScene" alt="" width="512" height="384">
+      <span id="resMode" class="results-mode">Farben · Blitz</span>
       <h2 data-i18n="game_over">ZEIT ABGELAUFEN!</h2>
+      <div class="ticket-total"><strong id="resScore" class="results-score-num">0</strong> <span class="results-score-label" data-i18n="score">Punkte</span></div>
+      </header>
       <p id="resSummary" class="results-summary"></p>
       <p id="resHighlight" class="results-summary" hidden></p>
     <div id="resMilestone" class="results-milestone" role="status" hidden></div>
-
-    <!-- Phase 1: Score (counts up immediately) -->
-    <div class="results-phase" id="resPhase1">
-      <span class="results-score-label" data-i18n="score">Punkte</span>
-      <div class="results-xp-ring">
-        <svg viewBox="0 0 140 140">
-          <circle class="ring-bg" cx="70" cy="70" r="65"/>
-          <circle id="resXPRingFill" class="ring-fill" cx="70" cy="70" r="65"/>
-        </svg>
-        <span id="resScore" class="ring-score results-score-num">0</span>
-      </div>
-      <span id="resMode" class="results-mode">Beginner</span>
-      <p id="resScoreBreakdown" class="results-summary" hidden></p>
-    </div>
 
     <!-- Phase 2: Stats grid (fades in after count-up) -->
     <div class="results-phase results-phase-hidden" id="resPhase2">
@@ -701,6 +706,13 @@
     <details id="resDetails" class="results-details">
       <summary data-i18n="result_details">Rundendetails</summary>
       <div id="resDetailsBody" class="results-details-body">
+      <p id="resScoreBreakdown" class="results-summary" hidden></p>
+      <section id="resReview" class="answer-review" hidden aria-labelledby="reviewHeading">
+        <h3 id="reviewHeading" data-i18n="review_heading">Dein letzter Fehlversuch</h3>
+        <p id="reviewPrompt"></p>
+        <dl><div><dt data-i18n="review_choice">Deine Wahl</dt><dd id="reviewChoice"></dd></div>
+          <div><dt data-i18n="review_solution">Richtig war</dt><dd id="reviewSolution"></dd></div></dl>
+      </section>
       <div id="resCompResult" class="results-comp" style="display:none"></div>
       <div class="results-grid">
         <div class="res-item"><span class="res-label" data-i18n="correct">Richtig</span><span id="resCorrect" class="res-val">0</span></div>
@@ -730,6 +742,7 @@
       <button id="btnPracticeResult" class="btn btn-secondary" data-i18n="round_practice">Diesen Modus üben</button>
       </div>
     </details>
+    </div> <!-- .results-scroll -->
 
     <!-- Phase 3: Buttons (slide up after stats) — pinned outside scrollable area -->
     <div class="results-phase results-phase-hidden" id="resPhase3">

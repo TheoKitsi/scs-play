@@ -3,18 +3,25 @@ import { t } from '../i18n.js';
 
 let root = null;
 let pending = null;
+let opener = null;
 
 function finish(value, restoreFocus = true) {
   if (!pending) return;
   const resolve = pending;
   pending = null;
   closeModal(root, { restoreFocus });
+  opener = null;
   resolve(value);
 }
 
 /** One bounded, text-only application dialog. Back/Escape never confirm. */
 export function appDialog({ title, message, confirmLabel, cancelLabel, copyText } = {}) {
-  finish(false);
+  if (pending) {
+    const previousOpener = opener;
+    finish(false, false);
+    previousOpener?.focus({ preventScroll: true });
+  }
+  opener = document.activeElement;
   if (!root) {
     root = document.createElement('div');
     root.id = 'appDialog';
@@ -22,8 +29,16 @@ export function appDialog({ title, message, confirmLabel, cancelLabel, copyText 
     root.hidden = root.inert = true;
     root.setAttribute('aria-labelledby', 'appDialogTitle');
     root.setAttribute('aria-describedby', 'appDialogMessage');
-    root.innerHTML = '<section class="app-dialog-panel"><h2 id="appDialogTitle"></h2><p id="appDialogMessage"></p><textarea id="appDialogCopy" readonly hidden></textarea><div class="app-dialog-actions"><button type="button" id="appDialogCancel" class="btn btn-secondary"></button><button type="button" id="appDialogConfirm" class="btn btn-primary"></button></div></section>';
+    root.innerHTML = `<section class="app-dialog-panel">
+      <div class="app-dialog-body" role="group" aria-labelledby="appDialogTitle"><h2 id="appDialogTitle"></h2><p id="appDialogMessage"></p><textarea id="appDialogCopy" readonly hidden></textarea></div>
+      <div class="app-dialog-actions"><button type="button" id="appDialogCancel" class="btn btn-secondary"></button><button type="button" id="appDialogConfirm" class="btn btn-primary"></button></div>
+    </section>`;
     document.body.appendChild(root);
+    const body = root.querySelector('.app-dialog-body');
+    new ResizeObserver(() => {
+      if (body.scrollHeight > body.clientHeight + 1) body.tabIndex = 0;
+      else body.removeAttribute('tabindex');
+    }).observe(body);
     root.querySelector('#appDialogConfirm').addEventListener('click', () => finish(true));
     root.querySelector('#appDialogCancel').addEventListener('click', () => finish(false));
     root.addEventListener('click', event => { if (event.target === root) finish(false); });
@@ -39,8 +54,10 @@ export function appDialog({ title, message, confirmLabel, cancelLabel, copyText 
   copy.hidden = copyText == null;
   copy.value = copyText || '';
   copy.setAttribute('aria-label', t('share_copy_prompt'));
+  root.querySelector('.app-dialog-panel').scrollTop = 0;
   return new Promise(resolve => {
     pending = resolve;
     openModal(root, { initialFocus: cancelLabel ? '#appDialogCancel' : '#appDialogConfirm', onDismiss: () => finish(false) });
+    root.querySelector('.app-dialog-body').scrollTop = 0;
   });
 }

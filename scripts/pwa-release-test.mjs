@@ -23,7 +23,12 @@ async function loadTrack(page, track) {
     let playback = null;
     if (outcome === 'loaded') {
       await audio.play();
-      await new Promise(resolve => setTimeout(resolve, 350));
+      // Metadata can be ready before the audio output clock advances on a
+      // busy runner. Require actual playback, not a fixed scheduling window.
+      const deadline=performance.now()+5000;
+      while (!audio.paused && !audio.error && audio.currentTime===0 && performance.now()<deadline) {
+        await new Promise(resolve=>setTimeout(resolve,100));
+      }
       playing = !audio.paused && audio.currentTime > 0 && !audio.error;
       playback = { time: audio.currentTime, paused: audio.paused, ready: audio.readyState, network: audio.networkState };
       audio.pause();
@@ -55,7 +60,7 @@ async function run() {
       await caches.open('qa-neighbor-app');
       await caches.open('scs-v0');
     });
-    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.goto(`${base}?view=arcade`, { waitUntil: 'networkidle' });
     await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller), null, { timeout: 30000 });
     const state = await page.evaluate(async () => ({
       cacheNames: await caches.keys(),
@@ -144,10 +149,10 @@ async function run() {
     const art = await page.evaluate(async files => Promise.all(files.map(async src => {
       const image = new Image(); image.src = src; await image.decode();
       return { src, width: image.naturalWidth, height: image.naturalHeight };
-    })), MATERIAL_FILES);
-    assert.equal(art.length, 18);
+    })), [...MATERIAL_FILES,...['harbour','valley','moonhall','sunhall','optics','archive','calculus','hub-astrolabe','hub-refraction'].map(name=>`img/scenery/${name}.webp`)]);
+    assert.equal(art.length, 27);
     assert.ok(art.every(image => image.width > 0 && image.height > 0), 'All original materials and restoration atlases decode offline before their first use');
-    console.log('PASS all 18 original material/island/data assets decoded on their first offline use');
+    console.log('PASS all 27 material, environment and cover assets decoded offline');
     for (const track of state.tracks) {
       await loadTrack(page, track);
       console.log(`PASS offline music: ${track}`);
@@ -171,6 +176,23 @@ async function run() {
     await page.waitForSelector('#home.active');
     assert.equal(await page.locator('.arcade-engine-layer').count(), 0);
     console.log('PASS first-ever offline arcade launch, lazy Phaser engine, real answer and disposal');
+    const shortcuts = await page.evaluate(async () => {
+      const listing = await (await fetch('manifest.json')).json();
+      for (const shot of listing.screenshots) {
+        const img = new Image(); img.src = shot.src; await img.decode();
+        if (`${img.naturalWidth}x${img.naturalHeight}` !== shot.sizes) throw Error(`Invalid install preview ${shot.src}`);
+      }
+      const icon = new Image(); icon.src = document.querySelector('link[rel=apple-touch-icon]').href; await icon.decode();
+      if (icon.naturalWidth !== 180 || icon.naturalHeight !== 180) throw Error('Missing iOS home screen icon');
+      return listing.shortcuts.map(s=>s.url);
+    });
+    for (const url of shortcuts) {
+      const href = new URL(url,base);
+      await page.goto(href.href);
+      const entry=href.searchParams.get('view');
+      await page.locator(entry==='garden' ? '#prism.active #pwArena canvas' : `#hub.active [data-action="${entry}"][aria-current]`).waitFor();
+    }
+    console.log('PASS offline install screenshots, home-screen icon and all three launch shortcuts');
     for (const file of ['privacy-policy.html', 'terms-of-service.html']) {
       for (const lang of ['de', 'en']) {
         await page.goto(new URL(`${file}?lang=${lang}`, base).href, { waitUntil: 'domcontentloaded' });

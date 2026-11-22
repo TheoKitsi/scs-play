@@ -104,6 +104,7 @@ export function tracePulse(state, aim, color = state.color) {
           events.push({ kind: 'activate', id: node.id, x: node.x, y: node.y, at: at + depth * 0.1, color, depth, from });
         }
       } else events.push({ kind: hit.kind === 'crystal' ? 'mismatch' : 'miss',
+        id: hit.node?.id,
         surface: hit.node?.kind === 'gate' ? 'gate' : hit.kind,
         x: end.x, y: end.y, at, color });
       break;

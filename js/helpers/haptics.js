@@ -49,6 +49,7 @@ const PATTERNS = {
 export function haptic(pattern = 'tap', save, intensityRamp = 1.0) {
   if (save && !save.getSetting('haptics')) return;
   if (typeof navigator === 'undefined' || !navigator.vibrate || (typeof document !== 'undefined' && document.hidden)) return;
+  if (navigator.userActivation?.hasBeenActive === false) return;
   
   let p = PATTERNS[pattern] || PATTERNS.tap;
   
@@ -62,5 +63,6 @@ export function haptic(pattern = 'tap', save, intensityRamp = 1.0) {
 }
 
 export function cancelHaptics() {
+  if (globalThis.navigator?.userActivation?.hasBeenActive === false) return;
   try { globalThis.navigator?.vibrate?.(0); } catch { /* No vibration support. */ }
 }

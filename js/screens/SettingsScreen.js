@@ -11,18 +11,30 @@ import { cancelHaptics } from '../helpers/haptics.js';
 
 let _settingsBack = null;
 let _backLabelKey = 'nav_back_home';
+let _collectionReturn = false;
+let failedControl = null;
 
-function preferenceSaveFailed() {
-  $('#settingsSaveNotice').hidden = false;
+function preferenceSaveFailed(control) {
+  const notice = $('#settingsSaveNotice');
+  if (control) {
+    failedControl = control;
+    const row = control.closest('.setting-row');
+    if (row && row.nextElementSibling !== notice) row.after(notice);
+  }
+  notice.hidden = false;
   $('#settingsSaveStatus').textContent = t('settings_save_error');
-  if (app.currentScreen === 'settings') $('#settingsSaveNotice').scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  if (app.currentScreen === 'settings') {
+    if (document.activeElement === control) $('#btnSettingsRetrySave').focus({ preventScroll: true });
+    notice.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  }
 }
 
-async function savePreference(key, value) {
+async function savePreference(key, value, control) {
   try {
     await app.save.setSetting(key, value);
     $('#settingsSaveNotice').hidden = true;
-  } catch { preferenceSaveFailed(); }
+    failedControl = null;
+  } catch { preferenceSaveFailed(control); }
 }
 
 function updateVolumeControl(input) {
@@ -47,13 +59,24 @@ function syncPresentationControls() {
   $$('.legal-links a').forEach(link => {
     const url = new URL(link.href);
     url.searchParams.set('lang', getLanguage());
+    url.searchParams.set('from', 'settings');
     link.href = url.href;
+    const newTab = getLanguage() === 'de' ? 'öffnet in neuem Tab' : 'opens in a new tab';
+    link.setAttribute('aria-label', `${link.textContent} (${newTab})`);
   });
 }
 
 /* The bottom back button says where it actually goes (menu or paused game) */
 function applyBackLabel() {
-  $$('.btn-back-bottom', $('#settings')).forEach(btn => { btn.textContent = t(_backLabelKey); });
+  const label = _collectionReturn ? `← ${getLanguage() === 'de' ? 'Sammlung' : 'Collection'}` : t(_backLabelKey);
+  $$('.btn-back-bottom', $('#settings')).forEach(btn => { btn.textContent = label; });
+}
+
+function markSection(id) {
+  for (const button of $$('.settings-nav button')) {
+    if (button.dataset.settingsSection === id) button.setAttribute('aria-current', 'true');
+    else button.removeAttribute('aria-current');
+  }
 }
 
 export function backFromSettings() {
@@ -66,10 +89,22 @@ export function backFromSettings() {
 
 export function showSettings(fromPause, showHome, showPausedGame) {
   const { save } = app;
-  _settingsBack = fromPause && showPausedGame ? showPausedGame : showHome;
+  const origin = app.currentScreen;
+  _collectionReturn = origin === 'hub';
+  _settingsBack = fromPause && showPausedGame ? showPausedGame : () => {
+    window.addEventListener('scs:screenchange', event => {
+      if (event.detail.id !== origin) return;
+      requestAnimationFrame(() => {
+        const button = origin === 'hub' ? $('#hub [data-action="settings"]') : $('#btnSettings');
+        if (app.currentScreen === origin && button?.getClientRects().length) button.focus();
+      });
+    }, { once: true });
+    showHome();
+  };
   _backLabelKey = fromPause && showPausedGame ? 'nav_back_game' : 'nav_back_home';
   showScreen('settings', app);
-  $$('.settings-nav button').forEach(btn => btn.removeAttribute('aria-current'));
+  $('#settings .screen-content').scrollTop = 0;
+  markSection('settingsDisplay');
   $('#toggleColorblind').checked = save.getSetting('colorblind');
   $('#toggleMotion').checked     = save.getSetting('reducedMotion');
   $('#toggleDepth').checked      = Boolean(save.getSetting('arenaDepth'));
@@ -92,7 +127,7 @@ export function showSettings(fromPause, showHome, showPausedGame) {
   /* Guests have no account to sign out of; the button only bounced them to
      the start screen. */
   const logout = $('#btnLogout');
-  if (logout) logout.style.display = app.auth?.isGuest === false ? '' : 'none';
+  if (logout) logout.hidden = app.auth?.isGuest !== false;
 
   applyBackLabel();
   $$('.btn-back, .btn-back-bottom', $('#settings')).forEach(btn => {
@@ -106,24 +141,52 @@ export function showSettings(fromPause, showHome, showPausedGame) {
 
 export function bindSettings(showHome) {
   const { save, audio } = app;
+  $('#btnSettingsRetrySave').setAttribute('aria-describedby', 'settingsSaveStatus');
+  for (const row of $$('#settings .setting-row')) {
+    const input = row.querySelector('input, select');
+    const name = row.querySelector('span[data-i18n]');
+    if (!input || !name) continue;
+    name.id = `${input.id}Label`;
+    input.setAttribute('aria-labelledby', name.id);
+    const descriptions = [...row.querySelectorAll('small')].map((node, index) => {
+      node.id ||= `${input.id}Hint${index}`;
+      return node.id;
+    });
+    if (descriptions.length) input.setAttribute('aria-describedby', descriptions.join(' '));
+  }
   $('#btnSettingsRetrySave').addEventListener('click', async event => {
     const button = event.currentTarget;
-    button.disabled = true;
+    if (button.hasAttribute('aria-busy')) return;
+    button.setAttribute('aria-busy', 'true');
     try {
       if (!await save.save()) throw new Error('No active save');
+      if (app.currentScreen === 'settings' && document.activeElement === button) failedControl?.focus();
       $('#settingsSaveNotice').hidden = true;
+      failedControl = null;
     } catch { preferenceSaveFailed(); }
-    finally { button.disabled = false; }
+    finally { button.removeAttribute('aria-busy'); }
   });
   window.addEventListener('scs:perftier', syncPresentationControls);
   window.addEventListener('scs:motionpreference', syncPresentationControls);
+  const scroller = $('#settings .screen-content');
+  const groups = $$('#settings .setting-group');
+  let frame = 0;
+  scroller.addEventListener('scroll', () => {
+    if (frame || app.currentScreen !== 'settings') return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      if (app.currentScreen !== 'settings') return;
+      const line = scroller.getBoundingClientRect().top + parseFloat(getComputedStyle(scroller).scrollPaddingTop) + 2;
+      const current = groups.filter(group => group.getBoundingClientRect().top <= line).at(-1) || groups[0];
+      markSection(current.id);
+    });
+  }, { passive: true });
   $$('.settings-nav button').forEach(button => {
     button.addEventListener('click', () => {
       const section = document.getElementById(button.dataset.settingsSection);
       const heading = section?.querySelector('legend');
       if (!heading) return;
-      $$('.settings-nav button').forEach(btn => btn.removeAttribute('aria-current'));
-      button.setAttribute('aria-current', 'true');
+      markSection(section.id);
       heading.tabIndex = -1;
       heading.focus({ preventScroll: true });
       section.scrollIntoView({ block: 'start', behavior: 'instant' });
@@ -135,7 +198,7 @@ export function bindSettings(showHome) {
     if (!el) return;
     el.addEventListener('change', async () => {
       const val = el.type === 'checkbox' ? el.checked : el.value;
-      const saving = savePreference(key, val);
+      const saving = savePreference(key, val, el);
       if (cb) cb(val);
       await saving;
     });
@@ -163,7 +226,7 @@ export function bindSettings(showHome) {
       setter(value / 100);
     });
     el.addEventListener('change', async () => {
-      await savePreference(key, Number(el.value));
+      await savePreference(key, Number(el.value), el);
       if (preview) preview();
     });
   };
@@ -174,7 +237,7 @@ export function bindSettings(showHome) {
   if (langEl) {
     langEl.addEventListener('change', async () => {
       const val = langEl.value;
-      const saving = savePreference('language', val);
+      const saving = savePreference('language', val, langEl);
       if (val === 'auto') {
         const browserLang = (navigator.language || 'de').substring(0, 2);
         setLanguage(browserLang === 'de' ? 'de' : 'en');

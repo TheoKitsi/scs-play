@@ -1,0 +1,242 @@
+/* Collection sheets: specimen on the left, name and action on the right.
+   All colour comes from the equipped UI theme or the inspected specimen. */
+:is(#store, #avatarSelect, #designPreviewOverlay, #wheelOverlay) {
+  --collection-rule: color-mix(in srgb, var(--text) 20%, var(--surface));
+  --collection-tint: color-mix(in srgb, var(--primary-glow) 9%, var(--surface));
+  --collection-serif: Georgia, 'Times New Roman', serif;
+}
+:is(#store, #avatarSelect) .screen-header h2,
+#designPreviewTitle, #wheelOverlay .wheel-heading {
+  font: 600 clamp(1.4rem, 5.4vw, 1.9rem)/1.12 var(--collection-serif);
+  letter-spacing: -.035em;
+}
+
+#store .screen-content { gap: 7px }
+#store .shop-tabs {
+  gap: 5px; padding: 3px; margin: 0; border-radius: 10px;
+  background: var(--bg); border-color: var(--collection-rule);
+}
+#store .shop-tab {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 44px; border-radius: 7px; white-space: normal; text-transform: none;
+  font-size: .9rem; letter-spacing: 0; color: var(--text-dim);
+}
+#store .shop-tab .ui-icon { width: 17px; height: 17px; flex: none }
+#store .shop-tab small { color: var(--text-dim); font: 500 .73rem/1 'Space Grotesk', sans-serif }
+#store .shop-tab.selected { background: var(--collection-tint); color: var(--text) }
+#store .shop-lives-bar {
+  margin: 0; padding: 7px 4px; gap: 7px; border: 0; border-radius: 0;
+  border-bottom: 1px solid var(--collection-rule); background: none; backdrop-filter: none;
+}
+#store .shop-lives-label { order: -1; margin-inline-end: auto; font-size: .8rem }
+#shopFireCount { font: 650 1.02rem/1 'Space Grotesk', sans-serif; font-variant-numeric: tabular-nums }
+#store #storeList { gap: 7px; padding-block: 2px 4px }
+#store .unlock-item {
+  grid-template-columns: minmax(90px, 34%) minmax(0, 1fr); gap: 5px 12px;
+  padding: 10px; align-items: start; transition: none;
+}
+#store .unlock-item.active-item { background: linear-gradient(115deg, var(--collection-tint), var(--surface)) !important }
+#store .unlock-item.locked-item::after { content: none }
+#store .unlock-item > .unlock-preview {
+  width: 100%; margin: 0; transform: none; border: 1px solid var(--collection-rule);
+  border-radius: 8px; align-self: stretch; justify-content: center; background: var(--bg);
+}
+#store .unlock-preview-label {
+  align-self: stretch; border-top: 1px solid var(--collection-rule); padding: 4px 2px; gap: 5px;
+  background: var(--surface); color: var(--text-dim); font-size: .72rem;
+}
+#store .unlock-item > .unlock-info { gap: 2px }
+#store .unlock-name { font: 600 1.13rem/1.13 var(--collection-serif); color: var(--text) }
+#store .unlock-desc { font-size: .8rem; line-height: 1.28 }
+#store .unlock-requirement {
+  display: flex; align-items: center; gap: 5px; margin-top: 3px;
+  font: 500 .75rem/1.3 'Outfit', sans-serif; color: var(--text);
+}
+#store .unlock-requirement .ui-icon { width: 13px; height: 13px; flex: none }
+#store [data-state="owned"] .unlock-requirement { color: var(--primary-glow) }
+#store .btn-unlock {
+  min-height: 44px; padding: 6px 10px; border-radius: 6px;
+  font: 600 .85rem/1.2 'Outfit', sans-serif; text-transform: none; letter-spacing: 0;
+}
+#store .btn-unlock.btn-active {
+  min-height: 24px; color: var(--text); background: var(--collection-tint);
+  border: 1px solid var(--collection-rule);
+}
+#store .btn-active .ui-icon { color: var(--primary-glow) }
+#store .btn-fire-buy:not(:disabled) { background: var(--collection-tint); border-color: var(--primary-glow) }
+#store .btn-fire-buy:not(:disabled) .ui-icon { color: var(--color-fire) }
+#store .btn-unlock:disabled { opacity: 1; color: var(--text-muted); background: transparent; border-style: dashed }
+
+/* Klassik: lifted/tinted ceramic deck, five enamel stations, edge rails.
+   Neutral architecture follows the theme; targets retain CONFIG task colours. */
+.design-preview.theme-default { --primary-glow: #b7a2ff; --accent: #8754d7 }
+.design-preview {
+  --deck-edge: color-mix(in srgb, var(--surface) 75%, var(--primary-glow));
+  background: linear-gradient(180deg, var(--bg), transparent 23%, transparent 70%, var(--bg)),
+    linear-gradient(0deg, color-mix(in srgb,var(--bg) 20%,transparent), color-mix(in srgb,var(--bg) 10%,transparent)),
+    url("../img/scenery/harbour.webp") center 54% / cover no-repeat, var(--bg);
+}
+.design-preview .design-material {
+  inset: 3%; border: 2px solid color-mix(in srgb,var(--deck-edge) 57%,#a48873); border-radius: 7%;
+  background: color-mix(in srgb,var(--surface) 40%,transparent);
+  box-shadow: inset 0 1px #ffffff48, inset 0 -2px var(--bg), 0 2px 0 var(--bg);
+}
+.design-preview .design-material img { opacity: .20 }
+.design-preview > .design-phone-route { display: none }
+#store .design-preview[data-design-type="themes"]::after {
+  content: ""; position: absolute; right: 8%; top: 3%; width: 23%; height: 4px;
+  border: 1px solid var(--bg); border-radius: 2px;
+  background: linear-gradient(90deg, var(--primary) 33%, var(--primary-glow) 33% 66%, var(--accent) 66%);
+}
+.design-preview .design-slot, .design-preview .design-plinth {
+  border-color: var(--deck-edge);
+  background: linear-gradient(150deg, var(--deck-edge), var(--surface) 70%);
+}
+.design-preview .design-rail { stroke: var(--primary-glow); stroke-width: 2; opacity: .72 }
+.design-preview .design-slot::after {
+  content: ""; position: absolute; inset: auto 14% 8%; height: 6%;
+  background: repeating-linear-gradient(90deg, transparent 0 2px, var(--surface) 2px 3px) right / 23% 100% no-repeat, var(--target-color);
+}
+.design-preview .design-plinth::after {
+  content: ""; position: absolute; top: 10%; width: 46%; height: 5%;
+  background: repeating-linear-gradient(90deg, var(--deck-edge) 0 25%, transparent 25% 36%);
+}
+.design-preview .design-trace { opacity: 1 }
+body[data-perf-mode="low"] .design-preview :is(.design-bloom, .design-flecks) { display: none }
+#designPreviewOverlay .app-dialog-panel {
+  display: flex; flex-direction: column; align-items: stretch; gap: 9px;
+  width: min(100%, 410px); max-height: 100%; overflow-y: auto; overscroll-behavior: contain;
+  padding: clamp(14px, 4vw, 22px); text-align: start;
+}
+#designPreviewOverlay .app-dialog-panel > * { flex: none; margin: 0; min-width: 0 }
+.collection-preview-kicker, #avatarPreviewCaption > span {
+  color: var(--text-dim); font: 600 .72rem/1.3 'Outfit', sans-serif;
+  letter-spacing: .095em; text-transform: uppercase;
+}
+#designPreviewScene { padding: 5px; background: var(--bg); border: 1px solid var(--collection-rule); border-radius: 10px }
+#designPreviewScene .design-preview { max-width: min(100%, 52dvh); margin-inline: auto }
+.collection-pair { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px }
+.collection-pair > span { display: inline-flex; align-items: center; gap: 5px; color: var(--text); font-size: .78rem }
+.collection-pair .ui-icon { width: 15px; height: 15px; color: var(--primary-glow) }
+#designPreviewOverlay #designPreviewNote, #designPreviewOverlay #designPreviewMotionNote {
+  color: var(--text-dim); font: 400 .85rem/1.45 'Outfit', sans-serif;
+}
+.collection-preview-actions { display: flex; flex-wrap: wrap; gap: 7px; padding-top: 6px; border-top: 1px solid var(--collection-rule) }
+#designPreviewOverlay .collection-preview-actions .btn { flex: 1 1 120px; min-width: 0; margin: 0; padding: 8px; min-height: 44px }
+
+#avatarSelect .screen-content { align-items: stretch; gap: 6px }
+#avatarSelect .avatar-preview {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 16px;
+  margin: 0; padding: 13px 16px; border: 1px solid var(--collection-rule);
+  background: linear-gradient(110deg, var(--collection-tint), var(--surface) 75%); border-radius: 14px 6px;
+}
+#avatarSelect .avatar-preview::before { content: none }
+#avatarSelect .avatar-preview-svg { width: 64px; height: 64px; flex: none; outline-color: var(--collection-rule); background: var(--bg) }
+#avatarSelect .avatar-preview-svg img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover }
+#avatarPreviewCaption { display: grid; gap: 2px; text-align: start; color: var(--text) }
+#avatarPreviewCaption strong { font: 600 1.25rem/1.2 var(--collection-serif); text-transform: capitalize; overflow-wrap: anywhere }
+#avatarPreviewCaption small { color: var(--text-dim); font-size: .85rem; text-transform: capitalize }
+#avatarSelect .avatar-upload-section {
+  margin: 0; padding: 0; max-width: none; border: 0; border-radius: 0; background: none;
+}
+#avatarSelect .avatar-upload-unlocked { flex-flow: row wrap; justify-content: flex-start; gap: 6px }
+#avatarSelect .avatar-upload-btn, #avatarSelect #btnAvatarRemovePhoto {
+  justify-content: center; min-height: 44px; padding: 8px 13px;
+  border-radius: 7px; font: 550 .86rem/1.2 'Outfit', sans-serif; color: var(--text);
+}
+#avatarUploadStatus:not(:empty) {
+  width: 100%; margin: 0; padding: 9px 11px; border-inline-start: 3px solid var(--primary-glow);
+  text-align: start; background: var(--collection-tint); color: var(--text); font-size: .83rem; line-height: 1.4;
+}
+#avatarUploadStatus:empty { display: none }
+#avatarUploadStatus:is([data-state="error"], [data-state="storage"]) { border-color: var(--color-fire); background: color-mix(in srgb, var(--color-fire) 8%, var(--surface)) }
+#avatarSelect .avatar-section-title {
+  display: flex; align-items: center; gap: 9px; margin: 6px 0 0; text-align: start;
+  color: var(--text); font: 600 1.05rem/1.3 var(--collection-serif);
+}
+#avatarSelect .avatar-section-title::after { content: ""; flex: 1; border-top: 1px solid var(--collection-rule) }
+#avatarSelect .avatar-grid, #avatarSelect .avatar-color-grid {
+  display: grid; grid-template-columns: repeat(4, minmax(44px, 1fr)); gap: 5px;
+  margin: 0; padding: 2px; max-width: none; width: 100%;
+}
+#avatarSelect .avatar-grid-item, #avatarSelect .avatar-color-item {
+  width: 100%; height: 44px; min-height: 44px; aspect-ratio: auto; transform: none; position: relative;
+  border-radius: 7px; transition: none;
+}
+#avatarSelect .avatar-grid-item svg { width: 26px; height: 26px }
+#avatarSelect .avatar-color-item { border: 9px solid var(--surface); border-radius: 14px; outline: 1px solid var(--collection-rule); outline-offset: -1px }
+#avatarSelect .avatar-color-item.selected { outline: 2px solid var(--primary-glow); outline-offset: -2px }
+#avatarSelect :is(.avatar-grid-item, .avatar-color-item).selected::after {
+  content: ""; position: absolute; right: 5px; bottom: 4px; width: 9px; height: 5px;
+  border: solid var(--text); border-width: 0 0 2px 2px; transform: rotate(-45deg);
+  filter: drop-shadow(0 1px 1px #000);
+}
+#avatarSelect .avatar-color-item.selected::after { border-color: #fff; filter: drop-shadow(0 1px 1px #000) drop-shadow(0 -1px 1px #000) }
+#avatarSelect .avatar-color-item:focus-visible { outline: 3px solid var(--text); outline-offset: 1px }
+#avatarSelect #btnAvatarSave { flex: none; align-self: stretch; min-height: 44px }
+
+#wheelOverlay .wheel-panel {
+  width: min(100%, 400px); padding: clamp(14px, 4vw, 22px);
+  background: linear-gradient(150deg, var(--collection-tint), var(--surface) 55%);
+  border: 1px solid var(--collection-rule); border-radius: 20px 8px;
+}
+#wheelOverlay .wheel-close { top: 6px; right: 6px; border-radius: 50%; color: var(--text) }
+#wheelOverlay .wheel-heading { margin-bottom: 6px }
+#wheelOverlay .wheel-subtitle { color: var(--text-dim); line-height: 1.3 }
+#wheelOverlay .wheel-meta { gap: 3px 8px; margin: 0 0 12px; align-items: baseline }
+#wheelOverlay .wheel-streak-badge, #wheelOverlay .wheel-bonus-note {
+  padding: 2px 3px; min-height: 0; border: 0; background: none; font: 500 .79rem/1.25 'Outfit', sans-serif;
+}
+#wheelOverlay .wheel-streak-badge { color: var(--text) }
+#wheelOverlay .wheel-bonus-note { color: var(--text-dim) }
+#wheelOverlay .wheel-prize-strip { gap: 5px; margin: 0 0 14px }
+#wheelOverlay .wheel-prize-chip { padding: 4px 8px; border-radius: 20px; border-color: var(--collection-rule); color: var(--text-dim); background: var(--surface) }
+#wheelOverlay .wheel-container {
+  width: min(74vw, 35dvh, 290px); height: auto; aspect-ratio: 1; margin: 0 auto 12px;
+  border-radius: 50%; background: var(--bg); border: 1px solid var(--collection-rule);
+  box-shadow: inset 0 2px 3px #ffffff18, 0 3px 0 var(--bg);
+}
+#wheelOverlay .wheel-pointer { top: -5px; border-top: 17px solid var(--text) }
+#wheelOverlay .wheel-result-card.revealed {
+  margin: 0 0 10px; padding: 11px 13px; min-height: 0; text-align: start;
+  border: 1px solid var(--collection-rule); border-inline-start: 4px solid var(--wheel-win-color);
+  border-radius: 9px; background: var(--bg);
+}
+#wheelOverlay .wheel-result-title { margin: 0 0 2px; color: var(--text-dim); font: 600 .72rem/1.3 'Outfit', sans-serif; letter-spacing: .08em }
+#wheelOverlay .wheel-result { min-height: 0; font: 600 1.55rem/1.2 var(--collection-serif) }
+#wheelOverlay .wheel-result-extra { margin-top: 8px; font: 400 .8rem/1.35 'Outfit', sans-serif }
+.wheel-ledger-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; padding-top: 4px; border-top: 1px solid var(--collection-rule) }
+.wheel-ledger-row b { color: var(--text); font-variant-numeric: tabular-nums }
+.wheel-milestone { color: var(--text); margin-bottom: 4px }
+#wheelOverlay .wheel-actions { gap: 6px }
+#wheelOverlay .wheel-actions button { margin: 0; min-height: 44px; width: 100% }
+#wheelOverlay[data-phase="complete"] #btnWheelSpin,
+#wheelOverlay[data-phase="spinning"]:has(#btnWheelSkip:not([hidden])) #btnWheelSpin { display: none }
+#wheelOverlay .wheel-status-note { margin-top: 7px; color: var(--text-dim) }
+@media (max-height: 680px) {
+  #wheelOverlay .wheel-prize-strip, #wheelOverlay .wheel-subtitle { display: none }
+}
+@media (max-height: 480px) {
+  #wheelOverlay .wheel-container { width: min(45vw, 32dvh, 170px) }
+  #designPreviewScene .design-preview { max-width: 38dvh }
+}
+/* The portrait arena uses the dock layout from play-hub.css: receiver above
+   two rows of wide print keys. The wide arena keeps its diagonal stations. */
+@media (orientation: portrait) and (max-width: 699px) {
+  .design-preview { aspect-ratio: 240 / 204 }
+  .design-preview > .design-wide-route { display: none }
+  .design-preview > .design-phone-route { display: block }
+  .design-preview .design-slot { left: 6%; top: 58%; width: 40%; height: 15%; border-radius: 7px }
+  .design-preview :is(.design-slot--1, .design-slot--3) { left: 54% }
+  .design-preview :is(.design-slot--2, .design-slot--3) { top: 79% }
+  .design-preview .design-slot svg { width: 52%; height: 69% }
+  .design-preview .design-plinth { left: 33%; top: 7%; width: 34%; height: 34%; border-radius: 20% }
+  .design-preview .design-object { left: 39%; top: 12%; width: 22%; height: 24% }
+  #designPreviewScene .design-preview { max-width: min(100%, 46dvh) }
+}
+@media (min-width: 530px) {
+  #store .unlock-item { grid-template-columns: 116px minmax(0, 1fr) auto; gap: 12px }
+  #store .unlock-item > .unlock-preview, #store .unlock-item > .unlock-info, #store .unlock-item > .btn-unlock { grid-row: 1; align-self: center }
+  #store .unlock-item > .btn-unlock { grid-column: 3 }
+  #avatarSelect .avatar-grid, #avatarSelect .avatar-color-grid { grid-template-columns: repeat(8, minmax(44px, 1fr)) }
+}

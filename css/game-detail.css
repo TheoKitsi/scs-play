@@ -1,0 +1,48 @@
+@import url('./detail-sort.css');
+@import url('./detail-think.css');
+@import url('./detail-memory.css');
+@import url('./detail-focus.css');
+@import url('./arena-polish.css');
+
+#modeDetail{pointer-events:none}
+#modeDetail:empty{display:none}
+.answer-review{padding:14px;border:1px solid var(--outline);border-radius:14px;background:var(--surface);color:var(--text);text-align:start;overflow-wrap:anywhere}
+.answer-review[hidden]{display:none}
+.answer-review h3{margin:0;font-size:.85rem;color:var(--text-dim)}
+.answer-review p{margin:.45em 0 .7em;font-size:1.05rem;font-weight:600}
+.answer-review dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,8rem),1fr));gap:10px;margin:0}
+.answer-review dt{color:var(--text-dim);font-size:.76rem}
+.answer-review dd{margin:2px 0 0;color:var(--text)}
+
+/* Round ticket: one scroll region for results; the action bar owns its own
+   row. A finger can never hit a concealed detail through the replay button. */
+#results .results-panel{
+  display:grid;grid-template-rows:minmax(0,1fr) auto;align-items:stretch;gap:0;width:100%;max-width:34rem;
+  max-height:100%;min-height:0;overflow:hidden;padding:0;background:var(--surface);border:1px solid var(--outline);
+}
+#results .results-scroll{min-height:0;min-width:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+#results #resPhase1.score-ticket{
+  display:grid;justify-items:start;align-content:center;gap:3px;position:relative;isolation:isolate;overflow:hidden;
+  padding:clamp(16px,3.8vw,28px);text-align:start;border:0;border-radius:0;background:#192334;color:#fff5e8;
+}
+.ticket-scene{position:absolute;z-index:-2;inset:0 0 0 auto;width:61%;height:100%;object-fit:cover;object-position:center 44%;pointer-events:none}
+.score-ticket::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#192334 27%,#192334ec 43%,#19233489 70%,#19233430)}
+#results .score-ticket .results-mode{margin:0;padding:0;background:none;color:#ffe0bb;font-size:.78rem;font-weight:650}
+#results .score-ticket h2{color:#fff5e8;font-size:clamp(1.15rem,5vw,1.65rem);font-weight:550;text-align:start;max-width:100%;overflow-wrap:anywhere}
+.ticket-total{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;max-width:100%}
+#results .ticket-total #resScore{font:650 clamp(2rem,9vw,3.7rem)/1.04 var(--font-display)!important;letter-spacing:-.06em;font-variant-numeric:tabular-nums;color:#fff5e8;-webkit-text-fill-color:currentColor;text-shadow:none;background:none;overflow-wrap:anywhere;max-width:100%}
+#results .ticket-total .results-score-label{order:0;color:#fff5e8;font-size:.82rem;letter-spacing:0;text-transform:none}
+#results[data-result-state=empty] .ticket-total{display:none}
+#results .results-scroll>:is(.results-summary,.results-milestone,.results-daily-banner,#resPhase2,#resDetails){width:auto;max-width:none;margin:10px 14px;text-align:start}
+#results #resPhase2 .results-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,7rem),1fr));gap:0;border-block:1px solid var(--outline)}
+#results #resPhase2 .res-item{padding:7px 9px;align-items:flex-start;text-align:start;min-height:0;border:0;border-radius:0;background:transparent}
+#results #resPhase3{position:relative;bottom:auto;margin:0;padding:10px 12px;background:var(--surface);border-top:1px solid var(--outline);max-height:53dvh;overflow-y:auto}
+#results #resPhase3::after{display:none}
+#results #resNormalBtns{grid-template-columns:1.2fr 1fr}
+#results #resNormalBtns button{line-height:1.25;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:699px) and (orientation:portrait){
+  #results .results-content{justify-content:flex-end}
+  #results .results-panel{margin:0 auto}
+  #results{background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 88%,transparent),var(--bg) 74%),url("../img/scenery/harbour.webp") center 35% / cover}
+}
+@media(forced-colors:active){.ticket-scene,.score-ticket::before{display:none}}

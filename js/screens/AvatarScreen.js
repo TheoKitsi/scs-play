@@ -3,24 +3,55 @@
    Icon picker, color picker, photo upload.
    ═══════════════════════════════════════ */
 import { CONFIG }           from '../config.js';
-import { t }                from '../i18n.js';
+import { t, getLanguage }   from '../i18n.js';
 import { $, $$, setHTML, showScreen, safeSrc } from '../helpers/dom.js';
 import { updateAvatarDisplay } from '../helpers/avatarDisplayHelper.js';
 import { avatarSVG }        from '../renderers/avatars.js';
 import app                   from '../appState.js';
 
 let uploadGeneration = 0;
+let showingPhoto = false;
 window.addEventListener('scs:screenchange', ({ detail }) => {
   if (detail?.prevScreen === 'avatarSelect' && detail.id !== 'avatarSelect') uploadGeneration++;
 });
 
 function renderAvatarPreview(icon, colorIndex, photo) {
+  showingPhoto = Boolean(photo);
+  const preview = $('#avatarPreviewSvg');
+  let caption = $('#avatarPreviewCaption');
+  if (!caption) {
+    caption = document.createElement('div');
+    caption.id = 'avatarPreviewCaption';
+    caption.setAttribute('aria-live', 'polite');
+    caption.innerHTML = '<span></span><strong></strong><small></small>';
+    preview.after(caption);
+  }
+  caption.querySelector('span').textContent = t('design_preview');
+  caption.querySelector('strong').textContent = photo ? t('avatar_upload') : t(`avatar_icon_${icon}`);
+  caption.querySelector('small').textContent = photo ? '' : t(`avatar_color_${colorIndex + 1}`);
+  caption.querySelector('small').hidden = Boolean(photo);
   if (photo) {
-    setHTML('#avatarPreviewSvg', `<img src="${safeSrc(photo)}" alt="Avatar" style="width:52px;height:52px;border-radius:50%;object-fit:cover">`);
+    setHTML('#avatarPreviewSvg', `<img src="${safeSrc(photo)}" alt="">`);
   } else {
     const color = CONFIG.COLORS.normal[colorIndex] || CONFIG.COLORS.normal[0];
     setHTML('#avatarPreviewSvg', avatarSVG(icon, color, 52));
   }
+}
+
+function photoStatus(state = '', key = '') {
+  const status = $('#avatarUploadStatus');
+  status.dataset.state = state;
+  status.textContent = state === 'storage' ? (getLanguage() === 'de'
+    ? 'Nicht gespeichert. Prüfe den freien Speicherplatz und versuche es erneut.'
+    : 'Not saved. Check available storage and try again.') : key ? t(key) : '';
+  $('#avatarFileInput').setAttribute('aria-invalid', String(state === 'error'));
+  $('#btnAvatarSave').disabled = state === 'loading';
+}
+
+function selectIconPreview(icon, ci) {
+  uploadGeneration++;
+  photoStatus();
+  renderAvatarPreview(icon, ci);
 }
 
 function renderAvatarIconGrid(selectedIcon, selectedCI) {
@@ -47,7 +78,7 @@ function renderAvatarIconGrid(selectedIcon, selectedCI) {
       item.setAttribute('aria-pressed', 'true');
       const ci = parseInt($('.avatar-color-item.selected')?.dataset.ci || '0');
       item.style.color = CONFIG.COLORS.normal[ci];
-      renderAvatarPreview(item.dataset.icon, ci);
+      selectIconPreview(item.dataset.icon, ci);
       audio.tap();
     });
   });
@@ -75,34 +106,25 @@ function renderAvatarColorGrid(selectedCI) {
       const selectedIcon = $('.avatar-grid-item.selected');
       if (selectedIcon) selectedIcon.style.color = CONFIG.COLORS.normal[item.dataset.ci];
       const icon = selectedIcon?.dataset.icon || 'circle';
-      renderAvatarPreview(icon, parseInt(item.dataset.ci));
+      selectIconPreview(icon, parseInt(item.dataset.ci));
       audio.tap();
     });
   });
 }
 
-function resizeImageToBase64(file, maxSize = 128) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const min = Math.min(img.width, img.height);
-        const sx = (img.width - min) / 2;
-        const sy = (img.height - min) / 2;
-        canvas.width = maxSize;
-        canvas.height = maxSize;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, sx, sy, min, min, 0, 0, maxSize, maxSize);
-        resolve(canvas.toDataURL('image/webp', 0.8));
-      };
-      img.onerror = reject;
-      img.src = e.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+async function resizeImageToBase64(file, maxSize = 128) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const min = Math.min(img.naturalWidth, img.naturalHeight);
+    if (!min) throw new Error('Empty image');
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = maxSize;
+    canvas.getContext('2d').drawImage(img, (img.naturalWidth - min) / 2, (img.naturalHeight - min) / 2, min, min, 0, 0, maxSize, maxSize);
+    return canvas.toDataURL('image/webp', 0.8);
+  } finally { URL.revokeObjectURL(url); }
 }
 
 function setupAvatarUpload() {
@@ -111,8 +133,7 @@ function setupAvatarUpload() {
   const unlocked = $('#avatarUploadUnlocked');
   const fileInput = $('#avatarFileInput');
   const removeBtn = $('#btnAvatarRemovePhoto');
-  const status = $('#avatarUploadStatus');
-  if (status) status.textContent = '';
+  photoStatus();
   if (unlocked) unlocked.style.display = '';
 
   const avatar = save.getAvatar();
@@ -121,41 +142,52 @@ function setupAvatarUpload() {
 
   if (fileInput) {
     fileInput.value = '';
+    fileInput.setAttribute('aria-describedby', 'avatarUploadStatus');
     fileInput.onchange = async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
       const generation = ++uploadGeneration;
       if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) {
-        if (status) status.textContent = t('avatar_upload_error');
+        photoStatus('error', 'avatar_upload_error');
         fileInput.value = '';
         return;
       }
-      if (status) status.textContent = t('loading');
+      photoStatus('loading', 'loading');
       try {
         const base64 = await resizeImageToBase64(file, 128);
         if (generation !== uploadGeneration) return;
-        await save.setAvatarPhoto(base64);
+        try { await save.withBatch(() => save.setAvatarPhoto(base64)); }
+        catch {
+          if (generation === uploadGeneration) { photoStatus('storage'); fileInput.value = ''; }
+          return;
+        }
         if (generation !== uploadGeneration) return;
         app.engagement?.trackAvatarChange();
         renderAvatarPreview(null, null, base64);
         if (removeBtn) removeBtn.hidden = false;
-        if (status) status.textContent = t('avatar_upload_saved');
+        photoStatus('saved', 'avatar_upload_saved');
         audio.tap();
       } catch {
-        if (generation === uploadGeneration && status) status.textContent = t('avatar_upload_error');
-        fileInput.value = '';
+        if (generation === uploadGeneration) {
+          photoStatus('error', 'avatar_upload_error');
+          fileInput.value = '';
+        }
       }
     };
   }
 
   if (removeBtn) {
     removeBtn.onclick = async () => {
-      uploadGeneration++;
-      await save.removeAvatarPhoto();
+      const generation = ++uploadGeneration;
+      try { await save.withBatch(() => save.removeAvatarPhoto()); }
+      catch { if (generation === uploadGeneration) photoStatus('storage'); return; }
+      if (generation !== uploadGeneration) return;
       const av = save.getAvatar();
-      renderAvatarPreview(av.icon, av.colorIndex);
+      renderAvatarPreview($('.avatar-grid-item.selected')?.dataset.icon ?? av.icon, Number($('.avatar-color-item.selected')?.dataset.ci ?? av.colorIndex));
       removeBtn.hidden = true;
-      if (status) status.textContent = '';
+      fileInput.value = '';
+      photoStatus();
+      fileInput.focus();
       audio.tap();
     };
   }
@@ -176,7 +208,12 @@ export function bindAvatarSave(showHome) {
   $('#btnAvatarSave')?.addEventListener('click', async () => {
     const icon = $('.avatar-grid-item.selected')?.dataset.icon || 'circle';
     const ci = parseInt($('.avatar-color-item.selected')?.dataset.ci || '0');
-    await save.setAvatar(icon, ci);
+    try {
+      await save.withBatch(async () => {
+        if (!showingPhoto && save.getAvatar().photo) await save.removeAvatarPhoto();
+        await save.setAvatar(icon, ci);
+      });
+    } catch { photoStatus('storage'); $('#avatarUploadStatus').scrollIntoView({ block: 'nearest' }); return; }
     app.engagement?.trackAvatarChange();
     updateAvatarDisplay();
     showHome();

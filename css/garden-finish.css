@@ -1,0 +1,154 @@
+/* Garden atlas. Pins occupy the same 3:2 coordinate system as the island
+   drawing. Native buttons jump to a real region heading, even with zoom. */
+.pw-atlas {
+  position:relative; isolation:isolate; width:min(100%,32rem); margin:auto;
+  overflow:hidden; border:1px solid #55676d; border-radius:19px 5px;
+  background:radial-gradient(ellipse at 32% 10%,#46575a 0,transparent 62%),linear-gradient(145deg,#293747,#182335 75%);
+}
+.pw-atlas>.pw-islands {width:100%; display:block}
+.pw-map-pins button {
+  position:absolute; transform:translate(-50%,-50%); min-width:44px; min-height:44px;
+  border:0; background:none; color:#fff3d9; font:650 .82rem/1 var(--font-display);
+  display:grid; place-items:center; isolation:isolate; font-variant-numeric:tabular-nums;
+}
+.pw-map-pins button::before {
+  content:""; position:absolute; z-index:-1; inset-inline:2px; height:1.55em;
+  border:1px solid #e2d5b5; border-radius:1em; background:#23343a;
+}
+.pw-map-pins button[aria-current]::before {border:2px solid #d1f5d7; background:#305248}
+.pw-map-pins [data-pw-pin="0"] {left:23%; top:81%}
+.pw-map-pins [data-pw-pin="1"] {left:51%; top:44%}
+.pw-map-pins [data-pw-pin="2"] {left:77%; top:81%}
+#prism .pw-map-pins button:focus-visible {outline-offset:-3px; border-radius:8px}
+.pw-world-caption {border:0; margin-inline:0; padding:4px 0; flex-wrap:wrap}
+.pw-world-caption strong {margin-inline:2px}
+.pw-journey h2 {font:400 clamp(1.8rem,4vw,2.7rem)/1.07 Georgia,serif; letter-spacing:-.035em}
+#pwContinue {text-align:start; padding:.65rem 1rem}
+#pwContinue b {font-size:1rem; line-height:1.3}
+#pwContinue small,#pwNext small {display:block; font-size:.78rem; font-weight:500; margin-top:2px; line-height:1.3}
+.pw-journey .pw-intro {margin:10px 0 0}
+.pw-level-zones {gap:19px; margin-top:16px}
+.pw-region-heading {border-inline-start:3px solid #9acbb2; margin:0 0 7px}
+[data-pw-zone="1"] .pw-region-heading {border-color:#bac8e4}
+[data-pw-zone="2"] .pw-region-heading {border-color:#e5c28a}
+.pw-region-heading h3 {font:500 1.1rem/1.25 Georgia,serif}
+.pw-region-heading h3>span {align-self:center; font:650 .73rem var(--font-display)}
+.pw-region-heading p {font-size:.76rem}
+.pw-level-grid {grid-template-columns:repeat(auto-fit,minmax(min(100%,8.2rem),1fr)); gap:5px}
+.pw-level {
+  grid-template:"number mark" auto "name name" 1fr / 1fr auto;
+  align-items:center; justify-items:start; align-content:start; text-align:start;
+  padding:.55rem .7rem; gap:3px; min-height:3.8rem; border-radius:8px 3px;
+}
+.pw-level-number {grid-area:number; font-size:.95rem}
+.pw-level-name {grid-area:name; font-size:.84rem; line-height:1.25; text-align:start; hyphens:auto}
+.pw-level-stars {grid-area:mark}
+.pw-level--next .pw-level-stars {font-size:1rem; color:#dcffed}
+.pw-lock {width:1em; height:1em; display:block}
+.pw-level:disabled {border-style:dashed; color:#bbcad4}
+.pw-region-heading h3:focus-visible {outline:2px solid currentColor; outline-offset:3px}
+[data-pw-view=map] .pw-shell {container:pwAtlas / inline-size}
+@container pwAtlas (max-width:15rem) {
+  .pw-header {display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:4px 7px; padding-block-end:5px}
+  .pw-brand {grid-column:2 / -1}
+  .pw-brand h1 {font-size:1.15rem; line-height:1.12}
+  .pw-header #pwMenu {grid-column:2; justify-self:end}
+  .pw-region-heading {grid-template-columns:minmax(0,1fr); padding:.3rem .4rem}
+  .pw-region-heading>.pw-islands {display:none}
+  .play-dock {display:grid; grid-template-columns:auto auto auto; gap:2px; padding-inline:2px}
+  .play-dock button {padding-inline:1px; font-size:.72rem}
+}
+
+/* Compact instrument console. The charge, chosen energy and target states
+   use physical marks as well as hue. The arena rectangle stays untouched. */
+#prism[data-pw-region="1"] {--pw-mint:#d6e2fa; background:radial-gradient(ellipse at 50% 20%,#374656,#171d2a 77%)}
+#prism[data-pw-region="2"] {--pw-mint:#ffe1b1; background:radial-gradient(ellipse at 50% 20%,#52404a,#1e202c 77%)}
+.pw-stats {border-block-end:1px solid #665c68; padding-block-end:5px}
+.pw-stats strong,.pw-aim-readout {font-variant-numeric:tabular-nums}
+#pwCrystalSeals {display:flex; align-items:center; gap:3px; min-height:8px}
+#pwCrystalSeals i {width:7px; height:7px; color:var(--energy); font:700 9px/8px system-ui}
+#pwCrystalSeals [data-energy=mint]::before {content:"◇"}
+#pwCrystalSeals [data-energy=amber]::before {content:"○"}
+#pwCrystalSeals [data-energy=violet]::before {content:"△"}
+#pwCrystalSeals [data-energy=mint][data-awake=true]::before {content:"◆"}
+#pwCrystalSeals [data-energy=amber][data-awake=true]::before {content:"●"}
+#pwCrystalSeals [data-energy=violet][data-awake=true]::before {content:"▲"}
+.pw-stats .pw-charge {min-height:8px; align-items:center; margin-top:0}
+.pw-colors button {min-height:44px; border-radius:6px}
+.pw-colors button[aria-pressed="true"] {border-style:double; border-width:3px; padding-block:4px}
+#pwAimReadout {border-inline:1px solid #665c68; min-width:4.3em; text-align:center; color:var(--pw-text)}
+.pw-help {padding:0; margin:0; border-top-color:#665c68}
+.pw-help summary {padding:11px 4px; font-size:.9rem; font-weight:600}
+.pw-help p {font-size:.9rem}
+.pw-hint .pw-tip {border-color:var(--pw-mint); margin-top:4px}
+.pw-sighting,.pw-ledger {
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px;
+  padding:.6rem .75rem; background:#172834; color:#e1eee7; border-inline-start:3px solid #91bca8;
+}
+.pw-sighting {font-size:.84rem; margin:0 0 8px}
+.pw-sighting span {font-weight:650}
+.pw-sighting strong {flex-basis:100%; font-size:.8rem}
+.pw-target-picker {gap:4px}
+.pw-target-picker button {
+  display:grid; grid-template-columns:auto 1fr; align-items:center; gap:10px; min-height:44px;
+  padding:.5rem .65rem; border-radius:7px; font-size:.85rem; line-height:1.35;
+}
+.pw-target-picker button[aria-pressed="true"] {outline:2px solid var(--pw-mint); outline-offset:-3px}
+.pw-node-mark {
+  display:grid; place-items:center; border:1px solid currentColor; background:#131f2c; color:var(--energy);
+  border-radius:50%; width:1.72em; height:1.72em; font:600 1rem/1 system-ui;
+}
+.pw-target-picker small {display:block; color:var(--pw-muted); font-size:.76rem; font-weight:500}
+.pw-help-tools {display:flex; gap:8px; flex-wrap:wrap; margin:9px 0 12px}
+.pw-help-tools #pwSound {margin:0}
+.pw-quick {margin:10px 0 0; background:transparent; border-style:dashed; font-weight:500; flex-wrap:wrap; padding:7px}
+
+/* Sheets stay in normal reading order, with the existing independent footer
+   scrollport for large type. Only a genuine win gets restoration artwork. */
+#prism.active {transform:none; animation:none; transition:none}
+.pw-dialog-card {border-color:#8a7980; container-type:inline-size}
+.pw-dialog-card h2 {font:400 clamp(1.7rem,5vw,2.2rem)/1.12 Georgia,serif; margin:.4rem 0 .7rem}
+.pw-dialog-scroll {scroll-padding:.5rem}
+.pw-dialog [id=pwDialogMessage] {margin:10px 0 14px; font-size:.92rem}
+.pw-dialog[data-save=error] #pwDialogMessage {padding-inline-start:.55rem; border-inline-start:3px solid #f0be97}
+.pw-ledger {font-size:.85rem; font-variant-numeric:tabular-nums}
+.pw-ledger strong {flex-basis:100%; font-size:1rem}
+[data-sheet=lost] .pw-ledger {border-color:#f0be97}
+.pw-dialog .pw-trail {margin:8px 0 0}
+.pw-dialog-actions {grid-template-columns:repeat(auto-fit,minmax(min(100%,7.5rem),1fr)); gap:6px}
+[data-sheet=won] .pw-dialog-scroll {
+  display:grid; grid-template-columns:minmax(0,1fr) 27%;
+  grid-auto-rows:max-content; align-content:start;
+  grid-template-areas:"key key" "title art" "stars art" "eff eff" "msg msg" "actions actions";
+}
+[data-sheet=won] .pw-eyebrow {grid-area:key}
+[data-sheet=won] h2 {grid-area:title}
+.pw-result-art {grid-area:art; align-self:center; margin:0; overflow:hidden}
+.pw-result-art .pw-islands {width:100%; height:auto}
+.pw-art-count {display:block; color:var(--pw-muted); text-align:center; font-size:.72rem; line-height:1.25; overflow-wrap:anywhere}
+.pw-art-count strong {display:block; color:var(--pw-text); font-variant-numeric:tabular-nums}
+.pw-earned-stars {grid-area:stars; font-size:1.45rem; line-height:1.2}
+.pw-efficiency {grid-area:eff}
+#pwDialogMessage {grid-area:msg}
+.pw-dialog-actions {grid-area:actions}
+#pwNext {display:block}
+#pwNext:disabled {background:#3f4144; color:#dedbdb}
+@container (max-width:19rem) {
+  [data-sheet=won] .pw-dialog-scroll {grid-template-areas:"key key" "title title" "stars art" "eff eff" "msg msg" "actions actions"}
+  .pw-dialog-card h2 {overflow-wrap:anywhere}
+  .pw-earned-stars {align-self:center}
+}
+@media(min-width:700px) {
+  .pw-map-view {grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:clamp(24px,5vw,58px)}
+  .pw-world-art {align-self:start; transform:none}
+}
+@media(max-width:699px) {
+  .pw-map-view {gap:12px}
+  .pw-atlas {max-width:min(100%,calc(40svh * 1.5))}
+  .pw-journey h2 {margin:4px 0 10px}
+}
+@media(forced-colors:active) {
+  .pw-map-pins button::before,.pw-node-mark {background:Canvas; border-color:ButtonText}
+  .pw-level--next,.pw-target-picker button[aria-pressed=true],.pw-colors button[aria-pressed=true] {outline:3px double Highlight; outline-offset:-3px}
+}
+body[data-reduced-motion] #prism *,body[data-reduced-motion] #prism *::before {transition:none!important; animation:none!important; scroll-behavior:auto}

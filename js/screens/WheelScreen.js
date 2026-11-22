@@ -3,9 +3,10 @@
    Daily spin with streak milestones,
    bonus spin, and richer presentation.
    ═══════════════════════════════════════ */
-import { t } from '../i18n.js';
+import { t, getLanguage } from '../i18n.js';
 import { $ } from '../helpers/dom.js';
 import app from '../appState.js';
+import { CONFIG } from '../config.js';
 import { closeModal, openModal } from '../helpers/modal.js';
 
 const PRIZES = [
@@ -34,6 +35,8 @@ let currentAngle = 0;
 let finishSpinAnimation = null;
 let pointerFrame = 0;
 let restoringWheelHistory = false;
+let lastReceipt = null;
+let pendingCredit = null;
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -89,12 +92,8 @@ function getMilestoneBonus(streak) {
 }
 
 function getNextMilestone(streak) {
-  if (streak < 3) return { days: 3 - streak, reward: STREAK_MILESTONES[2] };
-  if (streak < 7) return { days: 7 - streak, reward: STREAK_MILESTONES[1] };
-  if (streak < 14) return { days: 14 - streak, reward: STREAK_MILESTONES[0] };
-
-  const remainder = streak % 14;
-  return { days: remainder === 0 ? 14 : 14 - remainder, reward: STREAK_MILESTONES[0] };
+  return STREAK_MILESTONES.map(reward => ({ days: reward.every - streak % reward.every, reward }))
+    .reduce((first, next) => next.days < first.days ? next : first);
 }
 
 function isPremiumPrize(prize) {
@@ -151,28 +150,38 @@ function drawWheel(canvas, angle) {
     ctx.moveTo(0, 0);
     ctx.arc(0, 0, r, start, end);
     ctx.closePath();
-    ctx.fillStyle = i % 2 === 0 ? surface : card;
+    const enamel = ctx.createRadialGradient(0, 0, 24, 0, 0, r);
+    enamel.addColorStop(0, surface);
+    enamel.addColorStop(.80, card);
+    enamel.addColorStop(1, surface);
+    ctx.fillStyle = enamel;
     ctx.fill();
+    ctx.fillStyle = prize.color;
+    ctx.globalAlpha = i % 2 ? .14 : .09;
+    ctx.fill();
+    ctx.globalAlpha = 1;
     ctx.strokeStyle = 'rgba(255,255,255,0.14)';
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.beginPath();
     ctx.arc(0, 0, r - 9, start + .14, end - .14);
     ctx.strokeStyle = prize.color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 4;
     ctx.stroke();
 
     ctx.save();
     const middle = start + SEG_ANGLE / 2;
     ctx.translate(Math.cos(middle) * r * .60, Math.sin(middle) * r * .60);
-    ctx.rotate(-angle); // Upright in the resting bitmap, even when reopened after a previous spin.
+    // Numbers face the rim: the awarded segment is upright at the pointer,
+    // independent of the number of rotations or reopening the sheet.
+    ctx.rotate(middle + Math.PI / 2);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = ink;
     ctx.font = '500 21px "Space Grotesk", sans-serif';
     ctx.shadowBlur = 0;
     ctx.fillText(prize.type === 'xp' ? String(prize.amount) : prize.icon, 0, -6, 53);
-    ctx.font = '400 11px "Outfit", sans-serif';
+    ctx.font = '500 13px "Outfit", sans-serif';
     ctx.fillText(prize.label().replace(/^\d+\s*/, ''), 0, 10, 53);
     ctx.restore();
   }
@@ -186,6 +195,13 @@ function drawWheel(canvas, angle) {
     ctx.moveTo(0, -r - 2);
     ctx.lineTo(0, -r + 12);
     ctx.stroke();
+  }
+  ctx.restore();
+  ctx.save();
+  for (let i = 0; i < SEG_COUNT * 4; i++) {
+    ctx.rotate(SEG_ANGLE / 4);
+    ctx.fillStyle = i % 4 === 3 ? ink : '#8791a0';
+    ctx.fillRect(-.65, -r + 2, 1.3, i % 4 === 3 ? 4 : 2);
   }
   ctx.restore();
 
@@ -306,14 +322,12 @@ async function applyPrize(prize) {
   if (prize.type === 'life') {
     await save.addLives(prize.amount);
   } else if (prize.type === 'fire') {
-    save.data.fire = (save.data.fire || 0) + prize.amount;
-    await save.save();
+    await save.addFire(prize.amount);
   } else if (prize.type === 'xp') {
     await save.grantXP(prize.amount);
   } else if (prize.type === 'jackpot') {
     await save.addLives(5);
-    save.data.fire = (save.data.fire || 0) + 50;
-    await save.save();
+    await save.addFire(50);
   }
 }
 
@@ -343,11 +357,12 @@ async function awardPrize(prizeIdx, streak, allowMilestone = true) {
   const prize = SEGMENTS[prizeIdx];
   const milestoneBonus = allowMilestone ? getMilestoneBonus(streak) : null;
 
+  const balance = () => ({ life: app.save.getLives(), fire: app.save.getFireBalance(), xp: app.save.getTotalXP() });
+  const before = balance();
   await applyPrize(prize);
   if (milestoneBonus) await applyPrize(milestoneBonus);
 
-  syncMetaUI();
-  return { prize, milestoneBonus };
+  return { prize, milestoneBonus, before, after: balance() };
 }
 
 function clearResultCard() {
@@ -377,7 +392,7 @@ function renderPrizeStrip() {
   if (!strip) return;
 
   const upcomingStreak = getUpcomingSpinStreak();
-  const milestoneBonus = isBonusSpinActive() ? null : getMilestoneBonus(upcomingStreak);
+  const milestoneBonus = usedBaseSpinToday() ? null : getMilestoneBonus(upcomingStreak);
   const chips = FEATURED_SEGMENTS.map(prize => `
     <span class="wheel-prize-chip${isPremiumPrize(prize) ? ' premium' : ''}">${prize.label()}</span>
   `);
@@ -399,11 +414,12 @@ function renderWheelStatus() {
   const overlayBonus = $('#wheelOverlayBonus');
   const statusNote = $('#wheelStatusNote');
   const spinBtn = $('#btnWheelSpin');
+  const retry = pendingCredit?.save === app.save && pendingCredit.date === todayKey() && !spinning && canSpinNow();
 
   const streak = getWheelStreak();
   const upcomingStreak = getUpcomingSpinStreak();
-  const nextMilestone = getNextMilestone(upcomingStreak);
-  const milestoneBonus = isBonusSpinActive() ? null : getMilestoneBonus(upcomingStreak);
+  const nextMilestone = getNextMilestone(usedBaseSpinToday() ? streak : upcomingStreak - 1);
+  const milestoneBonus = usedBaseSpinToday() ? null : getMilestoneBonus(upcomingStreak);
   const finished = hasFinishedWheelToday();
   const bonusSpin = isBonusSpinActive();
   const bonusReady = hasBonusSpinAvailable();
@@ -430,7 +446,8 @@ function renderWheelStatus() {
   if (overlayStreak) overlayStreak.textContent = streakText || t('wheel_daily_spin');
   if (overlayBonus) overlayBonus.textContent = bonusReady ? t('wheel_bonus_ready') : bonusText;
   if (statusNote) {
-    if (finished) statusNote.textContent = t('wheel_status_complete');
+    if (retry) statusNote.textContent = getLanguage() === 'de' ? 'Gewinn nicht gespeichert. Dein Dreh bleibt verfügbar.' : 'Reward not saved. Your spin is still available.';
+    else if (finished) statusNote.textContent = t('wheel_status_complete');
     else if (bonusReady) statusNote.textContent = t('wheel_bonus_ready');
     else if (usedBaseSpinToday()) statusNote.textContent = t('wheel_status_complete');
     else statusNote.textContent = '';
@@ -438,12 +455,16 @@ function renderWheelStatus() {
   }
   if (spinBtn) {
     spinBtn.disabled = !canSpinNow() || spinning;
-    spinBtn.textContent = bonusSpin ? t('wheel_bonus_spin') : t('wheel_spin');
+    spinBtn.textContent = retry ? t('settings_save_retry') : bonusSpin ? t('wheel_bonus_spin') : finished ? t('wheel_used') : t('wheel_spin');
   }
+  const overlay = $('#wheelOverlay');
+  if (overlay) overlay.dataset.phase = spinning ? 'spinning' : finished ? 'complete' : 'ready';
+  const done = $('#btnWheelDone');
+  if (done) done.hidden = spinning || !finished;
 }
 
-function revealResult(result, bonusSpin) {
-  const { prize, milestoneBonus } = result;
+function revealResult(result, bonusSpin, focus = true) {
+  const { prize, milestoneBonus, before, after } = result;
   const resultCard = $('#wheelResultCard');
   const titleEl = $('#wheelResultTitle');
   const resultEl = $('#wheelResult');
@@ -451,21 +472,26 @@ function revealResult(result, bonusSpin) {
 
   if (titleEl) titleEl.textContent = bonusSpin ? t('wheel_bonus_spin') : t('wheel_won');
   if (resultEl) {
-    resultEl.textContent = prize.label();
+    const fullReserve = prize.type === 'life' && before.life === CONFIG.LIVES_MAX && after.life === before.life;
+    resultEl.textContent = fullReserve ? (getLanguage() === 'de' ? 'Vorrat voll' : 'Reserve full') : prize.label();
+    if (fullReserve && titleEl) titleEl.textContent = prize.label();
     resultEl.classList.add('wheel-result-show');
   }
   if (extraEl) {
-    const parts = [];
-    if (milestoneBonus) parts.push(`${t('wheel_milestone_bonus')} ${milestoneBonus.label()}`);
-    extraEl.textContent = parts.join(' • ');
-    extraEl.style.display = parts.length ? 'block' : 'none';
+    const keys = new Set(prize.type === 'jackpot' ? ['life', 'fire'] : [prize.type]);
+    if (milestoneBonus) keys.add(milestoneBonus.type);
+    Object.keys(after).forEach(k => { if (before[k] !== after[k]) keys.add(k); });
+    const labels = { life: t('reserve_lives'), fire: t('fire_balance'), xp: t('total_xp') };
+    extraEl.innerHTML = (milestoneBonus ? `<div class="wheel-milestone">${t('wheel_milestone_bonus')} ${milestoneBonus.label()}</div>` : '') +
+      [...keys].map(k => `<div class="wheel-ledger-row"><span>${labels[k]}</span><b>${Number(before[k]).toLocaleString(getLanguage())} → ${Number(after[k]).toLocaleString(getLanguage())}${k === 'life' ? ` / ${CONFIG.LIVES_MAX}` : ''}</b></div>`).join('');
+    extraEl.style.display = 'block';
   }
   if (resultCard) {
     resultCard.hidden = false;
     resultCard.style.setProperty('--wheel-win-color', prize.color);
     resultCard.classList.add('revealed');
     resultCard.classList.toggle('premium', prize.type === 'jackpot' || Boolean(milestoneBonus));
-    resultCard.focus({ preventScroll: true });
+    if (focus) resultCard.focus();
   }
 }
 
@@ -491,6 +517,9 @@ function showWheel() {
   if (canvas) drawWheel(canvas, currentAngle);
 
   clearResultCard();
+  if (!pendingCredit && lastReceipt?.save === app.save && lastReceipt.date === todayKey() && usedBaseSpinToday()) {
+    revealResult(lastReceipt.result, lastReceipt.bonusSpin, false);
+  }
   renderPrizeStrip();
   renderWheelStatus();
 }
@@ -510,6 +539,15 @@ export function updateWheelCard() {
 }
 
 export function bindWheel() {
+  const done = document.createElement('button');
+  done.type = 'button';
+  done.id = 'btnWheelDone';
+  done.className = 'btn btn-secondary';
+  done.dataset.i18n = 'dialog_ok';
+  done.textContent = t('dialog_ok');
+  done.hidden = true;
+  done.addEventListener('click', hideWheel);
+  $('#wheelOverlay .wheel-actions')?.append(done);
   if (history.state?.scsWheel) {
     const state = { ...history.state };
     delete state.scsWheel;
@@ -533,29 +571,36 @@ export function bindWheel() {
     const today = todayKey();
     const bonusSpin = isBonusSpinActive();
     const upcomingStreak = getUpcomingSpinStreak();
-    const prizeIdx = pickPrize(upcomingStreak, bonusSpin);
+    const retry = pendingCredit?.save === save && pendingCredit.date === today && pendingCredit.bonusSpin === bonusSpin;
+    const prizeIdx = retry ? pendingCredit.prizeIdx : pickPrize(upcomingStreak, bonusSpin);
 
     // Busy spans animation AND persistence. Repeated Skip/Back/clicks must not
     // open a second transaction while the original prize is being credited.
     spinning = true;
+    clearResultCard();
     renderWheelStatus();
     try {
-      await spinWheel(prizeIdx, bonusSpin);
-
-      save.data.wheelSpinsToday = (save.data.wheelSpinsToday || 0) + 1;
-      if (!bonusSpin) {
-        const wasYesterday = save.data.lastWheelDate && isConsecutiveDay(save.data.lastWheelDate, today);
-        save.data.lastWheelSpin = today;
-        save.data.wheelStreak = wasYesterday ? (save.data.wheelStreak || 0) + 1 : 1;
-        save.data.lastWheelDate = today;
-      } else {
-        save.data.wheelBonusSpinUsedDate = today;
+      if (!retry) await spinWheel(prizeIdx, bonusSpin);
+      let result;
+      try {
+        result = await save.withBatch(async () => {
+          save.data.wheelSpinsToday = (save.data.wheelSpinsToday || 0) + 1;
+          if (!bonusSpin) {
+            save.data.lastWheelSpin = today;
+            save.data.wheelStreak = upcomingStreak;
+            save.data.lastWheelDate = today;
+          } else {
+            save.data.wheelBonusSpinUsedDate = today;
+          }
+          return awardPrize(prizeIdx, upcomingStreak, !bonusSpin);
+        });
+      } catch {
+        pendingCredit = { save, date: today, bonusSpin, prizeIdx };
+        return;
       }
-
-      const effectiveStreak = bonusSpin ? Math.max(1, save.data.wheelStreak || 1) : (save.data.wheelStreak || upcomingStreak);
-      await save.save();
-
-      const result = await awardPrize(prizeIdx, effectiveStreak, !bonusSpin);
+      pendingCredit = null;
+      syncMetaUI();
+      lastReceipt = { result, bonusSpin, save, date: today };
       revealResult(result, bonusSpin);
 
       renderPrizeStrip();
@@ -565,6 +610,7 @@ export function bindWheel() {
       const close = $('#btnWheelClose');
       if (close) { close.disabled = false; close.removeAttribute('aria-disabled'); }
       renderWheelStatus();
+      if (pendingCredit) $('#btnWheelSpin')?.focus();
     }
   });
 

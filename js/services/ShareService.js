@@ -1,51 +1,22 @@
 /* ═══════════════════════════════════════
    SCS Play — Share Service
    Web Share API + Capacitor Share + clipboard fallback.
-   Viral-optimized emoji share cards.
+    Localized round ticket with a compact text fallback.
    ═══════════════════════════════════════ */
-import { t } from '../i18n.js';
+import { t, getLanguage } from '../i18n.js';
 import { appDialog } from '../helpers/appDialog.js';
-
-/* ── Emoji helpers ── */
-const MODE_EMOJI = {
-  klassik: '🔴🟢🔵🟡', beginner: '🟢🔵🟡🔴',
-  expert: '🔷🔶◆●', ultra: '🏆👑',
-  mathe: '🔢➕', worte: '📝✨', memo: '🧠💭',
-  sequenz: '🔔🎵', stroop: '🎨🖌️', fokus: '🎯👁️', chaos: '🌀🔄'
-};
-const PLAY_EMOJI  = { classic: '⏱', blitz: '⚡', endless: '♾️', competition: '🏅' };
-
-function _accuracyBar(pct) {
-  const filled = Math.round(pct / 10);
-  return '🟩'.repeat(filled) + '⬛'.repeat(10 - filled);
-}
-
-function _tierEmoji(score, accuracy) {
-  if (accuracy >= 95 && score >= 5000) return '👑';
-  if (accuracy >= 85 && score >= 3000) return '🏆';
-  if (accuracy >= 70 && score >= 1500) return '⭐';
-  return '🎮';
-}
 
 function generateShareText(stats) {
   const mode = (stats.mode || 'klassik').toLowerCase();
   const modeName = t(`mode_${mode}`);
   const playType = stats.playType || 'classic';
-  const score = stats.score ? stats.score.toLocaleString() : '0';
+  const score = Number(stats.score || 0).toLocaleString(getLanguage());
   const acc = stats.accuracy || 0;
   const streak = stats.streak || 0;
-  const tier = _tierEmoji(stats.score || 0, acc);
-  const modeE = MODE_EMOJI[mode] || '🎮';
-  const playE = PLAY_EMOJI[playType] || '⏱';
-
-  const bar = _accuracyBar(acc);
-
   const lines = [
-    `${tier} SCS PLAY ${modeE}`,
-    ``,
-    `${playE} ${modeName} · ${score} ${t('share_pts')}`,
-    `${t('streak_label')} ${streak} · ${t('accuracy')}: ${acc}%`,
-    bar,
+    `SCS PLAY  /  ${modeName} · ${t(`play_${playType}`)}`,
+    `${score} ${t('share_pts')}`,
+    `${t('accuracy')}: ${acc}% · ${t('streak_label')}: ${streak}×`,
   ];
 
   /* Mode-specific highlight */
@@ -54,8 +25,7 @@ function generateShareText(stats) {
   if (streak >= 20) lines.push(`🔥 ${t('share_insane_streak', { n: streak })}`);
 
   lines.push('');
-  lines.push(`${t('share_challenge')} 👀`);
-  lines.push('#SCSPlay');
+  lines.push(t('share_challenge'));
 
   return lines.join('\n');
 }
@@ -100,7 +70,15 @@ export async function shareScore(stats, getBodyFx) {
     { test: () => window.Capacitor?.Plugins?.Share,
       run:  async () => { await window.Capacitor.Plugins.Share.share({ title, text, dialogTitle: title }); } },
     { test: () => navigator.share,
-      run:  async () => { await navigator.share({ title, text }); } },
+      run: async () => {
+        let file;
+        if (navigator.canShare && typeof File === 'function' &&
+            navigator.canShare({files:[new File([], 'scs-play.png', {type:'image/png'})]})) {
+          try { file = await (await import('../renderers/scorePostcard.js')).scorePostcard(stats); } catch { /* Text works without canvas. */ }
+        }
+        const payload = file && navigator.canShare({files:[file]}) ? {title,text,files:[file]} : {title,text};
+        await navigator.share(payload);
+      } },
     { test: () => navigator.clipboard?.writeText,
       run:  async () => { await navigator.clipboard.writeText(text); _showToast(copiedMsg); } },
     { test: () => true,

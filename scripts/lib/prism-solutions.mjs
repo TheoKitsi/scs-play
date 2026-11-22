@@ -1,7 +1,7 @@
 /* Authored solution inputs. Test data only; not copied into the shipped game. */
 export const PRISM_SOLUTIONS = [
   [{ x: 210, y: 170 }],
-  [{ x: 85, y: 218 }],
+  [{ x: 255, y: 328 }],
   [{ x: 112, y: 180 }, { x: 290, y: 180, color: 'amber' }],
   [{ x: 100, y: 150 }],
   [{ x: 170, y: 308 }],

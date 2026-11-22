@@ -10,4 +10,6 @@ export function applyTheme(themeId) {
   if (themeId && themeId !== 'default') {
     document.body.classList.add(`theme-${themeId}`);
   }
+  const chrome = document.querySelector('meta[name="theme-color"]');
+  if (chrome) chrome.content = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#162535';
 }

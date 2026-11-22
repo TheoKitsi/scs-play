@@ -63,6 +63,16 @@ void main(){
   vec3 delta=uLight.xyz-vPosition;float attenuation=uLight.w/(1.+dot(delta,delta)/18000.);
   color+=brdf(n,v,normalize(delta),base,rough,metal)*uLightColor*attenuation;
   color+=base*max(vMaterial.z,0.);
+  // Warm waterfront horizon and cool overhead strip in the dark lacquer.
+  // The face keeps the same luminance ceiling as before; the bevel picks up
+  // more reflection at grazing angles. No additional texture or render pass.
+  if(vMaterial.z<-.5){
+    vec3 reflected=reflect(-v,n);
+    float edge=pow(1.-clamp(dot(n,v),0.,1.),2.);
+    float horizon=1.-smoothstep(.05,.40,abs(reflected.y+.16));
+    float strip=1.-smoothstep(.04,.31,abs(reflected.x+.44+vPosition.y*.0007));
+    color+=(horizon*vec3(.18,.055,.027)+strip*vec3(.055,.12,.18))*(.13+edge+metal*.35);
+  }
   // Cut glass under a conservatory skylight. Sample an analytic sky/ground
   // field, not a framebuffer: facets retain their own reflected directions
   // and optical density without an extra pass or copying the puzzle image.

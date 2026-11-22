@@ -1,13 +1,18 @@
 {
   "name": "SCS Play — Swipe Sort Score",
   "short_name": "SCS Play",
-  "description": "Ten focused reflex, math, memory and attention games. Swipe, sort, score.",
+  "description": "Erwecke die schwebenden Gärten mit Licht. Spiele zwölf Rätsel und zehn Arcade-Modi offline.",
+  "shortcuts": [
+    { "name": "Lichtgarten weiterspielen", "short_name": "Lichtgarten", "url": "./index.html?view=garden" },
+    { "name": "Spiele auswählen", "short_name": "Spielen", "url": "./index.html?view=play" },
+    { "name": "Meine Sammlung", "short_name": "Sammlung", "url": "./index.html?view=collection" }
+  ],
   "start_url": "./index.html",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
   "orientation": "portrait",
-  "theme_color": "#0f0c29",
-  "background_color": "#0f0c29",
+  "theme_color": "#162535",
+  "background_color": "#162535",
   "scope": "./",
   "categories": ["games", "entertainment"],
   "lang": "de",
@@ -40,39 +45,18 @@
   ],
   "screenshots": [
     {
-      "src": "screenshots/galaxy-s25/02-home-top.png",
-      "sizes": "1236x2745",
-      "type": "image/png",
+      "src": "img/install/garden.webp",
+      "sizes": "360x640",
+      "type": "image/webp",
       "form_factor": "narrow",
-      "label": "Home screen with game modes"
+      "label": "Lichtgarten – ziele mit dem Prisma auf die Kristalle"
     },
     {
-      "src": "screenshots/galaxy-s25/08-game-active.png",
-      "sizes": "1236x2745",
-      "type": "image/png",
+      "src": "img/install/arcade.webp",
+      "sizes": "360x640",
+      "type": "image/webp",
       "form_factor": "narrow",
-      "label": "Active gameplay"
-    },
-    {
-      "src": "screenshots/galaxy-s25/10-results.png",
-      "sizes": "1236x2745",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Results screen"
-    },
-    {
-      "src": "screenshots/small-android/02-home-top.png",
-      "sizes": "720x1280",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Home screen"
-    },
-    {
-      "src": "screenshots/small-android/08-game-active.png",
-      "sizes": "720x1280",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Active gameplay"
+      "label": "Arcade – ordne die Farben zu"
     }
   ],
   "prefer_related_applications": false

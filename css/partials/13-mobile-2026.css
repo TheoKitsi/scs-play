@@ -554,6 +554,11 @@ button:focus-visible,.btn:focus-visible{
   transition:border-color .14s ease,background-color .14s ease;
 }
 #game .corner-shape svg{width:64%;height:64%;filter:none}
+@media (orientation:portrait) and (max-width:699px){
+  body.mode-klassik #game[data-quick-colors]{--arena-cy:44%;--arena-dx:23%;--target-width:clamp(88px,38vw,168px);--target-height:clamp(48px,9svh,78px)}
+  #game[data-quick-colors] .corner-shape[data-dir^="u"]{--slot-y:65%}
+  #game[data-quick-colors] .corner-shape[data-dir^="d"]{--slot-y:79%}
+}
 #game .corner-shape[data-dir="ul"]{--slot-x:calc(50% - var(--arena-dx));--slot-y:calc(var(--arena-cy) - var(--arena-dy))}
 #game .corner-shape[data-dir="ur"]{--slot-x:calc(50% + var(--arena-dx));--slot-y:calc(var(--arena-cy) - var(--arena-dy))}
 #game .corner-shape[data-dir="dl"]{--slot-x:calc(50% - var(--arena-dx));--slot-y:calc(var(--arena-cy) + var(--arena-dy))}

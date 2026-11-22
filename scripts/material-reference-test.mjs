@@ -73,7 +73,7 @@ async function contextFor(browser, spec = { width: 412, height: 915, dpr: 3 }, {
   return context;
 }
 async function guest(page) {
-  await page.goto(server.baseUrl, { waitUntil: 'networkidle' });
+  await page.goto(`${server.baseUrl}?view=arcade`, { waitUntil: 'networkidle' });
   await page.locator('#btnGuest').click(); await page.waitForSelector('#home.active');
 }
 async function ready(page) {
@@ -319,7 +319,7 @@ try {
         assert.equal(await page.evaluate(() => __SCS_QA__.arcadeRendererState().backend), 'canvas');
         assert.equal(await page.evaluate(() => __SCS_QA__.arcadeRendererState().material), true);
         const pixel = await page.locator('.arcade-engine-layer canvas').evaluate(c => [...c.getContext('2d').getImageData(Math.floor(c.width / 2), Math.floor(c.height * .68), 1, 1).data]);
-        assert.ok(pixel[2] > pixel[0] + 5 && Math.max(...pixel.slice(0, 3)) < 120 && pixel[3] === 255, `Canvas fallback keeps the ocean material, not the white untinted image: ${pixel}`);
+        assert.ok(pixel[2] > pixel[0] + 5 && Math.max(...pixel.slice(0, 3)) < 120 && Math.abs(pixel[3] - 168) <= 1, `Canvas fallback keeps the ocean tint and translucent coastal deck: ${pixel}`);
         assert.deepEqual(errors, []);
         console.log(`PASS ${name}: Canvas-only ocean tint/pixel fixture`);
       } finally { await canvasContext.close(); }

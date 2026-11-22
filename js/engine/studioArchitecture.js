@@ -18,13 +18,13 @@ export function prismArchitecture(level) {
   const alloy = { color: 0x80998f, roughness: .25, metallic: .72, finish: 'alloy' };
   // Stop short of the existing corner foliage; no duplicated plant decals or
   // rails over playable crystals, even at the campaign's outermost positions.
-  const parts = [
+  const parts = level.zone === 0 ? [] : [
     { kind: 'beam', x: 210, y: 24, w: 280, h: 8, z: 7, ...material },
     { kind: 'beam', x: 24, y: 274, w: 374, h: 7, z: 8, angle: Math.PI / 2, ...material },
     { kind: 'beam', x: 397, y: 276, w: 352, h: 7, z: 8, angle: Math.PI / 2, ...material },
     { kind: 'beam', x: 210, y: 525, w: 228, h: 8, z: 7, ...material },
-    { kind: 'ring', x: level.launch.x, y: level.launch.y + 4, w: 62, h: 31, ...alloy },
   ];
+  parts.push({ kind: 'ring', x: level.launch.x, y: level.launch.y + 4, w: 62, h: 31, ...alloy });
   for (const wall of level.walls) parts.push({ kind: 'beam', x: wall.x + wall.width / 2, y: wall.y + wall.height / 2,
     w: wall.width, h: wall.height, z: 15, color: 0x66747b, roughness: .64, metallic: .12, finish: 'slate' });
   for (const gate of level.gates) for (const x of [gate.x + .5, gate.x + gate.width - .5]) parts.push({

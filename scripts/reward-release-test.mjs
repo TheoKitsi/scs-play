@@ -20,7 +20,7 @@ async function enterHome(context, base) {
   page.on('requestfailed', request => {
     if (request.failure()?.errorText !== 'net::ERR_ABORTED') errors.push(`${request.url()}: ${request.failure()?.errorText}`);
   });
-  await page.goto(base, { waitUntil: 'networkidle' });
+  await page.goto(`${base}?view=arcade`, { waitUntil: 'networkidle' });
   await page.waitForSelector('#auth.active, #home.active', { timeout: 15000 });
   const guest = page.locator('#btnGuest');
   if (await guest.isVisible()) await guest.click();

@@ -20,7 +20,7 @@ async function review(viewport, mode = 'klassik') {
     Math.random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   });
   try {
-    await page.goto(server.baseUrl, { waitUntil: 'networkidle' });
+    await page.goto(`${server.baseUrl}?view=arcade`, { waitUntil: 'networkidle' });
     await page.locator('#btnGuest').waitFor({ state: 'visible' });
     await page.evaluate(() => document.querySelector('#btnGuest').click());
     await page.locator('#home.active').waitFor();

@@ -7,6 +7,9 @@ import { CONFIG } from './config.js';
 
 /* ─── Corner hit-test padding (px) for fat-finger tolerance ─── */
 const TAP_HIT_PADDING = 22;
+function fingerIn(list, id) {
+  for (let i=0;i<list.length;i++) if (list[i].identifier === id) return list[i];
+}
 
 export class SwipeHandler {
   constructor(el, mode = 'beginner') {
@@ -124,6 +127,7 @@ export class SwipeHandler {
     if (e.touches) this._isTouch = true;
     else if (this._isTouch) return;
     const p = e.touches ? e.touches[0] : e;
+    this._finger = p.identifier;
     this._sx = p.clientX;
     this._sy = p.clientY;
     this._st = performance.now();
@@ -136,15 +140,17 @@ export class SwipeHandler {
   _move(e) {
     if (!this._active) return;
     if (this._isTouch && !e.touches) return;
-    const p = e.touches ? e.touches[0] : e;
+    const p = e.touches ? fingerIn(e.touches,this._finger) : e;
+    if (!p) return;
     if (this.onTrailMove) this.onTrailMove(p.clientX, p.clientY);
   }
 
   _end(e) {
     if (this._isTouch && !e.changedTouches) return;
     if (!this._active) return;
+    const p = e.changedTouches ? fingerIn(e.changedTouches,this._finger) : e;
+    if (!p) return;
     this._active = false;
-    const p = e.changedTouches ? e.changedTouches[0] : e;
     const dx = p.clientX - this._sx;
     const dy = p.clientY - this._sy;
     const dt = performance.now() - this._st;
@@ -205,8 +211,9 @@ export class SwipeHandler {
     }
   }
 
-  _cancel() {
+  _cancel(e) {
     if (!this._active) return;
+    if (e?.changedTouches && !fingerIn(e.changedTouches,this._finger)) return;
     this._active = false;
     this._isTouch = false;
     this._gestureStimulusId = undefined;
@@ -216,13 +223,14 @@ export class SwipeHandler {
   /* ─── Hit-test visible corner shapes ─── */
   _hitTestCorner(x, y) {
     this._cacheGeometry();
+    let nearest = null, best = Infinity;
     for (const { dir, rect: r } of this._hitRects) {
-      if (x >= r.left - TAP_HIT_PADDING && x <= r.right + TAP_HIT_PADDING &&
-          y >= r.top - TAP_HIT_PADDING && y <= r.bottom + TAP_HIT_PADDING) {
-        return dir;
-      }
+      const dx = Math.max(r.left-x,0,x-r.right), dy = Math.max(r.top-y,0,y-r.bottom);
+      if (!dx && !dy) return dir; // An actual button beats another button's padding.
+      const dist = dx*dx + dy*dy;
+      if (dist <= TAP_HIT_PADDING**2 && dist < best) { best = dist; nearest = dir; }
     }
-    return null;
+    return nearest;
   }
 
   /* ─── Classify direction from vector ─── */

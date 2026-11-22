@@ -145,7 +145,7 @@ async function context(browser, fault = '') {
   return ctx;
 }
 async function start(page) {
-  await page.goto(compiled.baseUrl, { waitUntil: 'networkidle' });
+  await page.goto(`${compiled.baseUrl}?view=arcade`, { waitUntil: 'networkidle' });
   await page.locator('#btnGuest').click();
   await page.evaluate(() => __SCS_QA__.setGameSelection('klassik', 'endless'));
   await page.locator('#btnPlay').click();
@@ -255,7 +255,7 @@ try {
          await page.waitForSelector('#pwArena[data-studio-renderer="mesh-ggx"]');
           await page.waitForTimeout(400); // Let the real screen-entry transition finish, without changing any game/renderer clock.
           const prism = await page.evaluate(() => __SCS_QA__.prismRendererState());
-          assert.deepEqual(prism.kinds, { beam: 4, ring: 2, crystal: 1 }, 'The actual first puzzle has four 3D rails, launcher/crystal rings and a crystal');
+           assert.deepEqual(prism.kinds, { ring: 4, crystal: 3 }, 'First light renders its three linked crystals and their rings');
           assert.equal(prism.loopRunning, false); assert.ok(prism.triangles <= 3500);
          await page.screenshot({ path: resolve(out, `${name}-prism-ready.png`), scale: 'css' });
         const arena = await page.locator('#pwArena canvas').boundingBox();

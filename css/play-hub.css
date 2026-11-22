@@ -1,0 +1,93 @@
+/* Play hub: a scrollable hand-held launcher with a reachable, persistent dock. */
+#hub{overflow:auto;overscroll-behavior:contain;align-items:stretch;justify-content:flex-start;padding:0;background:var(--bg);color:var(--text)}
+.hub-shell{--ink:#fff3df;--margin:clamp(14px,4vw,22px);width:min(100%,540px);margin:0 auto;padding:calc(env(safe-area-inset-top) + 10px) var(--margin) calc(76px + env(safe-area-inset-bottom));font-family:var(--font-display)}
+.hub-shell header,.hub-caption{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.hub-shell header{min-height:48px;margin-bottom:8px}
+.hub-kicker,.hub-duration{text-transform:uppercase;font:700 .68rem/1.25 var(--font-display);letter-spacing:.16em}
+.hub-shell header .hub-kicker{color:var(--text-dim);display:flex;gap:7px;align-items:center}
+.hub-shell header .hub-kicker::before{content:"";width:19px;height:5px;background:repeating-linear-gradient(115deg,currentColor 0 2px,transparent 2px 5px)}
+.hub-shell h1,.hub-caption h2{margin:0;font-weight:650;letter-spacing:-.055em;line-height:1.08}
+.hub-shell h1{font-size:clamp(2rem,8.2vw,2.9rem)}.hub-caption h2{font-size:1.6rem}
+.hub-shell button{font:inherit;cursor:pointer;touch-action:manipulation}
+.hub-shell button:focus-visible{outline:3px solid var(--text);outline-offset:2px}
+.hub-resume,.hub-record{position:relative;isolation:isolate;overflow:hidden;width:100%;text-align:start;color:var(--ink);border:0;border-radius:6px;box-shadow:inset 0 0 0 1px #fff2}
+.hub-resume{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;min-height:clamp(184px,calc(39svh - 50px),294px);padding:clamp(18px,5vw,28px);background:linear-gradient(75deg,#151b2ef2,#2020337a 51%,transparent 85%),url("../img/scenery/valley.webp") center 14%/cover,#302f4a}
+.hub-resume[data-scene=valley]::before{content:"";position:absolute;z-index:-1;inset:0 -11% 7% 39%;background:url("../img/scenery/hub-refraction.webp") 65% 35%/contain no-repeat}
+.hub-resume[data-scene=harbour]{background:linear-gradient(65deg,#141725f2,#1c172660 58%,transparent),url("../img/scenery/harbour.webp") center 48%/cover,#292839}
+.hub-resume .hub-kicker,.hub-record .hub-kicker{color:#ffe3b8}
+.hub-resume strong,.hub-count{font:400 clamp(2.6rem,11vw,4.4rem)/.98 Georgia,'Times New Roman',serif;letter-spacing:-.055em}
+.hub-resume strong{max-width:73%;margin:8px 0 14px;text-wrap:balance;text-shadow:0 1px 9px #090b185e}
+.hub-playline{display:flex;align-items:center;gap:8px;font-size:.88rem;font-weight:600}
+.hub-playline i{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;color:#1e2030;background:var(--ink)}
+.hub-playline svg{width:13px;height:13px;margin-left:2px}
+.hub-caption{margin:clamp(6px,1.5svh,16px) 0 3px}
+.hub-caption button{background:none;color:var(--text-dim);border:0;min-height:44px;font-size:.86rem}
+.hub-shelf{display:grid;gap:6px}
+.hub-row{--cloth:#512b3a;position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;justify-content:space-between;width:100%;min-height:clamp(68px,calc(14svh - 18px),108px);padding:10px 14px;text-align:start;background:var(--cloth);color:#fff4e6;border:0;border-radius:5px}
+.hub-row[data-action=memo]{--cloth:#333148}.hub-row[data-action=mathe]{--cloth:#193e43}
+.hub-cover{position:absolute;z-index:-2;right:0;top:0;width:48%;height:100%;object-fit:cover;object-position:center 48%;mask-image:linear-gradient(90deg,transparent,#000 30%)}
+.hub-mode{display:grid;gap:2px;max-width:60%}
+.hub-mode strong,.hub-entry strong{font-size:clamp(1.2rem,5.2vw,1.55rem);line-height:1.11;letter-spacing:-.035em}
+.hub-mode small,.hub-entry small,.hub-record small{font-size:.81rem;line-height:1.3}
+.hub-duration{align-self:flex-start;position:relative;color:#fff4e6;font-size:.64rem;letter-spacing:.07em;text-transform:none}
+.hub-record{min-height:clamp(192px,calc(40svh - 49px),300px);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:clamp(18px,5vw,28px);background:#2a2028}
+.hub-record::before{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,#251d27 4%,#261e29d9 30%,#271e294a 68%),url("../img/scenery/sunhall.webp") center 40%/cover}
+.hub-record::after{content:"";position:absolute;z-index:-1;inset:5% -4% 7% 47%;background:radial-gradient(ellipse 32% 3% at 51% 91%,#170e1e85,transparent),url("../img/scenery/hub-astrolabe.webp") center/contain no-repeat}
+.hub-count{margin-top:12px;font-size:clamp(4rem,16vw,6.6rem);font-variant-numeric:lining-nums tabular-nums}
+.hub-count strong{font-weight:400}.hub-count span{font-size:.44em;letter-spacing:-.03em;color:#fbd6b3}
+.hub-record p{font-size:.92rem;font-weight:500;margin-top:2px}
+.hub-meter{display:flex;gap:3px;width:46%;margin:15px 0 6px}
+.hub-meter i{height:4px;flex:1;background:#b7a39a80}.hub-meter .earned{background:#ffdb98}
+.hub-record small{color:#ffe7ce}
+.hub-index{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 10px;margin-top:clamp(12px,2svh,21px)}
+.hub-entry{display:flex;align-items:center;gap:12px;padding:13px 4px;min-height:clamp(60px,9svh,82px);grid-column:span 2;text-align:start;border:0;border-bottom:1px solid var(--outline);color:var(--text);background:transparent}
+.hub-entry>svg{width:24px;height:24px;flex:none;color:var(--text-dim)}.hub-entry>span:not(.hub-next){display:grid;gap:4px}
+.hub-entry strong{font-size:1.08rem}.hub-entry small,.hub-next{color:var(--text-dim)}.hub-next{margin-left:auto}
+.hub-entry:is([data-action=records],[data-action=awards]){position:relative;isolation:isolate;overflow:hidden;grid-column:span 1;display:grid;align-content:space-between;gap:10px;min-height:clamp(98px,15svh,140px);margin-bottom:6px;padding:14px;border:0;border-radius:5px;background:linear-gradient(120deg,#1f313c,#314b53);color:#fff5e5}
+.hub-entry[data-action=awards]{background:linear-gradient(120deg,#382d42,#574052)}
+.hub-entry:is([data-action=records],[data-action=awards])::before{content:"";position:absolute;z-index:-1;inset:0;background:repeating-radial-gradient(ellipse at 110% -26%,transparent 0 8px,#d2efdd38 8.5px 9px,transparent 9.5px 13px);mask-image:linear-gradient(220deg,#000,transparent 67%)}
+.hub-entry[data-action=awards]::before{background:repeating-conic-gradient(from 20deg at 110% -26%,transparent 0deg 5deg,#f3d5bd66 5.2deg 5.6deg,transparent 6deg 8deg)}
+.hub-entry:is([data-action=records],[data-action=awards]) :is(svg,small,.hub-next){color:inherit}
+.hub-entry:is([data-action=records],[data-action=awards]) .hub-next{display:none}
+.hub-entry:is([data-action=records],[data-action=awards]) strong{font-size:clamp(1.13rem,4.7vw,1.45rem)}
+.play-dock{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,540px);display:flex;gap:5px;padding:6px 8px max(7px,env(safe-area-inset-bottom),var(--gesture-nav-inset,0px));background:var(--surface);border-top:1px solid var(--outline);box-sizing:border-box;z-index:2}
+.play-dock button{flex:1;min-width:0;overflow-wrap:anywhere;min-height:48px;border:0;border-radius:12px;display:grid;justify-items:center;align-content:center;gap:3px;background:none;color:var(--text-dim);font-size:.8rem}
+.play-dock svg{width:18px;height:18px}.play-dock [aria-current]{background:var(--control-fill);color:var(--text);box-shadow:inset 0 -2px var(--text-dim)}
+#prism[data-pw-view=map] .pw-shell{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding-bottom:0}
+#prism[data-pw-view=map] .pw-map-view{overflow-y:auto;min-height:0;align-items:start;overscroll-behavior:contain}
+#prism[data-pw-view=map] .play-dock{position:static;transform:none;justify-self:center}
+#hub{overflow:hidden}
+#hub .hub-shell{height:100%;min-height:0;padding:0;display:grid;grid-template-rows:minmax(0,1fr) auto}
+.hub-scroll{overflow:auto;overscroll-behavior:contain;min-height:0;padding:calc(env(safe-area-inset-top) + 10px) var(--margin) 12px}
+#hub .play-dock{position:static;transform:none;width:100%}
+
+/* The task stays in sight above a fixed four-key deck. The renderer measures
+   these same DOM rectangles; a memory cover never changes their geometry. */
+.deck-instruction{display:none}
+@media(orientation:portrait) and (max-width:699px){
+  body #game:is([data-arena-mode=klassik],[data-arena-mode=memo],[data-arena-mode=mathe]){
+    --arena-cy:42%;--arena-dx:23%;--target-width:clamp(88px,39vw,172px);--target-height:clamp(48px,9svh,78px)}
+  #game:is([data-arena-mode=klassik],[data-arena-mode=memo],[data-arena-mode=mathe]) .corner-shape[data-dir^=u]{--slot-y:66%}
+  #game:is([data-arena-mode=klassik],[data-arena-mode=memo],[data-arena-mode=mathe]) .corner-shape[data-dir^=d]{--slot-y:80%}
+  #game[data-arena-mode=mathe] .math-eq{font:650 clamp(2rem,9vw,3rem)/1.08 var(--font-display);font-variant-numeric:tabular-nums}
+  #game[data-arena-mode=mathe] .corner-shape .corner-text{font-size:clamp(1.2rem,5vw,1.65rem)!important}
+  #game:is([data-arena-mode=klassik],[data-arena-mode=memo],[data-arena-mode=mathe]) .deck-instruction{display:block;position:absolute;z-index:5;inset:56.5% 4% auto;text-align:center;color:var(--text);font:600 .84rem/1.25 var(--font-display);pointer-events:none}
+  #game[data-arena-mode=memo] .corner-shape.memo-revealing{outline:3px double var(--primary-text,var(--text));outline-offset:2px}
+}
+@media(max-height:600px) and (orientation:portrait){
+  #game:is([data-arena-mode=klassik],[data-arena-mode=memo],[data-arena-mode=mathe]) .center-platform{height:18svh!important}
+}
+
+/* Coastal studio — the scenery sits below the task faces in every mode.
+   Scrims inherit the theme; light mode keeps dark type on light glass. */
+#game.active[data-arena-mode]::before{
+  content:"";display:block;position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:linear-gradient(180deg,var(--bg) 0%,transparent 30%,transparent 69%,var(--bg) 100%),
+    linear-gradient(0deg,color-mix(in srgb,var(--bg) 20%,transparent),color-mix(in srgb,var(--bg) 10%,transparent)),
+    url("../img/scenery/harbour.webp") center 54%/cover no-repeat;
+}
+#game.active[data-mode-world=memory]::before{filter:hue-rotate(319deg) saturate(.74)}
+#game.active[data-mode-world=think]::before{filter:saturate(.66)}
+#game .deck-instruction:not(:empty){width:fit-content;max-width:92%;margin:0 auto;border-radius:16px;padding:3px 12px;background:var(--surface);color:var(--text)}
+@media(forced-colors:active){#game.active[data-arena-mode]::before{display:none}#hub .hub-resume,#hub .hub-record{background:Canvas;color:CanvasText}}
+@media(forced-colors:active){.hub-record::before,.hub-record::after,.hub-resume::before,.hub-cover{display:none}.hub-entry,.hub-row,.hub-resume,.hub-record{border:1px solid ButtonText}.hub-meter i{border:1px solid CanvasText}.hub-meter .earned{background:Highlight;forced-color-adjust:none}}

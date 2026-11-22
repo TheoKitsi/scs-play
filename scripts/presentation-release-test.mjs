@@ -41,7 +41,7 @@ async function review(viewport) {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   try {
-    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.goto(`${base}?view=arcade`, { waitUntil: 'networkidle' });
     await page.locator('#btnGuest').waitFor({ state: 'visible' });
     await page.locator('#btnGuest').click();
     await page.locator('#home.active').waitFor();

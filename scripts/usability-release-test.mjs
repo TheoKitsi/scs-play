@@ -12,7 +12,7 @@ const base = process.env.SCS_BASE || server.baseUrl;
 const engines = { chromium, firefox, webkit };
 
 async function enter(page) {
-  await page.goto(base, { waitUntil: 'networkidle' });
+  await page.goto(`${base}?view=arcade`, { waitUntil: 'networkidle' });
   await page.locator('#btnGuest').click();
   await page.locator('#home.active').waitFor();
   await page.waitForTimeout(1000);

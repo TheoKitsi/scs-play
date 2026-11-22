@@ -1,38 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" width="1024" height="500">
   <defs>
-    <linearGradient id="fbg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#192231"/>
-      <stop offset="40%" stop-color="#111824"/>
-      <stop offset="100%" stop-color="#080C14"/>
-    </linearGradient>
-    <radialGradient id="fglow" cx="50%" cy="50%" r="60%">
-      <stop offset="0%" stop-color="#CAD4E3" stop-opacity="0.06"/>
-      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="material" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".24"/><stop offset=".18" stop-color="#fff" stop-opacity="0"/><stop offset=".84" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>
+    <linearGradient id="field" x2=".95" y2=".5"><stop stop-color="#141E32"/><stop offset=".55" stop-color="#272F4B"/><stop offset="1" stop-color="#48405C"/></linearGradient>
+    <radialGradient id="dawn"><stop stop-color="#B99DC7" stop-opacity=".4"/><stop offset="1" stop-color="#B99DC7" stop-opacity="0"/></radialGradient>
+    <linearGradient id="ridge" x2="0" y2="1"><stop stop-color="#454663"/><stop offset="1" stop-color="#1A293E"/></linearGradient>
   </defs>
-
-  <!-- Background -->
-  <rect width="1024" height="500" fill="url(#fbg)"/>
-  <rect width="1024" height="500" fill="url(#fglow)"/>
-
-  <!-- The same four material silhouettes as the app. -->
-  <!-- Top-left: Red circle -->
-  <circle cx="180" cy="140" r="55" fill="#FF4757"/>
-  <circle cx="180" cy="140" r="55" fill="url(#material)"/>
-
-  <!-- Top-right: Blue square -->
-  <rect x="790" y="85" width="110" height="110" rx="20" fill="#3742FA"/>
-  <rect x="790" y="85" width="110" height="110" rx="20" fill="url(#material)"/>
-
-  <!-- Bottom-left: Green triangle -->
-  <polygon points="180,310 240,420 120,420" fill="#2ED573"/>
-  <polygon points="180,310 240,420 120,420" fill="url(#material)"/>
-
-  <!-- Bottom-right: Orange star -->
-  <polygon points="845,310 860,355 905,360 872,388 882,432 845,412 808,432 818,388 785,360 830,355" fill="#FFA502"/>
-  <polygon points="845,310 860,355 905,360 872,388 882,432 845,412 808,432 818,388 785,360 830,355" fill="url(#material)"/>
-
-  <text x="512" y="235" fill="#F4F7FC" font-family="'Space Grotesk','Segoe UI',sans-serif" font-size="68" font-weight="500" text-anchor="middle" letter-spacing="-3">SCS Play</text>
-  <text x="512" y="280" fill="#C4CEDD" font-family="'Outfit','Segoe UI',sans-serif" font-size="22" font-weight="400" text-anchor="middle">Sort · Think · React</text>
+  <rect width="1024" height="500" fill="url(#field)"/>
+  <ellipse cx="760" cy="210" rx="325" ry="280" fill="url(#dawn)"/>
+  <g fill="none" stroke="#E2C9AF" opacity=".47">
+    <circle cx="748" cy="248" r="189"/><circle cx="748" cy="248" r="202" stroke-dasharray="1 8" stroke-width="2"/>
+    <path d="M748 29v20m0 401v20M529 248h20m399 0h20"/>
+  </g>
+  <path d="m0 401 143-34 70 19 100-46 116 59 142-84 98 30 94-71 71 46 96-17 94-49v246H0z" fill="url(#ridge)"/>
+  <path d="m0 455 153-49 96 19 72-32 144 37 153-40 107 35 114-54 78 12 107-40v157H0z" fill="#162335"/>
+  <path d="m0 474 112-22 178 13 139-13 167 26 198-37 113 11 117-31v79H0z" fill="#101C2B"/>
+  <path d="M84 144h70" stroke="#A4E1D9" stroke-width="3"/>
+  <g font-family="'Segoe UI',sans-serif">
+    <text x="82" y="261" font-size="83" letter-spacing="-5" font-weight="600" fill="#F6F4FE">SCS Play</text>
+    <text x="86" y="307" font-size="28" fill="#DADEED">Sort · Think · React</text>
+  </g>
+  <!-- The generator inlines the canonical mark for the standalone store raster. -->
+  <use href="icon-512.svg#brand-mark" transform="translate(477 -24) scale(1.06)"/>
 </svg>

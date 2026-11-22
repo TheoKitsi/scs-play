@@ -68,7 +68,7 @@ export function showScreen(id, app) {
     setTimeout(() => el.classList.remove('screen-enter'), 350);
 
     const currentState = history.state?.scsScreen;
-    const replace = !prevScreen || ['boot', 'auth', 'home', 'results'].includes(id) || currentState === id;
+    const replace = !prevScreen || ['boot', 'auth', 'home', 'hub', 'results'].includes(id) || currentState === id;
     const method = replace ? 'replaceState' : 'pushState';
     history[method]({ ...(history.state || {}), scsScreen: id }, '', location.href);
 

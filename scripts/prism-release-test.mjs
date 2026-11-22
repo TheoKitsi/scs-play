@@ -33,7 +33,7 @@ async function ready(page) {
     return renderer?.enabled && renderer.draws >= 2;
   });
   const renderer = await page.evaluate(() => __SCS_QA__.prismRendererState());
-  assert.ok(renderer.kinds.beam >= 4 && renderer.kinds.ring >= 2, 'Real puzzle play uses the physical architecture, not just a ready attribute');
+  assert.ok(renderer.kinds.crystal >= 1 && renderer.kinds.ring >= 2, 'Puzzle crystals and launcher use physical meshes');
   assert.ok(renderer.objects <= 32 && renderer.triangles <= 3500);
 }
 async function aim(page, action, touch = false) {
@@ -79,6 +79,12 @@ try {
     page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
     try {
       await guest(page);
+      await ready(page);
+      assert.equal(await page.locator('#pwCrystals').innerText(), '0/3');
+      const firstArena = await page.locator('#pwArena canvas').boundingBox();
+      assert.ok(firstArena.width >= 360, 'The garden fills the phone width');
+      await page.locator('#pwMenu').click();
+      await page.locator('#hub [data-action=catalog]').click();
       assert.match(await page.locator('#prismEntryProgress').innerText(), /12/);
       assert.doesNotMatch(await page.locator('#btnPrismPlay').innerText(), /ENGINE/);
       // A real preference stays usable in-session when storage is unavailable,
@@ -162,7 +168,9 @@ try {
           if (index === 1) await dragShot(page, action);
           else await shoot(page, action, index < 3);
         }
-        await page.waitForFunction(() => Boolean(document.querySelector('#pwNext:not(:disabled)')));
+        await page.waitForFunction(() => Boolean(document.querySelector('#pwNext:not(:disabled)'))).catch(async err => {
+          throw new Error(`${PRISM_LEVELS[index].id}: ${await page.locator('#pwStatus').innerText()} (${await page.locator('#pwAimReadout').innerText()})`, { cause: err });
+        });
         const save = await stored(page), level = PRISM_LEVELS[index];
         assert.equal(save.levels[level.id].stars, 3, `${name}: earned ${level.id}`);
         assert.equal(save.levels[level.id].bestShots, level.par);
@@ -210,7 +218,7 @@ try {
       assert.equal(JSON.stringify(await stored(page)), earned);
       await page.reload({ waitUntil: 'networkidle' });
       assert.equal(JSON.stringify(await stored(page)), earned, 'Earned progress survives reload');
-      await open(page);
+      await page.locator('#hub [data-action=worlds]').click();
       // Reflow: normal and doubled root text, narrow phone and wide desktop.
       for (const [width, height, font] of [[320, 640, 16], [360, 640, 32], [915, 412, 16], [1440, 900, 16]]) {
         await page.setViewportSize({ width, height });
@@ -225,6 +233,7 @@ try {
       await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
       await page.setViewportSize({ width: 412, height: 915 });
       await page.locator('#pwBack').click();
+      await page.locator('#hub [data-action=catalog]').click();
       await page.waitForSelector('#home.active');
       assert.match(await page.locator('#prismEntryProgress').innerText(), /36\/36/);
       assert.equal(await page.locator('#prismEntryArt [data-pw-region="2"]').getAttribute('data-restored'), '4', 'Home shares the final earned region');
@@ -239,8 +248,8 @@ try {
       if (name === 'webkit' && server) server.setNetworkAvailable(false);
       else await context.setOffline(true);
       await page.reload({ waitUntil: 'load' });
-      await page.waitForSelector('#home.active');
-      await page.locator('#btnPrismPlay').click(); await ready(page);
+      await page.locator('#hub [data-action=resume]').click();
+      await ready(page);
       assert.match(await page.locator('.pw-level-heading').innerText(), /01\s*\/\s*12/, 'Completed offline campaign replays directly from Home');
       await page.locator('#pwBack').click();
       await page.locator('[data-pw-level="4"]').click(); await ready(page);

@@ -1,0 +1,134 @@
+/* Use the live text faces: the canvas can paint the chassis, but the prompt,
+   answer labels and focus targets still belong to the original buttons. */
+@media (max-width: 699px), (orientation: landscape) and (max-height: 500px) {
+  #game:is([data-arena-mode="mathe"], [data-arena-mode="wissen"]) {
+    --think-rule: color-mix(in srgb, var(--text) 24%, var(--surface));
+    --think-plate: color-mix(in srgb, var(--surface) 96%, var(--text));
+  }
+
+  #game:is([data-arena-mode="mathe"], [data-arena-mode="wissen"]) .center-shape {
+    margin: auto;
+    width: calc(100% - 12px);
+    height: calc(100% - 12px);
+    background-color: var(--surface);
+    color: var(--text);
+  }
+  #game:is([data-arena-mode="mathe"], [data-arena-mode="wissen"])
+    .center-shape:is(.bonus-diamond, .bonus-golden) {
+    padding-block-end: 22px; /* Keep the existing multiplier below the task. */
+  }
+  #game:is([data-arena-mode="mathe"], [data-arena-mode="wissen"]) .corner-shape .corner-text {
+    width: calc(100% - 8px);
+    height: calc(100% - 8px);
+    margin: auto;
+    background-color: var(--think-plate);
+    color: var(--text);
+    text-shadow: none;
+  }
+
+  /* Calculator register: ticks along the lower edge only, never behind digits. */
+  #game[data-arena-mode="mathe"] .center-shape {
+    border: 1px solid var(--think-rule);
+    border-radius: 6px;
+    background-image: repeating-linear-gradient(90deg, var(--think-rule) 0 1px, transparent 1px 12px);
+    background-size: calc(100% - 24px) 4px;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+  }
+  #game[data-arena-mode="mathe"] .math-eq,
+  #game[data-arena-mode="mathe"] .corner-shape .corner-text {
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-variant-numeric: lining-nums tabular-nums slashed-zero;
+    font-weight: 650;
+    line-height: 1.05;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  #game[data-arena-mode="mathe"] .center-text.math-eq {
+    padding: 0;
+    font-size: clamp(1.85rem, 8vw, 2.85rem);
+    letter-spacing: -.025em;
+    word-spacing: .03em;
+  }
+  body #game[data-arena-mode="mathe"] .corner-shape[data-content="math"] .corner-text {
+    font-size: clamp(1.4rem, 6.4vw, 2rem) !important;
+    border-radius: 4px;
+    border-bottom: 2px solid var(--think-rule);
+  }
+
+  /* Archive leaf: a binding and ragged-right serif question, with sans-serif
+     answer slips. Prefer word boundaries; allow a long compound as a fallback. */
+  #game[data-arena-mode="wissen"] .center-shape {
+    border-inline-start: 4px double var(--think-rule);
+    border-radius: 2px 12px 12px 2px;
+  }
+  #game[data-arena-mode="wissen"] .center-text.wissen-display {
+    width: 100%;
+    padding: 4px clamp(10px, 3.5vw, 22px);
+    font: 600 clamp(1.125rem, 5.2vw, 1.5rem)/1.23 Georgia, "Times New Roman", serif;
+    color: var(--text);
+    text-align: start;
+    text-wrap: pretty;
+    word-break: normal;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+  #game[data-arena-mode="wissen"] .corner-shape .corner-wissen {
+    justify-content: flex-start;
+    padding: 3px clamp(6px, 2vw, 12px);
+    border-inline-start: 2px solid var(--think-rule);
+    border-radius: 2px 8px 8px 2px;
+    font-family: system-ui, sans-serif;
+    font-size: clamp(1rem, 4.25vw, 1.2rem) !important;
+    font-weight: 550;
+    line-height: 1.18;
+    text-align: start;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 699px) {
+  #game[data-arena-mode="wissen"] {
+    --arena-cy: 56%;
+    --arena-dy: 20%;
+    --arena-dx: min(24%, 126px);
+    --target-width: min(44%, 236px);
+    --target-height: clamp(60px, 10svh, 84px);
+  }
+  #game[data-arena-mode="wissen"] #centerPlatform {
+    width: min(92%, 488px) !important;
+    height: clamp(120px, 22svh, 170px) !important;
+  }
+}
+
+/* On a rotated phone, put the answers beside the prompt. Keep all four
+   directions relative to it and leave the top strip to the HUD. */
+@media (orientation: landscape) and (max-height: 500px) {
+  #game:is([data-arena-mode="mathe"], [data-arena-mode="wissen"]) {
+    --arena-cy: 65%;
+    --arena-dy: 12%;
+    --arena-dx: 34%;
+    --target-width: 26%;
+    --target-height: clamp(48px, 18svh, 80px);
+  }
+  #game:is([data-arena-mode="mathe"], [data-arena-mode="wissen"]) #centerPlatform {
+    width: 37% !important;
+    height: clamp(108px, 41svh, 170px) !important;
+  }
+  #game:is([data-arena-mode="mathe"], [data-arena-mode="wissen"]) .practice-label {
+    transition-property: none;
+    top: auto;
+    left: max(4%, var(--safe-left));
+    bottom: max(8px, var(--safe-bottom));
+    transform: none;
+  }
+  #game:is([data-arena-mode="mathe"], [data-arena-mode="wissen"]) .btn-stop-practice {
+    bottom: max(2px, var(--safe-bottom));
+  }
+  #game[data-arena-mode="mathe"] .center-text.math-eq { font-size: clamp(1.65rem, 4.8vw, 2.5rem); }
+  #game[data-arena-mode="wissen"] .center-text.wissen-display { font-size: 1.125rem; padding-inline: 8px; }
+  #game[data-arena-mode="wissen"] .corner-shape .corner-wissen { font-size: 1rem !important; }
+}

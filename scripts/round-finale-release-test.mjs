@@ -20,7 +20,7 @@ async function enter(context) {
     addEventListener('unhandledrejection', event => __finaleErrors.push(String(event.reason?.stack || event.reason)));
   });
   const page = await context.newPage();
-  await page.goto(base, { waitUntil: 'networkidle' });
+  await page.goto(`${base}?view=arcade`, { waitUntil: 'networkidle' });
   await page.locator('#btnGuest').click();
   await page.locator('#home.active').waitFor();
   await page.waitForTimeout(1000);

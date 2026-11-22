@@ -1,0 +1,106 @@
+/* Ink is game data. Every word gets the same matte, including light theme,
+   bonus rounds and Chaos ink trials. Never derive a frame from its color. */
+#game:is([data-arena-mode="stroop"], [data-arena-mode="chaos"]) #centerShape .stroop-display {
+  flex: none;
+  padding: .2em .34em;
+  border: 1px solid #707070;
+  border-radius: 8px;
+  background: #101010;
+  font: 750 clamp(26px, 7vw, 38px)/1.16 var(--font-display);
+  letter-spacing: .015em;
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+  white-space: nowrap;
+}
+#game:is([data-arena-mode="stroop"], [data-arena-mode="chaos"]) .corner-shape[data-content="stroop"] {
+  /* Do not tween through a third hue when a corner changes. */
+  transition: none;
+  filter: none;
+}
+
+/* One row, even at the fourth distraction level (four flankers per side).
+   A fixed center cell marks position; all nine arrows remain legible. */
+#game[data-arena-mode="fokus"] .fokus-display {
+  flex: none;
+  width: max-content;
+  max-width: 94vw;
+  gap: clamp(2px, .9vw, 5px);
+  padding: 5px 7px;
+  border: 1px solid var(--outline);
+  border-radius: 9px;
+  background: var(--surface);
+  pointer-events: none;
+}
+#game[data-arena-mode="fokus"] .fokus-flanker {
+  color: var(--text-dim);
+  opacity: 1;
+}
+#game[data-arena-mode="fokus"] .fokus-flanker .direction-icon {
+  width: clamp(16px, 4.8vw, 24px);
+  height: clamp(16px, 4.8vw, 24px);
+}
+#game[data-arena-mode="fokus"] .fokus-center {
+  padding: 3px;
+  border-block: 2px solid currentColor;
+  color: var(--text);
+  background: var(--card);
+}
+#game[data-arena-mode="fokus"] .fokus-center .direction-icon {
+  width: clamp(25px, 7vw, 34px);
+  height: clamp(25px, 7vw, 34px);
+}
+#game[data-arena-mode="fokus"] .corner-shape[data-content="fokus"] {
+  color: var(--text);
+}
+#game:is([data-arena-mode="stroop"], [data-arena-mode="fokus"], [data-arena-mode="chaos"]) .corner-shape:active {
+  /* Immediate contact feedback, outside the literal swatch or arrow. */
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* One persistent rule line for all five Chaos dimensions. Preserve the
+   independent switch count and the footer's screen-reader announcement. */
+#game[data-arena-mode="chaos"][data-focus-rule] #modeRuleLabel {
+  padding-inline-start: 7px;
+  border-inline-start: 3px solid currentColor;
+  color: var(--text);
+  font-weight: 700;
+}
+#game[data-arena-mode="chaos"][data-focus-rule] :is(.chaos-rule-badge, .chaos-rule-label, .chaos-rule-val) {
+  display: none;
+}
+#game[data-arena-mode="chaos"][data-focus-rule] #gameNotice[data-kind="rule"] {
+  opacity: 0;
+}
+#game[data-arena-mode="chaos"][data-focus-rule]:has(#gameNotice.visible[data-kind="rule"]) #modeRuleLabel {
+  background: var(--text);
+  color: var(--surface);
+  border-radius: 3px;
+  padding-inline-end: 7px;
+}
+/* The renderer reuses the same buttons; an inline swatch from the last ink
+   trial must not sit behind a new shape or number. Keep shape sizes intact. */
+#game[data-arena-mode="chaos"] .corner-shape:is([data-content="chaos"], [data-content="math"]) {
+  transition: none;
+}
+#game[data-arena-mode="chaos"] :is(.math-eq, .corner-shape[data-content="math"] .corner-text) {
+  color: var(--text);
+  background: var(--surface);
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
+}
+#game[data-arena-mode="chaos"] .math-eq ~ .colorblind-pattern-mark { display: none; }
+
+@media (forced-colors: active) {
+  #game:is([data-arena-mode="stroop"], [data-arena-mode="chaos"]) :is(.stroop-display, .corner-shape[data-content="stroop"]) {
+    forced-color-adjust: none;
+  }
+  #game:is([data-arena-mode="stroop"], [data-arena-mode="chaos"]) .corner-shape[data-content="stroop"] {
+    background: var(--target-color) !important;
+    border-color: ButtonText !important;
+  }
+  #game:is([data-arena-mode="stroop"], [data-arena-mode="chaos"], [data-arena-mode="fokus"]) button:focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+}

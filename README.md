@@ -2,9 +2,19 @@
 
 SCS Play is a mobile-first offline game for Web/PWA and Capacitor Android. **Prism Worlds** adds a Phaser 4 action-puzzle adventure: aim energy pulses, trigger crystal chains, use mirrors, colour rings and switches, and restore three illustrated floating gardens across twelve handcrafted puzzles. **Prism Arcade** upgrades all ten existing reflex, math, memory and attention modes with engine-rendered stages while retaining their rules and saves.
 
+## In-game details
+
+All ten public arcade modes have individual playfield treatments: sample strips in Colours, die-cut silhouettes in Shapes, an eight-bearing compass in Expert, a calculator in Math, a reading card in Knowledge, concealed cards in Memo, an input counter in Sequence, matte ink in Stroop, a center sight in Focus and a persistent rule in Chaos. In a scored round, **Round details** can show the last manually missed task, the selected answer and the correct answer. The example is held only in memory. Tap hit testing prioritizes the visible key over adjacent padding.
+
+The twelve Prism puzzles each have a bilingual objective and mechanism-specific fittings. The pulse path records actual contacts, including mirror turns, tuning rings, crystal chains and barriers. `npm run arena-experience-release-test` checks real target clearance on small phones; `npm run prism-release-test` plays the campaign.
+
 ## Prism Worlds
 
-Choose **Prism Worlds** on the home screen. Tap to aim and press **Launch pulse**, or drag and release. Every crystal must awaken within the level's pulse allowance. There is no countdown, energy paywall, advertisement or real-money purchase. Undo and retry are free. Matching colours also have different geometric symbols; named target selection, keyboard aiming and DOM launch controls provide alternatives to dragging.
+Arcade plays above an original coastal skyline. The three Prism chapters use a mountain lake, a cool glazed gallery and a brass solar pavilion. Seven offline WebP plates and cover renders live in `img/scenery/`. To reproduce them, run `python scripts/bake-scenery.py` with NumPy and Pillow installed (artist tooling only). Android and web builds use the checked-in images; they do not need Python. Gloss and grazing highlights on the live target meshes use the existing material pass.
+
+First launch opens the twilight garden. After that, **Play** offers the next unlocked puzzle or a new round of the last arcade mode. **Worlds** opens the campaign map; **Collection** holds records, achievements, appearance and settings. The three one-tap scored modes are Colours (30 seconds), Memo and Math (40 seconds each). Memo is available from the first profile. **All modes** opens the complete catalog, also available at `?view=arcade`. The installed app has separate shortcuts for the garden, Play, and Collection.
+
+A short upward drag from the launcher aims and fires on release. Tap-to-aim, a launch button, named targets and keyboard controls are also available. The first chain opens a persistent moonflower; the second puzzle bends light around a stone. **Colour blitz** starts a round directly; **Menu** returns to Play. Undo and retry are free.
 
 The main Prism card starts or resumes the campaign directly; **World map** opens the chapter selector. Only the introductory puzzle clears with one straight default shot. Later clues are opt-in. In **Light weaver**, the accessible direct route and the one-pulse optical route both win, but earn different efficiency ratings. Mirror flashes, ring tones and switch contacts follow the actual simulation. Earned garden shutters open visibly on the map.
 

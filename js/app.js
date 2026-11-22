@@ -34,12 +34,8 @@ import { showTutorial, tutorialNext, tutorialPrev, tutorialFinish }
 import { showResults, showContinuePrompt, doContinue, declineContinue,
          wasLastGameGood }
                             from './screens/ResultsScreen.js';
-import { showLeaderboard }  from './screens/LeaderboardScreen.js';
-import { showAchievements } from './screens/AchievementsScreen.js';
 import { showSettings, bindSettings, backFromSettings }
                             from './screens/SettingsScreen.js';
-import { showStore, bindShopTabs }
-                            from './screens/StoreScreen.js';
 import { bindWheel, updateWheelCard }
                             from './screens/WheelScreen.js';
 
@@ -73,12 +69,52 @@ function bindStatTooltips() {
 
 /* ═══════ Navigation wrappers ═══════ */
 let trialReturnMode = null;
+let quickSelection = null;
+let hubSection = 'play', catalog = new URL(location.href).searchParams.get('view') === 'arcade';
+let hubTicket = 0;
+async function openShelf(load, render, title) {
+  const from = app.currentScreen, ticket = ++hubTicket;
+  try {
+    const screen = await load();
+    if (app.currentScreen === from && ticket === hubTicket) render(screen);
+  } catch {
+    if (app.currentScreen === from && ticket === hubTicket) await appDialog({title:t(title),message:t('error_network')});
+  }
+}
+const showAchievements = () => openShelf(()=>import('./screens/AchievementsScreen.js'),m=>m.showAchievements(),'achievements_short');
+const showLeaderboard = () => openShelf(()=>import('./screens/LeaderboardScreen.js'),m=>m.showLeaderboard(),'leaderboard');
+const goHub = async (section = 'play') => {
+  const ticket = ++hubTicket, from = app.currentScreen;
+  const { showPlayHub } = await import('./screens/PlayHub.js');
+  if (ticket !== hubTicket || from !== app.currentScreen) return;
+  catalog = false; hubSection = section;
+  showPlayHub(section, (action, last) => {
+    if (action === 'catalog') { catalog = true; showHome(); }
+    else if (action === 'worlds') navPrism();
+    else if (action === 'resume' && !last) navPrism(null, true);
+    else if (action === 'play' || action === 'collection') goHub(action);
+    else if (action === 'records') showLeaderboard();
+    else if (action === 'awards') showAchievements();
+    else if (action === 'looks') navShowStore();
+    else if (action === 'settings') showSettings(false, navShowHome);
+    else navStartGame(false, false, null, action === 'resume' ? last : {mode:action,type:'blitz'});
+  });
+};
 const navShowHome  = () => {
+  if (quickSelection) {
+    Object.assign(app, quickSelection); quickSelection = null;
+    delete $('#game').dataset.quickColors;
+    delete $('#game').dataset.hubRound;
+  }
   if (trialReturnMode) { app.selectedMode = trialReturnMode; trialReturnMode = null; }
-  showHome();
+  if (catalog) showHome(); else goHub(hubSection);
 };
 const navShowAuth  = () => showScreen('auth', app);
-const navShowStore = () => showStore(navShowHome);
+let shopBound = false;
+const navShowStore = () => openShelf(()=>import('./screens/StoreScreen.js'),screen=>{
+  if (!shopBound) {screen.bindShopTabs();shopBound=true}
+  screen.showStore(navShowHome);
+},'store');
 const navActivateHome = async () => {
   await app.save.load();
   applyLoadedSave();
@@ -93,37 +129,64 @@ let gameScreenPromise;
 const loadGameScreen = () => gameScreenPromise ||= import('./screens/GameScreen.js').then(async screen => {
   await screen.prepareArenaEngine();
   return screen;
-});
+}).catch(error=>{ gameScreenPromise=null; throw error; });
+
+function loadingNotice(label) {
+  const status=document.createElement('div');
+  status.className='launch-notice'; status.setAttribute('role','status');
+  const timer=setTimeout(()=>{status.textContent=label;document.body.appendChild(status)},400);
+  const stop=()=>{clearTimeout(timer);status.remove();window.removeEventListener('scs:screenchange',stop)};
+  window.addEventListener('scs:screenchange',stop);
+  return stop;
+}
 
 let prismLoading = false;
 const navPrism = async (challengeId = null, play = false) => {
-  if (prismLoading || app.currentScreen !== 'home') return;
+  const from = app.currentScreen;
+  if (prismLoading || !['home', 'hub', 'boot'].includes(from)) return;
   prismLoading = true;
-  const entry = $(play ? '#btnPrismPlay' : '#btnPrism');
-  entry.disabled = true; entry.setAttribute('aria-busy', 'true');
+  const entry = from === 'hub' ? $(`#hub [data-action="${play?'resume':'worlds'}"]`) : from === 'home' ? $(play ? '#btnPrismPlay' : '#btnPrism') : null;
+  entry?.setAttribute('aria-busy', 'true');
+  const hideNotice=loadingNotice(t('enter_garden'));
   try {
     const { openPrism } = await import('./screens/PrismScreen.js');
-    if (app.currentScreen === 'home') openPrism({ onHome: navShowHome, challengeId, play });
+    if (app.currentScreen === from) openPrism({ onHome: navShowHome, onHub: goHub, onQuickColors: () => navStartGame(), challengeId, play });
   } catch {
-    await appDialog({ title: 'Prism Worlds', message: t('prism_load_error') });
+    if (app.currentScreen === from) {
+      if (from === 'boot') navShowHome();
+      await appDialog({ title: 'Prism Worlds', message: t('prism_load_error') });
+    }
   } finally {
-    prismLoading = false; entry.disabled = false; entry.removeAttribute('aria-busy');
+    prismLoading = false; hideNotice(); entry?.removeAttribute('aria-busy');
   }
 };
 
 let gameLoading = false;
-const navStartGame = async (practice = false, daily = false, trialMode = null) => {
+const navStartGame = async (practice = false, daily = false, trialMode = null, choice = null) => {
   const from = app.currentScreen;
-  if (gameLoading || !['home', 'results'].includes(from)) return;
+  if (gameLoading || !['home', 'hub', 'results', 'prism', 'leaderboard'].includes(from)) return;
+  if ((from === 'hub' || from === 'leaderboard') && (!choice || !app.save.isModeUnlocked(choice.mode) ||
+      !['blitz','classic','endless','competition'].includes(choice.type) || (choice.type === 'competition' && !app.save.isCompetitionUnlocked()) ||
+      (choice.mode === 'sequenz' && choice.type !== 'endless'))) return;
   gameLoading = true;
   let cancelled = false;
   const cancelOnNavigation = ({ detail }) => { if (detail.id !== from) cancelled = true; };
-  const entry = $(from === 'home' ? '#btnPlay' : practice ? '#btnPracticeResult' : '#btnOneMore');
+  const entry = from === 'hub' ? $('#hub [data-action]:focus') : $(from === 'leaderboard' ? '#btnLbPlayNow' : from === 'prism' ? '#pwQuickColors' : from === 'home' ? '#btnPlay' : practice ? '#btnPracticeResult' : '#btnOneMore');
   entry?.setAttribute('aria-busy', 'true');
+  const hideNotice=loadingNotice(t('enter_arcade'));
   window.addEventListener('scs:screenchange', cancelOnNavigation);
   try {
     const gameScreen = await loadGameScreen();
     if (!cancelled && app.currentScreen === from && !app.gameStarting) {
+      if (from === 'prism' || from === 'hub' || from === 'leaderboard') {
+        if (from === 'leaderboard' && !entry?.isConnected) return;
+        if (from === 'prism' && (!entry?.isConnected || $('#pwDialog.active'))) return;
+        quickSelection = { selectedMode: app.selectedMode, selectedPlayType: app.selectedPlayType };
+        app.selectedMode = choice?.mode || 'klassik'; app.selectedPlayType = choice?.type || 'blitz';
+        $('#game').dataset.hubRound = app.selectedMode;
+        if (app.selectedMode === 'klassik') $('#game').dataset.quickColors = '';
+        app.engagement?.trackGameStart();
+      }
       if (trialMode) {
         if (!practice || !$('#heroSlider .hero-slide[data-pos="current"] [data-trial="' + CSS.escape(trialMode) + '"]')) return;
         trialReturnMode = app.selectedMode;
@@ -135,6 +198,7 @@ const navStartGame = async (practice = false, daily = false, trialMode = null) =
     if (!cancelled) await appDialog({ title: 'Prism Arcade', message: t('game_load_error') });
   } finally {
     window.removeEventListener('scs:screenchange', cancelOnNavigation);
+    hideNotice();
     entry?.removeAttribute('aria-busy');
     gameLoading = false;
   }
@@ -157,6 +221,9 @@ function bindEvents() {
 
   bindAuth(navActivateHome);
   bindSettings(navShowHome);
+  window.addEventListener('scs:play-record-mode', ({detail}) => {
+    if (app.currentScreen === 'leaderboard') navStartGame(false,false,null,detail);
+  });
   bindStatTooltips();
   bindMicroFeedback();
 
@@ -197,6 +264,7 @@ function bindEvents() {
   });
 
   /* ─ Primary actions ─ */
+  $('#catalogHub').onclick = () => goHub();
   $('#btnPrism')?.addEventListener('click', () => navPrism());
   $('#btnPrismPlay')?.addEventListener('click', () => navPrism(null, true));
   $('#heroSlider')?.addEventListener('click', event => {
@@ -269,17 +337,8 @@ function bindEvents() {
   $('#btnResContinueUse')?.addEventListener('click', () => doContinue(cancel => withGameScreen(m => m.resumeContinuedGame(cancel))));
   $('#btnResContinueNo')?.addEventListener('click',  () => declineContinue());
   /* ─ Shop tabs ─ */
-  bindShopTabs();
   bindWheel();
   window.addEventListener('scs:show-home', navShowHome);
-  let challengeOpened = false;
-  window.addEventListener('scs:screenchange', ({ detail }) => {
-    const challengeId = new URL(location.href).searchParams.get('prism');
-    if (detail.id === 'home' && !challengeOpened && /^[a-z-]{1,40}$/.test(challengeId || '')) {
-      challengeOpened = true;
-      navPrism(challengeId);
-    }
-  });
   window.addEventListener('scs:update-wheel-card', updateWheelCard);
 
   /* ─ Back button fallback ─ */
@@ -318,7 +377,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tapTarget && !tapTarget.matches('.corner-shape,#centerPlatform')) haptic('tap', app.save);
   });
   bindEvents();
-  boot(navShowHome, navShowAuth);
+  boot(navShowHome, navShowAuth, () => {
+    const params = new URL(location.href).searchParams, challenge = params.get('prism');
+    if (challenge) return navPrism(challenge, true);
+    const entry = params.get('view');
+    if (entry === 'collection' || entry === 'play') return goHub(entry);
+    if (entry === 'garden') return navPrism(null, true);
+    return app.save.getSetting('lastPlay') ? goHub() : navPrism(null, true);
+  });
   initOfflineIndicator();
   initVisibilityPause(pauseLoadedGame);
   initBackButton({ pauseGame: pauseLoadedGame, quitGame: quitLoadedGame, showHome: navShowHome, backFromSettings });

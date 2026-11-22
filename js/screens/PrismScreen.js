@@ -10,9 +10,13 @@ import { haptic, cancelHaptics } from '../helpers/haptics.js';
 import { prismChallengeUrl } from '../helpers/prismLink.js';
 import { setGameplayPerformanceActive } from '../helpers/perfMode.js';
 import app from '../appState.js';
+import { CONFIG } from '../config.js';
+import { rememberPlay } from '../helpers/lastPlay.js';
+import { playDock } from '../renderers/playDock.js';
 
 const copy = {
   de: {
+    garden: 'Lichtgarten', gesture: 'Zieh am Prisma. Lass los.', quick: 'Farben-Blitz', menu: 'Menü', firstBloom: 'Die Mondblüte ist offen.', firstSaved: 'Deine Blüte bleibt. Im nächsten Garten wartet ein Spiegel.',
     home: 'Arcade & Menü', map: 'Weltkarte', chapter: 'KAPITEL 01 · DIE SCHWEBENDEN GÄRTEN',
     adventure: 'Dein Licht verändert die Welt.', intro: 'Lenke Energie durch vergessene Gärten. Wecke Kristalle, verbinde Wege und bring die Inseln zum Blühen.',
     play: 'Abenteuer starten', continue: 'Abenteuer fortsetzen', replay: 'Noch einmal spielen', restored: 'Rätsel gelöst', stars: 'Sterne',
@@ -34,8 +38,19 @@ const copy = {
     context: 'Die Grafik wurde unterbrochen. Starte das Level neu. Dein gespeicherter Fortschritt bleibt erhalten.', angle: 'Zielwinkel',
     blooming: 'Der Garten erwacht.', skipReveal: 'Ergebnis anzeigen', hint: 'Tipp zum Lichtweg', improve: 'Mit weniger Impulsen versuchen',
     hitGate: 'Die Schranke hält das Licht auf. Ein Schalter öffnet sie.', hitWall: 'Der Impuls trifft auf Stein. Suche einen Weg um die Mauer.',
+    trail: 'Impulsweg', edge: 'Rand', wall: 'Stein', gate: 'Schranke', wrong: 'Symbol passt nicht',
+    opened: 'Die Schranke bleibt offen. Ziele mit dem nächsten Impuls neu.',
+    offMirror: 'Der Strahl verfehlt nach dem Spiegel sein Ziel. Ändere den Auftreffwinkel.',
+    offRing: 'Der Impuls hat jetzt {energy}. Richte die Bahn hinter dem Ring neu aus.',
+    chooseSymbol: 'Der Kristall braucht {energy}. Wähle das passende Symbol.',
+    ringSymbol: 'Der Kristall braucht {energy}. Stimme deinen Impuls mit dem Farbring um.',
+    more: 'Noch nicht erwacht: {groups}.', positionsX: ['links', 'mittig', 'rechts'], positionsY: ['oben', 'auf halber Höhe', 'unten'],
+    region: 'Region', forecast: 'Erster Kontakt', awake: 'Erwacht', asleep: 'Schläft', latched: 'Geschlossen', unlatched: 'Offen',
+    fieldHelp: 'Die gestrichelte Linie zeigt deine Richtung. Die durchgezogene Spur zeigt den letzten Impuls. ✓ bedeutet erwacht.',
+    routeHelp: 'Wähle eine Insel für ihre vier Rätsel.', mirrorSlash: 'steigt nach rechts', mirrorBack: 'fällt nach rechts',
   },
   en: {
+    garden: 'Light garden', gesture: 'Drag from the prism. Let go.', quick: 'Colour blitz', menu: 'Menu', firstBloom: 'The moonflower opens.', firstSaved: 'Your flower stays. A mirror awaits in the next garden.',
     home: 'Arcade & menu', map: 'World map', chapter: 'CHAPTER 01 · THE FLOATING GARDENS',
     adventure: 'Your light changes the world.', intro: 'Guide energy through forgotten gardens. Awaken crystals, connect paths and bring the islands into bloom.',
     play: 'Start adventure', continue: 'Continue adventure', replay: 'Play again', restored: 'Puzzles solved', stars: 'Stars',
@@ -57,26 +72,55 @@ const copy = {
     context: 'Graphics were interrupted. Restart this level. Your saved progress is safe.', angle: 'Aim angle',
     blooming: 'The garden awakens.', skipReveal: 'Show result', hint: 'Light-path hint', improve: 'Try with fewer pulses',
     hitGate: 'The barrier stops the light. A switch opens it.', hitWall: 'The pulse hit stone. Look for a way around the wall.',
+    trail: 'Pulse path', edge: 'Edge', wall: 'Stone', gate: 'Barrier', wrong: 'Symbol mismatch',
+    opened: 'The barrier stays open. Aim your next pulse through the gap.',
+    offMirror: 'The reflected beam missed. Change where the pulse meets the mirror.',
+    offRing: 'The pulse took on {energy}. Adjust the path beyond the ring.',
+    chooseSymbol: 'This crystal needs {energy}. Select the matching symbol.',
+    ringSymbol: 'This crystal needs {energy}. Retune your pulse with the colour ring.',
+    more: 'Still asleep: {groups}.', positionsX: ['left', 'centre', 'right'], positionsY: ['upper', 'middle', 'lower'],
+    region: 'Region', forecast: 'First contact', awake: 'Awake', asleep: 'Asleep', latched: 'Closed', unlatched: 'Open',
+    fieldHelp: 'Dashes show where you aim. A solid trace shows your last pulse. ✓ means awake.',
+    routeHelp: 'Choose an island to see its four puzzles.', mirrorSlash: 'rises to the right', mirrorBack: 'falls to the right',
   },
 };
 
 const langIndex = () => getLanguage() === 'de' ? 0 : 1;
 const tr = (key, params = {}) => Object.entries(params).reduce((s, [key, val]) => s.replaceAll(`{${key}}`, String(val)), copy[getLanguage()]?.[key] || copy.en[key] || key);
 const title = level => level.name[langIndex()];
+const energyName = color => PRISM_COLORS[color][getLanguage()] || PRISM_COLORS[color].en;
+const zoneName = zone => (copy[getLanguage()] || copy.en).zones[zone];
+const folio = index => String(index + 1).padStart(2, '0');
+const nodeMark = n => n.kind === 'mirror' ? (n.slope === '/' ? '╱' : '╲') : n.kind === 'paint' ? '◎' : n.kind === 'switch' ? 'ϟ' : PRISM_COLORS[n.color].symbol;
+const lock = '<svg class="pw-lock" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 7V5a3 3 0 0 1 6 0v2m-8 0h10v7H3z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+function targetLabel(node, level) {
+  const words = copy[getLanguage()] || copy.en;
+  const x = words.positionsX[Math.min(2, Math.floor(node.x / 140))];
+  const y = words.positionsY[Math.min(2, Math.floor(node.y / (560 / 3)))];
+  const number = level.nodes.filter(n => n.kind === node.kind).findIndex(n => n.id === node.id) + 1;
+  const property = node.color ? energyName(node.color) : node.kind === 'mirror' ? tr(node.slope === '/' ? 'mirrorSlash' : 'mirrorBack') : '';
+  return `${tr(node.kind)} ${number} · ${y}, ${x}${property ? ` · ${property}` : ''}`;
+}
 const glyph = id => `<svg class="pw-glyph" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><use href="#icon-${id}"/></svg>`;
 const pulseCells = (max, remaining) => Array.from({ length: max }, (_, i) => `<i${i < remaining ? ' class="charged"' : ''}></i>`).join('');
 const policy = () => ({ tier: document.body.dataset.perfMode || 'high', reduced: document.body.hasAttribute('data-reduced-motion'), maxImpacts: document.body.dataset.perfMode === 'low' ? 4 : 12 });
 let cleanup = null;
 
-export function openPrism({ onHome, challengeId = null, play = false }) {
+export function openPrism({ onHome, onHub, onQuickColors, challengeId = null, play = false }) {
   cleanup?.();
   const root = $('#prism');
   let arena = null, view = 'map', generation = 0, levelIndex = 0, paused = false, settled = false, challenge = false;
   let startupTimer = null, contextFailed = false;
+  let contacts = [];
   const listeners = new AbortController();
   const on = (el, type, handler) => el.addEventListener(type, handler, { signal: listeners.signal });
+  const startGardenMusic = () => {
+    if (!paused && !document.hidden && navigator.userActivation?.hasBeenActive !== false) app.audio.startMusic();
+  };
+  root.addEventListener('pointerup', startGardenMusic, { once: true, signal: listeners.signal });
+  root.addEventListener('keydown', startGardenMusic, { once: true, signal: listeners.signal });
   const modal = () => $('#pwDialog');
-  const closeDialog = () => { if (modal()) closeModal(modal(), { restoreFocus: false }); };
+  const closeDialog = (restoreFocus = false) => { if (modal()) closeModal(modal(), { restoreFocus }); };
   const releaseArena = () => {
     clearTimeout(startupTimer); startupTimer = null;
     closeDialog(); generation++;
@@ -87,15 +131,23 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
     paused = false;
   };
   const leave = () => { cleanup?.(); onHome(); };
+  const soundButton = () => `<button type="button" class="pw-icon-button" id="pwSound" aria-pressed="${app.save.getSetting('sound')}">${tr(app.save.getSetting('sound') ? 'sound' : 'soundOff')}</button>`;
 
   function shell(body) {
     root.dataset.pwView = view;
+    if (view === 'game') root.dataset.pwRegion = PRISM_LEVELS[levelIndex].zone;
+    else delete root.dataset.pwRegion;
     root.innerHTML = `<div class="pw-shell">
       <header class="pw-header"><button type="button" class="pw-icon-button" id="pwBack" aria-label="${tr(view === 'map' ? 'home' : 'map')}">←</button>
-        <div class="pw-brand"><span class="pw-eyebrow">SCS PLAY</span><h1>Prism Worlds<span class="pw-brand-dot">.</span></h1></div>
-        <button type="button" class="pw-icon-button" id="pwSound" aria-pressed="${app.save.getSetting('sound')}">${tr(app.save.getSetting('sound') ? 'sound' : 'soundOff')}</button>
-      </header>${body}</div>`;
+         ${view === 'map' ? `<div class="pw-brand"><span class="pw-eyebrow">PRISM WORLDS</span><h1>${tr('garden')}</h1></div>` :
+           `<div class="pw-level-heading"><p class="pw-eyebrow">${challenge ? tr('challenge') : `${tr('level')} ${String(levelIndex + 1).padStart(2,'0')} / 12`}</p><h1>${escHTML(title(PRISM_LEVELS[levelIndex]))}</h1></div>`}
+         <button type="button" class="pw-icon-button" id="pwMenu">${tr('menu')}</button>
+        ${view === 'map' ? soundButton() : `<button type="button" class="pw-icon-button" id="pwPause" aria-label="${tr('pause')}">${glyph('pause')}</button>`}
+       </header>${body}${view === 'map' ? playDock('worlds') : ''}</div>`;
     root.scrollTop = 0;
+    const heading = root.querySelector('h1');
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
   }
 
   function showMap() {
@@ -105,17 +157,17 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
     const next = progress.unlocked;
     const regions = prismRegions(progress);
     shell(`<div class="pw-map-view">
-      <section class="pw-world-art" aria-label="${tr('restored')}: ${progress.completed}/12">${prismIsland(progress)}
+      <section class="pw-world-art" aria-label="${tr('map')}"><div class="pw-atlas">${prismIsland(progress, null, true)}
+        <nav class="pw-map-pins" aria-label="${tr('routeHelp')}">${regions.map((count, i) => `<button type="button" data-pw-pin="${i}" aria-label="${tr('region')} ${i + 1}: ${zoneName(i)}. ${tr('restored')}: ${count}/4" aria-controls="pwZone${i}" ${count !== 4 && i === PRISM_LEVELS[next].zone ? 'aria-current="step"' : ''}>${count === 4 ? '✓ ' : ''}${folio(i)}</button>`).join('')}</nav></div>
         <div class="pw-world-caption"><span>${tr('restored')} <strong>${progress.completed}/12</strong></span><span>✦ <strong>${progress.stars}/36</strong> ${tr('stars')}</span></div>
       </section>
       <section class="pw-journey"><p class="pw-eyebrow">${tr('chapter')}</p><h2>${tr(progress.completed === 12 ? 'complete' : 'adventure')}</h2>
-        <p class="pw-intro">${tr(progress.completed === 12 ? 'completeHelp' : 'intro')}</p>
-        <p class="pw-next-preview">${tr('level')} ${progress.completed === 12 ? 1 : next + 1} · ${escHTML(title(PRISM_LEVELS[progress.completed === 12 ? 0 : next]))}</p>
-        <button type="button" class="pw-primary" id="pwContinue">${tr(progress.completed === 12 ? 'replay' : progress.completed ? 'continue' : 'play')} <span aria-hidden="true">↗</span></button>
-        <div class="pw-level-zones">${[0, 1, 2].map(zone => `<section class="pw-level-zone" data-pw-zone="${zone}"><div class="pw-region-heading">${prismIsland(progress, zone)}<div><h3><span>0${zone + 1}</span> ${copy[getLanguage()]?.zones[zone] || copy.en.zones[zone]}</h3><p>${tr('restored')} <strong>${regions[zone]}/4</strong></p></div></div><div class="pw-level-grid">${PRISM_LEVELS.map((level, index) => {
+        <button type="button" class="pw-primary" id="pwContinue"><b>${tr(progress.completed === 12 ? 'replay' : progress.completed ? 'continue' : 'play')}<small>${tr('level')} ${folio(progress.completed === 12 ? 0 : next)} · ${escHTML(title(PRISM_LEVELS[progress.completed === 12 ? 0 : next]))}</small></b><span aria-hidden="true">↗</span></button>
+        <p class="pw-intro">${tr(progress.completed === 12 ? 'completeHelp' : 'routeHelp')}</p>
+        <div class="pw-level-zones">${[0, 1, 2].map(zone => `<section class="pw-level-zone" data-pw-zone="${zone}" id="pwZone${zone}"><div class="pw-region-heading">${prismIsland(progress, zone)}<div><h3 tabindex="-1"><span>${folio(zone)}</span> ${zoneName(zone)}</h3><p>${tr('restored')} <strong>${regions[zone]}/4</strong></p></div></div><div class="pw-level-grid">${PRISM_LEVELS.map((level, index) => {
           if (level.zone !== zone) return '';
           const result = progress.levels[level.id], unlocked = index <= next;
-          return `<button type="button" class="pw-level${result ? ' pw-level--done' : ''}${index === next && !result ? ' pw-level--next' : ''}" data-pw-level="${index}" ${unlocked ? '' : 'disabled'} aria-label="${tr('level')} ${index + 1}: ${escHTML(title(level))}. ${unlocked ? `${result?.stars || 0}/3 ${tr('stars')}` : tr('locked')}" ${index === next && !result ? 'aria-current="step"' : ''}><span class="pw-level-number">${String(index + 1).padStart(2, '0')}</span><span class="pw-level-name">${escHTML(title(level))}</span><span class="pw-level-stars" aria-hidden="true">${result ? '✦'.repeat(result.stars) + '·'.repeat(3 - result.stars) : unlocked ? '→' : '·'}</span></button>`;
+          return `<button type="button" class="pw-level${result ? ' pw-level--done' : ''}${index === next && !result ? ' pw-level--next' : ''}" data-pw-level="${index}" ${unlocked ? '' : 'disabled'} aria-label="${tr('level')} ${index + 1}: ${escHTML(title(level))}. ${unlocked ? `${result?.stars || 0}/3 ${tr('stars')}` : tr('locked')}" ${index === next && !result ? 'aria-current="step"' : ''}><span class="pw-level-number">${folio(index)}</span><span class="pw-level-name">${escHTML(title(level))}</span><span class="pw-level-stars" aria-hidden="true">${result ? '✦'.repeat(result.stars) + '·'.repeat(3 - result.stars) : unlocked ? '→' : lock}</span></button>`;
         }).join('')}</div></section>`).join('')}</div>
         <p class="pw-map-note">${getLanguage() === 'de' ? '12 handgestaltete Rätsel · kein Zeitlimit · offline spielbar' : '12 handcrafted puzzles · no time limit · playable offline'}</p>
         <p class="pw-map-note">${tr('starHelp')}</p>
@@ -123,35 +175,58 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
     $('#pwContinue').onclick = () => loadLevel(progress.completed === 12 ? 0 : next);
   }
 
-  function makeDialog(heading, message, buttons, { dismiss } = {}) {
+  function makeDialog(heading, message, buttons, { dismiss, mode = 'error', progress } = {}) {
     closeDialog();
     modal()?.remove();
     const el = document.createElement('div');
     el.id = 'pwDialog'; el.className = 'pw-dialog'; el.setAttribute('aria-labelledby', 'pwDialogTitle');
-    el.innerHTML = `<section class="pw-dialog-card"><span class="pw-eyebrow">PRISM WORLDS</span><h2 id="pwDialogTitle">${heading}</h2><div class="pw-result-art">${prismIsland(prismProgress(app.save.data), PRISM_LEVELS[levelIndex].zone)}</div><p id="pwDialogMessage">${message}</p><div class="pw-dialog-actions"></div></section>`;
+    el.dataset.sheet = mode;
+    el.setAttribute('aria-describedby', 'pwDialogMessage');
+    const level = PRISM_LEVELS[levelIndex];
+    el.innerHTML = `<section class="pw-dialog-card"><div class="pw-dialog-scroll"><span class="pw-eyebrow">${zoneName(level.zone)} · ${tr('level')} ${folio(levelIndex)}</span><h2 id="pwDialogTitle">${heading}</h2>
+      ${mode === 'won' ? `<div class="pw-result-art">${resultArt(level.zone, progress)}</div>` : ''}
+      ${mode === 'pause' || mode === 'lost' ? `<div class="pw-ledger"><strong>${escHTML(title(level))}</strong><span>${tr('crystals')} <b>${$('#pwCrystals').textContent}</b></span><span>${tr('pulses')} <b>${$('#pwPulses').textContent}</b></span></div>` : ''}
+      <p id="pwDialogMessage" role="status">${message}</p><div class="pw-dialog-actions"></div></div><div class="pw-dialog-footer"></div></section>`;
+    if (mode === 'lost' && contacts.length) {
+      const trail = $('#pwTrail').cloneNode(true);
+      trail.removeAttribute('id'); trail.querySelector('ol').removeAttribute('id');
+      el.querySelector('#pwDialogMessage').before(trail);
+    }
     for (const [id, label, action, primary] of buttons) {
       const button = document.createElement('button');
       button.id = id; button.type = 'button'; button.className = primary ? 'pw-primary' : 'pw-secondary'; button.textContent = label; button.onclick = action;
-      el.querySelector('.pw-dialog-actions').appendChild(button);
+      el.querySelector(primary ? '.pw-dialog-footer' : '.pw-dialog-actions').appendChild(button);
     }
     root.querySelector('.pw-shell').appendChild(el);
-    openModal(el, { onDismiss: dismiss || showMap });
+    openModal(el, { initialFocus: '.pw-dialog-footer button:not(:disabled)', onDismiss: dismiss || showMap });
   }
 
   function pause() {
     if (!arena || paused || settled || view !== 'game') return;
     paused = true; arena.scene.setPaused(true);
     setGameplayPerformanceActive(false); cancelHaptics(); app.audio.stopMusic(); app.releaseWakeLock?.();
-    makeDialog(tr('pause'), tr('ready'), [
+    makeDialog(tr('pause'), escHTML(PRISM_LEVELS[levelIndex].objective[langIndex()]), [
       ['pwResume', tr('resume'), resume, true], ['pwPauseRestart', tr('restart'), () => loadLevel(levelIndex, challenge)], ['pwPauseMap', tr('toMap'), showMap],
-    ], { dismiss: resume });
+    ], { dismiss: resume, mode: 'pause' });
   }
 
   function resume() {
     if (document.hidden || contextFailed) return;
-    closeDialog(); paused = false;
+    closeDialog(true); paused = false;
     arena?.scene.setPaused(false); setGameplayPerformanceActive(true);
     app.audio.startMusic(); app.requestWakeLock?.();
+  }
+
+  function resultArt(zone, progress = prismProgress(app.save.data)) {
+    const count = prismRegions(progress)[zone];
+    return prismIsland(progress, zone) + (challenge ? '' : `<span class="pw-art-count">${tr('restored')} <strong>${count}/4</strong></span>`);
+  }
+
+  function undoPulse() {
+    if (!arena) return;
+    arena.scene.undo();
+    resetTrail();
+    $('#pwStatus').textContent = PRISM_LEVELS[levelIndex].objective[langIndex()];
   }
 
   async function finish(state) {
@@ -161,16 +236,22 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
     const token = generation, sim = arena.scene.simulation;
     if (state.phase === 'lost') {
       arena.scene.settle();
-      makeDialog(tr('lost'), tr('lostHelp'), [
-        ['pwResultUndo', tr('undo'), () => { closeDialog(); settled = false; arena.scene.setPaused(false); arena.scene.undo(); app.requestWakeLock?.(); setGameplayPerformanceActive(true); }, true],
+      const retry = () => {
+        closeDialog(); settled = false; arena.scene.setPaused(false); undoPulse(); $('#pwFire').focus({ preventScroll: true });
+        app.requestWakeLock?.(); setGameplayPerformanceActive(true);
+      };
+      const lastMessage = $('#pwStatus').textContent;
+      makeDialog(tr('lost'), `${lastMessage === tr('miss') ? '' : escHTML(lastMessage) + ' '}${tr('lostHelp')}`, [
+        ['pwResultUndo', tr('undo'), retry, true],
         ['pwResultRestart', tr('restart'), () => loadLevel(levelIndex, challenge)], ['pwResultMap', tr('toMap'), showMap],
-      ], { dismiss: () => { closeDialog(); settled = false; arena.scene.setPaused(false); arena.scene.undo(); app.requestWakeLock?.(); setGameplayPerformanceActive(true); } });
+      ], { dismiss: retry, mode: 'lost' });
       return;
     }
     // Commit the genuine win immediately. Presentation neither delays storage
     // nor alters simulation time, rewards or eligibility. Catch before awaiting
     // the reveal so a rejected write can never become an unhandled rejection.
     const saveWin = () => savePrismWin(app.save, sim).then(saved => Boolean(saved), () => false);
+    const priorProgress = prismProgress(app.save.data);
     const saving = challenge ? Promise.resolve(true) : saveWin();
     root.dataset.pwFinishing = '';
     $('#pwStatus').textContent = tr('blooming');
@@ -179,11 +260,11 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
     if (!presented || token !== generation) return;
     delete root.dataset.pwFinishing;
     $('#pwSkipReveal').hidden = true;
-    makeDialog(tr('won'), challenge ? tr('challengeHelp') : tr('saving'), [
+    makeDialog(tr(levelIndex === 0 ? 'firstBloom' : levelIndex === 11 && !challenge ? 'complete' : 'won'), challenge ? tr('challengeHelp') : tr('saving'), [
       ['pwNext', tr(challenge || levelIndex === 11 ? 'toMap' : 'next'), () => challenge || levelIndex === 11 ? showMap() : loadLevel(levelIndex + 1), true],
       ['pwResultReplay', tr(state.stars < 3 ? 'improve' : 'replay'), () => loadLevel(levelIndex, challenge)], ['pwShare', tr('share'), share],
-    ]);
-    const stars = document.createElement('div'); stars.className = 'pw-earned-stars'; stars.setAttribute('aria-label', `${state.stars}/3 ${tr('stars')}`);
+    ], { mode: 'won', progress: priorProgress });
+    const stars = document.createElement('div'); stars.className = 'pw-earned-stars'; stars.setAttribute('role', 'img'); stars.setAttribute('aria-label', `${state.stars}/3 ${tr('stars')}`);
     stars.textContent = '✦'.repeat(state.stars) + '·'.repeat(3 - state.stars);
     $('#pwDialogTitle').after(stars);
     const efficiency = document.createElement('p');
@@ -191,19 +272,31 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
     efficiency.textContent = tr('efficiency', { n: state.shots, par: sim.level.par });
     stars.after(efficiency);
     const next = $('#pwNext'); next.disabled = !challenge;
+    if (!challenge && levelIndex < PRISM_LEVELS.length - 1) {
+      const destination = document.createElement('small');
+      const upcoming = PRISM_LEVELS[levelIndex + 1];
+      destination.textContent = `${upcoming.zone !== sim.level.zone ? zoneName(upcoming.zone) + ' · ' : ''}${folio(levelIndex + 1)} · ${title(upcoming)}`;
+      next.append(destination);
+    }
     if (challenge) return;
     const persist = async (pending = null) => {
       $('#pwRetrySave')?.remove();
       const saved = await (pending || saveWin());
-      if (token !== generation) return;
+      if (token !== generation || !next.isConnected || contextFailed) return;
       if (saved) {
-        $('#pwDialogMessage').textContent = tr('saved');
-        $('.pw-result-art').innerHTML = prismIsland(prismProgress(app.save.data), PRISM_LEVELS[levelIndex].zone);
+        delete modal().dataset.save;
+        $('#pwDialogMessage').textContent = tr(levelIndex === 0 ? 'firstSaved' : 'saved');
+        $('.pw-result-art').innerHTML = resultArt(sim.level.zone);
         next.disabled = false;
+        if (!modal().inert && (document.activeElement === modal() || document.activeElement === document.body)) next.focus({ preventScroll: true });
       } else {
+        modal().dataset.save = 'error';
         $('#pwDialogMessage').textContent = tr('saveError');
         const button = document.createElement('button'); button.type = 'button'; button.id = 'pwRetrySave'; button.className = 'pw-secondary'; button.textContent = tr('retrySave'); button.onclick = () => persist();
-        $('.pw-dialog-actions').prepend(button);
+        button.setAttribute('aria-describedby', 'pwDialogMessage');
+        $('.pw-dialog-footer').prepend(button);
+        $('#pwDialogMessage').scrollIntoView({ block: 'nearest', behavior: 'instant' });
+        button.focus({preventScroll:true});
       }
     };
     await persist(saving);
@@ -220,7 +313,10 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
       $('#pwCharge').innerHTML = pulseCells(sim.level.shots, remaining);
     }
     $('#pwCrystals').textContent = `${active}/${count.length}`;
+    const seals = $('#pwCrystalSeals').children;
+    count.forEach((node, i) => { seals[i].dataset.awake = String(node.active); });
     $('#pwFire').disabled = state.phase !== 'ready' || paused;
+    $('#pwTargetFire').disabled = $('#pwFire').disabled;
     $('#pwUndo').disabled = !state.canUndo || paused;
     for (const button of root.querySelectorAll('[data-pw-color]')) {
       button.disabled = state.phase !== 'ready'; button.setAttribute('aria-pressed', String(button.dataset.pwColor === state.color));
@@ -229,17 +325,68 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
     for (const button of root.querySelectorAll('[data-pw-target]')) {
       const node = state.nodes.find(n => n.id === button.dataset.pwTarget);
       button.disabled = state.phase !== 'ready' || Boolean(node?.active);
+      const label = button.querySelector('small');
+      if (label) label.textContent = tr(node.kind === 'switch' ? node.active ? 'unlatched' : 'latched' : node.active ? 'awake' : 'asleep');
     }
+    if (state.gates.length) $('#pwGateState').textContent = `${tr('gate')} · ${tr(state.gates.every(g => g.open) ? 'unlatched' : 'latched')}`;
     if (state.phase === 'won' || state.phase === 'lost') finish(state);
+  }
+
+  function resetTrail() {
+    contacts = [];
+    $('#pwTrail').hidden = true;
+    $('#pwTrailList').replaceChildren();
+  }
+
+  function recordContact(event, sim) {
+    const { kind, color, surface } = event;
+    const node = sim.nodes.find(n => n.id === event.id);
+    const mark = { reflect: node?.slope === '/' ? '╱' : '╲', paint: '◎', switch: 'ϟ', activate: PRISM_COLORS[color]?.symbol, mismatch: '≠', miss: '×' }[kind];
+    if (!mark) return;
+    const name = { reflect: 'mirror', paint: 'paint', switch: 'switch', activate: 'crystal', mismatch: 'wrong', miss: surface === 'wall' || surface === 'gate' ? surface : 'edge' }[kind];
+    const list = $('#pwTrailList');
+    const group = contacts.at(-1);
+    let chip;
+    if (kind === 'activate' && group?.kind === kind && group.color === color) {
+      group.count++;
+      chip = list.lastElementChild;
+    } else {
+      contacts.push({ kind, color, count: 1 });
+      chip = document.createElement('li');
+      chip.style.setProperty('--energy', PRISM_COLORS[color]?.css || 'var(--pw-text)');
+      list.append(chip);
+    }
+    const n = contacts.at(-1).count;
+    const label = `${tr(name)}${kind === 'paint' || kind === 'activate' ? ` · ${energyName(color)}` : ''}${n > 1 ? ` ×${n}` : ''}`;
+    chip.setAttribute('aria-label', label); chip.title = label;
+    chip.textContent = `${mark} ${tr(name)}${n > 1 ? ` ×${n}` : ''}`;
+    $('#pwTrail').hidden = false;
   }
 
   function signal(event) {
     if (view !== 'game' || paused) return;
-    const el = $('#pwStatus');
+    const el = $('#pwStatus'), sim = arena.scene.simulation;
+    if (event.kind === 'launch') resetTrail();
+    recordContact(event, sim);
     const messages = { launch: 'launch', reflect: 'reflect', paint: 'paintHit', switch: 'switchHit', mismatch: 'mismatch', miss: 'miss' };
     const message = event.kind === 'miss' && event.surface === 'gate' ? 'hitGate'
       : event.kind === 'miss' && event.surface === 'wall' ? 'hitWall' : messages[event.kind];
     if (message) el.textContent = tr(message);
+    if (event.kind === 'miss' && event.surface === 'edge') {
+      const prior = contacts.at(-2);
+      if (contacts.some(c => c.kind === 'switch')) el.textContent = tr('opened');
+      else if (prior?.kind === 'reflect') el.textContent = tr('offMirror');
+      else if (prior?.kind === 'paint') el.textContent = tr('offRing', { energy: energyName(prior.color) });
+    }
+    if (event.kind === 'mismatch') {
+      const hit = sim.nodes.find(n => n.id === event.id);
+      if (hit) el.textContent = tr(sim.level.colors.includes(hit.color) ? 'chooseSymbol' : 'ringSymbol', { energy: energyName(hit.color) });
+    }
+    if (event.kind === 'settled' && event.phase === 'ready' && contacts.at(-1)?.kind === 'activate') {
+      const asleep = sim.nodes.filter(n => n.kind === 'crystal' && !n.active);
+      const groups = [...new Set(asleep.map(n => n.color))].map(color => `${asleep.filter(n => n.color === color).length} × ${energyName(color)}`);
+      el.textContent = tr('more', { groups: groups.join(', ') });
+    }
     app.audio.prismContact(event);
     if (event.kind === 'activate') {
       const n = arena.scene.simulation.nodes.filter(n => n.kind === 'crystal' && n.active).length;
@@ -251,18 +398,25 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
   function loadLevel(index, freePlay = false) {
     if (!Number.isInteger(index) || !PRISM_LEVELS[index] || (!freePlay && index > prismProgress(app.save.data).unlocked)) return;
     releaseArena(); levelIndex = index; challenge = freePlay; view = 'game'; settled = false;
+    if (!freePlay) rememberPlay(app.save, 'garden');
     contextFailed = false;
     const level = PRISM_LEVELS[index], token = generation;
-    shell(`<div class="pw-play-view"><div class="pw-level-heading"><div><p class="pw-eyebrow">${freePlay ? tr('challenge') : `${tr('level')} ${String(index + 1).padStart(2, '0')} / 12`}</p><h2>${escHTML(title(level))}</h2></div><button type="button" class="pw-icon-button" id="pwPause">${glyph('pause')} <span>${tr('pause')}</span></button></div>
+    let sighted = null, forecastKey = null;
+    contacts = [];
+    shell(`<div class="pw-play-view">
       <div class="pw-play-layout"><div class="pw-arena" id="pwArena"><p class="pw-loading">${tr('loading')}</p><button type="button" id="pwSkipReveal" class="pw-reveal-skip" hidden>${tr('skipReveal')} <span aria-hidden="true">→</span></button></div>
-      <section class="pw-console" aria-label="${tr('controls')}"><div class="pw-stats"><div><span>${tr('crystals')}</span><strong id="pwCrystals">0</strong></div><div><span>${tr('pulses')}<span id="pwCharge" class="pw-charge" aria-hidden="true">${pulseCells(level.shots, level.shots)}</span></span><strong id="pwPulses">${level.shots}</strong></div></div>
-        <p class="pw-goal">${tr('goal')} <span>${tr(level.par === 1 ? 'parOne' : 'par', { n: level.par })}</span></p>
-        <div class="pw-colors" aria-label="${getLanguage() === 'de' ? 'Energie wählen' : 'Choose energy'}">${level.colors.map(color => `<button type="button" data-pw-color="${color}" style="--energy:${PRISM_COLORS[color].css}" aria-pressed="${color === level.colors[0]}" aria-label="${PRISM_COLORS[color][getLanguage()]}"><span aria-hidden="true">${PRISM_COLORS[color].symbol}</span> ${PRISM_COLORS[color][getLanguage()].split(' · ')[0]}</button>`).join('')}</div>
+      <section class="pw-console" aria-label="${tr('controls')}"><div class="pw-stats"><div><span>${tr('crystals')}<span id="pwCrystalSeals" aria-hidden="true">${level.nodes.filter(n => n.kind === 'crystal').map(n => `<i data-energy="${n.color}" style="--energy:${PRISM_COLORS[n.color].css}"></i>`).join('')}</span></span><strong id="pwCrystals">0</strong></div><div><span>${tr('pulses')}<span id="pwCharge" class="pw-charge" aria-hidden="true">${pulseCells(level.shots, level.shots)}</span></span><strong id="pwPulses">${level.shots}</strong></div></div>
+        <div class="pw-colors" ${level.colors.length === 1 ? 'hidden' : ''} aria-label="${getLanguage() === 'de' ? 'Energie wählen' : 'Choose energy'}">${level.colors.map(color => `<button type="button" data-pw-color="${color}" style="--energy:${PRISM_COLORS[color].css}" aria-pressed="${color === level.colors[0]}" aria-label="${PRISM_COLORS[color][getLanguage()]}"><span aria-hidden="true">${PRISM_COLORS[color].symbol}</span> ${PRISM_COLORS[color][getLanguage()].split(' · ')[0]}</button>`).join('')}</div>
+         <p id="pwStatus" class="pw-status" role="status" aria-live="polite">${index === 0 ? tr('gesture') : escHTML(level.objective[langIndex()])}</p>
         <fieldset id="pwAimControls" class="pw-aim-controls" aria-label="${tr('angle')}"><button type="button" id="pwLeft" class="pw-secondary" aria-label="${tr('left')}">↶</button><button type="button" id="pwFire" class="pw-primary">${tr('fire')} <span aria-hidden="true">↗</span></button><button type="button" id="pwRight" class="pw-secondary" aria-label="${tr('right')}">↷</button></fieldset>
-        <div class="pw-tools"><button type="button" class="pw-text-button" id="pwUndo" disabled>↶ ${tr('undo')}</button><output id="pwAimReadout" class="pw-aim-readout" aria-label="${tr('aimValue', { degrees: 0 })}" aria-live="off">0°</output><button type="button" class="pw-text-button" id="pwRestart">↻ ${tr('restart')}</button></div>
-        <p id="pwStatus" class="pw-status" role="status" aria-live="polite">${tr('ready')}</p>
-        ${index === 0 ? `<p class="pw-tip">${escHTML(level.tip[langIndex()])}</p>` : `<details class="pw-help pw-hint"><summary>${tr('hint')}</summary><p class="pw-tip">${escHTML(level.tip[langIndex()])}</p></details>`}
-        <details class="pw-help"><summary>${tr('controls')}</summary><p>${tr('controlHelp')}</p><div class="pw-target-picker">${level.nodes.map((n, i) => `<button type="button" class="pw-secondary" data-pw-target="${n.id}">${tr('target')}: ${tr(n.kind)} ${i + 1}${n.color ? ` · ${PRISM_COLORS[n.color][getLanguage()]}` : ''}</button>`).join('')}</div></details>
+         <div class="pw-tools"><button type="button" class="pw-text-button" id="pwUndo" disabled>↶ ${tr('undo')}</button><output id="pwAimReadout" class="pw-aim-readout" aria-label="${tr('aimValue', { degrees: 0 })}" aria-live="off">0°</output><button type="button" class="pw-text-button" id="pwRestart">↻ ${tr('restart')}</button></div>
+         <div id="pwTrail" class="pw-trail" hidden><span>${tr('trail')}</span><ol id="pwTrailList" aria-label="${tr('trail')}"></ol></div>
+        <details class="pw-help pw-hint"><summary>${tr('hint')}</summary><p class="pw-tip">${escHTML(level.tip[langIndex()])}</p><p>${tr(level.par === 1 ? 'parOne' : 'par', { n: level.par })}</p></details>
+         <details class="pw-help"><summary>${tr('controls')}</summary><p>${escHTML(level.objective[langIndex()])} ${tr('controlHelp')}</p><p>${tr('fieldHelp')}</p>
+         <div class="pw-sighting"><span>${tr('forecast')}</span><output id="pwForecast" aria-live="off"></output>${level.gates.length ? '<strong id="pwGateState"></strong>' : ''}</div>
+         <div class="pw-target-picker" role="group" aria-label="${tr('target')}">${level.nodes.map(n => `<button type="button" class="pw-secondary" data-pw-target="${n.id}" aria-pressed="false"><span class="pw-node-mark" aria-hidden="true" style="--energy:${PRISM_COLORS[n.color]?.css || '#f3eddc'}">${nodeMark(n)}</span><span>${escHTML(targetLabel(n, level))}${['switch','crystal'].includes(n.kind) ? '<small></small>' : ''}</span></button>`).join('')}</div>
+         <div class="pw-help-tools"><button type="button" id="pwTargetFire" class="pw-primary">${tr('fire')}</button>${soundButton()}</div></details>
+        <button type="button" class="pw-quick" id="pwQuickColors"><span aria-hidden="true">⚡</span> ${tr('quick')} <small>Arcade · ${CONFIG.DURATION_BLITZ} s</small> →</button>
         ${freePlay ? `<p class="pw-map-note">${tr('challengeHelp')}</p>` : ''}
       </section></div></div>`);
     try {
@@ -272,6 +426,7 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
         makeDialog('Prism Worlds', tr('graphicsError'), [['pwGraphicsRetry', tr('restart'), () => loadLevel(index, freePlay), true], ['pwGraphicsBack', tr('home'), leave]]);
       }, 10000);
       arena = createPrismArena($('#pwArena'), level, {
+        gardenRestored: Boolean(prismProgress(app.save.data).levels['first-light']),
         ready: () => {
           if (token !== generation) return;
           clearTimeout(startupTimer); startupTimer = null;
@@ -279,12 +434,24 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
           if (document.hidden) pause();
         },
         state: state => { if (token === generation) update(state); },
-        aim: point => {
+        aim: (point, first) => {
           if (token !== generation) return;
           const degrees = Math.round(Math.atan2(point.x - level.launch.x, level.launch.y - point.y) * 180 / Math.PI);
           const readout = $('#pwAimReadout');
           readout.textContent = `${degrees > 0 ? '+' : ''}${degrees}°`;
           readout.setAttribute('aria-label', tr('aimValue', { degrees }));
+          const node = level.nodes.find(n => n.x === point.x && n.y === point.y);
+          if (sighted !== node) {
+            if (sighted) root.querySelector(`[data-pw-target="${sighted.id}"]`).setAttribute('aria-pressed', 'false');
+            if (node) root.querySelector(`[data-pw-target="${node.id}"]`).setAttribute('aria-pressed', 'true');
+            sighted = node;
+          }
+          const key = first?.id || first?.surface || '—';
+          if (forecastKey !== key) {
+            const hit = level.nodes.find(n => n.id === first?.id);
+            $('#pwForecast').textContent = hit ? targetLabel(hit, level) : first ? tr(['gate','wall'].includes(first.surface) ? first.surface : 'edge') : '—';
+            forecastKey = key;
+          }
         },
         signal: event => { if (token === generation) signal(event); },
         contextLost: event => {
@@ -298,16 +465,17 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
           makeDialog('Prism Worlds', tr('context'), [['pwGraphicsRestart', tr('restart'), () => loadLevel(index, freePlay), true], ['pwGraphicsMap', tr('toMap'), showMap]], { dismiss: showMap });
         },
       }, policy());
-      app.audio.setMusicMode('endless'); app.audio.startMusic();
+      app.audio.setMusicMode('endless'); startGardenMusic();
       app.requestWakeLock?.(); setGameplayPerformanceActive(true);
     } catch {
       releaseArena();
       makeDialog('Prism Worlds', tr('graphicsError'), [['pwGraphicsRetry', tr('restart'), () => loadLevel(index, freePlay), true], ['pwGraphicsBack', tr('home'), leave]]);
     }
     $('#pwFire').onclick = () => arena?.scene.fire();
+    $('#pwTargetFire').onclick = () => arena?.scene.fire();
     $('#pwLeft').onclick = () => arena?.scene.rotateAim(-5);
     $('#pwRight').onclick = () => arena?.scene.rotateAim(5);
-    $('#pwUndo').onclick = () => { arena?.scene.undo(); if ($('#pwStatus')) $('#pwStatus').textContent = tr('ready'); };
+    $('#pwUndo').onclick = undoPulse;
     $('#pwRestart').onclick = () => loadLevel(index, freePlay);
     $('#pwPause').onclick = pause;
     $('#pwSkipReveal').onclick = () => arena?.scene.endCompletion(true);
@@ -327,6 +495,9 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
   on(root, 'click', event => {
     const target = event.target.closest('button');
     if (!target || target.disabled) return;
+    if (view === 'map' && ['play','collection'].includes(target.dataset.action)) onHub(target.dataset.action);
+    if (target.id === 'pwMenu') leave();
+    if (target.id === 'pwQuickColors') onQuickColors();
     if (target.id === 'pwBack') view === 'map' ? leave() : showMap();
     if (target.id === 'pwSound') {
       const sound = !app.save.getSetting('sound');
@@ -334,6 +505,11 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
       app.audio.toggle(sound); target.setAttribute('aria-pressed', String(sound)); target.textContent = tr(sound ? 'sound' : 'soundOff');
     }
     if (target.dataset.pwLevel != null) loadLevel(Number(target.dataset.pwLevel));
+    if (target.dataset.pwPin != null) {
+      const region = $(`#pwZone${Number(target.dataset.pwPin)}`);
+      region.scrollIntoView({ block: 'start', behavior: 'instant' });
+      region.querySelector('h3').focus({ preventScroll: true });
+    }
     if (target.dataset.pwColor) arena?.scene.selectColor(target.dataset.pwColor);
     if (target.dataset.pwTarget) {
       const node = arena?.scene.simulation.nodes.find(n => n.id === target.dataset.pwTarget);
@@ -362,6 +538,7 @@ export function openPrism({ onHome, challengeId = null, play = false }) {
     listeners.abort(); releaseArena();
     root.innerHTML = ''; app.prismNavigation = null; cleanup = null;
     delete root.dataset.pwView;
+    delete root.dataset.pwRegion;
   };
   app.prismNavigation = {
     back: () => { if (view === 'map') leave(); else if (!paused && !settled) pause(); else showMap(); },

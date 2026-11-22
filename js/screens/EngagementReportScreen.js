@@ -6,17 +6,9 @@
    ═══════════════════════════════════════ */
 
 import { t, getLanguage } from '../i18n.js';
-import { $, showScreen }    from '../helpers/dom.js';
-import { escHTML }          from '../helpers/dom.js';
+import { $, showScreen, escHTML } from '../helpers/dom.js';
+import { CONFIG } from '../config.js';
 import app                   from '../appState.js';
-
-/* ═══════ Helper: color class for a 0-1 score ═══════ */
-function barClass(pct) {
-  if (pct >= 0.75) return 'er-bar-green';
-  if (pct >= 0.55) return 'er-bar-yellow';
-  if (pct >= 0.35) return 'er-bar-orange';
-  return 'er-bar-red';
-}
 
 function scoreColor(score) {
   if (score >= 80) return 'var(--success)';
@@ -37,27 +29,28 @@ function labelText(label) {
 }
 
 /* ═══════ Render ═══════ */
-export function showEngagementReport() {
+export function showEngagementReport(onBrowse = () => window.dispatchEvent(new Event('scs:show-home'))) {
   const { engagement } = app;
   showScreen('engagementReport', app);
+  $('#engagementReport .er-content').scrollTop = 0;
   $('#engagementReport')?.classList.remove('no-data');
 
   if (!engagement) {
-    renderNoData(t('er_not_init'));
+    renderNoData(t('er_not_init'), undefined, onBrowse);
     return;
   }
 
   const result = engagement.computeEngagementScore();
-  const { score, label, signals, subscores } = result;
+  const { score, label, signals } = result;
 
   if (score === null) {
-    renderNoData(labelText(label));
+    renderNoData(labelText(label), signals.totalGames, onBrowse);
     return;
   }
 
   renderSummary(signals);
   renderScoreCircle(score, label);
-  renderSignals(signals, subscores);
+  renderSignals(signals);
   renderFeedback(signals);
   renderDailyChart(engagement);
   $('#erExportButtons')?.removeAttribute('hidden');
@@ -65,14 +58,16 @@ export function showEngagementReport() {
 }
 
 /* ─── No data state ─── */
-function renderNoData(msg) {
+function renderNoData(msg, rounds, onBrowse) {
   $('#engagementReport')?.classList.add('no-data');
   const el = $('#erScoreCircle');
   if (el) {
-    el.innerHTML = `<div class="er-no-data"><span class="er-no-data-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="6" y="25" width="8" height="17" rx="3"/><rect x="20" y="15" width="8" height="27" rx="3"/><rect x="34" y="6" width="8" height="36" rx="3"/></svg></span>${escHTML(msg)}<br><small>${t('er_play_more')}</small><br><button type="button" class="btn btn-primary" id="btnErPlayNow">${t('lb_play_now')}</button></div>`;
-    el.querySelector('#btnErPlayNow')?.addEventListener('click', () => {
-      window.dispatchEvent(new Event('scs:show-home'));
-    });
+    el.innerHTML = `<div class="er-no-data">
+      ${rounds === undefined ? '' : `<span class="catalog-eyebrow">${t('er_games')} · ${rounds} / 3</span>`}
+      ${rounds === undefined ? '' : `<span class="er-baseline" aria-hidden="true">${Array.from({length:3}, (_,i)=>`<i class="${i < rounds ? 'filled' : ''}"></i>`).join('')}</span>`}
+      <h3>${escHTML(msg)}</h3><p>${t('er_play_more')}</p>
+      <button type="button" class="btn btn-primary" id="btnErPlayNow">${t('play')} →</button></div>`;
+    el.querySelector('#btnErPlayNow')?.addEventListener('click', onBrowse);
   }
   ['erSummary', 'erSignals', 'erFeedback', 'erDailyChart'].forEach(id => {
     const e = $(`#${id}`);
@@ -86,7 +81,9 @@ function renderSummary(signals) {
   const el = $('#erSummary');
   if (!el) return;
   const since = signals.firstSeen ? new Date(signals.firstSeen).toLocaleDateString(getLanguage()) : '—';
-  el.innerHTML = `${t('er_basis')}: <strong>${signals.totalSessions}</strong> ${t('er_sessions_unit')}, <strong>${signals.totalGames}</strong> ${t('er_games')}, ${t('er_since')} ${since}`;
+  el.innerHTML = `<div><strong>${signals.totalGames}</strong><span>${t('er_games')}</span></div>
+    <div><strong>${signals.totalSessions}</strong><span>${t('er_sessions_unit')}</span></div>
+    <small>${t('er_since')} ${since}</small>`;
 }
 
 /* ─── Big score circle (SVG ring) ─── */
@@ -101,7 +98,7 @@ function renderScoreCircle(score, label) {
 
   el.innerHTML = `
     <div class="er-score-ring">
-      <svg viewBox="0 0 140 140">
+      <svg viewBox="0 0 140 140" aria-hidden="true">
         <circle class="ring-bg" cx="70" cy="70" r="${r}"/>
         <circle class="ring-fill" cx="70" cy="70" r="${r}"
           stroke="${color}"
@@ -122,52 +119,42 @@ function renderScoreCircle(score, label) {
 }
 
 /* ─── Signal cards ─── */
-function renderSignals(signals, subscores) {
+function renderSignals(signals) {
   const el = $('#erSignals');
   if (!el) return;
 
   const cards = [
     {
       title: t('er_retention'),
-      value: `${signals.activeDaysPerWeek} ${t('er_days_week')}`,
-      pct: subscores.retention
+      value: `${signals.activeDaysPerWeek} ${t('er_days_week')}`
     },
     {
       title: t('er_sessions'),
-      value: `\u00d8 ${signals.avgSessionMin} Min.`,
-      pct: subscores.sessionLen
+      value: `\u00d8 ${signals.avgSessionMin} min`
     },
     {
       title: t('er_score_trend'),
-      value: `${signals.avgScoreTrend >= 0 ? '\u2197 +' : '\u2198 '}${(signals.avgScoreTrend * 100).toFixed(1)}%`,
-      pct: subscores.scoreTrend
+      value: `${signals.avgScoreTrend >= 0 ? '+' : ''}${(signals.avgScoreTrend * 100).toFixed(1)}%`
     },
     {
       title: t('er_retry'),
-      value: `${(signals.retryRate * 100).toFixed(0)}%`,
-      pct: subscores.retryRate
+      value: `${(signals.retryRate * 100).toFixed(0)}%`
     },
     {
       title: t('er_quits'),
-      value: `${(signals.quitRate * 100).toFixed(0)}%`,
-      pct: subscores.quitRate
+      value: `${(signals.quitRate * 100).toFixed(0)}%`
     },
     {
       title: t('er_modes'),
-      value: `${signals.modesPlayed} / 10`,
-      pct: subscores.exploration
+      value: `${signals.modesPlayed} / ${CONFIG.MODE_ORDER.length}`
     }
   ];
 
   el.innerHTML = cards.map(c => {
-    const pctRound = Math.round((c.pct || 0) * 100);
-    const cls = barClass(c.pct || 0);
     return `
       <div class="er-signal-card">
         <span class="er-signal-title">${escHTML(c.title)}</span>
         <span class="er-signal-value">${escHTML(c.value)}</span>
-        <div class="er-signal-bar"><div class="er-signal-bar-fill ${cls}" style="width:${pctRound}%"></div></div>
-        <span class="er-signal-pct">${pctRound}%</span>
       </div>`;
   }).join('');
 }
@@ -210,16 +197,17 @@ function renderDailyChart(engagement) {
 
   const dailyCounts = engagement.getDailyGameCounts(14);
   const maxCount = Math.max(1, ...dailyCounts.map(([, c]) => c));
+  const formatDate = iso => new Date(`${iso}T12:00:00`).toLocaleDateString(getLanguage(), {day:'numeric',month:'short'});
 
   el.innerHTML = `
     <span class="er-chart-title">${t('er_daily_games')}</span>
-    <div class="er-chart-bars">
-      ${dailyCounts.map(([date, count], index) => {
-        const heightPct = Math.max(2, (count / maxCount) * 100);
-        const dayLabel = window.innerWidth <= 360 && index % 2 ? '' : date.slice(8, 10) + '.' + date.slice(5, 7);
-        return `<div class="er-chart-bar" style="height:${heightPct}%"><span class="er-chart-bar-label">${dayLabel}</span></div>`;
-      }).join('')}
-    </div>`;
+    <div class="er-chart-bars" aria-hidden="true">
+      ${dailyCounts.map(([, count]) => `<div class="er-chart-bar" style="height:${(count / maxCount) * 100}%"></div>`).join('')}
+    </div>
+    <div class="er-range">${[dailyCounts.at(0), dailyCounts.at(-1)].filter(Boolean).map(([d])=>`<span>${formatDate(d)}</span>`).join('')}</div>
+    <details class="er-days"><summary>${getLanguage() === 'de' ? 'Tageswerte' : 'Daily totals'}</summary>
+      <dl>${dailyCounts.map(([d,c])=>`<div><dt>${formatDate(d)}</dt><dd>${c}</dd></div>`).join('')}</dl>
+    </details>`;
 }
 
 /* ─── Export buttons ─── */
